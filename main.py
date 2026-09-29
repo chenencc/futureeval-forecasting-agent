@@ -667,10 +667,11 @@ if __name__ == "__main__":
     publish_to_metaculus = True
     print_startup_banner(run_mode, will_publish=publish_to_metaculus)
 
-    # Pin every LLM role to an OpenRouter free endpoint. The template's
+    # Pin every LLM role to OpenRouter free endpoints. The template's
     # default researcher uses a retired search model and fails before
     # forecasting starts. Current-news retrieval can be added separately.
-    free_model = "openrouter/google/gemma-4-31b-it:free"
+    free_model = "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
+    free_parser = "openrouter/qwen/qwen3.8-27b:free"
     template_bot = SummerTemplateBot2026(
         research_reports_per_question=1,
         predictions_per_research_report=1,
@@ -688,7 +689,7 @@ if __name__ == "__main__":
             ),
             "summarizer": free_model,
             "researcher": "no_research",
-            "parser": free_model,
+            "parser": free_parser,
         },
     )
 
