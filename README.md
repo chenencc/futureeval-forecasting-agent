@@ -6,7 +6,10 @@ This checkout is based on the official Metaculus template. `main.py --mode tourn
 forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
 The scheduler runs every 20 minutes and skips questions already forecasted by
 this bot. V0 uses one research report and one prediction per question to limit
-cost. The optional Polymarket paper-trading track is not yet enabled.
+cost. V0 pins forecasting and parsing to OpenRouter's free Google Gemma 4 31B
+endpoint. The retired template research model is disabled, so forecasts use
+the question context without current-news retrieval. The optional Polymarket
+paper-trading track is not yet enabled.
 
 1. Use this repository as the source for deployment. The official Metaculus
    template is kept as the `upstream` remote for future reference.
