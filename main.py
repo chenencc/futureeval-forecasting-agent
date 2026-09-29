@@ -671,7 +671,6 @@ if __name__ == "__main__":
     # default researcher uses a retired search model and fails before
     # forecasting starts. Current-news retrieval can be added separately.
     free_model = "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
-    free_parser = "openrouter/qwen/qwen3.8-27b:free"
     template_bot = SummerTemplateBot2026(
         research_reports_per_question=1,
         predictions_per_research_report=1,
@@ -689,7 +688,7 @@ if __name__ == "__main__":
             ),
             "summarizer": free_model,
             "researcher": "no_research",
-            "parser": free_parser,
+            "parser": free_model,
         },
     )
 

@@ -6,8 +6,8 @@ This checkout is based on the official Metaculus template. `main.py --mode tourn
 forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
 The scheduler runs every 20 minutes and skips questions already forecasted by
 this bot. V0 uses one research report and one prediction per question to limit
-cost. V0 pins forecasting to OpenRouter's free NVIDIA Nemotron 3 Super endpoint
-and parsing to free Qwen3.8 27B. The retired template research model is disabled, so forecasts use
+cost. V0 pins forecasting and parsing to OpenRouter's free NVIDIA Nemotron 3
+Super endpoint. The retired template research model is disabled, so forecasts use
 the question context without current-news retrieval. The optional Polymarket
 paper-trading track is not yet enabled.
 
