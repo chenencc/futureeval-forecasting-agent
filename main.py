@@ -127,7 +127,7 @@ class SummerTemplateBot2026(ForecastBot):
         1  # Set this to whatever works for your search-provider/ai-model rate limits
     )
     _concurrency_limiter = asyncio.Semaphore(_max_concurrent_questions)
-    _structure_output_validation_samples = 2
+    _structure_output_validation_samples = 1
 
     ##################################### RESEARCH #####################################
 
@@ -728,13 +728,19 @@ if __name__ == "__main__":
             )
         )
     elif run_mode == "test_questions":
-        # The bot-testing-area tournament contains all question types and is
-        # the recommended target for smoke-testing your bot.
+        # One binary question is enough for an end-to-end smoke test and
+        # avoids using the daily free-model quota on the full testing area.
         # https://www.metaculus.com/tournament/bot-testing-area/
         template_bot.skip_previously_forecasted_questions = False
+        test_questions = client.get_all_open_questions_from_tournament(
+            "bot-testing-area"
+        )
+        binary_questions = [
+            question for question in test_questions if isinstance(question, BinaryQuestion)
+        ]
         forecast_reports = asyncio.run(
-            template_bot.forecast_on_tournament(
-                "bot-testing-area", return_exceptions=True
+            template_bot.forecast_questions(
+                (binary_questions or test_questions)[:1], return_exceptions=True
             )
         )
 
