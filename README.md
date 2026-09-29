@@ -1,4 +1,26 @@
 # Simple Metaculus forecasting bot
+
+## Fall 2026 V0 setup
+
+This checkout is based on the official Metaculus template. `main.py --mode tournament`
+forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
+The scheduler runs every 20 minutes and skips questions already forecasted by
+this bot. V0 uses one research report and one prediction per question to limit
+cost. The optional Polymarket paper-trading track is not yet enabled.
+
+1. Use this repository as the source for deployment. The official Metaculus
+   template is kept as the `upstream` remote for future reference.
+2. Add `METACULUS_TOKEN` and `OPENROUTER_API_KEY` under **Settings → Secrets and
+   variables → Actions**. Never commit `.env` or share either key in a chat.
+3. Submit the [Fall 2026 participation form](https://forms.gle/aQdYMq9Pisrf1v7d8).
+4. Enable GitHub Actions. Run **Test Bot** manually, then verify a forecast on
+   the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
+5. The **Forecast on new AI tournament questions** workflow handles the live
+   tournament and MiniBench. Check its first run and the bot profile.
+
+The test workflow posts actual forecasts to the testing area. The live workflow
+posts actual forecasts to the competition. See the upstream instructions below
+for local setup and other optional API keys.
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
 
 **Brand new to this?** You can get a working bot running in about 5 minutes without writing a single line of code — just fork this repo, paste two API keys into GitHub, and click "Run workflow". See **[Quick start](#quick-start--fork-and-use-github-actions)** below.
