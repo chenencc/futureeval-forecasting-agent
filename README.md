@@ -10,8 +10,9 @@ cost. The optional Polymarket paper-trading track is not yet enabled.
 
 1. Use this repository as the source for deployment. The official Metaculus
    template is kept as the `upstream` remote for future reference.
-2. Add `METACULUS_TOKEN` and `OPENROUTER_API_KEY` under **Settings → Secrets and
-   variables → Actions**. Never commit `.env` or share either key in a chat.
+2. Add `METACULUS_TOKEN` and `OPENROUTER` under **Settings → Secrets and
+   variables → Actions**. The workflow maps `OPENROUTER` to the runtime variable
+   `OPENROUTER_API_KEY`. Never commit `.env` or share either key in a chat.
 3. Submit the [Fall 2026 participation form](https://forms.gle/aQdYMq9Pisrf1v7d8).
 4. Enable GitHub Actions. Run **Test Bot** manually, then verify a forecast on
    the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
