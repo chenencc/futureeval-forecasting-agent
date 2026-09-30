@@ -37,7 +37,8 @@ def rank_passages(pages, query, target=None, limit=5):
         if target and target != url:
             continue
         text = doc['page_content']
-        for start, end in windows(text):
+        spans=[(0,len(text))] if doc.get('metadata',{}).get('format')=='html_table' and len(text)<=4000 else windows(text)
+        for start, end in spans:
             part = text[start:end]
             found = terms(part)
             candidates.append((url, page, index, doc, start, end, part, found))

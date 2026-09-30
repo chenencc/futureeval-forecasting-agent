@@ -43,6 +43,8 @@ class CollectionUpgradeTests(TestCase):
         self.assertIn('123.4',table['page_content'])
         self.assertEqual(base64.b64decode(result['raw_response_base64']),raw)
         self.assertEqual(result['page_date_metadata']['extraction_engine'],'trafilatura')
+        passages=rank_passages({URL:result},'123.4')
+        self.assertTrue(any('Date | USD' in p['text'] and '123.4' in p['text'] for p in passages))
 
     def test_interstitial_and_javascript_shell_are_distinguished(self):
         from ForecastAgent.readers.quality import body_diagnostics

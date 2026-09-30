@@ -5,8 +5,13 @@ $runner=Join-Path $PSScriptRoot 'monitor_watchdog.ps1'
 foreach ($required in @($PythonPath,$GhPath,$runner)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Required executable/script missing: $required" }
 }
+$PythonPath=(Resolve-Path -LiteralPath $PythonPath).Path
+$GhPath=(Resolve-Path -LiteralPath $GhPath).Path
+New-Item -ItemType Directory -Force -Path $DataRoot | Out-Null
+$DataRoot=(Resolve-Path -LiteralPath $DataRoot).Path
 $argument='-NoProfile -NonInteractive -WindowStyle Hidden -File "{0}" -PythonPath "{1}" -RepositoryPath "{2}" -GhPath "{3}" -DataRoot "{4}"' -f $runner,$PythonPath,$repositoryPath,$GhPath,$DataRoot
-$action=New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $argument -WorkingDirectory $repositoryPath
+$shellPath=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$action=New-ScheduledTaskAction -Execute $shellPath -Argument $argument -WorkingDirectory $repositoryPath
 $periodic=New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $login=New-ScheduledTaskTrigger -AtLogOn -User ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)
 $principal=New-ScheduledTaskPrincipal -UserId ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
