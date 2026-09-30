@@ -17,6 +17,23 @@ def call(name, args, ident):
     return {"id": ident, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
 
 class RetrievalTests(TestCase):
+    @patch("scripts.retrieval_agent.search_batch", return_value={"results": []})
+    def test_model_search_choices_are_durable_with_same_three_attempt_cap(self, search):
+        with TemporaryDirectory() as directory:
+            task = RetrievalTask(Path(directory), REQUEST)
+            task.execute("plan_evidence", PLAN, "key")
+            choices = {**SEARCH, "query": '"Agency" announcement', "topic": "news", "include_domains": ["agency.gov"], "include_domains_mode": "prefer", "exact_match": True}
+            task.execute("search_tavily", choices, "key")
+            self.assertEqual(search.call_args.kwargs["topic"], "news")
+            self.assertTrue(search.call_args.kwargs["exact_match"])
+            restored = RetrievalTask(Path(directory), REQUEST)
+            self.assertEqual(restored.bundle["searches"][0]["search_options"]["include_domains"], ["agency.gov"])
+            for _ in range(2):
+                restored.execute("search_tavily", choices, "key")
+            with self.assertRaisesRegex(ValueError, "budget exhausted"):
+                restored.execute("search_tavily", choices, "key")
+            self.assertEqual(search.call_count, 3)
+
     @patch("scripts.retrieval_agent.extract_basic")
     def test_extract_rescue_eligibility_partial_response_and_restart_budget(self, extract):
         other = "https://example.org/other"

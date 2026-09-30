@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import re
 
-from tavily_research import canonical_url, search_batch
+from tavily_research import canonical_url, search_batch, search_options
 from scripts.tavily_extract import extract_basic
 from scripts.ultra_research_agent import ask_ultra, fetch_public_page, utc_now, canonical_evidence_chain
 
@@ -31,7 +31,11 @@ TOOLS = [
              "id": STRING, "condition": STRING, "priority": {"type": "string", "enum": ["critical", "useful"]},
              "expected_source": STRING, "query": STRING}, "required": ["id", "condition", "priority", "expected_source", "query"]}}}, ["needs"]),
     tool("search_tavily", "Spend one of at most THREE basic search attempts. Only search for important missing evidence or unresolved contradictions. Cannot override date or depth.",
-         {"query": STRING, "need_ids": {"type": "array", "items": STRING}, "reason": STRING}, ["query", "need_ids", "reason"]),
+         {"query": STRING, "need_ids": {"type": "array", "items": STRING}, "reason": STRING,
+          "topic": {"type": "string", "enum": ["general", "news", "finance"]},
+          "include_domains": {"type": "array", "items": STRING, "maxItems": 10},
+          "include_domains_mode": {"type": "string", "enum": ["prefer", "restrict"]},
+          "exact_match": {"type": "boolean"}}, ["query", "need_ids", "reason", "topic", "include_domains", "include_domains_mode", "exact_match"]),
     tool("fetch_page", "Read a discovered URL using free HTTP fetching. Failed reads are logged. Historical strict mode refuses today's pages.", {"url": STRING}, ["url"]),
     tool("extract_failed_pages", "One basic Extract rescue batch per task, up to five URLs. Only important accepted pages whose free fetch failed; batch candidates together. Never historical strict.",
          {"urls": {"type": "array", "items": STRING, "minItems": 1, "maxItems": 5}, "need_ids": {"type": "array", "items": STRING}, "reason": STRING}, ["urls", "need_ids", "reason"]),
@@ -50,6 +54,9 @@ TOOLS = [
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
 Use Tavily basic at most three times, at most ten new URLs per search. Do not spend all calls automatically.
+Choose each search topic: general for official documents/definitions/base rates; news for breaking events; finance for companies/economic/financial evidence. Explain choices in reason.
+Choose genuine official domains based on resolution criteria or discovered sources; never invent an authority. Empty include_domains searches broadly. Prefer boosts selected domains while preserving wider coverage; restrict is for verifying a named authority only and requires domains. These labels are not proof of source reliability.
+For ambiguous entities or a specific announcement, use exact_match=true and put the entity/phrase in double quotes within query. Avoid quoting the entire question or over-constraining broad discovery. If no results, consciously relax parameters only within the remaining THREE attempts; there are no automatic fallback searches.
 After each search select relevant primary/official pages, fetch their text, record exact supporting quotes and evaluate coverage before searching again.
 If free fetch fails for important evidence, collect failed candidates and use extract_failed_pages ONCE (up to five URLs). Explain which critical gaps they address. No Extract for pages already read or unavailable due to temporal quarantine. Extract is a current vendor capture, not an archived original HTML page.
 Search snippets are unverified leads, never formal evidence. News copies citing one original source are one evidence chain.
@@ -176,13 +183,14 @@ class RetrievalTask:
                 raise ValueError("Explain which missing evidence the query addresses")
             if len(b["searches"]) >= MAX_SEARCHES:
                 raise ValueError("Three-basic-search budget exhausted; persists across restarts")
+            options = search_options(args["query"], **{k: args[k] for k in ["topic", "include_domains", "include_domains_mode", "exact_match"] if k in args})
             attempt = {"query": args["query"], "need_ids": args["need_ids"], "reason": args["reason"],
-                       "depth": "basic", "end_date": self.end_date, "attempted_at": utc_now(), "status": "reserved", "results": []}
+                       "depth": "basic", "search_options": options, "end_date": self.end_date, "attempted_at": utc_now(), "status": "reserved", "results": []}
             b["searches"].append(attempt)
             self.save()  # Durable reservation BEFORE the network; crashes consume this attempt.
             seen = tuple(r["url"] for s in b["searches"] for r in s["results"])
             try:
-                data = search_batch(args["query"], key, exclude_urls=seen, end_date=self.end_date)
+                data = search_batch(args["query"], key, exclude_urls=seen, end_date=self.end_date, **options)
                 attempt["raw_response"] = data
                 for hit in data["results"]:
                     published = parse_time(hit.get("published_date"))

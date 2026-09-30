@@ -3,10 +3,38 @@ import json
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from tavily_research import followup_query_from_response, search_batch, search_question
+from tavily_research import followup_query_from_response, search_batch, search_question, search_options
 
 
 class TavilyResearchTests(TestCase):
+    @patch("tavily_research.urlopen")
+    def test_targeted_search_payload_and_restrict_boundary(self, urlopen):
+        body = {"results": [{"url": "https://www.sec.gov/Archives/a"},
+                            {"url": "https://sec.gov.evil.example/a"},
+                            {"url": "https://news.example/a"}], "usage": {"credits": 1}}
+        urlopen.return_value.__enter__.return_value = io.BytesIO(json.dumps(body).encode())
+        batch = search_batch('"Anthropic" S-1', "key", topic="finance", include_domains=["SEC.GOV"],
+                             include_domains_mode="restrict", exact_match=True, end_date="2026-08-19")
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(payload["topic"], "finance")
+        self.assertEqual(payload["include_domains"], ["sec.gov"])
+        self.assertTrue(payload["exact_match"])
+        self.assertEqual(payload["search_depth"], "basic")
+        self.assertFalse(payload["auto_parameters"])
+        self.assertEqual(payload["end_date"], "2026-08-19")
+        self.assertEqual(len(batch["results"]), 1)
+        self.assertEqual(batch["usage"]["credits"], 1)
+        self.assertEqual(len(batch["raw_results"]), 3)
+
+    @patch("tavily_research.urlopen")
+    def test_invalid_search_choices_never_use_network(self, urlopen):
+        for options in [{"topic": "advanced"}, {"include_domains_mode": "restrict"},
+                        {"exact_match": True}, {"exact_match": "false"},
+                        {"include_domains": ["https://sec.gov/a"]}, {"include_domains": ["metaculus.com"]}]:
+            with self.assertRaises(ValueError):
+                search_batch("agency status", "key", **options)
+        urlopen.assert_not_called()
+
     @patch("tavily_research.urlopen")
     def test_historical_date_is_sent_with_basic_and_no_answer(self, urlopen):
         urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"results":[]}')
