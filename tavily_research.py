@@ -22,6 +22,7 @@ def search_question(question_text: str, api_key: str) -> str:
             "include_answer": False,
             "include_raw_content": False,
             "include_published_date": True,
+            "exclude_domains": ["metaculus.com"],
     }
     request = Request(
         TAVILY_SEARCH_URL,

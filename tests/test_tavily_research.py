@@ -36,6 +36,7 @@ class TavilyResearchTests(TestCase):
         payload = json.loads(request.data)
         self.assertEqual(payload["search_depth"], "basic")
         self.assertFalse(payload["include_answer"])
+        self.assertEqual(payload["exclude_domains"], ["metaculus.com"])
         self.assertEqual(report.count("https://example.org/update"), 1)
         self.assertIn("2026-09-29", report)
         self.assertIn("Latest data with details", report)
