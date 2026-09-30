@@ -7,9 +7,14 @@ from scripts.retrieval_agent import run_retrieval
 
 
 def main():
-    root = Path("snapshots/retrieval-five")
+    experiment = os.environ.get("RETRIEVAL_EXPERIMENT", "five")
+    if experiment not in {"five", "v2-three"}:
+        raise ValueError("Unknown experiment; refusing arbitrary budget reset")
+    root = Path("snapshots/retrieval-five" if experiment == "five" else "snapshots/retrieval-v2-three")
     root.mkdir(parents=True, exist_ok=True)
     questions = json.loads(Path("fixtures/retrieval_2026_five.json").read_text(encoding="utf-8"))
+    if experiment == "v2-three":
+        questions = [q for q in questions if q["id"] in {"44925", "44448", "44986"}]
     rows = []
     for question in questions:
         ident = question["id"]
@@ -22,6 +27,7 @@ def main():
                    "searches": len(bundle["searches"]), "pages": len(bundle["pages"]), "evidence": len(bundle["evidence"]),
                    "critical_covered": sum(bool(n["evidence_ids"]) for n in critical), "critical_total": len(critical),
                    "quarantined": len(bundle["quarantine"]), "summary": bundle["result"]["summary"],
+                   "extract_batches": len(bundle.get("extract_attempts", [])),
                    "gaps": bundle["result"].get("gaps", []), "conflicts": bundle["result"].get("conflicts", []),
                    "last_error": bundle.get("last_error"), "last_error_detail": bundle.get("last_error_detail")}
         except Exception as exc:
