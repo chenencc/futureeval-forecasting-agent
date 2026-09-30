@@ -255,7 +255,13 @@ class RetrievalTask:
                 raise ValueError("Conflicted needs explicit contradictions")
             if not b["evidence"]:
                 status = "failed"
+            temporal_gaps = []
+            if self.cutoff and any(e["temporal_status"] == "current_capture_possible_later_edits" for e in b["evidence"]):
+                temporal_gaps.append("Historical article bodies were fetched today; pre-cutoff availability is unverified")
+                if status == "sufficient":
+                    status = "partial"
             b["result"] = {**args, "status": status, "coverage": coverage, "uncovered_critical_ids": missing,
+                           "gaps": args["gaps"] + temporal_gaps,
                            "evidence_chains": sorted({e["evidence_chain"] for e in b["evidence"]}), "finished_at": utc_now()}
             return b["result"]
         raise ValueError("Unknown retrieval tool")
@@ -291,6 +297,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         for _ in range(MAX_TURNS):
             try:
                 message = ask_ultra(messages, router_key, tools=TOOLS, forced_tool="plan_evidence" if task.bundle["plan"] is None else None)
+                task.bundle.pop("last_error", None)
+                task.bundle.pop("last_error_detail", None)
             except Exception as exc:
                 task.bundle["last_error"] = type(exc).__name__
                 detail = str(exc)

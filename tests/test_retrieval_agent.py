@@ -17,6 +17,14 @@ def call(name, args, ident):
     return {"id": ident, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
 
 class RetrievalTests(TestCase):
+    def test_historical_current_capture_cannot_finish_as_sufficient(self):
+        with TemporaryDirectory() as directory:
+            task = RetrievalTask(Path(directory), {**REQUEST, "mode": "historical_exploratory", "as_of_utc": "2026-08-20T00:00:00Z"})
+            task.execute("plan_evidence", PLAN, "")
+            task.bundle["evidence"] = [{"id": "E1", "need_ids": ["status"], "evidence_chain": "agency", "temporal_status": "current_capture_possible_later_edits"}]
+            result = task.execute("finish_retrieval", {"status": "sufficient", "gaps": [], "conflicts": [], "summary": "Critical condition covered"}, "")
+            self.assertEqual(result["status"], "partial")
+            self.assertIn("pre-cutoff availability", result["gaps"][0])
     def test_strict_mode_reuses_pre_cutoff_capture_with_hash_validation(self):
         with TemporaryDirectory() as directory:
             raw = b'Official figure was published before the deadline.'
