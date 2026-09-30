@@ -170,7 +170,7 @@ class RetrievalTask:
     def rescue_candidates(self):
         quarantined = {canonical_url(q.get("url", "")) for q in self.bundle["quarantine"]}
         return list(dict.fromkeys(a["url"] for a in self.bundle["fetch_attempts"]
-                    if a["status"] == "failed" and canonical_url(a["url"]) in self.catalog()
+                    if a["status"] == "failed" and a.get('url') and canonical_url(a["url"]) in self.catalog()
                     and canonical_url(a["url"]) not in self.bundle["pages"]
                     and not (self.cutoff and structured_url(a["url"]))
                     and canonical_url(a["url"]) not in quarantined))
@@ -518,7 +518,7 @@ class RetrievalTask:
                 raise ValueError("Explain importance; batch 1 to 5 failed URLs")
             keys = [canonical_url(u) for u in urls if isinstance(u, str)]
             accepted = self.catalog()
-            failed = {canonical_url(a["url"]) for a in b["fetch_attempts"] if a["status"] == "failed"}
+            failed = {canonical_url(a["url"]) for a in b["fetch_attempts"] if a["status"] == "failed" and a.get('url')}
             quarantined = {canonical_url(q.get("url", "")) for q in b["quarantine"]}
             if len(keys) != len(urls) or len(set(keys)) != len(keys) or any(not u or u not in accepted or u not in failed or u in b["pages"] or u in quarantined for u in keys):
                 raise ValueError("Extract only accepted, free-fetch-failed, uncached, non-quarantined URLs")

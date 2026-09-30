@@ -101,6 +101,8 @@ class AcquisitionChannelTests(TestCase):
             with self.assertRaises(RuntimeError):
                 task.execute('collect_polymarket', args, '')
             self.assertEqual(task.bundle['fetch_attempts'][0]['status'], 'failed')
+            self.assertEqual(task.rescue_candidates(), [])
+            self.assertEqual(task.execute('list_sources', {}, '')['extract_eligible'], [])
             for mode in ['historical_strict', 'historical_exploratory']:
                 historic = self.task(Path(directory) / mode, mode=mode, as_of_utc='2026-08-20T00:00:00Z')
                 with self.assertRaisesRegex(ValueError, 'historical'):
@@ -195,3 +197,18 @@ class AcquisitionChannelTests(TestCase):
             before = (location / 'bundle.json').read_bytes()
             agent.acceptance('snapshots/one')
             self.assertEqual((location / 'bundle.json').read_bytes(), before)
+
+    def test_acceptance_reports_empty_collection_and_failed_searches(self):
+        report = collection_acceptance({'searches': [{'status': 'failed', 'results': []}]})
+        self.assertEqual(report['status'], 'accepted_with_gaps')
+        issues = [w['issue'] for w in report['warnings']]
+        self.assertIn('Failed/interrupted searches remain', issues)
+        self.assertIn('No source bodies or market responses were captured', issues)
+
+    @patch('ForecastAgent.runtime.retrieval.extract_basic', return_value={'results': [], 'failed_results': []})
+    def test_market_failure_does_not_break_unrelated_extract_rescue(self, extract):
+        with TemporaryDirectory() as directory:
+            task = self.task(directory)
+            task.bundle['fetch_attempts'] = [{'channel': 'polymarket', 'status': 'failed'}, {'url': URL, 'status': 'failed'}]
+            task.execute('extract_failed_pages', {'urls': [URL], 'need_ids': ['n'], 'reason': 'Important saved source'}, '')
+            self.assertEqual(extract.call_count, 1)

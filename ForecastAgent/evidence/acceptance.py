@@ -51,12 +51,17 @@ def collection_acceptance(bundle):
     if len(searches) > 3 or len(attempts) > 8 or len(bundle.get('extract_attempts', [])) > 1:
         failures.append({'issue': 'Attempt budget exceeded'})
     failed_reads = [a for a in attempts if a.get('status') in {'failed', 'reserved'}]
+    failed_searches = [a for a in searches if a.get('status') in {'failed', 'reserved'}]
     unassociated = [n['id'] for n in bundle.get('plan') or []
                     if not any(n['id'] in e.get('need_ids', []) for e in bundle.get('excerpts', []))
                     and not any(n['id'] in a.get('need_ids', []) and a.get('status') == 'completed' for a in attempts)]
     warnings.extend({'issue': 'Acquisition need has no associated material', 'need_id': n} for n in unassociated)
     if failed_reads:
         warnings.append({'issue': 'Failed/interrupted reads remain', 'count': len(failed_reads)})
+    if failed_searches:
+        warnings.append({'issue': 'Failed/interrupted searches remain', 'count': len(failed_searches)})
+    if not pages and not bundle.get('market_snapshots'):
+        warnings.append({'issue': 'No source bodies or market responses were captured'})
     if bundle.get('quarantine'):
         warnings.append({'issue': 'Temporally quarantined material remains', 'count': len(bundle['quarantine'])})
     if unread:
