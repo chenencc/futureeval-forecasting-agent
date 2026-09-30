@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from ForecastAgent.agent import run_research
-from ForecastAgent.monitor_tournament import API_ROOT, collect_questions, get_json, _questions, _write_json
+from ForecastAgent.monitor_tournament import API_ROOT, get_json, _questions, _write_json
 from ForecastAgent.evidence.acceptance import collection_acceptance
 
 ROOT = Path('snapshots/live-collection')
@@ -72,10 +72,10 @@ def main():
     if manifest.exists():
         selected = json.loads(manifest.read_text(encoding='utf-8'))['questions']
     else:
-        tournament, complete = collect_questions(token)
-        if not complete:
-            raise RuntimeError('Tournament exclusion inventory is incomplete')
-        excluded = {q['id'] for p in tournament for q in _questions(p)}
+        excluded = set()
+        for snapshot in (ROOT / 'monitor-state').glob('*/[0-9]*.json'):
+            saved = json.loads(snapshot.read_text(encoding='utf-8')).get('post', {})
+            excluded.update(q['id'] for q in _questions(saved))
         monitor = ROOT / 'monitor-state' / 'retrieval'
         excluded.update(int(p.name) for p in monitor.iterdir() if p.is_dir() and p.name.isdigit()) if monitor.exists() else None
         url = API_ROOT + '?' + urlencode({'statuses': 'open', 'forecast_type': 'binary', 'limit': 100,
@@ -86,7 +86,7 @@ def main():
         if len(selected) != 3:
             raise RuntimeError('Fewer than three eligible open binary questions outside monitored tasks')
         _write_json(manifest, {'selected_at': datetime.now(timezone.utc).isoformat(), 'questions': selected,
-                              'policy': 'Exclude current tournament and existing monitor ledgers; freeze selection and budgets.'})
+                              'policy': 'Exclude restored monitor inventory and ledgers; freeze selection and budgets.'})
     fresh = get_json(API_ROOT + '?' + urlencode({'statuses':'open', 'forecast_type':'binary', 'limit':100,
                                                 'include_description':'true', 'order_by':'-hotness'}), token)['results']
     open_ids = {q['id'] for p in fresh for q in _questions(p) if eligible(p, q)}

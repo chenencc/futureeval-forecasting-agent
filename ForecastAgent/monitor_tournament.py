@@ -31,7 +31,8 @@ def get_json(url: str, token: str) -> dict:
         try:
             with urlopen(request, timeout=30) as response:
                 data = json.load(response)
-            if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+            detail = parts.path.rstrip('/').removeprefix('/api/posts/').isdigit()
+            if not isinstance(data, dict) or (not detail and not isinstance(data.get("results"), list)) or (detail and not isinstance(data.get('id'), int)):
                 raise ValueError("Unexpected Metaculus posts response")
             return data
         except HTTPError as exc:
