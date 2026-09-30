@@ -1,0 +1,17 @@
+name: Inspect resolved question access
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Inspect five resolved FutureEval questions
+        run: python scripts/inspect_resolved_access.py
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
