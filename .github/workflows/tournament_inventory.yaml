@@ -1,0 +1,28 @@
+name: Read-only 2026 tournament inventory
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read question metadata and official categories
+        run: python -u -m scripts.tournament_inventory
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tournament-inventory-2026
+          path: snapshots/tournament-inventory-2026/
+          if-no-files-found: error
+          retention-days: 90
