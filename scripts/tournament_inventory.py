@@ -1,10 +1,11 @@
 """Read-only 2026 seasonal inventory; no forecasting, search or LLM calls."""
 import json
 import os
+import time
 from pathlib import Path
 from urllib.parse import urlencode
 
-from scripts.monitor_tournament import API_ROOT, collect_pages, _questions
+from scripts.monitor_tournament import API_ROOT, get_json, _next_url, _questions
 from scripts.ultra_research_agent import utc_now
 
 SEASONS = ['spring-aib-2026', 'summer-futureeval-2026', 'fall-futureeval-2026']
@@ -15,8 +16,16 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     manifest = []
     for season in SEASONS:
-        url = API_ROOT+'?'+urlencode({'tournaments': season, 'limit': 100, 'include_description': 'true', 'order_by': 'id'})
-        posts, cursor, pages = collect_pages(os.environ['METACULUS_TOKEN'], url, 100)
+        url = API_ROOT+'?'+urlencode({'tournaments': season, 'limit': 100, 'include_description': 'true'})
+        posts, cursor, pages = [], url, 0
+        while cursor and pages < 20:
+            page = get_json(cursor, os.environ['METACULUS_TOKEN'])
+            posts.extend(page['results'])
+            cursor = _next_url(page.get('next'))
+            pages += 1
+            print(json.dumps({'season': season, 'page': pages, 'rows': len(page['results']), 'next': cursor}), flush=True)
+            (root/(season+'-partial.json')).write_text(json.dumps({'posts': posts, 'next': cursor}), encoding='utf-8')
+            if cursor: time.sleep(3)
         if cursor:
             raise RuntimeError('Inventory incomplete; more pages remain')
         unique = {p['id']: p for p in posts}
