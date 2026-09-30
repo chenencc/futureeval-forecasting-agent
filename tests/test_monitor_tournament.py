@@ -18,6 +18,7 @@ class MonitorTournamentTests(TestCase):
             saved = json.loads((output / "123.json").read_text(encoding="utf-8"))
 
         self.assertEqual(index["question_count"], 1)
+        self.assertEqual(index["scope"], "complete_api_result")
         self.assertEqual(index["questions"][0]["question_id"], 456)
         self.assertEqual(saved["post"]["question"]["resolution_criteria"], "Official announcement")
         self.assertEqual(get_json.call_count, 1)
@@ -25,4 +26,4 @@ class MonitorTournamentTests(TestCase):
     @patch("scripts.monitor_tournament.get_json")
     def test_empty_tournament_is_valid(self, get_json) -> None:
         get_json.return_value = {"results": [], "next": None}
-        self.assertEqual(collect_questions("test-token"), [])
+        self.assertEqual(collect_questions("test-token"), ([], False))

@@ -40,15 +40,16 @@ def get_json(url: str, token: str) -> dict:
     raise AssertionError("Unreachable retry state")
 
 
-def collect_questions(token: str) -> list[dict]:
+def collect_questions(token: str) -> tuple[list[dict], bool]:
     # A single bounded request keeps the scheduled monitor safe under API
-    # throttling. The tournament currently has far fewer than 100 posts.
+    # throttling. The API may return fewer than the requested limit.
     url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 100})
     page = get_json(url, token)
     posts = page.get("results") or []
-    if page.get("next"):
-        print("WARNING: More than 100 questions available; this snapshot contains only the first page.", flush=True)
-    return posts
+    has_more = bool(page.get("next"))
+    if has_more:
+        print("WARNING: API has another page; this snapshot contains the latest page only.", flush=True)
+    return posts, has_more
 
 
 def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Path:
@@ -56,7 +57,7 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Pa
     output = root / now.strftime("%Y%m%dT%H%M%SZ")
     output.mkdir(parents=True, exist_ok=True)
     try:
-        posts = collect_questions(token)
+        posts, has_more = collect_questions(token)
     except Exception as exc:
         (output / "index.json").write_text(json.dumps({
             "tournament": TOURNAMENT,
@@ -89,6 +90,8 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Pa
         "tournament": TOURNAMENT,
         "retrieved_at_utc": now.isoformat(),
         "question_count": len(index),
+        "scope": "latest_page_only" if has_more else "complete_api_result",
+        "has_more_pages": has_more,
         "questions": index,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Saved {len(index)} tournament questions to {output}")
