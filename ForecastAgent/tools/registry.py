@@ -48,4 +48,3 @@ TOOLS.insert(-1, tool("audit_evidence", "Review ALL saved evidence before finish
     {"reviews": {"type": "array", "items": {"type": "object", "properties": {"evidence_id": STRING,
      "entity_matches": {"type": "boolean"}, "quote_supports_claim": {"type": "boolean"},
      "time_valid": {"type": "boolean"}, "reason": STRING}, "required": ["evidence_id", "entity_matches", "quote_supports_claim", "time_valid", "reason"]}}}, ["reviews"]))
-
