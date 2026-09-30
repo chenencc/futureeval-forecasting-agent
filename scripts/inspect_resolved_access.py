@@ -22,17 +22,26 @@ def main() -> None:
         }
     )
     url = f"https://www.metaculus.com/api/posts/?{params}"
-    request = Request(url, headers={"Authorization": f"Token {token}"})
+    request = Request(
+        url,
+        headers={
+            "Authorization": f"Token {token}",
+            "Accept": "application/json",
+            "User-Agent": "futureeval-forecasting-agent/0.1",
+        },
+    )
     try:
         with urlopen(request, timeout=30) as response:
             data = json.load(response)
     except HTTPError as error:
         print(f"Metaculus API returned HTTP {error.code}")
+        print(f"Content-Type: {error.headers.get('Content-Type', 'unknown')}")
         try:
             body = json.load(error)
         except (ValueError, UnicodeDecodeError):
             body = {}
         if isinstance(body, dict):
+            print(f"Response keys: {sorted(body.keys())}")
             for field in ("detail", "error", "code"):
                 if isinstance(body.get(field), str):
                     print(f"{field}: {body[field][:300]}")
