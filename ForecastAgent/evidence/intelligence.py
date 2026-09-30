@@ -14,6 +14,8 @@ def intelligence_package(bundle):
             "request_hash": bundle["request_hash"], "mode": bundle["mode"],
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
+            'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
+            'execution_versions': bundle.get('execution_versions', []),
             "pages": bundle.get("pages", {}), "excerpts": bundle.get("excerpts", []),
             "page_history": bundle.get('page_history', {}), "updates": bundle.get('updates', []),
             "market_snapshots": bundle.get('market_snapshots', {}), "acceptance": collection_acceptance(bundle),

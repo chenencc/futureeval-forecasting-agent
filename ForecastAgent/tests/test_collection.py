@@ -69,7 +69,7 @@ class CollectionTests(TestCase):
             task.save()
             with patch('ForecastAgent.runtime.retrieval.channel_catalog', return_value={'version': 999}):
                 restored = RetrievalTask(Path(directory), REQUEST)
-            self.assertEqual(restored.execute('list_channels', {}, '')['version'], 2)
+            self.assertEqual(restored.execute('list_channels', {}, '')['version'], 3)
             for name in ['audit_evidence', 'record_evidence', 'finish_retrieval']:
                 with self.assertRaisesRegex(ValueError, 'unavailable'):
                     restored.execute(name, {}, '')
@@ -156,7 +156,7 @@ class CollectionTests(TestCase):
                            call('finish_collection', {'gaps': ['Unavailable sources']}, 'f')]
         with TemporaryDirectory() as directory:
             result = run_retrieval(REQUEST, directory, '', '')
-            self.assertEqual(ask.call_args.kwargs['forced_tool'], 'finish_collection')
+            self.assertIsNone(ask.call_args.kwargs['forced_tool'])
             self.assertFalse(result['result'].get('incomplete', False))
             self.assertEqual(result['result']['status'], 'leads_only')
 

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import io
 import json
 import re
+from html import unescape
 from urllib.parse import urlsplit, unquote, quote, urlencode
 
 from ForecastAgent.tavily_research import canonical_url
@@ -22,6 +23,8 @@ def quoted_dates(text):
 
 
 def source_urls(text):
+    # Decode Markdown/HTML link syntax without inventing any path or authority.
+    text = re.sub(r'\\([&?_#=])', r'\1', unescape(text))
     return list(dict.fromkeys(u.rstrip('.,;') for u in re.findall(r'https?://[^\s<>"\[\]()]+', text) if canonical_url(u)))
 
 

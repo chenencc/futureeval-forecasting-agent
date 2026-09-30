@@ -16,4 +16,8 @@ Parsed documents retain `page_content` and metadata, including PDF pages or CSV 
 
 Collection exposes source acquisition, exact excerpt recording and raw export. Legacy review remains isolated for compatibility. A collected package is not a verified answer.
 
-The interface draws on structured tools and document loaders without adding LangChain or LangGraph. XML/RSS, OCR, spreadsheets, table reconstruction and browser rendering are not implemented channels.
+The interface draws on structured tools and document loaders without adding LangChain or LangGraph. RSS/Atom entry reading is available through free fetching. Generic XML, OCR, spreadsheets, table reconstruction and browser rendering are not implemented channels.
+
+`record_quote` computes offsets for an exact copied passage; repeated text requires an explicit one-based occurrence. `search_saved_text` and lexical `find_passages` return reusable `excerpt_args`. These operations preserve source versions and never infer factual support.
+
+`collection_checkpoint` provides bounded next-tool suggestions each turn. Ultra selects which channels to use or records a concrete deferral with `record_channel_decision`. No suggestions invoke providers automatically or renew budgets. `select_sources` associates accepted links with acquisition needs. Question URLs, search hits and selected links count as unread reading leads; unselected outbound links remain in the raw inventory separately.

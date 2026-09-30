@@ -2,6 +2,7 @@
 from ForecastAgent.tavily_research import canonical_url
 import hashlib
 import json
+import re
 
 
 def version_digest(page):
@@ -82,8 +83,61 @@ def search_saved_text(pages, args):
                 matches.append({"url": url, "document_index": index, "match_start": found,
                                 "match_end": found + len(query), "context_start": start, "context_end": end,
                                 "context": text[start:end], "metadata": doc.get("metadata", {}),
+                                "excerpt_args": {"url": url, "document_index": index,
+                                                 "start_char": start, "end_char": end},
                                 "source_sha256": page.get("sha256"), "temporal_status": page.get("temporal_status")})
             total += 1; cursor = found + len(query)
     return {"query": query, "case_sensitive": True, "matches": matches, "total_matches": total,
             "next_offset": offset + len(matches) if offset + len(matches) < total else None,
             "scope": "Saved parsed text only; missing or truncated originals are not searched."}
+
+
+def quote_coordinates(pages, args):
+    """Locate exact text in a selected saved coordinate space; never guess offsets."""
+    _, text, _ = select(pages, args['url'], args.get('document_index'))
+    quote = args.get('quote')
+    if not isinstance(quote, str) or not quote.strip() or len(quote) > 4000:
+        raise ValueError('Use an exact nonempty quote of at most 4000 characters from saved text')
+    matches = []; cursor = 0
+    while (found := text.find(quote, cursor)) >= 0:
+        matches.append(found)
+        cursor = found + 1
+    if not matches:
+        raise ValueError('Quote is absent from selected saved text; read_document or search_saved_text first')
+    occurrence = args.get('occurrence_index')
+    if occurrence is None:
+        if len(matches) != 1:
+            raise ValueError(f'Quote occurs {len(matches)} times; specify one-based occurrence_index or a longer unique quote')
+        occurrence = 1
+    integer(occurrence, 1, len(matches), 'occurrence_index')
+    start = matches[occurrence - 1]
+    return {**{k: args[k] for k in ('url', 'document_index', 'need_ids') if k in args},
+            'start_char': start, 'end_char': start + len(quote)}
+
+
+def find_passages(pages, args):
+    """Bounded lexical navigation of saved text, with exact reusable offsets."""
+    query = args.get('query')
+    if not isinstance(query, str) or not query.strip() or len(query) > 300:
+        raise ValueError('Use a nonempty passage query of at most 300 characters')
+    terms = list(dict.fromkeys(re.findall(r'\w+', query.casefold())))[:20]
+    limit = integer(args.get('limit', 5), 1, 10, 'limit')
+    target = canonical_url(args['url']) if args.get('url') else None
+    if args.get('url') and target not in pages:
+        raise ValueError('Unknown saved URL')
+    ranked = []
+    for url, page, index, doc in documents(pages):
+        if target and url != target:
+            continue
+        text = doc['page_content']
+        for start in range(0, len(text), 1000):
+            end = min(start + 1200, len(text))
+            tokens = set(re.findall(r'\w+', text[start:end].casefold()))
+            matched = [t for t in terms if t in tokens]
+            if matched:
+                ranked.append((len(matched), {'url': url, 'document_index': index, 'content': text[start:end],
+                    'matched_terms': matched, 'excerpt_args': {'url': url, 'document_index': index, 'start_char': start, 'end_char': end},
+                    'source_sha256': page.get('sha256'), 'metadata': doc.get('metadata', {})}))
+    ranked.sort(key=lambda row: -row[0])
+    return {'query': query, 'passages': [row for _, row in ranked[:limit]], 'matching_windows': len(ranked),
+            'scope': 'Lexical navigation of saved text; not a relevance verdict, exhaustive retrieval or factual verification.'}

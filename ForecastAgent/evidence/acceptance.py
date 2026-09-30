@@ -5,6 +5,7 @@ import json
 from collections import Counter
 from ForecastAgent.readers.saved import select, version_digest
 from ForecastAgent.tavily_research import canonical_url
+from ForecastAgent.runtime.acquisition import reading_targets
 
 
 def collection_acceptance(bundle):
@@ -12,7 +13,7 @@ def collection_acceptance(bundle):
     pages = bundle.get('pages', {})
     source_urls = set(bundle.get('source_leads', {}))
     source_urls.update(canonical_url(hit['url']) for search in bundle.get('searches', []) for hit in search.get('results', []))
-    unread = sorted(source_urls - set(pages))
+    unread = sorted(reading_targets(bundle) - set(pages))
     versions = bundle.get('page_history', {})
     for url, snapshots in [(u, [p]) for u, p in pages.items()] + [(u, ps) for u, ps in versions.items()]:
         for page in snapshots:
@@ -75,5 +76,7 @@ def collection_acceptance(bundle):
             'raw_versions_checked': raw_checked, 'page_count': len(pages), 'market_snapshot_count': len(bundle.get('market_snapshots', {})),
             'excerpt_count': len(bundle.get('excerpts', [])), 'failures': failures, 'warnings': warnings,
             'source_count': len(source_urls), 'unread_source_count': len(unread), 'unread_urls': unread[:120],
+            'captured_unselected_link_count': sum(row.get('origin') == 'page_link' and url not in bundle.get('selected_sources', {})
+                                                 for url, row in bundle.get('source_leads', {}).items()),
             'resources': {'tavily_basic_attempts': len(searches), 'free_http_attempts': len(attempts), 'update_http_attempts': len(updates)},
             'scope': 'Capture integrity and acquisition gaps only; not factual correctness or exhaustive coverage.'}

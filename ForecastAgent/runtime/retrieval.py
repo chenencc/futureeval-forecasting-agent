@@ -31,6 +31,8 @@ from ForecastAgent.providers.official import dataset_catalog, endpoint as offici
 from ForecastAgent.polymarket_match import search_candidates as search_markets
 from ForecastAgent.runtime.budget import reserve, reserve_update, update_day, MAX_UPDATE_HTTP_TOTAL, MAX_UPDATE_HTTP_DAILY
 from ForecastAgent.runtime.task_lock import task_lock
+from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recovery_hint
+from ForecastAgent.providers.ultra import MODEL
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -62,6 +64,14 @@ Read selected pages with free fetch_page/fetch_pages. Eight new fetch attempts a
 For important accepted pages whose free fetch failed, use at most ONE basic Extract batch, up to five URLs.
 Use list_documents, read_document and search_saved_text to navigate saved long text without new network calls.
 Use record_excerpt to preserve exact slices addressing need IDs. Excerpts locate source text; they do not establish truth.
+Prefer record_quote with a unique copied passage; the program computes coordinates. A quote is at most 4000 characters.
+Use find_passages for multiword case-insensitive local navigation; prefer a short meaningful passage over a page header or menu.
+search_saved_text returns excerpt_args ready for record_excerpt: copy them unchanged and add need_ids. Never guess offsets or bank navigation headers as useful passages.
+Before each additional search, read the most useful saved source and record relevant passages. Use general for official records; news for reporting; finance for market/economic sources.
+Prioritize URLs named in resolution criteria and official linked documents. Use select_sources to create a bounded reading list. Captured navigation links are not automatically required reading.
+Use collection_checkpoint before finishing. Consider Polymarket early enough to leave one HTTP attempt: query a short entity/event, read child contract rules, keep the snapshot separate. An empty response is not event absence.
+Inspect supported official datasets with list_official_datasets when appropriate. If Polymarket, official adapters or Extract are inapplicable or deferred, record_channel_decision with the concrete reason.
+When a free fetch fails on important accepted pages, consult extract_eligible_urls and batch basic Extract once; do not consume more searches to repeat the same failed page.
 Search snippets remain leads. Do not turn unsuccessful searches into event-absence conclusions.
 Dates, units, pages and row metadata must be preserved. Historical strict forbids current captures;
 publication filters and today's page bodies do not constitute a clean historical backtest.
@@ -153,6 +163,8 @@ class RetrievalTask:
         self.bundle.setdefault("market_cache", {})
         self.bundle.setdefault("updates", [])
         self.bundle.setdefault('update_attempts', [])
+        self.bundle.setdefault('channel_decisions', {})
+        self.bundle.setdefault('selected_sources', {})
         self.bundle.setdefault("extract_attempts", [])
         self.bundle.setdefault("source_leads", {})
         self.bundle.setdefault("control", {"consecutive_errors": 0, "forced_close": False})
@@ -338,7 +350,7 @@ class RetrievalTask:
             raise ValueError("Tool arguments must be an object")
         b = self.bundle
         if b["result"] and name not in {'refresh_sources', 'collection_acceptance', 'list_channels', 'list_official_datasets',
-                                        'list_sources', 'list_documents', 'read_document', 'search_saved_text', 'read_market_snapshot'}:
+                                        'list_sources', 'list_documents', 'read_document', 'search_saved_text', 'find_passages', 'collection_checkpoint', 'read_market_snapshot'}:
             raise ValueError("Retrieval already finished")
         if b["pipeline"] == "collection" and name in {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}:
             raise ValueError("Analysis tools are unavailable in collection mode")
@@ -398,7 +410,29 @@ class RetrievalTask:
             return {'snapshot_id': entry['id'], 'captured_at': entry['snapshot']['searched_at'], 'total_contracts': len(rows),
                     'contracts': [{'market_id': str(m.get('id')), 'title': m.get('question'), 'event_title': e.get('title')} for m, e in rows[offset:offset+limit]],
                     'next_offset': offset + limit if offset + limit < len(rows) else None}
-        if name in {"list_documents", "read_document", "search_saved_text"}:
+        if name == 'collection_checkpoint':
+            return checkpoint(self)
+        if name == 'record_channel_decision':
+            if args.get('channel') not in {'polymarket_gamma', 'tavily_extract_basic', 'official_government'} or args.get('decision') not in {'deferred', 'not_applicable'} or not isinstance(args.get('reason'), str) or not args['reason'].strip():
+                raise ValueError('Choose a supported channel, planning decision and concrete reason')
+            b['channel_decisions'][args['channel']] = {'decision': args['decision'], 'reason': args['reason'][:1000], 'at': utc_now()}
+            self.save()
+            return {'channel_decision': b['channel_decisions'][args['channel']]}
+        if name == 'select_sources':
+            self.needs(args)
+            urls = args.get('urls')
+            if not isinstance(urls, list) or not 1 <= len(urls) <= 10 or not isinstance(args.get('reason'), str) or not args['reason'].strip():
+                raise ValueError('Select one to ten accepted URLs with needs and a reason')
+            keys = [canonical_url(u) if isinstance(u, str) else '' for u in urls]
+            if any(k not in self.catalog() for k in keys):
+                raise ValueError('Select only exact URLs in list_sources')
+            for k in keys:
+                b['selected_sources'][k] = {'need_ids': args['need_ids'], 'reason': args['reason'][:1000]}
+            self.save()
+            return {'selected_sources': b['selected_sources']}
+        if name == 'record_quote':
+            return self.execute('record_excerpt', saved_reader.quote_coordinates(b['pages'], args), key)
+        if name in {"list_documents", "read_document", "search_saved_text", "find_passages"}:
             return getattr(saved_reader, name)(b["pages"], args)
         if name == "record_excerpt":
             self.needs(args)
@@ -420,17 +454,27 @@ class RetrievalTask:
         if name == "finish_collection":
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
-            unread = [row["url"] for url, row in self.catalog().items() if url not in b["pages"]]
+            unread = sorted(reading_targets(b) - set(b['pages']))
             b['acceptance'] = collection_acceptance(b)
             b["result"] = {"status": "collected" if b["pages"] or b['market_snapshots'] else "leads_only" if self.catalog() else "empty",
                            "output_type": "intelligence_package", "truth_verified": False,
                            "page_count": len(b["pages"]), "excerpt_count": len(b["excerpts"]),
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": args["gaps"], "finished_at": utc_now()}
+            b['result']['acquisition_checkpoint'] = checkpoint(self)
             self.save()
             return b["result"]
         if name == "list_sources":
-            return {"source_catalog": list(self.catalog().values())[:120], "saved_evidence": b["evidence"],
+            rows = sorted(self.catalog().values(), key=lambda r: (canonical_url(r['url']) not in b['selected_sources'],
+                          not r.get('origin', '').startswith('question_'), r.get('origin') == 'page_link', r['url']))
+            if args.get('parent_url'):
+                parent = canonical_url(args['parent_url'])
+                rows = [r for r in rows if canonical_url(r.get('parent_url', '')) == parent]
+            offset = saved_reader.integer(args.get('offset', 0), 0, 1_000_000, 'offset')
+            limit = saved_reader.integer(args.get('limit', 60), 1, 120, 'limit')
+            return {"source_catalog": rows[offset:offset+limit], 'total_sources': len(rows),
+                    'next_offset': offset + limit if offset + limit < len(rows) else None,
+                    'catalog_truncated': offset + limit < len(rows), "saved_evidence": b["evidence"],
                     "extract_eligible": self.rescue_candidates(), "coverage": self.coverage()}
         if name == "search_tavily":
             self.needs(args)
@@ -669,6 +713,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         available_tools = COLLECTION_TOOLS if collection else TOOLS
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
         system = (COLLECTION_SYSTEM if collection else SYSTEM) + "\nSkills guide source acquisition only in collection mode; the program owns limits. Skill catalog: " + json.dumps(catalog)
+        versions = task.bundle.setdefault('execution_versions', [])
+        versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
+            'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
+            'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
+            'collection_only': collection, 'max_model_turns_per_run': MAX_TURNS})
         messages = task.bundle["messages"]
         if messages and messages[0].get("role") == "system":
             messages[0]["content"] = system
@@ -685,7 +734,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
         for turn in range(MAX_TURNS):
             control = task.bundle["control"]
-            if turn >= MAX_TURNS-2 or control["consecutive_errors"] >= 3:
+            if turn >= MAX_TURNS-2 or (not collection and control["consecutive_errors"] >= 3):
                 control["forced_close"] = True
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
             forced = None
@@ -698,6 +747,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),
                     "instruction": "Conclude from saved facts and explicit gaps; no outcome assertion or guessed URLs."})})
             task.save()
+            if collection:
+                messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': checkpoint(task),
+                    'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
                 message = ask_ultra(messages, router_key, tools=available_tools, forced_tool=forced)
                 task.bundle.pop("last_error", None)
@@ -747,9 +799,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     result = {"error": detail[:500]}
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
                 control["consecutive_errors"] = control["consecutive_errors"]+1 if failed else 0
-                if control["consecutive_errors"] >= 3:
+                if control["consecutive_errors"] >= 3 and not collection:
                     control["forced_close"] = True
                 if "error" in result:
+                    if collection:
+                        result['recovery_hint'] = recovery_hint(name)
                     result["available_urls"] = [r["url"] for r in task.catalog().values()][:60]
                 result = tool_result(name, result, task.budget(), error=result.get("error"))
                 task.bundle["transcript"].append({"tool": name, "result": result})

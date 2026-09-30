@@ -39,6 +39,11 @@ Input requires `question` and `resolution_criteria`. Live collection uses `"mode
 - `list_official_datasets` / `collect_official`: BLS CPI, unemployment and payroll series, Treasury debt data, and Federal Register document discovery.
 - `collect_polymarket` / `read_market_snapshot`: save current Gamma responses and inspect saved child contracts without declaring equivalence.
 - `refresh_sources`: update saved live sources in the same ledger, preserve old versions, and report new/changed/unchanged content.
+- `record_quote`: copy an exact passage; the program locates it and preserves its source version. No guessed coordinates.
+- `find_passages`: lexical navigation of saved text with reusable excerpt coordinates; no search API calls.
+- `collection_checkpoint`: bounded acquisition gaps and next-tool suggestions; Ultra chooses the next tool or explicitly defers a channel.
+- `select_sources`: maintain a reading list without treating every outbound navigation link as required reading.
+- Free RSS/Atom reading preserves publisher dates, entry metadata, links and original bytes. PDF magic-byte detection handles mislabeled PDF responses.
 - `collection_acceptance`: check capture integrity, exact excerpt coordinates, resource limits and acquisition gaps, without judging truth.
 
 Agent-facing results use `tool_result_v1`: `tool`, `ok`, `status`, `data`, `error`, `provenance` and `budget_remaining`. Provider-native responses stay in the ledger. The channel catalog is frozen per task. See [tool architecture](tools/README.md) and [collection contract](docs/COLLECTION.md).
@@ -67,3 +72,10 @@ Skills are loaded on demand and frozen with their content hashes in each ledger.
 Actions and command-line operators use the same engine and snapshot paths. Codex does not need to remain online. GitHub may delay scheduled runs.
 
 See [adapter and incremental collection details](docs/ACQUISITION_CHANNELS.md). Acceptance reports are technical checks, not reliability or forecast scores.
+
+## Acquisition design references
+
+- [nostreambot architecture](https://github.com/No-Stream/nostreambot-metaculus-bot/blob/main/docs/architecture.md): separate designated resolution-source reading, market snapshots and bounded gap-filling; retain failures and raw artifacts. ForecastAgent adapts these acquisition ideas with Ultra and the existing three-search limit.
+- [TradingAgents changelog](https://github.com/TauricResearch/TradingAgents/blob/main/CHANGELOG.md): explicit vendor availability, bounded tool rounds, source settings and point-in-time disclosure. ForecastAgent uses explicit channel decisions and capture provenance; provider failures never establish event absence.
+
+These are design references, not copied modules or a claim of tournament performance. Browser rendering, OCR, SEC/BEA-specific adapters and automatic update scheduling remain future work. The acquisition checkpoint guides tool selection without forcing unnecessary paid calls. Autonomous use of the new guidance still requires a fresh-question Ultra trial; cached completed tasks are never reopened to renew budgets.

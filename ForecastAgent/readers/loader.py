@@ -6,17 +6,23 @@ from ForecastAgent.evidence.document import Document
 from ForecastAgent.readers.html import parse_html
 from ForecastAgent.readers.pdf import parse_pdf
 from ForecastAgent.readers.structured import parse_csv, parse_json
+from ForecastAgent.readers.feed import parse_feed
 
 
 def load_response(response, *, retrieved_at, max_chars=150_000):
     raw = response["raw"]; source = response["final_url"]; kind = response["content_type"]
-    metadata = {}; links = []
+    metadata = {}; links = []; feed_truncated = False
+    if raw.lstrip().startswith(b'%PDF-'):
+        kind = 'application/pdf'
     if kind == "application/pdf":
         documents = parse_pdf(raw, source)
         text = "\n".join(f"[PDF page {d.metadata['page']}]\n{d.page_content}" for d in documents)
     else:
         text = raw.decode(response.get("charset", "utf-8"), errors="replace")
-        if kind in {"text/html", "application/xhtml+xml"}:
+        if kind in {'application/rss+xml', 'application/atom+xml', 'application/xml', 'text/xml'}:
+            documents, links, feed_truncated = parse_feed(raw, source)
+            text = '\n\n'.join(d.page_content for d in documents)
+        elif kind in {"text/html", "application/xhtml+xml"}:
             text, metadata, links = parse_html(text, source)
             documents = [Document(text, {"source": source, "format": "html"})]
         elif kind in {"text/csv", "application/csv"}:
@@ -35,13 +41,16 @@ def load_response(response, *, retrieved_at, max_chars=150_000):
     for document in documents[:1000]:
         if remaining <= 0:
             break
-        text_part = document.page_content[:remaining]; remaining -= len(text_part)
-        saved.append(Document(text_part, {**document.metadata, "truncated": len(text_part) < len(document.page_content)}).as_dict())
+        normalized = re.sub(r'\n\s*\n+', '\n', re.sub(r'[ \t]+', ' ', document.page_content)).strip()
+        text_part = normalized[:remaining]; remaining -= len(text_part)
+        saved.append(Document(text_part, {**document.metadata, "truncated": len(text_part) < len(normalized)}).as_dict())
     return {"url": response["url"], "final_url": source, "retrieved_at_utc": retrieved_at,
             "content_type": kind, "sha256": hashlib.sha256(raw).hexdigest(),
+            'declared_content_type': response['content_type'],
             "raw_response_base64": base64.b64encode(raw).decode("ascii"),
             "page_date_metadata": metadata, "content": content,
             "content_truncated": len(text) > max_chars, "links": links,
             "capture_method": "pdf_text" if kind == "application/pdf" else "direct_http",
             "documents": saved, "document_count": len(documents),
-            "documents_truncated": len(saved) < len(documents) or any(d["metadata"]["truncated"] for d in saved)}
+            "parser_version": 'document_reader_v2',
+            "documents_truncated": feed_truncated or len(saved) < len(documents) or any(d["metadata"]["truncated"] for d in saved)}
