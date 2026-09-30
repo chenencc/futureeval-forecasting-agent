@@ -56,6 +56,11 @@ Skills are loaded on demand and frozen with their content hashes in each ledger.
 
 ## Limits
 
+The manual [historical batch campaign](docs/HISTORICAL_BATCH.md) freezes 135 blind
+questions and supports batches of at most five, durable resume, model transport
+records, temporal provenance and portable archives. It never loads outcome labels
+or submits forecasts. Initialization alone makes no provider calls.
+
 - At most **three Tavily basic attempts per task**, including failures and resumed runs.
 - Initial collection has eight free HTTP attempts shared by page reads, official adapters and Polymarket; one basic Extract batch with at most five URLs. Failures consume attempts.
 - Local reading and export do not spend search or fetch budget.

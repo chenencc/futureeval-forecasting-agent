@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import time
 
 from ForecastAgent.tavily_research import canonical_url, search_batch, search_options
 from ForecastAgent.tavily_extract import extract_basic
@@ -33,6 +34,7 @@ from ForecastAgent.runtime.budget import reserve, reserve_update, update_day, MA
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recovery_hint
 from ForecastAgent.providers.ultra import MODEL
+from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -706,6 +708,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 task.save()
             return task.bundle
         task.bundle["result"] = None
+        deadline = time.monotonic() + MAX_RUN_SECONDS
+        observer = model_observer(task, (tavily_key, router_key))
         freeze_skills(task.bundle)
         task.bundle.setdefault("agent_runtime", {"name": "ForecastAgent", "version": 1, "stage": "analysis", "events": []})
         runtime = task.bundle["agent_runtime"]
@@ -717,7 +721,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
             'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
-            'collection_only': collection, 'max_model_turns_per_run': MAX_TURNS})
+            'collection_only': collection, 'max_model_turns_per_run': MAX_TURNS,
+            'model_http_lifetime_limit': 72, 'run_dispatch_seconds': MAX_RUN_SECONDS})
         messages = task.bundle["messages"]
         if messages and messages[0].get("role") == "system":
             messages[0]["content"] = system
@@ -751,7 +756,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': checkpoint(task),
                     'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
-                message = ask_ultra(messages, router_key, tools=available_tools, forced_tool=forced)
+                message = ask_ultra(messages, router_key, tools=available_tools, forced_tool=forced,
+                                    observer=observer, deadline=deadline)
                 task.bundle.pop("last_error", None)
                 task.bundle.pop("last_error_detail", None)
             except Exception as exc:
@@ -769,7 +775,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 messages.append({"role": "user", "content": "Use the retrieval tools. Finish explicitly with gaps if evidence is inadequate."})
             for call in calls:
                 name = (call.get("function") or {}).get("name")
+                step = {'tool': name, 'call_id': call.get('id'), 'started_at_utc': utc_now(), 'status': 'reserved'}
+                task.bundle.setdefault('step_attempts', []).append(step)
+                task.save()
+                step_started = time.monotonic()
                 try:
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
                     if name not in {t["function"]["name"] for t in available_tools}:
                         raise ValueError("Tool is unavailable in this pipeline")
@@ -798,6 +810,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                             detail = detail.replace(secret, "[REDACTED]")
                     result = {"error": detail[:500]}
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
+                step.update(status='failed' if failed else 'completed',
+                            duration_seconds=time.monotonic() - step_started, finished_at_utc=utc_now())
                 control["consecutive_errors"] = control["consecutive_errors"]+1 if failed else 0
                 if control["consecutive_errors"] >= 3 and not collection:
                     control["forced_close"] = True
@@ -817,6 +831,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         runtime["stage"] = "incomplete" if task.bundle["result"].get("incomplete") else "complete"
         runtime["events"].append({"stage": runtime["stage"], "at": utc_now(), "status": task.bundle["result"]["status"]})
         task.bundle["resources"] = {"tavily_basic_attempts": len(task.bundle["searches"]), "page_fetch_attempts": len(task.bundle["fetch_attempts"]),
+                                    'model_http_attempts': len(task.bundle.get('model_attempts', [])),
                                     "basic_extract_batches": len(task.bundle["extract_attempts"]),
                                     "basic_extract_reserved_urls": sum(len(a["urls"]) for a in task.bundle["extract_attempts"])}
         task.save()

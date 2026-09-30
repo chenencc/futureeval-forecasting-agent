@@ -78,7 +78,7 @@ def fetch_public_page(url: str) -> dict:
     return load_response(response, retrieved_at=utc_now(), max_chars=MAX_SAVED_CHARS)
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None) -> dict:
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None) -> dict:
     request = Request(
         OPENROUTER_URL,
         data=json.dumps({
@@ -98,22 +98,53 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
         method="POST",
     )
     for attempt in range(3):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise RuntimeError('Model run deadline exhausted')
+        started = time.monotonic()
+        record = {'started_at_utc': utc_now(), 'retry_index': attempt,
+                  'request': json.loads(request.data), 'status': 'reserved'}
+        token = observer('reserve', record) if observer else None
         try:
-            with urlopen(request, timeout=180) as response:
-                payload = json.load(response)
+            timeout = min(180, max(0.1, deadline - time.monotonic())) if deadline else 180
+            with urlopen(request, timeout=timeout) as response:
+                record['response_body'] = response.read().decode('utf-8', errors='replace')
+                payload = json.loads(record['response_body'])
+            choices = payload.get('choices') if isinstance(payload, dict) else None
+            valid = bool(isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get('message'), dict))
+            record.update(status='received' if valid else 'missing_choices', response=payload,
+                          duration_seconds=time.monotonic() - started)
+            if observer:
+                observer('complete', record, token)
         except HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")[:800]
+            raw_error = exc.read().decode('utf-8', errors='replace')
+            detail = raw_error[:800]
+            record.update(status='http_error', http_status=exc.code, response_body=raw_error,
+                          duration_seconds=time.monotonic() - started)
+            if observer:
+                observer('complete', record, token)
             # Daily quota exhaustion cannot be repaired by short retries.
             if attempt < 2 and exc.code in {429, 500, 502, 503, 504} and "free-models-per-day" not in detail:
-                time.sleep(10 * (2 ** attempt))
+                delay = 10 * (2 ** attempt)
+                if deadline is not None and time.monotonic() + delay >= deadline:
+                    raise RuntimeError('Model retry deadline exhausted') from exc
+                time.sleep(delay)
                 continue
             raise RuntimeError(f"OpenRouter HTTP {exc.code}: {detail}") from exc
+        except Exception as exc:
+            record.update(status='transport_error', error=type(exc).__name__,
+                          duration_seconds=time.monotonic() - started)
+            if observer:
+                observer('complete', record, token)
+            raise
         choices = payload.get("choices") if isinstance(payload, dict) else None
         if isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get("message"), dict):
             return choices[0]["message"]
         error = payload.get("error") if isinstance(payload, dict) else None
         if attempt < 2:
-            time.sleep(10 * (2 ** attempt))
+            delay = 10 * (2 ** attempt)
+            if deadline is not None and time.monotonic() + delay >= deadline:
+                raise RuntimeError('Model retry deadline exhausted')
+            time.sleep(delay)
             continue
         raise RuntimeError(f"OpenRouter returned no choices: {str(error or payload)[:800]}")
     raise AssertionError("Unreachable OpenRouter retry state")

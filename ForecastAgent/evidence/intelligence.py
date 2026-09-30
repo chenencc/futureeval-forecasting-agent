@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from ForecastAgent.tavily_research import canonical_url
 from ForecastAgent.evidence.acceptance import collection_acceptance
+from ForecastAgent.evidence.temporal import temporal_report
 
 
 def intelligence_package(bundle):
@@ -16,6 +17,10 @@ def intelligence_package(bundle):
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
             'execution_versions': bundle.get('execution_versions', []),
+            'model_attempts': bundle.get('model_attempts', []),
+            'step_attempts': bundle.get('step_attempts', []),
+            'messages': bundle.get('messages', []), 'transcript': bundle.get('transcript', []),
+            'temporal_provenance': temporal_report(bundle),
             "pages": bundle.get("pages", {}), "excerpts": bundle.get("excerpts", []),
             "page_history": bundle.get('page_history', {}), "updates": bundle.get('updates', []),
             "market_snapshots": bundle.get('market_snapshots', {}), "acceptance": collection_acceptance(bundle),
@@ -26,6 +31,7 @@ def intelligence_package(bundle):
             "limitations": ["Quotes are located in saved text, not independently fact-checked.",
                             bundle.get("temporal_warning", "Historical availability must be established separately.")],
             "resources": {"tavily_basic_attempts": len(bundle.get("searches", [])),
+                          'model_http_attempts': len(bundle.get('model_attempts', [])),
                           "free_fetch_attempts": len(bundle.get("fetch_attempts", [])),
                           'update_http_attempts': len(bundle.get('update_attempts', [])),
                           "extract_batches": len(bundle.get("extract_attempts", []))}}
