@@ -37,10 +37,12 @@ def main() -> None:
     print(f"READ-ONLY ULTRA DEMO: {item['title']}")
     print(f"Tavily basic searches: {report['searches_used']}/{report['search_budget']}; pages opened: {len(report['pages'])}")
     for search in report["searches"]:
-        print(f"SEARCH: {search['query']} ({len(search['results'])} new results)")
+        print(f"SEARCH [{search.get('purpose', 'gap')}]: {search['query']} ({len(search['results'])} new results)")
     for page in report["pages"]:
         print(f"FETCHED: {page['url']} ({len(page['content'])} chars)")
     print("FINAL ASSESSMENT:")
+    print("Frozen baseline:", json.dumps(report["baseline"], ensure_ascii=False))
+    print("Probability shift:", report["probability_shift"])
     print(json.dumps(report["assessment"], ensure_ascii=False, indent=2))
     print(f"Saved report to {path}")
     if report["error"] or report["assessment"] is None:

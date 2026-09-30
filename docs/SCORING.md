@@ -31,6 +31,24 @@ must never be substituted for one another.
    never a backtest. The present demo covers a binary question only; numeric
    and multiple-choice questions need their own output schemas and metrics.
 
+## Outside-view baseline and current-evidence update
+
+Ultra first records `baseline.probability`, its reference class, time window,
+rationale, and fetched supporting URLs. A baseline may be null when the
+reference class cannot be supported. The tool accepts this record once and
+prevents later replacement. The final assessment must explain evidence updates
+that support any change in probability, citing its assessed fetched evidence.
+`probability_shift` is the arithmetic difference between the final probability
+and the recorded baseline, not a calibrated signal or evidence-quality score.
+The self-review checklist covers exact criteria, timeframe, status quo, a major
+blind spot, and probability consistency. Code validates structure and citation
+provenance; it does not certify that a reference class is statistically valid or
+that the model's explanation is factually correct.
+
+The same Ultra model plans historical, current, and gap searches. All purposes
+share one three-attempt Tavily budget per question. Failures consume budget,
+and no hidden retry is made by the Tavily client. Unused calls need not be spent.
+
 ## Jev-inspired design
 
 TypeSafe Jev separates `Score` (ordered rubric), `Choice` (discrete class), and

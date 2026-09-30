@@ -23,6 +23,18 @@ contradictions, and a final probability. A failed fetch is recorded as an error,
 not treated as verified evidence. No forecast is submitted. Artifacts are
 retained for 90 days. Paper trading is not yet enabled.
 
+The `outside_inside_v1` pipeline keeps Ultra as the sole planning and forecasting
+model. It labels Tavily searches as historical, current, or gap, with a shared
+hard cap of three API attempts per question (failed attempts count). Each search
+keeps up to ten distinct new URLs. Ultra freezes an outside-view baseline via
+`record_base_rate`, including its reference class, time window, and fetched
+sources. Missing reference-class data is recorded as a null probability.
+Its final assessment includes evidence-backed updates and checks for resolution
+criteria, timeframe, status quo, blind spots, and probability consistency.
+Snapshots preserve the frozen baseline, final probability, and their difference.
+These checks are model self-review; statistical calibration still requires
+prospective resolved-question data.
+
 The three different meanings of evidence grade, event probability, and later
 forecast performance are specified in [docs/SCORING.md](docs/SCORING.md).
 

@@ -3,7 +3,7 @@ from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.ultra_research_agent import ask_ultra, canonical_evidence_chain, run_research, validate_assessment
+from scripts.ultra_research_agent import ask_ultra, canonical_evidence_chain, run_research, validate_assessment, validate_baseline, validate_forecast_steps
 
 
 def tool_call(name: str, arguments: dict, ident: str) -> dict:
@@ -42,10 +42,16 @@ class UltraResearchAgentTests(TestCase):
             "event_paths": ["Yes if the total remains above the threshold"],
             "evidence": [{"url": url, "claim": "The figure is 12", "source_type": "primary", "quality": "high", "evidence_chain": "official dataset", "reason": "Direct official data"}],
             "contradictions": [], "remaining_unknowns": [], "rationale": "The observed figure is above the threshold.",
+            "updates": [{"direction": "up", "evidence_urls": [url], "reason": "Current figure exceeds the historical baseline"}],
+            "checks": {key: "Reviewed against the question" for key in ("criteria_alignment", "timeframe", "status_quo", "blind_spot", "probability_sanity")},
         }
+        baseline = {"probability": 0.4, "reference_class": "Comparable periods", "time_window": "One month", "rationale": "Historical official records", "source_urls": [url]}
         ask.side_effect = [
-            {"tool_calls": [tool_call("search_tavily", {"query": "event data"}, "1")]},
+            {"tool_calls": [tool_call("search_tavily", {"query": "event data", "purpose": "historical"}, "1")]},
             {"tool_calls": [tool_call("fetch_page", {"url": url}, "2")]},
+            {"tool_calls": [tool_call("finish_research", assessment, "premature")]},
+            {"tool_calls": [tool_call("record_base_rate", baseline, "baseline")]},
+            {"tool_calls": [tool_call("record_base_rate", {**baseline, "probability": 0.8}, "rewrite")]},
             {"tool_calls": [tool_call("finish_research", assessment, "3")]},
         ]
         report = run_research("Will it happen?", "Official figure above 10", "", "tavily", "router")
@@ -55,6 +61,42 @@ class UltraResearchAgentTests(TestCase):
         self.assertEqual(report["evidence_chains"], ["official dataset"])
         self.assertEqual(report["pages"][0]["content"], "Official figure: 12")
         self.assertIsNone(report["error"])
+        self.assertEqual(report["baseline"]["probability"], 0.4)
+        self.assertAlmostEqual(report["probability_shift"], 0.2)
+        self.assertEqual(report["searches"][0]["purpose"], "historical")
+        self.assertIn("record_base_rate", report["tool_transcript"][2]["result"]["error"])
+        self.assertIn("already frozen", report["tool_transcript"][4]["result"]["error"])
+
+    @patch("scripts.ultra_research_agent.search_batch")
+    @patch("scripts.ultra_research_agent.ask_ultra")
+    def test_failed_and_batched_searches_share_three_call_budget(self, ask, search) -> None:
+        search.side_effect = RuntimeError("Tavily unavailable")
+        ask.side_effect = [
+            {"tool_calls": [tool_call("search_tavily", {"query": str(n), "purpose": "gap"}, str(n)) for n in range(4)]},
+            {"content": "stopped"}, {"content": "stopped"},
+        ]
+        report = run_research("Will it happen?", "", "", "tavily", "router")
+        self.assertEqual(search.call_count, 3)
+        self.assertEqual(report["searches_used"], 3)
+        self.assertTrue(all("Tavily unavailable" in item["error"] for item in report["searches"]))
+        self.assertEqual(report["tool_transcript"][3]["result"]["budget_remaining"]["tavily_calls"], 0)
+
+    def test_missing_reference_class_is_null_not_invented_probability(self) -> None:
+        baseline = {"probability": None, "reference_class": "No suitable class found", "time_window": "One month", "rationale": "No historical observations available", "source_urls": []}
+        self.assertIsNone(validate_baseline(baseline, {})["probability"])
+        baseline["probability"] = 0.5
+        with self.assertRaisesRegex(ValueError, "supporting sources"):
+            validate_baseline(baseline, {})
+
+    def test_final_requires_baseline_and_explained_evidence_shift(self) -> None:
+        data = {"probability": 0.8, "verdict": "Yes", "base_rate": "Comparable periods", "event_paths": [], "evidence": [], "contradictions": [], "remaining_unknowns": [], "rationale": "Test", "updates": [], "checks": {key: "Checked" for key in ("criteria_alignment", "timeframe", "status_quo", "blind_spot", "probability_sanity")}}
+        with self.assertRaisesRegex(ValueError, "record_base_rate"):
+            validate_forecast_steps(data, {}, None)
+        with self.assertRaisesRegex(ValueError, "needs evidence updates"):
+            validate_forecast_steps(data, {}, {"probability": 0.4})
+        data["updates"] = [{"direction": "up", "evidence_urls": ["https://example.org/unverified"], "reason": "Claim"}]
+        with self.assertRaisesRegex(ValueError, "assessed evidence"):
+            validate_forecast_steps(data, {}, {"probability": 0.4})
 
     @patch("scripts.ultra_research_agent.search_batch")
     @patch("scripts.ultra_research_agent.ask_ultra")
