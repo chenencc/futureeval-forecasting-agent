@@ -56,8 +56,14 @@ executable quote, and this version does not create paper positions or PnL.
 
 Other template workflows can still publish if deliberately run with publishing
 enabled. Do not trigger those workflows while operating in read-only mode.
-See the upstream instructions below
-for local setup and other optional API keys.
+The remaining text is the original upstream template documentation for reference.
+Its automatic-submission instructions do not describe this repository's current
+scheduled workflow, which is read-only.
+
+---
+
+# Upstream template documentation (reference only)
+
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
 
 **Brand new to this?** You can get a working bot running in about 5 minutes without writing a single line of code — just fork this repo, paste two API keys into GitHub, and click "Run workflow". See **[Quick start](#quick-start--fork-and-use-github-actions)** below.
