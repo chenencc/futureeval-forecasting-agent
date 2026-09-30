@@ -1,0 +1,52 @@
+[
+  {
+    "id": "43502",
+    "question": "Will Bitcoin trade above $120,000 before August 1, 2026?",
+    "background": "Bitcoin remains the largest cryptocurrency by market capitalization and is closely watched by investors worldwide. Recent institutional adoption, ETF growth, and macroeconomic conditions have increased speculation about another major price rally during 2026.\n\nSupporters believe strong demand and limited supply could push Bitcoin above \\$120,000 in the near future, while critics argue that market volatility and regulatory uncertainty may prevent such growth.\n\nHelpful resources:\n\n* [Binance BTC/USDT](https://www.binance.com/en/trade/BTC_USDT)\n* [CoinMarketCap Bitcoin Page](https://coinmarketcap.com/currencies/bitcoin)",
+    "resolution_criteria": "This question will resolve as Yes if, before August 1, 2026, Bitcoin trades at >\\$120,000 USD.",
+    "as_of_utc": "2026-06-25T00:00:00+00:00",
+    "tavily_end_date": "2026-06-24",
+    "date_basis": "ForecastBench freeze date; not verified as earliest unresolved historical forecast point",
+    "historical_criteria_audit": "Original question background and rules may contain later edits; not yet audited"
+  },
+  {
+    "id": "43525",
+    "question": "Will OpenAI's ChatGPT Atlas browser be released for Windows before September 1, 2026?",
+    "background": "On October 21, 2025, OpenAI [released](https://openai.com/index/introducing-chatgpt-atlas/) a web browser built around ChatGPT, called [ChatGPT Atlas](https://en.wikipedia.org/wiki/ChatGPT_Atlas):\n\n> With Atlas, ChatGPT can come with you anywhere across the web—helping you in the window right where you are, understanding what you’re trying to do, and completing tasks for you, all without copying and pasting or leaving the page.\n\nEarly reviews suggest that Atlas [shows promise](https://www.pcmag.com/news/chatgpts-atlas-browser-shows-potential-but-its-no-chrome-killeryet) but is not yet worth switching to. And some have suggested that it is [particularly vulnerable to hacking](https://www.theregister.com/2025/10/27/atlas_vulnerability_memory_injection/).\n\nIn releasing Atlas, OpenAI [opened another front](https://techcrunch.com/2025/10/21/openai-launches-an-ai-powered-browser-chatgpt-atlas/) in its rivalry with Google, who makes not only ChatGPT competitor [Gemini](https://en.wikipedia.org/wiki/Google_Gemini) but also [Chrome](https://en.wikipedia.org/wiki/Google_Chrome), by far [the world's most popular web browser](https://gs.statcounter.com/browser-market-share). Atlas was initially made available only for macOS, but OpenAI has promised that \"Experiences for Windows, iOS, and Android are coming soon.\" That will be a must if OpenAI wants to take a chunk out of Chrome's market share.\n\nOn January 21, 2026, OpenAI [released new features](https://www.pcmag.com/news/chatgpt-atlas-gets-new-tab-upgrades-still-no-windows-or-mobile-versions) for Atlas but has not provided an updated time-frame for the anticipated Windows release.",
+    "resolution_criteria": "This question will resolve as **Yes** if, before September 1, 2026 UTC, OpenAI publicly releases ChatGPT Atlas for Windows.",
+    "as_of_utc": "2026-07-09T00:00:00+00:00",
+    "tavily_end_date": "2026-07-08",
+    "date_basis": "ForecastBench freeze date; not verified as earliest unresolved historical forecast point",
+    "historical_criteria_audit": "Original question background and rules may contain later edits; not yet audited"
+  },
+  {
+    "id": "43841",
+    "question": "Will OpenAI publicly file an initial registration statement (S-1) with the SEC to launch an IPO, before September 1, 2026?",
+    "background": "New York Times (May 20, 2026) [OpenAI Prepares to File to Go Public in Coming Weeks](https://www.nytimes.com/2026/05/20/technology/openai-ipo.html):&#x20;\n\n> OpenAI, the maker of the ChatGPT chatbot, is preparing to file confidentially for an initial public offering in the coming weeks, two people with knowledge of the matter said, laying the groundwork for one of the largest artificial intelligence company offerings that would heighten the stakes of the technology race.\n\n> OpenAI is working with Goldman Sachs and Morgan Stanley to prepare the paperwork, said the people, who were not authorized to speak publicly about private discussions. OpenAI is closely watching the stock market, they added, and the timing of any filing remains in flux. If a filing comes soon, an I.P.O. could take place as soon as September.\n\n> OpenAI overcame a significant hurdle on Monday on the way to a possible I.P.O. when a federal judge and jury rejected a lawsuit from Mr. Musk that aimed to unravel the for-profit company that OpenAI created last year.",
+    "resolution_criteria": "This question resolves as **Yes** if OpenAI, or any subsidiary directly involved in the creation or commercialization of ChatGPT, files a public, non-confidential [SEC Form S-1](https://www.investopedia.com/terms/s/sec-form-s-1.asp) at the U.S. Security and Exchange Commission's [EDGAR](https://www.sec.gov/search-filings) database with a filing date before September 1, 2026.",
+    "as_of_utc": "2026-08-06T00:00:00+00:00",
+    "tavily_end_date": "2026-08-05",
+    "date_basis": "ForecastBench freeze date; not verified as earliest unresolved historical forecast point",
+    "historical_criteria_audit": "Original question background and rules may contain later edits; not yet audited"
+  },
+  {
+    "id": "41595",
+    "question": "Will the North Atlantic sea surface temperature reach a daily record high before May 2026?",
+    "background": "In recent years, the daily mean sea surface temperature has dramatically increased far above the rate of climate change, part of this is [due to lower sulfur oxide emissions by sea traffic](https://acp.copernicus.org/articles/24/13681/2024/), due to new regulations that took effect during 2020. In 2023 and 2024 the sea surface temperatures were well beyond what they had been even since 2020, in part due to lowered SO2 emissions, and [in part due to El Niño](https://www.npr.org/2024/08/14/nx-s1-5051849/hot-oceans-climate-science).\n\nNorth Atlantic Sea Surface Temperatures have started out high in 2026, but have so far been lower than during 2025.",
+    "resolution_criteria": "This question resolves as **Yes** if, on any day after February 1, 2026 and before May 1, 2026, the [North Atlantic Daily Sea Surface Temperature](https://climatereanalyzer.org/clim/sst_daily/?dm_id=natlan) is higher than the same day of the year during any other year.",
+    "as_of_utc": "2026-03-06T00:00:00+00:00",
+    "tavily_end_date": "2026-03-05",
+    "date_basis": "ForecastBench freeze date; not verified as earliest unresolved historical forecast point",
+    "historical_criteria_audit": "Original question background and rules may contain later edits; not yet audited"
+  },
+  {
+    "id": "41090",
+    "question": "Will the winner of the 2026 FIFA World Cup be a country that has never won before?",
+    "background": "The [FIFA World Cup](https://en.wikipedia.org/wiki/FIFA_World_Cup) is a quadrennial [football](https://en.wikipedia.org/wiki/Association_football) competition organised by FIFA. The [2026 edition](https://en.wikipedia.org/wiki/2026_FIFA_World_Cup), set to be jointly hosted Canada, Mexico and the United States, will take place from June 11 to July 19 2026.\n\nDespite beginning in 1930 and hosting competitions every 4 years, outside of World War 2, only a total of [8 countries](https://en.wikipedia.org/wiki/List_of_FIFA_World_Cup_finals) have ever won the title.",
+    "resolution_criteria": "This question will resolve as **Yes** if the winner of [2026 FIFA World Cup](https://en.wikipedia.org/wiki/2026_FIFA_World_Cup) is a country other than Uruguay, Italy, Germany, Brazil, England, Argentina, France, or Spain.",
+    "as_of_utc": "2026-06-25T00:00:00+00:00",
+    "tavily_end_date": "2026-06-24",
+    "date_basis": "ForecastBench freeze date; not verified as earliest unresolved historical forecast point",
+    "historical_criteria_audit": "Original question background and rules may contain later edits; not yet audited"
+  }
+]

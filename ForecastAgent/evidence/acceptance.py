@@ -51,7 +51,7 @@ def collection_acceptance(bundle):
     searches = bundle.get('searches', [])
     attempts = bundle.get('fetch_attempts', [])
     updates = bundle.get('update_attempts', [])
-    if len(searches) > 3 or len(attempts) > 8 or len(bundle.get('extract_attempts', [])) > 1:
+    if len(searches) > bundle.get('acquisition_limits',{}).get('tavily_basic',3) or len(attempts) > 8 or len(bundle.get('extract_attempts', [])) > 1:
         failures.append({'issue': 'Attempt budget exceeded'})
     if len(updates) > 24 or any(count > 3 for count in Counter(a.get('budget_day') for a in updates).values()):
         failures.append({'issue': 'Update attempt budget exceeded'})

@@ -60,7 +60,7 @@ def search_options(query, *, topic="general", include_domains=None, include_doma
     return {"topic": topic, "include_domains": normalized, "include_domains_mode": include_domains_mode, "exact_match": exact_match}
 
 
-def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = (), end_date: str | None = None,
+def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = (), end_date: str | None = None, start_date: str | None = None,
                  topic="general", include_domains=None, include_domains_mode="prefer", exact_match=False) -> dict:
     """Search once and retain at most ten new, distinct Tavily hits."""
     query = " ".join(query.split())[:350]
@@ -90,6 +90,12 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
         if date.fromisoformat(end_date).isoformat() != end_date:
             raise ValueError("end_date must be YYYY-MM-DD")
         payload["end_date"] = end_date
+    if start_date is not None:
+        from datetime import date
+        date.fromisoformat(start_date)
+        if end_date and start_date>end_date: raise ValueError('start_date must precede end_date')
+        payload['start_date']=start_date
+        payload['filter_by_published_date']=True
     request = Request(
         TAVILY_SEARCH_URL,
         data=json.dumps(payload).encode("utf-8"),

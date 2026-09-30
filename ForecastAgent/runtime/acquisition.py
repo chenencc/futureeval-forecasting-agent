@@ -27,9 +27,14 @@ def checkpoint(task):
     if b['mode'] == 'live' and not any(a.get('channel') == 'official' for a in b['fetch_attempts']) and 'official_government' not in decisions:
         todo.append({'tool': 'list_official_datasets', 'reason': 'Check whether a supported series/document API fits the acquisition needs; otherwise record not applicable.'})
     targets = reading_targets(b)
+    if getattr(task,'optimized',False):
+        for step in todo:
+            if step['tool']=='search_saved_text':
+                step.update(tool='read_sources',reason='Locate complete saved paragraphs for several acquisition queries in one batch; no additional HTTP call for cached sources.')
     unread = sorted(targets - set(b['pages']))
     return {'schema': 'acquisition_checkpoint_v1', 'budget_remaining': task.budget(),
             'needs_without_located_material': missing, 'saved_body_count': len(b['pages']),
+            'association_warning':'Located material does not establish resolution-condition coverage or known future outcomes.',
             'excerpt_count': len(b['excerpts']), 'extract_eligible_urls': rescue[:5],
             'selected_unread_count': len(unread), 'selected_unread_urls': unread[:12],
             'captured_link_count': sum(row.get('origin') == 'page_link' for row in b['source_leads'].values()),

@@ -1,0 +1,88 @@
+name: Five optimized collection trials
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Questions this run (1-5); resumes the frozen campaign'
+        default: '5'
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: optimized-collection-v2-five
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Locate previous campaign state
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({owner, repo,
+              workflow_id:'optimized_collection_trial.yaml', status:'completed', per_page:100});
+            for (const run of data.workflow_runs) {
+              if (run.id === context.runId) continue;
+              const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
+              const state = list.artifacts.find(a => a.name === 'optimized-collection-v2-five-state' && !a.expired);
+              if (state) { core.setOutput('run', run.id); return; }
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {owner, repo, run_id:run.id, per_page:100});
+              const step = jobs.flatMap(j => j.steps || []).find(s => s.name === 'Collect bounded historical batch');
+              if (step && step.conclusion === 'skipped') continue;
+              throw new Error(`Run ${run.id} has no recoverable ledger; refusing budget reset`);
+            }
+            if (data.workflow_runs.length === 100) throw new Error('History scan limit reached without state; refusing budget reset');
+      - name: Restore frozen campaign
+        if: steps.previous.outputs.run != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: optimized-collection-v2-five-state
+          run-id: ${{ steps.previous.outputs.run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/optimized-collection-v2-five
+      - name: Initialize or validate frozen inputs
+        run: python -m ForecastAgent.historical_batch init --root snapshots/optimized-collection-v2-five --input ForecastAgent/fixtures/historical_v2_five.json --profile collection_v2
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/optimized-collection-v2-five
+      - name: Collect bounded historical batch
+        run: python -u -m ForecastAgent.historical_batch run --root snapshots/optimized-collection-v2-five --limit "$BATCH_LIMIT"
+        env:
+          BATCH_LIMIT: ${{ inputs.limit }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/optimized-collection-v2-five
+      - name: Export portable archive
+        if: always()
+        run: python -m ForecastAgent.historical_batch archive --root snapshots/optimized-collection-v2-five --output snapshots/optimized-collection-v2-five.zip
+      - name: Preserve complete campaign state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimized-collection-v2-five-state
+          path: snapshots/optimized-collection-v2-five/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve downloadable archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimized-collection-v2-five-archive
+          path: snapshots/optimized-collection-v2-five.zip
+          if-no-files-found: error
+          retention-days: 90

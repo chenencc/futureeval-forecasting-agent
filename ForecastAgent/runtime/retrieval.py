@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import time
+import copy
 
 from ForecastAgent.tavily_research import canonical_url, search_batch, search_options
 from ForecastAgent.tavily_extract import extract_basic
@@ -35,6 +36,7 @@ from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recovery_hint
 from ForecastAgent.providers.ultra import MODEL
 from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
+from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -159,6 +161,10 @@ class RetrievalTask:
         if self.bundle["pipeline"] not in {"collection", "legacy"}:
             raise ValueError("Invalid acquisition pipeline")
         self.bundle.setdefault("channel_catalog", channel_catalog())
+        self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else
+            5 if request.get('acquisition_profile') == 'collection_v2' else 3})
+        self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
+        self.optimized = request.get('acquisition_profile') == 'collection_v2'
         self.bundle.setdefault("excerpts", [])
         self.bundle.setdefault("page_history", {})
         self.bundle.setdefault("market_snapshots", {})
@@ -192,12 +198,17 @@ class RetrievalTask:
                     and canonical_url(a["url"]) not in quarantined))
 
     def page_view(self, page, start=0):
-        text = page["content"]
+        text = masked(page['content'],self.cutoff)[0] if self.optimized else page["content"]
         if type(start) is not int or start < 0 or start > len(text):
             raise ValueError("Invalid page offset")
         end = min(start+18000, len(text))
         view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content", "documents"}}
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
+        if self.optimized:
+            _,blocked=masked(page['content'],self.cutoff)
+            view['temporal_isolation']={'blocked_dated_lines':len(blocked),'strict_snapshot':False,
+                'warning':'Explicit later-dated paragraphs are hidden; undated revisions remain possible.'}
+            if len(page['content'])<1200: view['body_warning']='Thin capture; may be a headline or paywall preview.'
         return view
 
     def save(self):
@@ -209,7 +220,7 @@ class RetrievalTask:
             export_intelligence(self.bundle, self.directory)
 
     def budget(self):
-        return {"tavily_basic_remaining": MAX_SEARCHES - len(self.bundle["searches"]),
+        return {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
                 "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
                 'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
                 'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
@@ -433,14 +444,36 @@ class RetrievalTask:
             self.save()
             return {'selected_sources': b['selected_sources']}
         if name == 'record_quote':
-            return self.execute('record_excerpt', saved_reader.quote_coordinates(b['pages'], args), key)
+            pages=visible_pages(b['pages'],self.cutoff) if self.optimized else b['pages']
+            return self.execute('record_excerpt', saved_reader.quote_coordinates(pages, args), key)
+        if name == 'read_sources':
+            urls=args.get('urls',[])
+            if not isinstance(urls,list) or len(urls)>4: raise ValueError('Read at most four URLs')
+            outcomes=[]
+            for url in urls:
+                try: self.execute('fetch_page',{'url':url},key);outcomes.append({'url':url,'ok':True})
+                except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
+            return {'reads':outcomes,**locate(self,args)}
+        if name == 'record_excerpts':
+            items=args.get('items')
+            if not isinstance(items,list) or not 1<=len(items)<=8: raise ValueError('Save one to eight excerpts')
+            outcomes=[]
+            for item in items:
+                try: outcomes.append({'ok':True,**self.execute('record_excerpt',item,key)})
+                except Exception as exc: outcomes.append({'ok':False,'error':str(exc)[:180]})
+            return {'items':outcomes}
         if name in {"list_documents", "read_document", "search_saved_text", "find_passages"}:
-            return getattr(saved_reader, name)(b["pages"], args)
+            pages=visible_pages(b['pages'],self.cutoff) if self.optimized else b['pages']
+            return getattr(saved_reader, name)(pages, args)
         if name == "record_excerpt":
             self.needs(args)
             page, text, location = saved_reader.select(b["pages"], args["url"], args.get("document_index"))
             start = saved_reader.integer(args.get("start_char"), 0, len(text), "start_char")
             end = saved_reader.integer(args.get("end_char"), start + 1, min(len(text), start + 4000), "end_char")
+            if self.optimized:
+                _,blocked=masked(text,self.cutoff)
+                if any(start<x['end'] and end>x['start'] for x in blocked):
+                    raise ValueError('Excerpt intersects a conservatively isolated post-cutoff dated paragraph')
             excerpt = {"url": canonical_url(args["url"]), "text": text[start:end], "start_char": start,
                        "end_char": end, "location": location, "need_ids": args["need_ids"],
                        "source_sha256": page.get("sha256"), "temporal_status": page.get("temporal_status"),
@@ -456,6 +489,8 @@ class RetrievalTask:
         if name == "finish_collection":
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
+            if self.optimized and self.cutoff and not any(s.get('search_role')=='recent' for s in b['searches']):
+                raise ValueError('Use at least one cutoff-bounded recent search before closing this historical pilot')
             unread = sorted(reading_targets(b) - set(b['pages']))
             b['acceptance'] = collection_acceptance(b)
             b["result"] = {"status": "collected" if b["pages"] or b['market_snapshots'] else "leads_only" if self.catalog() else "empty",
@@ -482,19 +517,28 @@ class RetrievalTask:
             self.needs(args)
             if not args.get("reason") or not args.get("query"):
                 raise ValueError("Explain which missing evidence the query addresses")
-            if len(b["searches"]) >= MAX_SEARCHES:
-                raise ValueError("Three-basic-search budget exhausted; persists across restarts")
+            if len(b["searches"]) >= self.search_limit:
+                raise ValueError('Frozen basic-search budget exhausted; persists across restarts')
+            if self.optimized and len(b['searches'])>=3 and args.get('search_role') not in {'recent','official_gap'}:
+                raise ValueError('Searches four and five require recent dynamics or a missing official source')
             options = search_options(args["query"], **{k: args[k] for k in ["topic", "include_domains", "include_domains_mode", "exact_match"] if k in args})
             attempt = {"query": args["query"], "need_ids": args["need_ids"], "reason": args["reason"],
                        "depth": "basic", "search_options": options, "end_date": self.end_date, "attempted_at": utc_now(), "status": "reserved", "results": []}
-            reserve(b, "searches", attempt, MAX_SEARCHES, self.save)
+            if self.optimized:
+                attempt['search_role']=args.get('search_role','gap')
+            reserve(b, "searches", attempt, self.search_limit, self.save)
             seen = tuple(r["url"] for s in b["searches"] for r in s["results"])
             try:
-                data = search_batch(args["query"], key, exclude_urls=seen, end_date=self.end_date, **options)
+                extra={}
+                if self.optimized and self.cutoff and args.get('search_role')=='recent':
+                    extra['start_date']=(self.cutoff.date()-timedelta(days=60)).isoformat()
+                    attempt['start_date']=extra['start_date']
+                data = search_batch(args["query"], key, exclude_urls=seen, end_date=self.end_date, **extra, **options)
                 attempt["raw_response"] = data
                 for hit in data["results"]:
                     published = parse_time(hit.get("published_date"))
-                    if self.cutoff and (not published or published.date() > date.fromisoformat(self.end_date)):
+                    inline_late=self.optimized and late_dates((hit.get('content') or '')+' '+(hit.get('title') or ''),self.cutoff)
+                    if self.cutoff and (not published or published.date() > date.fromisoformat(self.end_date) or inline_late):
                         b["quarantine"].append({"hit": hit, "reason": "Unknown or post-cutoff publication date"})
                     else:
                         attempt["results"].append(hit)
@@ -715,8 +759,19 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         runtime = task.bundle["agent_runtime"]
         collection = task.bundle["pipeline"] == "collection"
         available_tools = COLLECTION_TOOLS if collection else TOOLS
+        if task.optimized:
+            available_tools=copy.deepcopy([t for t in COLLECTION_TOOLS if t['function']['name'] not in
+                {'fetch_page','fetch_pages','record_excerpt','find_passages','search_saved_text','collection_checkpoint','collection_acceptance','select_sources','refresh_sources'}])
+            for entry in available_tools:
+                if entry['function']['name']=='search_tavily':
+                    entry['function']['description']='Basic search within the frozen five-attempt ceiling. Default three; additional searches only for recent dynamics or missing official sources.'
+                    entry['function']['parameters']['required'].append('search_role')
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
         system = (COLLECTION_SYSTEM if collection else SYSTEM) + "\nSkills guide source acquisition only in collection mode; the program owns limits. Skill catalog: " + json.dumps(catalog)
+        if task.optimized:
+            system=system.replace('at most THREE attempted searches','at most FIVE attempted searches')
+            system=system.replace('fetch_page/fetch_pages','read_sources').replace('search_saved_text','read_sources').replace('find_passages','read_sources').replace('record_excerpt','record_excerpts')
+            system += '\nV2: Default to three basic searches; calls four/five only for recent dynamics or official-source gaps. Use read_sources to batch fetch up to four sources and locate paragraphs for multiple needs, then record_excerpts in one batch. Aim for 8-12 model turns without skipping critical work. At least one search must use search_role=recent: it searches the 60 days before the frozen cutoff. Distinguish information cutoff from future event deadline; future outcomes need not yet be known. Need IDs mean associated material, never resolved conditions. Explicitly dated post-cutoff paragraphs are conservatively hidden, including future schedules requiring historical provenance. Never infer dates from model memory. Preserve gaps. Full tool responses remain on disk; model views are bounded. Short bodies may only be headlines or paywall leads; locate an alternative important source rather than treating them as full articles.'
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
@@ -753,7 +808,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     "instruction": "Conclude from saved facts and explicit gaps; no outcome assertion or guessed URLs."})})
             task.save()
             if collection:
-                messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': checkpoint(task),
+                messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': model_view(checkpoint(task)) if task.optimized else checkpoint(task),
                     'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
                 message = ask_ultra(messages, router_key, tools=available_tools, forced_tool=forced,
@@ -821,7 +876,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     result["available_urls"] = [r["url"] for r in task.catalog().values()][:60]
                 result = tool_result(name, result, task.budget(), error=result.get("error"))
                 task.bundle["transcript"].append({"tool": name, "result": result})
-                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result, ensure_ascii=False)})
+                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result) if task.optimized else result, ensure_ascii=False)})
                 task.save()
             if task.bundle["result"]:
                 break

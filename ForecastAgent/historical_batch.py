@@ -30,7 +30,7 @@ def write(path, data):
     temporary.replace(path)
 
 
-def initialize(root, input_path=DEFAULT_INPUT):
+def initialize(root, input_path=DEFAULT_INPUT, profile='collection_v1'):
     root = Path(root)
     rows = json.loads(Path(input_path).read_text(encoding='utf-8'))
     if not isinstance(rows, list) or not rows:
@@ -52,13 +52,16 @@ def initialize(root, input_path=DEFAULT_INPUT):
             batch = json.loads(path.read_text(encoding='utf-8'))
             if batch['input_sha256'] != digest(rows):
                 raise ValueError('Frozen campaign inputs changed; resume refused')
+            if batch.get('acquisition_profile','collection_v1')!=profile:
+                raise ValueError('Frozen acquisition profile changed; resume refused')
             validate(root, batch)
             return batch
         write(root / 'blind_inputs.json', rows)
         batch = {'schema': 'historical_collection_batch_v1', 'created_at_utc': now().isoformat(),
+                 'acquisition_profile':profile,
                  'input_sha256': digest(rows), 'mode': 'historical_exploratory', 'pipeline': 'collection',
                  'limits': {'questions_per_run': 5, 'attempts_per_question': 5,
-                            'tavily_basic_lifetime': 3, 'model_http_lifetime': 72, 'run_seconds_per_question': 900},
+                            'tavily_basic_lifetime': 5 if profile=='collection_v2' else 3, 'model_http_lifetime': 72, 'run_seconds_per_question': 900},
                  'tasks': {ident: {'status': 'pending', 'attempts': []} for ident in ids}}
         write(path, batch)
         return batch
@@ -104,6 +107,7 @@ def run_batch(root, tavily_key, router_key, limit=5, runner=run_retrieval):
                 break
             selected += 1
             request = {**rows[ident], 'mode': batch['mode'], 'pipeline': batch['pipeline']}
+            if batch.get('acquisition_profile')=='collection_v2': request['acquisition_profile']='collection_v2'
             # Freeze the empty task before reserving an execution, so a crash
             # cannot ambiguously lose previously consumed search reservations.
             from ForecastAgent.runtime.retrieval import RetrievalTask
@@ -161,10 +165,11 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT)
     parser.add_argument('--limit', type=int, default=5)
+    parser.add_argument('--profile',choices=['collection_v1','collection_v2'],default='collection_v1')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.action == 'init':
-        batch = initialize(args.root, args.input)
+        batch = initialize(args.root, args.input,args.profile)
     elif args.action == 'run':
         if not os.environ.get('TAVILY_API_KEY') or not os.environ.get('OPENROUTER_API_KEY'):
             raise ValueError('Both provider keys are required')

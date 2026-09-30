@@ -99,3 +99,12 @@ TOOLS.extend([
 ])
 COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
                     {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]
+COLLECTION_TOOLS.extend([
+    tool('read_sources','Batch up to four accepted source reads and locate complete paragraphs for up to eight acquisition queries. Free fetch budgets still apply per URL. No semantic verdict.',
+         {'urls':{'type':'array','items':STRING,'maxItems':4},'queries':{'type':'array','maxItems':8,'minItems':1,'items':{'type':'object','properties':{'query':STRING,'url':STRING,'need_ids':{'type':'array','items':STRING}},'required':['query','need_ids']}}},['urls','queries']),
+    tool('record_excerpts','Bank one to eight located passages in one turn. Copy excerpt_args from read_sources. Each item is independently validated; associations do not resolve a need.',
+         {'items':{'type':'array','minItems':1,'maxItems':8,'items':next(t['function']['parameters'] for t in LOCAL_TOOLS if t['function']['name']=='record_excerpt')}},['items'])
+])
+for entry in COLLECTION_TOOLS:
+    if entry['function']['name']=='search_tavily':
+        entry['function']['parameters']['properties']['search_role']={'type':'string','enum':['primary','crosscheck','gap','recent','official_gap']}

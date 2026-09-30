@@ -17,6 +17,7 @@ def intelligence_package(bundle):
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
             'execution_versions': bundle.get('execution_versions', []),
+            'acquisition_limits': bundle.get('acquisition_limits', {'tavily_basic':3}),
             'model_attempts': bundle.get('model_attempts', []),
             'step_attempts': bundle.get('step_attempts', []),
             'messages': bundle.get('messages', []), 'transcript': bundle.get('transcript', []),
