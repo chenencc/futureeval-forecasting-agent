@@ -8,12 +8,12 @@ from scripts.retrieval_agent import run_retrieval
 
 def main():
     experiment = os.environ.get("RETRIEVAL_EXPERIMENT", "five")
-    if experiment not in {"five", "v2-three"}:
+    if experiment not in {"five", "v2-three", "v3-three"}:
         raise ValueError("Unknown experiment; refusing arbitrary budget reset")
-    root = Path("snapshots/retrieval-five" if experiment == "five" else "snapshots/retrieval-v2-three")
+    root = Path("snapshots/retrieval-five" if experiment == "five" else f"snapshots/retrieval-{experiment}")
     root.mkdir(parents=True, exist_ok=True)
     questions = json.loads(Path("fixtures/retrieval_2026_five.json").read_text(encoding="utf-8"))
-    if experiment == "v2-three":
+    if experiment in {"v2-three", "v3-three"}:
         questions = [q for q in questions if q["id"] in {"44925", "44448", "44986"}]
     rows = []
     for question in questions:

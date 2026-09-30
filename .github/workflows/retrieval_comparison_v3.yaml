@@ -1,0 +1,62 @@
+name: Three retrieval v3 comparison trials
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: v3-three-historical-retrieval-trials
+  cancel-in-progress: false
+
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free document parser
+        run: python -m pip install -r requirements-retrieval.txt
+      - name: Find latest durable task ledgers
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({owner, repo,
+              workflow_id: 'retrieval_comparison_v3.yaml', status: 'completed', per_page: 1});
+            if (!data.workflow_runs.length) return null;
+            const run = data.workflow_runs[0];
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: run.id});
+            if (!artifacts.data.artifacts.some(a => a.name === 'retrieval-v3-three-state' && !a.expired)) {
+              throw new Error('Latest trial ledger unavailable: refusing to reset search budgets');
+            }
+            return run.id;
+      - name: Restore existing evidence and budgets
+        if: steps.previous.outputs.result != 'null'
+        uses: actions/download-artifact@v4
+        with:
+          name: retrieval-v3-three-state
+          run-id: ${{ fromJSON(steps.previous.outputs.result) }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/retrieval-v3-three/
+      - name: Collect three v3 evidence bundles without forecasting
+        run: python -u -m scripts.retrieval_trial
+        env:
+          RETRIEVAL_EXPERIMENT: v3-three
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      - name: Save durable ledgers and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-v3-three-state
+          path: snapshots/retrieval-v3-three/
+          if-no-files-found: error
+          retention-days: 90
+
