@@ -281,6 +281,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
     try:
         task = RetrievalTask(directory, request)
         if task.bundle["result"] and not task.bundle["result"].get("incomplete"):
+            # Re-audit restored results produced before the historical quality gate.
+            result = task.bundle["result"]
+            if task.cutoff and result["status"] == "sufficient" and any(e.get("temporal_status") == "current_capture_possible_later_edits" for e in task.bundle["evidence"]):
+                result["model_reported_status"] = "sufficient"
+                result["status"] = "partial"
+                result.setdefault("gaps", []).append("Historical article bodies were fetched today; pre-cutoff availability is unverified")
+                task.save()
             return task.bundle
         task.bundle["result"] = None
         messages = task.bundle["messages"]
