@@ -1,0 +1,62 @@
+{
+  "retrieved_at_utc": "2026-09-30T01:28:12Z",
+  "source": "Metaculus /api/posts/ spring-aib-2026 resolved binary",
+  "note": "Metadata only; bot account could not access resolution values",
+  "items": [
+    {
+      "post_id": 43134,
+      "question_id": 43148,
+      "title": "Will any model evaluated by Epoch AI score at least 40.0% on FrontierMath Tier 4 before May 1, 2026?",
+      "status": "resolved",
+      "resolved": true,
+      "open_time": "2026-04-12T13:30:00Z",
+      "resolution_visible": false,
+      "resolution": null,
+      "url": "https://www.metaculus.com/questions/43134/"
+    },
+    {
+      "post_id": 43135,
+      "question_id": 43149,
+      "title": "Will U.S. spot Bitcoin ETFs take in at least $1 billion of net inflows during April 2026?",
+      "status": "resolved",
+      "resolved": true,
+      "open_time": "2026-04-12T15:00:00Z",
+      "resolution_visible": false,
+      "resolution": null,
+      "url": "https://www.metaculus.com/questions/43135/"
+    },
+    {
+      "post_id": 43136,
+      "question_id": 43150,
+      "title": "Will the United States and Iran publicly agree to a formal ceasefire that both sides acknowledge before May 1, 2026?",
+      "status": "resolved",
+      "resolved": true,
+      "open_time": "2026-04-13T00:00:00Z",
+      "resolution_visible": false,
+      "resolution": null,
+      "url": "https://www.metaculus.com/questions/43136/"
+    },
+    {
+      "post_id": 43138,
+      "question_id": 43152,
+      "title": "Will Yuma, Arizona receive any rain in April 2026?",
+      "status": "resolved",
+      "resolved": true,
+      "open_time": "2026-04-13T10:30:00Z",
+      "resolution_visible": false,
+      "resolution": null,
+      "url": "https://www.metaculus.com/questions/43138/"
+    },
+    {
+      "post_id": 43155,
+      "question_id": 43170,
+      "title": "Will another U.S. cabinet member leave office before May 2026?",
+      "status": "resolved",
+      "resolved": true,
+      "open_time": "2026-04-09T17:50:00Z",
+      "resolution_visible": false,
+      "resolution": null,
+      "url": "https://www.metaculus.com/questions/43155/"
+    }
+  ]
+}

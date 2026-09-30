@@ -2,25 +2,24 @@
 
 ## Fall 2026 V0 setup
 
-This checkout is based on the official Metaculus template. `main.py --mode tournament`
-forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
-The live workflow checks for new questions hourly and can also be run manually.
-V0 uses one research report and one prediction per question to limit
-cost. V0 pins forecasting, parsing, and the follow-up query to OpenRouter's
-free NVIDIA Nemotron 3 Ultra endpoint. Tavily first returns up to 10 Basic
-search results. Ultra then identifies a missing fact and writes a targeted
-second query; Tavily returns up to 10 more results, with URLs already seen in
-the first round removed. Each run saves both queries, result batches, and
-point-in-time research and forecast snapshots. Candidate Polymarket matches
-are kept separate from the model's
-research input. Paper trading is not yet enabled.
+This checkout is based on the official Metaculus template. The scheduled
+workflow reads `fall-futureeval-2026` questions every 15 minutes and saves
+an index plus one JSON detail snapshot per question as a GitHub Actions
+artifact. It never forecasts or submits. GitHub may delay scheduled runs.
+
+The separate, manually triggered read-only research demo runs one previously
+collected question through two Tavily searches and NVIDIA Nemotron 3 Ultra.
+Tavily keeps up to 10 results in each round; the second round removes sources
+already seen in the first. The demo saves the two search batches, follow-up
+query, model assessment, and probability without submitting a forecast.
+Artifacts are retained for 90 days. Paper trading is not yet enabled.
 
 ### Forecast snapshots and market candidates
 
 For each question, `snapshots/<run-id>/<question-id>.json` records the question
 and resolution criteria, research text, model output, code commit, timestamps,
-and the returned report status. Both bot workflows upload these files as a
-GitHub Actions artifact even if the bot run fails. Artifacts are retained for
+and the returned report status. The manual bot workflows upload these files as
+GitHub Actions artifacts even if the bot run fails. Artifacts are retained for
 90 days; download or move them to longer-lived storage for multi-month studies.
 Local snapshots are ignored by Git. A returned report indicates that the
 framework finished; the record does not independently verify Metaculus accepted

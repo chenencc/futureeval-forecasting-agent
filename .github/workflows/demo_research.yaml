@@ -1,0 +1,30 @@
+name: Read-only research demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run two-pass Tavily and Ultra research without submission
+        run: python -m scripts.demo_research
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      - name: Upload research snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: read-only-research-${{ github.run_id }}
+          path: snapshots/demo/
+          if-no-files-found: ignore
+          retention-days: 90
