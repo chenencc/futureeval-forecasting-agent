@@ -59,6 +59,8 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           RUN_READ_ONLY_RESEARCH: '1'
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/monitor
       - name: Save state for the next poll
         if: always()
         uses: actions/upload-artifact@v4

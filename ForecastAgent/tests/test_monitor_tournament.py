@@ -14,6 +14,22 @@ def post(post_id: int, question_id: int, status: str = "open") -> dict:
 
 
 class MonitorTournamentTests(TestCase):
+    @patch('ForecastAgent.retrieval_agent.run_retrieval')
+    @patch('ForecastAgent.monitor_tournament.get_json')
+    def test_incomplete_result_is_not_completed_and_cooldown_preserves_budget(self, get_json, run_research):
+        get_json.return_value = {'results': [post(1, 11)], 'next': None}
+        run_research.return_value = {'result': {'status': 'partial', 'incomplete': True}}
+        with patch.dict('os.environ', {'TAVILY_API_KEY': 'test', 'OPENROUTER_API_KEY': 'test'}):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with self.assertRaises(RuntimeError):
+                    snapshot_questions('token', root, research=True)
+                state = json.loads((root / 'state.json').read_text())
+                self.assertEqual(state['researched_question_ids'], [])
+                self.assertEqual(state['research_retries']['11']['attempts'], 1)
+                snapshot_questions('token', root, research=True)
+        self.assertEqual(run_research.call_count, 1)
+
     @patch("ForecastAgent.monitor_tournament.get_json")
     def test_follows_next_even_when_first_page_is_short(self, get_json) -> None:
         page_two = API_ROOT + "?offset=5"

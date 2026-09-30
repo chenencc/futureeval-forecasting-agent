@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
@@ -16,6 +16,7 @@ TOURNAMENT = "fall-futureeval-2026"
 OPEN_PAGE_LIMIT = 30
 ARCHIVE_PAGES_PER_RUN = 5
 RESEARCH_PER_RUN = 2
+MAX_RESEARCH_RETRIES = 5
 
 
 def get_json(url: str, token: str) -> dict:
@@ -140,6 +141,14 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
     state = _load_state(state_path)
     seen = set(state["seen_question_ids"])
     researched = set(state["researched_question_ids"])
+    retries = state.setdefault('research_retries', {})
+    # Repair IDs marked complete by older monitors after an interrupted run.
+    for qid in list(researched):
+        ledger = root / 'retrieval' / str(qid) / 'bundle.json'
+        if ledger.exists():
+            result = json.loads(ledger.read_text(encoding='utf-8')).get('result')
+            if not result or result.get('incomplete'):
+                researched.discard(qid)
     try:
         open_posts, open_complete = collect_questions(token)
     except Exception as exc:
@@ -171,7 +180,10 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
                           "new": is_new, "open": is_open, "snapshot_saved": True})
             seen.add(qid)
             if is_open and question.get("type") == "binary" and qid not in researched:
-                pending_research.append((post, question))
+                retry = retries.get(str(qid), {})
+                due = datetime.fromisoformat(retry['next_retry_at']) if retry.get('next_retry_at') else now
+                if retry.get('attempts', 0) < MAX_RESEARCH_RETRIES and due <= now:
+                    pending_research.append((post, question))
 
     research_results = []
     if research and open_complete:
@@ -190,10 +202,16 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
                     request = json.loads(existing.read_text(encoding="utf-8"))["request"]
                 report = run_research(request, task_directory, os.environ["TAVILY_API_KEY"], os.environ["OPENROUTER_API_KEY"])
                 _write_json(output / f"research-{qid}.json", report)
+                if not report.get('result') or report['result'].get('incomplete'):
+                    raise RuntimeError('Agent interrupted; durable ledger retained for retry')
                 researched.add(qid)
+                retries.pop(str(qid), None)
                 research_results.append({"question_id": qid, "status": "saved", "retrieval_status": report["result"]["status"]})
             except Exception as exc:
-                research_results.append({"question_id": qid, "status": "failed", "error": f"{type(exc).__name__}: {exc}"})
+                attempts = retries.get(str(qid), {}).get('attempts', 0) + 1
+                retries[str(qid)] = {'attempts': attempts, 'next_retry_at': (now + timedelta(minutes=min(15 * 2 ** (attempts - 1), 240))).isoformat(),
+                                     'last_error': type(exc).__name__, 'needs_attention': attempts >= MAX_RESEARCH_RETRIES}
+                research_results.append({"question_id": qid, "status": "failed", "retry": retries[str(qid)], "error": f"{type(exc).__name__}: {exc}"})
 
     _write_json(output / "index.json", {
         "tournament": TOURNAMENT, "retrieved_at_utc": now.isoformat(), "code_commit": os.environ.get("GITHUB_SHA"),

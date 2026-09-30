@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import json
+from collections import Counter
 from ForecastAgent.readers.saved import select, version_digest
 from ForecastAgent.tavily_research import canonical_url
 
@@ -48,9 +49,12 @@ def collection_acceptance(bundle):
             warnings.append({'market': market.get('id'), 'issue': 'Missing raw market response'})
     searches = bundle.get('searches', [])
     attempts = bundle.get('fetch_attempts', [])
+    updates = bundle.get('update_attempts', [])
     if len(searches) > 3 or len(attempts) > 8 or len(bundle.get('extract_attempts', [])) > 1:
         failures.append({'issue': 'Attempt budget exceeded'})
-    failed_reads = [a for a in attempts if a.get('status') in {'failed', 'reserved'}]
+    if len(updates) > 24 or any(count > 3 for count in Counter(a.get('budget_day') for a in updates).values()):
+        failures.append({'issue': 'Update attempt budget exceeded'})
+    failed_reads = [a for a in attempts + updates if a.get('status') in {'failed', 'reserved'}]
     failed_searches = [a for a in searches if a.get('status') in {'failed', 'reserved'}]
     unassociated = [n['id'] for n in bundle.get('plan') or []
                     if not any(n['id'] in e.get('need_ids', []) for e in bundle.get('excerpts', []))
@@ -71,5 +75,5 @@ def collection_acceptance(bundle):
             'raw_versions_checked': raw_checked, 'page_count': len(pages), 'market_snapshot_count': len(bundle.get('market_snapshots', {})),
             'excerpt_count': len(bundle.get('excerpts', [])), 'failures': failures, 'warnings': warnings,
             'source_count': len(source_urls), 'unread_source_count': len(unread), 'unread_urls': unread[:120],
-            'resources': {'tavily_basic_attempts': len(searches), 'free_http_attempts': len(attempts)},
+            'resources': {'tavily_basic_attempts': len(searches), 'free_http_attempts': len(attempts), 'update_http_attempts': len(updates)},
             'scope': 'Capture integrity and acquisition gaps only; not factual correctness or exhaustive coverage.'}

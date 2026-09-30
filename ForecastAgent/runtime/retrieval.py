@@ -29,7 +29,8 @@ from ForecastAgent.evidence.intelligence import export_intelligence
 from ForecastAgent.evidence.acceptance import collection_acceptance
 from ForecastAgent.providers.official import dataset_catalog, endpoint as official_endpoint, fetch_official
 from ForecastAgent.polymarket_match import search_candidates as search_markets
-from ForecastAgent.runtime.budget import reserve
+from ForecastAgent.runtime.budget import reserve, reserve_update, update_day, MAX_UPDATE_HTTP_TOTAL, MAX_UPDATE_HTTP_DAILY
+from ForecastAgent.runtime.task_lock import task_lock
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -151,6 +152,7 @@ class RetrievalTask:
         self.bundle.setdefault("market_snapshots", {})
         self.bundle.setdefault("market_cache", {})
         self.bundle.setdefault("updates", [])
+        self.bundle.setdefault('update_attempts', [])
         self.bundle.setdefault("extract_attempts", [])
         self.bundle.setdefault("source_leads", {})
         self.bundle.setdefault("control", {"consecutive_errors": 0, "forced_close": False})
@@ -195,6 +197,8 @@ class RetrievalTask:
     def budget(self):
         return {"tavily_basic_remaining": MAX_SEARCHES - len(self.bundle["searches"]),
                 "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
+                'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
+                'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
                 "basic_extract_batches_remaining": MAX_EXTRACT_BATCHES - len(self.bundle["extract_attempts"])}
 
     def store_page(self, url, page):
@@ -294,7 +298,10 @@ class RetrievalTask:
             old = self.bundle['pages'][url]
             attempt = {'url': url, 'channel': 'incremental_refresh', 'status': 'reserved', 'at': utc_now(), 'old_sha256': old.get('sha256')}
             try:
-                reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+                if self.bundle.get('result') and not self.bundle['result'].get('incomplete'):
+                    reserve_update(self.bundle, attempt, self.save)
+                else:
+                    reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
                 official = old.get('official_request')
                 page = fetch_official(official['dataset'], official['query'], official['page'], fetch_public_page) if official else (
                     fetch_structured(url, None, fetch_public_page) or fetch_public_page(url))
@@ -305,7 +312,7 @@ class RetrievalTask:
                 attempt.update(status='completed', update=update)
                 results.append({'ok': True, 'result': update})
             except Exception as exc:
-                if attempt in self.bundle['fetch_attempts']:
+                if attempt in self.bundle['fetch_attempts'] or attempt in self.bundle['update_attempts']:
                     attempt.update(status='failed', error=type(exc).__name__)
                 results.append({'ok': False, 'url': url, 'error': str(exc)[:300]})
             self.save()
@@ -643,13 +650,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         # Replay never creates, validates, changes, or makes any network requests.
         return json.loads((directory / "bundle.json").read_text(encoding="utf-8"))
     directory.mkdir(parents=True, exist_ok=True)
-    lock = directory / ".running.lock"
-    try:
-        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        raise RuntimeError("Task is already running or needs crash-lock inspection; refusing concurrent budget use")
-    os.close(descriptor)
-    try:
+    with task_lock(directory):
         task = RetrievalTask(directory, request)
         if task.bundle["result"] and not task.bundle["result"].get("incomplete"):
             # Re-audit restored results produced before the historical quality gate.
@@ -766,8 +767,6 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                                     "basic_extract_reserved_urls": sum(len(a["urls"]) for a in task.bundle["extract_attempts"])}
         task.save()
         return task.bundle
-    finally:
-        lock.unlink()
 
 def main():
     parser = argparse.ArgumentParser()

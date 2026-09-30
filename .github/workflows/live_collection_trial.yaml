@@ -1,0 +1,75 @@
+name: Three live Ultra collection trials
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: three-live-ultra-collection
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Find completed durable ledgers
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            async function latest(workflow, artifact) {
+              const {data} = await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: workflow, status:'completed', per_page:1});
+              if (!data.workflow_runs.length) return null;
+              const run = data.workflow_runs[0];
+              const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
+              if (!list.artifacts.some(a => a.name === artifact && !a.expired)) throw new Error('Latest durable state missing; refusing budget reset');
+              return run.id;
+            }
+            const trial = await latest('live_collection_trial.yaml', 'live-collection-state');
+            const monitor = await latest('run_bot_on_tournament.yaml', 'futureeval-monitor-state');
+            core.setOutput('trial', trial || '');
+            core.setOutput('monitor', monitor || '');
+            core.setOutput('completed', [trial, monitor].filter(Boolean).join(','));
+      - name: Restore existing trial selection and budgets
+        if: steps.previous.outputs.trial != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: live-collection-state
+          run-id: ${{ steps.previous.outputs.trial }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/live-collection/
+      - name: Exclude already monitored task IDs
+        if: steps.previous.outputs.monitor != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-monitor-state
+          run-id: ${{ steps.previous.outputs.monitor }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/live-collection/monitor-state/
+      - name: Run real Ultra acquisition without predictions
+        run: python -u -m ForecastAgent.live_collection_trial
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/live-collection
+      - name: Preserve selection, budgets and source captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-collection-state
+          path: snapshots/live-collection/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90

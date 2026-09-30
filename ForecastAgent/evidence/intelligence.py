@@ -18,12 +18,14 @@ def intelligence_package(bundle):
             "page_history": bundle.get('page_history', {}), "updates": bundle.get('updates', []),
             "market_snapshots": bundle.get('market_snapshots', {}), "acceptance": collection_acceptance(bundle),
             "fetch_attempts": bundle.get("fetch_attempts", []), "extract_attempts": bundle.get("extract_attempts", []),
+            'update_attempts': bundle.get('update_attempts', []),
             "quarantine": bundle.get("quarantine", []), "channel_catalog": bundle.get("channel_catalog"),
             "truth_verified": False, "out_of_sample": False,
             "limitations": ["Quotes are located in saved text, not independently fact-checked.",
                             bundle.get("temporal_warning", "Historical availability must be established separately.")],
             "resources": {"tavily_basic_attempts": len(bundle.get("searches", [])),
                           "free_fetch_attempts": len(bundle.get("fetch_attempts", [])),
+                          'update_http_attempts': len(bundle.get('update_attempts', [])),
                           "extract_batches": len(bundle.get("extract_attempts", []))}}
 
 

@@ -37,7 +37,7 @@ CHANNELS = [
      'temporal_support': 'Current captures only; no historical release-vintage claim.', 'availability': 'implemented'},
     {'id': 'incremental_refresh', 'kind': 'update', 'tools': ['refresh_sources'],
      'formats': ['version_changes'], 'cost': 'No paid provider call', 'credentials': [],
-     'limits': 'Saved live pages only; same ledger and remaining HTTP budget; hashes do not avoid downloads.',
+     'limits': 'Saved live pages only; initial eight HTTP attempts before completion; afterward three per UTC day and 24 lifetime update attempts; hashes do not avoid downloads.',
      'temporal_support': 'New live captures with preserved previous versions.', 'availability': 'implemented'},
     {'id': 'collection_acceptance', 'kind': 'local_check', 'tools': ['collection_acceptance'],
      'formats': ['integrity_report'], 'cost': 'No network', 'credentials': [],

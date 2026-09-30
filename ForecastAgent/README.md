@@ -52,14 +52,16 @@ Skills are loaded on demand and frozen with their content hashes in each ledger.
 ## Limits
 
 - At most **three Tavily basic attempts per task**, including failures and resumed runs.
-- Eight free HTTP attempts shared by page reads, official adapters, Polymarket and refresh; one basic Extract batch with at most five URLs. Failures consume attempts.
+- Initial collection has eight free HTTP attempts shared by page reads, official adapters and Polymarket; one basic Extract batch with at most five URLs. Failures consume attempts.
 - Local reading and export do not spend search or fetch budget.
 - Task input, pipeline, skill versions and budget state survive restarts.
 - Historical strict requires pre-cutoff captures; publication filters do not restore old pages or remove model knowledge leakage.
 - Readers expose bounded parsed text and report truncation. PDF OCR, table reconstruction and dynamic browser rendering are not implemented.
 - Current Polymarket and official adapters refuse historical modes. Yahoo/ALFRED retain their existing cutoff-aware behavior.
 - Official discovery and Polymarket pagination are explicit and bounded; no automatic extra requests. BEA, SEC-specific and general official-site adapters are not implemented.
-- Refresh does not renew budgets or trigger automatically in the tournament monitor. Exhausted tasks cannot refresh further; changing this policy requires an explicit future budget design.
+- After completion, saved live sources have a separate update budget: three free HTTP attempts per UTC day and 24 per task lifetime. Before completion, refresh uses the original eight attempts. Updates never renew Tavily's three lifetime basic searches or the single Extract batch. Updates are operator initiated.
+- Interrupted tasks resume the original ledger. A dead local process or a lock restored from a verified completed Actions run can be recovered; an active or unknown owner remains blocked. The monitor retries incomplete tasks with backoff, stops after five failed attempts, and never labels an incomplete result as researched.
+- The manual `Three live Ultra collection trials` workflow freezes three unresolved questions outside existing monitor tasks, restores their cumulative budgets on reruns, and exports source captures without forecasts.
 - Acquisition does not submit forecasts or trades. Legacy forecasting templates contain publication code and are not called by this interface.
 
 Actions and command-line operators use the same engine and snapshot paths. Codex does not need to remain online. GitHub may delay scheduled runs.

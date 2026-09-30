@@ -9,6 +9,7 @@ from ForecastAgent.skill_loader import SKILLS
 from ForecastAgent.tools.channels import channel_catalog
 from ForecastAgent.evidence.intelligence import export_intelligence
 from ForecastAgent.evidence.acceptance import collection_acceptance
+from ForecastAgent.runtime.task_lock import task_lock
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -30,6 +31,7 @@ def inspect_task(directory):
             "skill_versions": {k: v["sha256"] for k, v in bundle.get("skill_bank", {}).items()},
             "resources": {"tavily_basic_attempts": len(bundle.get("searches", [])),
                           "page_fetch_attempts": len(bundle.get("fetch_attempts", [])),
+                          "update_http_attempts": len(bundle.get("update_attempts", [])),
                           "basic_extract_batches": len(bundle.get("extract_attempts", []))},
             "result": bundle.get("result"), "evidence": evidence,
             "pipeline": bundle.get("pipeline", "legacy"), "excerpts": bundle.get("excerpts", []),
@@ -71,18 +73,10 @@ class ForecastAgent:
         path = self.task_path(task_directory)
         if not (path / 'bundle.json').exists():
             raise ValueError('Refresh requires an existing ledger')
-        lock = path / '.running.lock'
-        try:
-            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            raise RuntimeError('Task is already running; refresh refused')
-        os.close(descriptor)
-        try:
+        with task_lock(path):
             original = json.loads((path / 'bundle.json').read_text(encoding='utf-8'))
             task = retrieval_agent.RetrievalTask(path, original['request'])
             return task.execute('refresh_sources', {'urls': urls}, '')
-        finally:
-            lock.unlink()
 
     def run(self, task_directory, request=None):
         path = self.task_path(task_directory)

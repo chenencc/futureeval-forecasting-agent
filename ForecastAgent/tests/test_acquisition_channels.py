@@ -128,9 +128,11 @@ class AcquisitionChannelTests(TestCase):
             self.assertEqual(len(task.bundle['page_history'][URL]), 1)
             self.assertEqual(result['acceptance']['failures'], [])
             self.assertEqual(len(task.bundle['searches']), 0)
-            self.assertEqual(len(task.bundle['fetch_attempts']), 1)
+            self.assertEqual(len(task.bundle['fetch_attempts']), 0)
+            self.assertEqual(len(task.bundle['update_attempts']), 1)
             self.assertEqual(task.bundle['result']['status'], 'collected')
-            self.assertEqual(RetrievalTask(Path(directory), REQUEST).budget()['page_fetch_remaining'], 7)
+            self.assertEqual(RetrievalTask(Path(directory), REQUEST).budget()['page_fetch_remaining'], 8)
+            self.assertEqual(RetrievalTask(Path(directory), REQUEST).budget()['update_http_remaining'], 23)
 
     @patch('ForecastAgent.runtime.retrieval.fetch_public_page', side_effect=RuntimeError('unavailable'))
     def test_refresh_failure_preserves_saved_page_and_unknown_urls_are_refused(self, fetch):
