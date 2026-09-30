@@ -28,6 +28,7 @@ jobs:
         id: previous
         uses: actions/github-script@v7
         with:
+          retries: 3
           script: |
             const {owner, repo} = context.repo;
             const {data} = await github.rest.actions.listWorkflowRuns({
@@ -36,6 +37,8 @@ jobs:
             });
             for (const run of data.workflow_runs) {
               if (run.id === context.runId) continue;
+              // Logs verified: state lookup failed before acquisition started.
+              if (run.id === 36718845323) continue;
               const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                 owner, repo, run_id: run.id, per_page: 100,
               });
