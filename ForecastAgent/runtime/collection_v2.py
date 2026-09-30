@@ -72,13 +72,14 @@ def model_view(value, blocked_urls=()):
         if canonical_url(value.get('url','')) in blocked_urls:
             hidden |= {'title','content','text','context','preview','snippet','description'}
         result={k:model_view(v,blocked_urls) for k,v in value.items() if k not in hidden}
-        for key in ('content','context'):
+        for key in ('content','context','text','preview','snippet'):
             if isinstance(result.get(key),str) and len(result[key])>2400:
                 result[key]=result[key][:2400]
                 result['model_view_truncated']=True
                 result['instruction']='Use read_sources for targeted passages; full text is saved locally.'
         return result
-    if isinstance(value,list): return [model_view(x,blocked_urls) for x in value[:12]]
+    # Do not silently drop needs, tool outcomes or later pagination rows.
+    if isinstance(value,list): return [model_view(x,blocked_urls) for x in value]
     return value
 
 
@@ -91,23 +92,18 @@ def locate(task,args):
     rows=[]
     for query in queries:
         task.needs(query)
-        terms=set(re.findall(r'\w+',query.get('query','').casefold()))
-        if not terms: raise ValueError('Nonempty passage query required')
+        from ForecastAgent.readers.passages import rank_passages
+        if not isinstance(query.get('query'),str) or not query['query'].strip(): raise ValueError('Nonempty passage query required')
+        pages = {u:p for u,p in task.bundle['pages'].items() if not task.verified_only or eligible(p,task.cutoff)}
         ranked=[]
-        for url,page,index,doc in documents(task.bundle['pages']):
-            if query.get('url') and canonical_url(query['url'])!=url: continue
-            if task.verified_only and not eligible(page,task.cutoff): continue
-            text=doc['page_content']
-            for paragraph in re.finditer(r'[^\n]+',text):
-                part=paragraph.group()
-                if len(part)<100 or (not task.verified_only and late_dates(part,task.cutoff)): continue
-                score=len(terms & set(re.findall(r'\w+',part.casefold())))
-                if score and len(part)<=4000:
-                    coordinates={'url':url,'document_index':index,'start_char':paragraph.start(),'end_char':paragraph.end()}
-                    digest=hashlib.sha256(json.dumps({'coordinates':coordinates,'version':version_digest(page),'raw_sha256':page.get('sha256')},sort_keys=True).encode()).hexdigest()
-                    passage_id='P'+digest
-                    task.bundle.setdefault('passages',{})[passage_id]={**coordinates,'source_version':version_digest(page),'source_sha256':page.get('sha256')}
-                    ranked.append((score,{'url':url,'text':part,'passage_id':passage_id,'excerpt_args':{**coordinates,'need_ids':query['need_ids']}}))
-        ranked.sort(key=lambda x:-x[0])
-        rows.append({'query':query['query'],'need_ids':query['need_ids'],'passages':[v for _,v in ranked[:2]]})
+        for candidate in rank_passages(pages,query['query'],canonical_url(query['url']) if query.get('url') else None,limit=6):
+            page=candidate['page']; part=candidate['text']
+            if not task.verified_only and late_dates(part,task.cutoff): continue
+            coordinates={k:candidate[k] for k in ('url','document_index','start_char','end_char')}
+            digest=hashlib.sha256(json.dumps({'coordinates':coordinates,'version':version_digest(page),'raw_sha256':page.get('sha256')},sort_keys=True).encode()).hexdigest()
+            passage_id='P'+digest
+            task.bundle.setdefault('passages',{})[passage_id]={**coordinates,'source_version':version_digest(page),'source_sha256':page.get('sha256')}
+            ranked.append({'url':candidate['url'],'text':part,'passage_id':passage_id,'matched_terms':candidate['matched_terms'],
+                           'location':candidate['metadata'],'excerpt_args':{**coordinates,'need_ids':query['need_ids']}})
+        rows.append({'query':query['query'],'need_ids':query['need_ids'],'passages':ranked[:4]})
     return {'located_material':rows,'scope':'Lexical candidates only; associations do not resolve a requirement.'}

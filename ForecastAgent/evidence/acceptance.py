@@ -6,6 +6,50 @@ from collections import Counter
 from ForecastAgent.readers.saved import select, version_digest
 from ForecastAgent.tavily_research import canonical_url
 from ForecastAgent.runtime.acquisition import reading_targets
+from ForecastAgent.readers.quality import body_diagnostics
+from datetime import datetime, timezone
+import re
+
+
+def acquisition_metrics(bundle):
+    """Measure saved material and dates without assigning evidence truth scores."""
+    from ForecastAgent.runtime.collection_v2 import eligible
+    cutoff=bundle.get('request',{}).get('as_of_utc')
+    cutoff=datetime.fromisoformat(cutoff.replace('Z','+00:00')) if cutoff else None
+    verified=bundle.get('historical_body_policy')=='verified_snapshots_only'
+    details=[]
+    for url,page in bundle.get('pages',{}).items():
+        diagnostics=page.get('body_diagnostics') or body_diagnostics(page.get('content',''))
+        usable=diagnostics['usable_text'] and (not verified or eligible(page,cutoff))
+        days=[]
+        for row in page.get('rows',[]):
+            day=next((str(row[k])[:10] for k in ('date','record_date','publication_date','filingDate','filing_date') if row.get(k)),None)
+            if not day and str(row.get('period','')).startswith('M') and row.get('year') and row['period']!='M13':
+                day=str(row['year'])+'-'+str(row['period'])[1:]+'-01'
+            if day and re.fullmatch(r'\d{4}-\d{2}-\d{2}',day): days.append(day)
+        published=page.get('published_at') or page.get('page_date_metadata',{}).get('published_at') or page.get('page_date_metadata',{}).get('extracted_date')
+        details.append({'url':url,'usable_body':usable,'state':diagnostics['state'],'chars':len(page.get('content','')),
+                        'table_count':diagnostics.get('table_count',0),'reading_gaps':diagnostics.get('page_reading_gaps',[]),
+                        'unit':page.get('unit'),'dataset':page.get('dataset'),'row_count':len(page.get('rows',[])),
+                        'observed_start':min(days) if days else None,'observed_end':max(days) if days else None,
+                        'declared_publication':published,'captured_at':page.get('retrieved_at_utc'),
+                        'last_checked_at':page.get('last_checked_at_utc'),'pagination':page.get('pagination'),
+                        'requested_range':page.get('requested_range'),'temporal_status':page.get('temporal_status'),
+                        'date_warning':'Publication and observation dates alone do not prove historical availability.'})
+    needs=[]
+    for need in bundle.get('plan') or []:
+        urls={e['url'] for e in bundle.get('excerpts',[]) if need['id'] in e.get('need_ids',[])}
+        urls.update(a.get('url') for a in bundle.get('fetch_attempts',[]) if need['id'] in a.get('need_ids',[]) and a.get('status')=='completed')
+        needs.append({'need_id':need['id'],'priority':need.get('priority'),
+                      'usable_associated_sources':[d['url'] for d in details if d['url'] in urls and d['usable_body']],
+                      'excerpt_count':sum(need['id'] in e.get('need_ids',[]) for e in bundle.get('excerpts',[]))})
+    selected=set(bundle.get('selected_sources',{}))
+    return {'schema':'acquisition_metrics_v1','usable_body_count':sum(d['usable_body'] for d in details),
+            'audit_only_body_count':sum(not d['usable_body'] for d in details),
+            'declared_date_unknown_count':sum(not d['declared_publication'] for d in details),
+            'selected_unread_urls':sorted(selected-set(bundle.get('pages',{}))),
+            'needs':needs,'sources':details,'truth_verified':False,
+            'scope':'Observed capture/excerpt association and date ranges; not semantic adequacy or factual correctness.'}
 
 
 def collection_acceptance(bundle):
@@ -71,10 +115,18 @@ def collection_acceptance(bundle):
         warnings.append({'issue': 'Temporally quarantined material remains', 'count': len(bundle['quarantine'])})
     if unread:
         warnings.append({'issue': 'Discovered sources remain unread', 'count': len(unread)})
+    metrics=acquisition_metrics(bundle)
+    for need in metrics['needs']:
+        if need['priority']=='critical' and not need['usable_associated_sources']:
+            warnings.append({'issue':'Critical acquisition need lacks associated usable source','need_id':need['need_id']})
+    for row in metrics['sources']:
+        if row['reading_gaps'] or row['state'] not in {'readable','thin'}:
+            warnings.append({'issue':'Source has extraction gaps','url':row['url'],'state':row['state']})
     status = 'failed' if failures else 'accepted_with_gaps' if warnings else 'accepted'
     return {'schema': 'collection_acceptance_v1', 'status': status, 'truth_verified': False,
             'raw_versions_checked': raw_checked, 'page_count': len(pages), 'market_snapshot_count': len(bundle.get('market_snapshots', {})),
             'excerpt_count': len(bundle.get('excerpts', [])), 'failures': failures, 'warnings': warnings,
+            'acquisition_metrics':metrics,
             'source_count': len(source_urls), 'unread_source_count': len(unread), 'unread_urls': unread[:120],
             'captured_unselected_link_count': sum(row.get('origin') == 'page_link' and url not in bundle.get('selected_sources', {})
                                                  for url, row in bundle.get('source_leads', {}).items()),

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       snapshot_only:
-        description: 'Verify monitoring and snapshots without model or search calls'
+        description: 'Capture questions without queuing a collection worker'
         type: boolean
         default: false
   schedule:
@@ -21,14 +21,12 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install free document parser
-        run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
       - name: Find the previous monitor state artifact
         id: previous
         uses: actions/github-script@v7
@@ -75,9 +73,8 @@ jobs:
         run: python -m ForecastAgent.monitor_tournament
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
-          RUN_READ_ONLY_RESEARCH: ${{ inputs.snapshot_only && '0' || '1' }}
+          RUN_READ_ONLY_RESEARCH: '0'
+          QUEUE_READ_ONLY_RESEARCH: ${{ inputs.snapshot_only && '0' || '1' }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/monitor
       - name: Save state for the next poll

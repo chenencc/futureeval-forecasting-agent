@@ -32,6 +32,9 @@ def checkpoint(task):
             if step['tool']=='search_saved_text':
                 step.update(tool='read_sources',reason='Locate complete saved paragraphs for several acquisition queries in one batch; no additional HTTP call for cached sources.')
     unread = sorted(targets - set(b['pages']))
+    planned = sum(row.get('expected_http_attempts',0) for row in b.get('channel_plan',[]))
+    if not b.get('channel_plan'):
+        todo.insert(0,{'tool':'plan_channels','reason':'Allocate shared HTTP attempts to important sources, structured data and any two-request archive lookup.'})
     return {'schema': 'acquisition_checkpoint_v1', 'budget_remaining': task.budget(),
             'needs_without_located_material': missing, 'saved_body_count': len(b['pages']),
             'association_warning':'Located material does not establish resolution-condition coverage or known future outcomes.',
@@ -39,6 +42,8 @@ def checkpoint(task):
             'selected_unread_count': len(unread), 'selected_unread_urls': unread[:12],
             'captured_link_count': sum(row.get('origin') == 'page_link' for row in b['source_leads'].values()),
             'channel_decisions': decisions, 'suggested_next_steps': todo,
+            'http_plan':{'estimated_attempts':planned,'initial_attempt_cap':8,
+                         'over_initial_cap':planned>8,'archive_requires_two_remaining':True},
             'limits': 'Suggestions grant no extra calls. Empty search results do not establish absence. No truth verification.'}
 
 

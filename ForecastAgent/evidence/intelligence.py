@@ -21,6 +21,8 @@ def intelligence_package(bundle):
             'historical_body_policy':bundle.get('historical_body_policy'),
             'passages':bundle.get('passages',{}),
             'data_raw_responses':bundle.get('data_raw_responses',[]),
+            'channel_plan':bundle.get('channel_plan',[]),'context_projections':bundle.get('context_projections',[]),
+            'cache_events':bundle.get('cache_events',[]),'failed_captures':bundle.get('failed_captures',[]),
             'model_attempts': bundle.get('model_attempts', []),
             'step_attempts': bundle.get('step_attempts', []),
             'messages': bundle.get('messages', []), 'transcript': bundle.get('transcript', []),

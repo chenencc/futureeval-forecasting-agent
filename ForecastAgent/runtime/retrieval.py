@@ -38,6 +38,7 @@ from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recov
 from ForecastAgent.providers.ultra import MODEL
 from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
 from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate, eligible
+from ForecastAgent.providers.cache import cached_page, save_cached_page
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -165,7 +166,7 @@ class RetrievalTask:
         self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else
             5 if request.get('acquisition_profile') == 'collection_v2' else 3})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
-        self.optimized = request.get('acquisition_profile') == 'collection_v2'
+        self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
         upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
         self.bundle.setdefault('historical_body_policy', request.get('historical_body_policy','verified_snapshots_only' if self.optimized else 'date_filtered_exploratory'))
         if self.bundle['historical_body_policy'] not in {'verified_snapshots_only','date_filtered_exploratory'}:
@@ -217,6 +218,8 @@ class RetrievalTask:
             raise ValueError("Invalid page offset")
         end = min(start+18000, len(text))
         view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content", "documents"}}
+        if 'page_date_metadata' in view:
+            view['page_date_metadata']={k:v for k,v in view['page_date_metadata'].items() if k!='tables'}
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
         if self.optimized:
             _,blocked=masked(page['content'],self.cutoff)
@@ -256,6 +259,8 @@ class RetrievalTask:
         if old is None or raw_changed or parsed_changed:
             self.bundle['pages'][canonical] = page
         self.bundle['pages'][canonical]['last_checked_at_utc'] = utc_now()
+        if page.get('http_revalidation'):
+            self.bundle['pages'][canonical]['http_revalidation']=page['http_revalidation']
         for link in page.get('links', []):
             if allowed_source(link):
                 self.bundle['source_leads'].setdefault(canonical_url(link), {'url': link, 'origin': 'page_link', 'parent_url': url})
@@ -270,14 +275,15 @@ class RetrievalTask:
         if self.bundle['mode'] != 'live':
             raise ValueError('Official current captures are unavailable in historical modes')
         dataset, query, page_number = args['dataset'], args.get('query', ''), args.get('page', 1)
-        url = official_endpoint(dataset, query, page_number)
+        date_args={k:args[k] for k in ('start_date','end_date') if k in args}
+        url = official_endpoint(dataset, query, page_number,**date_args)
         canonical = canonical_url(url)
         if canonical in self.bundle['pages']:
             return {**self.page_view(self.bundle['pages'][canonical]), 'cached': True}
         attempt = {'url': url, 'channel': 'official', 'need_ids': args['need_ids'], 'status': 'reserved', 'at': utc_now()}
         reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
         try:
-            page = fetch_official(dataset, query, page_number, fetch_public_page)
+            page = fetch_official(dataset, query, page_number, fetch_public_page,**date_args)
             page['temporal_status'] = 'live_capture'
             self.bundle['source_leads'][canonical] = {'url': url, 'origin': 'official_adapter', 'dataset': dataset}
             update = self.store_page(url, page)
@@ -407,8 +413,12 @@ class RetrievalTask:
                 else:
                     reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
                 official = old.get('official_request')
-                page = fetch_official(official['dataset'], official['query'], official['page'], fetch_public_page) if official else (
-                    fetch_structured(url, None, fetch_public_page) or fetch_public_page(url))
+                retained=old.get('response_headers',{})
+                validators={header:retained[key] for header,key in [('If-None-Match','ETag'),('If-Modified-Since','Last-Modified')]
+                            if isinstance(retained.get(key),str)}
+                page = fetch_official(official['dataset'], official['query'], official['page'], fetch_public_page,
+                                      **{k:official[k] for k in ('start_date','end_date') if k in official}) if official else (
+                    fetch_structured(url, None, fetch_public_page) or fetch_public_page(url,**({'validators':validators,'previous_page':old} if validators else {})))
                 if len(page['content'].strip()) < 80 or re.search(r'just a moment|verify you are human|enable javascript and cookies', page['content'], re.I):
                     raise ValueError('Refresh returned empty content or an access interstitial')
                 page['temporal_status'] = 'live_capture'
@@ -446,12 +456,12 @@ class RetrievalTask:
             raise ValueError('Freeze an evidence plan first')
         if name=='read_dataset_rows':
             page=self.bundle['pages'].get(canonical_url(args['url']))
-            if not page or page.get('capture_method')!='dated_data': raise ValueError('Select a saved dated dataset URL')
+            if not page or not isinstance(page.get('rows'),list): raise ValueError('Select a saved structured dataset URL')
             offset=saved_reader.integer(args.get('offset',0),0,len(page['rows']),'offset')
             limit=saved_reader.integer(args.get('limit',50),1,100,'limit')
             end=min(len(page['rows']),offset+limit)
             return {'url':args['url'],'rows':page['rows'][offset:end],'total':len(page['rows']),
-                    'next_offset':end if end<len(page['rows']) else None,'warning':page['data_warning'],'unit':page['unit']}
+                    'next_offset':end if end<len(page['rows']) else None,'warning':page.get('data_warning'),'unit':page.get('unit')}
         if name=='collect_dataset': return self.collect_dataset(args)
         if name=='collect_archive': return self.collect_archive(args)
         if name=='list_dated_datasets':
@@ -522,6 +532,17 @@ class RetrievalTask:
                     'contracts': [{'market_id': str(m.get('id')), 'title': m.get('question'), 'event_title': e.get('title')} for m, e in rows[offset:offset+limit]],
                     'next_offset': offset + limit if offset + limit < len(rows) else None}
         if name == 'collection_checkpoint':
+            return checkpoint(self)
+        if name == 'plan_channels':
+            rows=args.get('channels')
+            known={c['id'] for c in b['channel_catalog']['channels']}
+            if not isinstance(rows,list) or not 1<=len(rows)<=8: raise ValueError('Plan one to eight implemented channels')
+            for row in rows:
+                self.needs(row)
+                if row.get('channel') not in known or type(row.get('expected_http_attempts')) is not int or not 0<=row['expected_http_attempts']<=8 or not row.get('reason'):
+                    raise ValueError('Use catalog channels, needs, bounded HTTP estimates and a reason')
+            b['channel_plan']=rows
+            self.save()
             return checkpoint(self)
         if name == 'record_channel_decision':
             if args.get('channel') not in {'polymarket_gamma', 'tavily_extract_basic', 'official_government'} or args.get('decision') not in {'deferred', 'not_applicable'} or not isinstance(args.get('reason'), str) or not args['reason'].strip():
@@ -680,6 +701,11 @@ class RetrievalTask:
             if canonical in b["pages"]:
                 page = b["pages"][canonical]
             else:
+                shared=cached_page(canonical) if not self.cutoff and not structured_url(url) else None
+                if shared:
+                    b.setdefault('cache_events',[]).append({'url':canonical,'at':utc_now(),'provenance':shared['cache_provenance']})
+                    self.store_page(url,shared);self.save()
+                    return {**self.page_view(shared,args.get('start_char',0)),'cached':True,'cross_task_cache':True}
                 if b["mode"] == "historical_strict":
                     raise ValueError("No verified pre-cutoff snapshot available; current web fetch forbidden")
                 if len(b["fetch_attempts"]) >= MAX_FETCHES:
@@ -689,7 +715,8 @@ class RetrievalTask:
                 try:
                     page = fetch_structured(url, self.cutoff, fetch_public_page) or fetch_public_page(url)
                     text = page["content"]
-                    if len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
+                    if not page.get('body_diagnostics',{}).get('usable_text',True) or len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
+                        b.setdefault('failed_captures',[]).append({'url':url,'page':page,'reason':'Unreadable or blocked body'})
                         raise ValueError("Empty page or access interstitial")
                     page["published_at"] = hits[0].get("published_date")
                     page["updated_at"] = page.get("page_date_metadata", {}).get("updated_at")
@@ -702,12 +729,13 @@ class RetrievalTask:
                         raise ValueError("Page publication/update metadata is after cutoff")
                     page["independence_note"] = "Original-source grouping is assessed by Ultra, not automatically verified"
                     self.store_page(url, page)
+                    if not self.cutoff and not structured_url(url): save_cached_page(canonical,page)
                     for link in page.get("links", []):
                         if allowed_source(link):
                             b["source_leads"].setdefault(canonical_url(link), {"url": link, "origin": "page_link", "parent_url": url, "published_date": None})
                     attempt["status"] = "completed"
                 except Exception as exc:
-                    attempt.update(status="failed", error=type(exc).__name__)
+                    attempt.update(status="failed", error=type(exc).__name__,detail=str(exc)[:250])
                     raise RuntimeError("Page unavailable; this does not imply event absence") from exc
                 finally:
                     self.save()
@@ -886,7 +914,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 {'fetch_page','fetch_pages','record_excerpt','find_passages','search_saved_text','collection_checkpoint','collection_acceptance','select_sources','refresh_sources'}])
             for entry in available_tools:
                 if entry['function']['name']=='search_tavily':
-                    entry['function']['description']='Basic search within the frozen five-attempt ceiling. Default three; additional searches only for recent dynamics or missing official sources.'
+                    entry['function']['description']=f'Basic search within this task frozen {task.search_limit}-attempt ceiling. Additional searches above three only for recent dynamics or missing official sources.'
                     entry['function']['parameters']['required'].append('search_role')
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
         system = (COLLECTION_SYSTEM if collection else SYSTEM) + "\nSkills guide source acquisition only in collection mode; the program owns limits. Skill catalog: " + json.dumps(catalog)
@@ -894,6 +922,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             system=system.replace('at most THREE attempted searches','at most FIVE attempted searches')
             system=system.replace('fetch_page/fetch_pages','read_sources').replace('search_saved_text','read_sources').replace('find_passages','read_sources').replace('record_excerpt','record_excerpts')
             system += '\nV2: Default to three basic searches; calls four/five only with recent or official_gap roles. Save passage_id and need_ids with record_excerpts; never calculate offsets. Aim for 8-12 turns without skipping critical work. Begin historical research with a recent search, not a last-minute checkbox. Use general for scientific data and official records, finance only for financial topics. Distinguish cutoff from event deadline: observations after cutoff are unavailable future outcomes, not collection gaps. Historical bodies require pre-cutoff local or archive captures by default; current pages are audit-only. collect_archive uses two of the eight shared HTTP attempts and may fail. Dated datasets are exploratory current vintages with explicit revision caveats, never clean historical snapshots. For BTC use exchange candles, for North Atlantic SST use daily series, for SEC use issuer discovery then exact CIK/form/date queries; an empty lookup never proves absence. Current HTML publication dates do not establish its historical version. Full tool responses remain on disk. No forecasting, event verdicts or outcome inference.'
+        system += f'\nProgram budget for THIS task: {task.search_limit} total basic search attempts, shared 8 initial HTTP attempts, one Extract batch. Frozen ledgers never restart. Use plan_channels early to reserve important structured/official/archive work; archive needs two HTTP attempts. Read saved passages and row pages in batches. Model context contains program state and recent complete turns; older raw records remain on disk. Current captures use a short shared live cache; capture time remains the original time. Diagnostics and associated sources are acquisition indicators, not truth scores.'
+        system=system.replace('at most FIVE attempted searches',f'at most {task.search_limit} attempted searches').replace('at most THREE attempted searches',f'at most {task.search_limit} attempted searches')
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
@@ -916,7 +946,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
         for turn in range(MAX_TURNS):
             control = task.bundle["control"]
-            if turn >= MAX_TURNS-2 or (not collection and control["consecutive_errors"] >= 3):
+            if turn >= MAX_TURNS-2 or control["consecutive_errors"] >= (4 if collection else 3):
                 control["forced_close"] = True
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
             forced = None
@@ -933,7 +963,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': model_view(checkpoint(task)) if task.optimized else checkpoint(task),
                     'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
-                message = ask_ultra(messages, router_key, tools=available_tools, forced_tool=forced,
+                from ForecastAgent.runtime.context import collection_context
+                model_messages = collection_context(task) if collection else messages
+                message = ask_ultra(model_messages, router_key, tools=available_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline)
                 task.bundle.pop("last_error", None)
                 task.bundle.pop("last_error_detail", None)
@@ -990,7 +1022,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 step.update(status='failed' if failed else 'completed',
                             duration_seconds=time.monotonic() - step_started, finished_at_utc=utc_now())
                 control["consecutive_errors"] = control["consecutive_errors"]+1 if failed else 0
-                if control["consecutive_errors"] >= 3 and not collection:
+                if control["consecutive_errors"] >= (4 if collection else 3):
                     control["forced_close"] = True
                 if "error" in result:
                     if collection:

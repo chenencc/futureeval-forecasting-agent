@@ -80,3 +80,11 @@ SELECT DISTINCT question_id,question,as_of_utc FROM question_versions;
 SELECT kind,COUNT(*) FROM records GROUP BY kind;
 SELECT at,status,detail FROM sync_events ORDER BY rowid DESC LIMIT 10;
 ```
+# Monitor freshness fallback
+
+The separate Windows task `ForecastAgent Monitor Watchdog` checks every five
+minutes and can dispatch the GitHub snapshot workflow after 20 minutes without
+a successful uploaded poll. It performs no local research. Existing active runs
+and recent uncertain dispatches prevent duplicate triggers. This requires the
+machine to be awake, the user logged in and GitHub CLI access available.
+See [Collection v3](COLLECTION_V3.md) for timing limits and status locations.

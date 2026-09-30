@@ -72,6 +72,7 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
     payload = {
         "query": query,
         "search_depth": "basic",
+        "chunks_per_source": 3,
         "auto_parameters": False,
         "topic": options["topic"],
         "exact_match": options["exact_match"],
@@ -123,7 +124,8 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
             "title": result.get("title") or "Untitled source",
             "url": url,
             "published_date": result.get("published_date") or "date unknown",
-            "content": " ".join((result.get("content") or "").split())[:1200],
+            "content": (result.get("content") or "")[:2000],
+            "snippet_truncated": len(result.get("content") or "") > 2000,
         })
         if len(results) == MAX_RESULTS:
             break
@@ -148,7 +150,7 @@ def format_batch(batch: dict, *, label: str) -> str:
     for result in batch["results"]:
         lines.append(
             f"- {result['title']} ({result['published_date']})\n"
-            f"  {result['url']}\n  {result['content']}"
+            f"  {result['url']}\n  {' '.join(result['content'].split())}"
         )
     if not batch["results"]:
         lines.append("No new search results returned.")

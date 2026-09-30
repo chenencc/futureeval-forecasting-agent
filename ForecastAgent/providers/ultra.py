@@ -69,12 +69,19 @@ class SafeRedirects(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch_public_page(url: str, *, user_agent=None) -> dict:
+def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_page=None) -> dict:
     # Preserve the legacy injection seam for existing tests and integrations.
     from ForecastAgent.providers.http import download
     from ForecastAgent.readers.loader import load_response
     response = download(url, public_check=public_url, opener_factory=lambda: build_opener(SafeRedirects()),
-                        max_page_bytes=MAX_PAGE_BYTES, **({'user_agent':user_agent} if user_agent else {}))
+                        max_page_bytes=MAX_PAGE_BYTES, **({'user_agent':user_agent} if user_agent else {}),
+                        **({'validators':validators} if validators else {}))
+    if response.get('not_modified'):
+        if previous_page is None: raise ValueError('304 response has no saved body')
+        import copy
+        page=copy.deepcopy(previous_page)
+        page['http_revalidation']={'status':304,'checked_at_utc':utc_now(),'original_capture_unchanged':True}
+        return page
     return load_response(response, retrieved_at=utc_now(), max_chars=MAX_SAVED_CHARS)
 
 

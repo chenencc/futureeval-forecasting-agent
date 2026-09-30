@@ -7,6 +7,7 @@ from ForecastAgent.readers.html import parse_html
 from ForecastAgent.readers.pdf import parse_pdf
 from ForecastAgent.readers.structured import parse_csv, parse_json
 from ForecastAgent.readers.feed import parse_feed
+from ForecastAgent.readers.quality import body_diagnostics
 
 
 def load_response(response, *, retrieved_at, max_chars=150_000):
@@ -25,6 +26,8 @@ def load_response(response, *, retrieved_at, max_chars=150_000):
         elif kind in {"text/html", "application/xhtml+xml"}:
             text, metadata, links = parse_html(text, source)
             documents = [Document(text, {"source": source, "format": "html"})]
+            documents.extend(Document(table['text'],{'source':source,'format':'html_table','table':table['table'],
+                              'table_warning':'Heuristic row extraction; merged cells may require original HTML.'}) for table in metadata.get('tables',[]))
         elif kind in {"text/csv", "application/csv"}:
             documents = parse_csv(text, source)
         elif kind == "application/json":
@@ -52,5 +55,7 @@ def load_response(response, *, retrieved_at, max_chars=150_000):
             "content_truncated": len(text) > max_chars, "links": links,
             "capture_method": "pdf_text" if kind == "application/pdf" else "direct_http",
             "documents": saved, "document_count": len(documents),
-            "parser_version": 'document_reader_v2',
-            "documents_truncated": feed_truncated or len(saved) < len(documents) or any(d["metadata"]["truncated"] for d in saved)}
+            "parser_version": 'document_reader_v3',
+            'body_diagnostics': body_diagnostics(content, kind=kind, metadata=metadata, documents=saved),
+            'response_headers': response.get('response_headers', {}),
+            "documents_truncated": feed_truncated or metadata.get('tables_truncated',False) or len(saved) < len(documents) or any(d["metadata"]["truncated"] for d in saved)}

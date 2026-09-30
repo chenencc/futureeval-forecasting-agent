@@ -116,3 +116,11 @@ COLLECTION_TOOLS.extend([
 for entry in COLLECTION_TOOLS:
     if entry['function']['name']=='search_tavily':
         entry['function']['parameters']['properties']['search_role']={'type':'string','enum':['primary','crosscheck','gap','recent','official_gap']}
+COLLECTION_TOOLS.append(tool('plan_channels','Plan source channels and HTTP estimates before acquisition. Program caps remain frozen; keep critical data/archive attempts available. No network.',
+    {'channels':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{
+        'channel':STRING,'need_ids':{'type':'array','items':STRING},'expected_http_attempts':{'type':'integer','minimum':0,'maximum':8},
+        'reason':STRING},'required':['channel','need_ids','expected_http_attempts','reason'],'additionalProperties':False}}},['channels']))
+for entry in COLLECTION_TOOLS:
+    if entry['function']['name']=='collect_official':
+        entry['function']['parameters']['properties'].update(start_date=STRING,end_date=STRING)
+        entry['function']['description']+=' Optional paired start_date/end_date filters; BLS dates select observation months, not release dates. Inspect saved row pagination and gaps.'

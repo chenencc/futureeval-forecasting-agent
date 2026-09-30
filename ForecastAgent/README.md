@@ -88,3 +88,11 @@ See [adapter and incremental collection details](docs/ACQUISITION_CHANNELS.md). 
 - [TradingAgents changelog](https://github.com/TauricResearch/TradingAgents/blob/main/CHANGELOG.md): explicit vendor availability, bounded tool rounds, source settings and point-in-time disclosure. ForecastAgent uses explicit channel decisions and capture provenance; provider failures never establish event absence.
 
 These are design references, not copied modules or a claim of tournament performance. Browser rendering, OCR, SEC/BEA-specific adapters and automatic update scheduling remain future work. The acquisition checkpoint guides tool selection without forcing unnecessary paid calls. Autonomous use of the new guidance still requires a fresh-question Ultra trial; cached completed tasks are never reopened to renew budgets.
+# Latest collection runtime
+
+See [Collection v3](docs/COLLECTION_V3.md) for free main-text/table extraction,
+bounded local OCR, exact passage navigation, shared live caching, context
+projection, date-bounded official data and acquisition metrics. New monitored
+tasks retain three Tavily basic attempts. Polling and collection use separate
+Actions workflows; the local freshness watchdog only dispatches overdue GitHub
+polls and never runs collection locally.

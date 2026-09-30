@@ -1,0 +1,83 @@
+name: Collect new FutureEval questions
+
+on:
+  workflow_run:
+    workflows: ['Monitor FutureEval questions']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: futureeval-collection-worker
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free readers
+        run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Find durable collection state
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({owner, repo,
+              workflow_id: 'collect_new_questions.yaml', status: 'completed', per_page: 100});
+            for (const run of data.workflow_runs) {
+              if (run.id === context.runId) continue;
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: run.id});
+              if (artifacts.data.artifacts.some(a => a.name === 'futureeval-collection-state' && !a.expired)) {
+                core.setOutput('run', run.id); core.setOutput('artifact', 'futureeval-collection-state'); return;
+              }
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
+              if (jobs.flatMap(j=>j.steps||[]).some(s=>s.name==='Collect captured questions' && s.conclusion!=='skipped')) {
+                throw new Error('Collection ledger missing; refusing to restart budgets');
+              }
+            }
+            if (data.workflow_runs.length === 100) throw new Error('Collection history exhausted without recoverable state');
+            // Migrate existing ledgers from the triggering poll, preserving budgets.
+            core.setOutput('run', context.payload.workflow_run.id);
+            core.setOutput('artifact', 'futureeval-monitor-state');
+      - name: Restore collection ledgers
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.previous.outputs.artifact }}
+          run-id: ${{ steps.previous.outputs.run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/collection-worker
+      - name: Read triggering question snapshots
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-questions-${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/incoming
+      - name: Collect captured questions
+        run: python -m ForecastAgent.monitor_tournament --research-saved --source-root snapshots/incoming --root snapshots/collection-worker
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_SHARED_CACHE_ROOT: snapshots/collection-worker/cache
+          SOURCE_MONITOR_RUN: ${{ github.event.workflow_run.id }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/collection-worker
+      - name: Preserve collection state and source versions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-collection-state
+          path: snapshots/collection-worker/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
