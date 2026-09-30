@@ -23,7 +23,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_SEARCHES = 3
 MAX_FETCHES = 5
 MAX_FINDS = 10
-MAX_TURNS = 12
+MAX_TURNS = 18
 MAX_PAGE_BYTES = 1_500_000
 MAX_SAVED_CHARS = 150_000
 
@@ -206,6 +206,8 @@ low = indirect, stale, or weakly documented support; unverified = a claim the fe
 Explain the rating for each cited claim. Do not turn these ordinal labels into numerical probabilities.
 Name the original evidence_chain for each claim. Reports repeating the same original dataset share one label.
 If the first search yields only secondary reports, use another search targeted at the original data before finishing.
+If original pages refuse access, state that limit and use at most medium quality for traceable secondary reports.
+When search and fetch budgets are exhausted, finish with the evidence available and explicit uncertainty.
 Do not claim to have verified a page you did not fetch. A high quality rating does not mechanically determine event probability.
 If evidence is poor, state uncertainty. Call finish_research with a concise structured final result.
 """
