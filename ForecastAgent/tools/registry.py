@@ -102,8 +102,16 @@ COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
 COLLECTION_TOOLS.extend([
     tool('read_sources','Batch up to four accepted source reads and locate complete paragraphs for up to eight acquisition queries. Free fetch budgets still apply per URL. No semantic verdict.',
          {'urls':{'type':'array','items':STRING,'maxItems':4},'queries':{'type':'array','maxItems':8,'minItems':1,'items':{'type':'object','properties':{'query':STRING,'url':STRING,'need_ids':{'type':'array','items':STRING}},'required':['query','need_ids']}}},['urls','queries']),
-    tool('record_excerpts','Bank one to eight located passages in one turn. Copy excerpt_args from read_sources. Each item is independently validated; associations do not resolve a need.',
-         {'items':{'type':'array','minItems':1,'maxItems':8,'items':next(t['function']['parameters'] for t in LOCAL_TOOLS if t['function']['name']=='record_excerpt')}},['items'])
+    tool('record_excerpts','Bank one to eight passages by exact passage_id from read_sources and need_ids. Do not enter character offsets. IDs are checked against saved source versions.',
+         {'items':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{'passage_id':STRING,'need_ids':{'type':'array','items':STRING}},'required':['passage_id','need_ids'],'additionalProperties':False}}},['items']),
+    tool('list_dated_datasets','List supported date-bounded data adapters, units and temporal limitations. No network.',{},[]),
+    tool('collect_dataset','Capture structured observations. Shares eight HTTP attempts. Current provider vintage, not a verified historical snapshot. Historical_strict refuses. SEC requires configured contact and a discovered CIK.',
+         {'dataset':{'type':'string','enum':['binance_daily','north_atlantic_sst','sec_issuers','sec_submissions']},
+          'start_date':STRING,'end_date':STRING,'query':STRING,'cik':STRING,'submission_file':STRING,'forms':{'type':'array','items':STRING,'maxItems':5},
+          'need_ids':{'type':'array','items':STRING}},['dataset','need_ids']),
+    tool('collect_archive','Obtain an exact URL pre-cutoff Wayback capture. Two separately reserved shared HTTP attempts; redirects or missing captures fail closed. Only source catalog URLs.',{'url':STRING},['url']),
+    tool('read_dataset_rows','Read saved structured rows without network calls; current-vintage warning remains attached. Use pagination for large reference histories.',
+         {'url':STRING,'offset':{'type':'integer','minimum':0},'limit':{'type':'integer','minimum':1,'maximum':100}},['url'])
 ])
 for entry in COLLECTION_TOOLS:
     if entry['function']['name']=='search_tavily':

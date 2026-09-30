@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import time
 import copy
+from urllib.parse import urlsplit
 
 from ForecastAgent.tavily_research import canonical_url, search_batch, search_options
 from ForecastAgent.tavily_extract import extract_basic
@@ -36,7 +37,7 @@ from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recovery_hint
 from ForecastAgent.providers.ultra import MODEL
 from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
-from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate
+from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate, eligible
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -165,6 +166,14 @@ class RetrievalTask:
             5 if request.get('acquisition_profile') == 'collection_v2' else 3})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
         self.optimized = request.get('acquisition_profile') == 'collection_v2'
+        upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
+        self.bundle.setdefault('historical_body_policy', request.get('historical_body_policy','verified_snapshots_only' if self.optimized else 'date_filtered_exploratory'))
+        if self.bundle['historical_body_policy'] not in {'verified_snapshots_only','date_filtered_exploratory'}:
+            raise ValueError('Invalid historical body policy')
+        self.verified_only = bool(self.optimized and self.cutoff and self.bundle['historical_body_policy']=='verified_snapshots_only')
+        self.bundle.setdefault('passages',{})
+        if upgrading_body_policy and self.verified_only and self.bundle.get('messages') and not self.bundle.get('result'):
+            raise ValueError('Existing model context may contain current bodies; refusing cutoff-safe resume. Preserve its ledger and audit it before continuation.')
         self.bundle.setdefault("excerpts", [])
         self.bundle.setdefault("page_history", {})
         self.bundle.setdefault("market_snapshots", {})
@@ -199,6 +208,11 @@ class RetrievalTask:
 
     def page_view(self, page, start=0):
         text = masked(page['content'],self.cutoff)[0] if self.optimized else page["content"]
+        if self.verified_only and eligible(page,self.cutoff): text=page['content']
+        if self.verified_only and not eligible(page,self.cutoff):
+            return {'url':page['url'] if 'url' in page else '', 'content':'', 'saved_chars':len(page['content']),
+                    'temporal_status':page.get('temporal_status'), 'blocked':True,
+                    'warning':'Current body saved for audit only. Obtain a verified pre-cutoff snapshot before reading or excerpting.'}
         if type(start) is not int or start < 0 or start > len(text):
             raise ValueError("Invalid page offset")
         end = min(start+18000, len(text))
@@ -206,8 +220,9 @@ class RetrievalTask:
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
         if self.optimized:
             _,blocked=masked(page['content'],self.cutoff)
-            view['temporal_isolation']={'blocked_dated_lines':len(blocked),'strict_snapshot':False,
-                'warning':'Explicit later-dated paragraphs are hidden; undated revisions remain possible.'}
+            view['temporal_isolation']={'blocked_dated_lines':0 if self.verified_only else len(blocked),
+                'strict_snapshot':page.get('temporal_status') in {'local_pre_cutoff_capture','archive_pre_cutoff_capture'},
+                'warning':page.get('data_warning','Historical body provenance is required; question text and model knowledge remain unaudited.')}
             if len(page['content'])<1200: view['body_warning']='Thin capture; may be a headline or paywall preview.'
         return view
 
@@ -273,6 +288,70 @@ class RetrievalTask:
             raise
         finally:
             self.save()
+
+    def bounded_data_fetch(self, url):
+        """Reserve every physical data/archive HTTP request in the existing ledger."""
+        agent=None
+        if urlsplit(url).hostname in {'www.sec.gov','data.sec.gov'}:
+            agent=os.environ.get('SEC_USER_AGENT','')
+            if '@' not in agent or '\n' in agent or '\r' in agent:
+                raise ValueError('Configure SEC_USER_AGENT with a real contact email; no request sent')
+        attempt={'url':url,'channel':'dated_data_or_archive','status':'reserved','at':utc_now()}
+        reserve(self.bundle,'fetch_attempts',attempt,MAX_FETCHES,self.save)
+        try:
+            page=fetch_public_page(url,**({'user_agent':agent} if agent else {}))
+            self.bundle.setdefault('data_raw_responses',[]).append(page)
+            attempt['status']='completed'
+            return page
+        except Exception as exc:
+            attempt.update(status='failed',error=type(exc).__name__)
+            raise
+        finally:
+            self.save()
+
+    def collect_dataset(self,args):
+        from ForecastAgent.providers.dated_data import request_url,normalized
+        self.needs(args)
+        if self.bundle['mode']=='historical_strict':
+            raise ValueError('Current data vintages are unavailable in historical_strict mode')
+        if args['dataset']=='sec_submissions':
+            cik=str(int(args.get('cik','0')))
+            known={str(int(row['cik'])) for page in self.bundle['pages'].values() for row in page.get('rows',[]) if 'cik' in row}
+            for source in self.catalog():
+                match=re.search(r'^https://www\.sec\.gov/Archives/edgar/data/(\d+)(?:/|$)',source)
+                if match: known.add(str(int(match.group(1))))
+            if cik not in known:
+                raise ValueError('CIK must come from saved SEC issuer discovery; do not infer an identity')
+            if args.get('submission_file'):
+                files={v['name'] for page in self.bundle['pages'].values()
+                    if page.get('dataset')=='sec_submissions' and str(int(page.get('dated_request',{}).get('cik','0')))==cik
+                    for v in page.get('pagination',{}).get('older_files',[]) if 'name' in v}
+                if args['submission_file'] not in files: raise ValueError('Historical submissions file must come from saved issuer metadata')
+        url=request_url(args,self.cutoff)
+        signature=hashlib.sha256(json.dumps(args,sort_keys=True).encode()).hexdigest()
+        canonical=canonical_url(url)
+        if canonical in self.bundle['pages'] and self.bundle['pages'][canonical].get('dated_signature')==signature:
+            page=self.bundle['pages'][canonical];cached=True
+        else:
+            page=normalized(self.bounded_data_fetch(url),args,self.cutoff)
+            page['dated_signature']=signature
+            self.bundle['source_leads'][canonical]={'url':url,'origin':'dated_data_adapter'}
+            self.store_page(url,page);cached=False;self.save()
+        return {'url':url,'dataset':args['dataset'],'rows':page['rows'][:20],'total_rows':len(page['rows']),
+                'pagination':page['pagination'],'warning':page['data_warning'],'cached':cached,'unit':page['unit']}
+
+    def collect_archive(self,args):
+        from ForecastAgent.providers.archive import archive_lookup
+        url=args['url'];canonical=canonical_url(url)
+        if canonical not in self.catalog(): raise ValueError('Archive only URLs from the source catalog')
+        if not self.cutoff: raise ValueError('Archive capture requires historical cutoff')
+        old=self.bundle['pages'].get(canonical)
+        if old and eligible(old,self.cutoff) and old.get('temporal_status')!='date_bounded_current_data':
+            return {**self.page_view(old),'cached':True}
+        if self.budget()['page_fetch_remaining']<2: raise ValueError('Archive lookup requires two remaining HTTP attempts')
+        page=archive_lookup(url,self.cutoff,self.bounded_data_fetch)
+        self.store_page(url,page);self.save()
+        return {**self.page_view(page),'cached':False}
 
     def collect_market(self, args):
         self.needs(args)
@@ -360,6 +439,25 @@ class RetrievalTask:
 
     def execute(self, name, args, key):
         if not isinstance(args, dict):
+            raise ValueError('Tool arguments must be an object')
+        if self.bundle['result'] and name in {'collect_dataset','collect_archive'}:
+            raise ValueError('Retrieval already finished; no new initial-budget collection allowed')
+        if name=='collect_archive' and self.bundle['plan'] is None:
+            raise ValueError('Freeze an evidence plan first')
+        if name=='read_dataset_rows':
+            page=self.bundle['pages'].get(canonical_url(args['url']))
+            if not page or page.get('capture_method')!='dated_data': raise ValueError('Select a saved dated dataset URL')
+            offset=saved_reader.integer(args.get('offset',0),0,len(page['rows']),'offset')
+            limit=saved_reader.integer(args.get('limit',50),1,100,'limit')
+            end=min(len(page['rows']),offset+limit)
+            return {'url':args['url'],'rows':page['rows'][offset:end],'total':len(page['rows']),
+                    'next_offset':end if end<len(page['rows']) else None,'warning':page['data_warning'],'unit':page['unit']}
+        if name=='collect_dataset': return self.collect_dataset(args)
+        if name=='collect_archive': return self.collect_archive(args)
+        if name=='list_dated_datasets':
+            from ForecastAgent.providers.dated_data import CATALOG
+            return {'datasets':CATALOG,'warning':'Current observations are date bounded, not verified historical vintages. Shared eight HTTP attempts.'}
+        if not isinstance(args, dict):
             raise ValueError("Tool arguments must be an object")
         b = self.bundle
         if b["result"] and name not in {'refresh_sources', 'collection_acceptance', 'list_channels', 'list_official_datasets',
@@ -444,33 +542,47 @@ class RetrievalTask:
             self.save()
             return {'selected_sources': b['selected_sources']}
         if name == 'record_quote':
-            pages=visible_pages(b['pages'],self.cutoff) if self.optimized else b['pages']
+            pages=visible_pages(b['pages'],self.cutoff,self.verified_only) if self.optimized else b['pages']
             return self.execute('record_excerpt', saved_reader.quote_coordinates(pages, args), key)
         if name == 'read_sources':
             urls=args.get('urls',[])
             if not isinstance(urls,list) or len(urls)>4: raise ValueError('Read at most four URLs')
             outcomes=[]
             for url in urls:
-                try: self.execute('fetch_page',{'url':url},key);outcomes.append({'url':url,'ok':True})
+                try:
+                    view=self.execute('fetch_page',{'url':url},key)
+                    outcomes.append({'url':url,'ok':not view.get('blocked',False),**{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
-            return {'reads':outcomes,**locate(self,args)}
+            result={'reads':outcomes,**locate(self,args)}
+            self.save()
+            return result
         if name == 'record_excerpts':
             items=args.get('items')
             if not isinstance(items,list) or not 1<=len(items)<=8: raise ValueError('Save one to eight excerpts')
             outcomes=[]
             for item in items:
-                try: outcomes.append({'ok':True,**self.execute('record_excerpt',item,key)})
+                try:
+                    if 'passage_id' in item:
+                        passage=b['passages'].get(item['passage_id'])
+                        if passage is None: raise ValueError('Unknown passage ID; use read_sources first')
+                        page=b['pages'].get(canonical_url(passage['url']))
+                        if not page or saved_reader.version_digest(page)!=passage['source_version'] or page.get('sha256')!=passage.get('source_sha256'):
+                            raise ValueError('Stale passage ID; locate the updated source again')
+                        item={k:passage[k] for k in ('url','document_index','start_char','end_char')} | {'need_ids':item['need_ids']}
+                    outcomes.append({'ok':True,**self.execute('record_excerpt',item,key)})
                 except Exception as exc: outcomes.append({'ok':False,'error':str(exc)[:180]})
             return {'items':outcomes}
         if name in {"list_documents", "read_document", "search_saved_text", "find_passages"}:
-            pages=visible_pages(b['pages'],self.cutoff) if self.optimized else b['pages']
+            pages=visible_pages(b['pages'],self.cutoff,self.verified_only) if self.optimized else b['pages']
             return getattr(saved_reader, name)(pages, args)
         if name == "record_excerpt":
             self.needs(args)
             page, text, location = saved_reader.select(b["pages"], args["url"], args.get("document_index"))
+            if self.verified_only and not eligible(page,self.cutoff):
+                raise ValueError('No verified historical body version; current capture cannot be excerpted')
             start = saved_reader.integer(args.get("start_char"), 0, len(text), "start_char")
             end = saved_reader.integer(args.get("end_char"), start + 1, min(len(text), start + 4000), "end_char")
-            if self.optimized:
+            if self.optimized and not self.verified_only:
                 _,blocked=masked(text,self.cutoff)
                 if any(start<x['end'] and end>x['start'] for x in blocked):
                     raise ValueError('Excerpt intersects a conservatively isolated post-cutoff dated paragraph')
@@ -499,6 +611,13 @@ class RetrievalTask:
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": args["gaps"], "finished_at": utc_now()}
             b['result']['acquisition_checkpoint'] = checkpoint(self)
+            b['result']['historical_body_policy']=b.get('historical_body_policy')
+            b['result']['historical_clean']=False
+            if self.verified_only:
+                b['result']['audit_only_urls']=[u for u,p in b['pages'].items() if not eligible(p,self.cutoff)]
+                b['result']['usable_body_count']=len(b['pages'])-len(b['result']['audit_only_urls'])
+                if b['result']['audit_only_urls']:
+                    b['result']['gaps'].append('Current bodies are audit-only; verified pre-cutoff captures are missing for '+str(len(b['result']['audit_only_urls']))+' sources.')
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -548,7 +667,10 @@ class RetrievalTask:
                 raise RuntimeError("Tavily attempt failed; budget consumed") from exc
             finally:
                 self.save()
-            return {"results": attempt["results"], "coverage": self.coverage()}
+            results=attempt['results']
+            if self.verified_only:
+                results=[{k:h[k] for k in ('url','published_date') if k in h} for h in results]
+            return {"results": results, "coverage": self.coverage(), 'warning':'Search hits are discovery leads, not verified historical bodies.'}
         if name == "fetch_page":
             url = args.get("url", "")
             canonical = canonical_url(url)
@@ -771,7 +893,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         if task.optimized:
             system=system.replace('at most THREE attempted searches','at most FIVE attempted searches')
             system=system.replace('fetch_page/fetch_pages','read_sources').replace('search_saved_text','read_sources').replace('find_passages','read_sources').replace('record_excerpt','record_excerpts')
-            system += '\nV2: Default to three basic searches; calls four/five only for recent dynamics or official-source gaps. Use read_sources to batch fetch up to four sources and locate paragraphs for multiple needs, then record_excerpts in one batch. Aim for 8-12 model turns without skipping critical work. At least one search must use search_role=recent: it searches the 60 days before the frozen cutoff. Distinguish information cutoff from future event deadline; future outcomes need not yet be known. Need IDs mean associated material, never resolved conditions. Explicitly dated post-cutoff paragraphs are conservatively hidden, including future schedules requiring historical provenance. Never infer dates from model memory. Preserve gaps. Full tool responses remain on disk; model views are bounded. Short bodies may only be headlines or paywall leads; locate an alternative important source rather than treating them as full articles.'
+            system += '\nV2: Default to three basic searches; calls four/five only with recent or official_gap roles. Save passage_id and need_ids with record_excerpts; never calculate offsets. Aim for 8-12 turns without skipping critical work. Begin historical research with a recent search, not a last-minute checkbox. Use general for scientific data and official records, finance only for financial topics. Distinguish cutoff from event deadline: observations after cutoff are unavailable future outcomes, not collection gaps. Historical bodies require pre-cutoff local or archive captures by default; current pages are audit-only. collect_archive uses two of the eight shared HTTP attempts and may fail. Dated datasets are exploratory current vintages with explicit revision caveats, never clean historical snapshots. For BTC use exchange candles, for North Atlantic SST use daily series, for SEC use issuer discovery then exact CIK/form/date queries; an empty lookup never proves absence. Current HTML publication dates do not establish its historical version. Full tool responses remain on disk. No forecasting, event verdicts or outcome inference.'
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
@@ -876,7 +998,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     result["available_urls"] = [r["url"] for r in task.catalog().values()][:60]
                 result = tool_result(name, result, task.budget(), error=result.get("error"))
                 task.bundle["transcript"].append({"tool": name, "result": result})
-                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result) if task.optimized else result, ensure_ascii=False)})
+                blocked_urls={url for url in task.catalog() if not eligible(task.bundle['pages'].get(url,{}),task.cutoff)} if task.verified_only else set()
+                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result,blocked_urls) if task.optimized else result, ensure_ascii=False)})
                 task.save()
             if task.bundle["result"]:
                 break

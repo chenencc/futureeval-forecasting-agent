@@ -1,9 +1,16 @@
 """Repository-owned capability catalog; availability is not a reliability score."""
 
 CHANNELS = [
+    {'id':'dated_observations','kind':'structured_data','tools':['list_dated_datasets','collect_dataset'],
+     'formats':['json_rows'],'cost':'No paid search call','credentials':['SEC_USER_AGENT for SEC'],
+     'limits':'Each physical HTTP attempt shares the existing eight-fetch ledger.',
+     'temporal_support':'Date-bounded current vintage only; historical_strict refuses.', 'availability':'implemented'},
+    {'id':'historical_archive','kind':'download','tools':['collect_archive'],'formats':['archived_document'],
+     'cost':'No paid search call','credentials':[], 'limits':'Two physical HTTP attempts per lookup/replay; exact discovered URLs only.',
+     'temporal_support':'Archive timestamp strictly before cutoff; missing captures and redirects fail closed.', 'availability':'implemented'},
     {"id": "tavily_basic", "kind": "discovery", "tools": ["search_tavily"],
      "formats": ["search_results"], "cost": "Tavily credits", "credentials": ["TAVILY_API_KEY"],
-     "limits": "At most three attempted basic searches per task, including failures.",
+     "limits": "Frozen per-task budget: three for original profiles; collection_v2 defaults to three with a five-attempt ceiling. Failures count.",
      "temporal_support": "Publication filters only; not archived page versions.", "availability": "implemented"},
     {"id": "public_http", "kind": "download", "tools": ["fetch_page", "fetch_pages"],
      "formats": ["html", "text", "pdf_text", "csv", "json", "rss", "atom"], "cost": "No paid provider call",

@@ -69,12 +69,12 @@ class SafeRedirects(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch_public_page(url: str) -> dict:
+def fetch_public_page(url: str, *, user_agent=None) -> dict:
     # Preserve the legacy injection seam for existing tests and integrations.
     from ForecastAgent.providers.http import download
     from ForecastAgent.readers.loader import load_response
     response = download(url, public_check=public_url, opener_factory=lambda: build_opener(SafeRedirects()),
-                        max_page_bytes=MAX_PAGE_BYTES)
+                        max_page_bytes=MAX_PAGE_BYTES, **({'user_agent':user_agent} if user_agent else {}))
     return load_response(response, retrieved_at=utc_now(), max_chars=MAX_SAVED_CHARS)
 
 

@@ -41,7 +41,7 @@ class CollectionV2Tests(TestCase):
 
     def test_batch_location_and_recording_respect_blocked_ranges(self):
         with TemporaryDirectory() as temp:
-            request={'question':'Question','resolution_criteria':'Rules','as_of_utc':'2026-08-20T00:00:00Z','pipeline':'collection','acquisition_profile':'collection_v2'}
+            request={'question':'Question','resolution_criteria':'Rules','as_of_utc':'2026-08-20T00:00:00Z','pipeline':'collection','acquisition_profile':'collection_v2','historical_body_policy':'date_filtered_exploratory'}
             task=RetrievalTask(Path(temp),request);task.bundle['plan']=[{'id':'n','priority':'critical'}]
             text='The official regulation sets the eligibility requirement and reporting rules. '+ 'Background explanatory material. '*5
             text+='\nPublished: 4 September 2026 the new regulation changes the requirement.'

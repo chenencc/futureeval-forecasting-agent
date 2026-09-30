@@ -63,6 +63,7 @@ jobs:
         env:
           BATCH_LIMIT: ${{ inputs.limit }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/historical-2026-135

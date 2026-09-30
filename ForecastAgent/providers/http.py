@@ -5,10 +5,10 @@ SUPPORTED = {"text/html", "text/plain", "application/xhtml+xml", "application/pd
              'application/rss+xml', 'application/atom+xml', 'application/xml', 'text/xml'}
 
 
-def download(url, *, public_check, opener_factory, max_page_bytes=1_500_000):
+def download(url, *, public_check, opener_factory, max_page_bytes=1_500_000, user_agent=None):
     if not public_check(url):
         raise ValueError("URL is not a public HTTP URL")
-    request = Request(url, headers={"User-Agent": "FutureEvalReadOnlyResearch/0.3", "Accept": ",".join(sorted(SUPPORTED))})
+    request = Request(url, headers={"User-Agent": user_agent or "FutureEvalReadOnlyResearch/0.3", "Accept": ",".join(sorted(SUPPORTED))})
     with opener_factory().open(request, timeout=20) as response:
         final_url = response.geturl()
         if not public_check(final_url):

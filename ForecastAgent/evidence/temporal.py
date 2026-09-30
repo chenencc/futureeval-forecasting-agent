@@ -19,8 +19,9 @@ def temporal_report(bundle):
         captured = timestamp(page.get('retrieved_at_utc') or page.get('retrieved_at'))
         published = timestamp(page.get('published_at') or page.get('published_date'))
         updated = timestamp(page.get('updated_at'))
-        strict = bool(cutoff and captured and captured <= cutoff and
-                      page.get('temporal_status') == 'local_pre_cutoff_capture')
+        snapshot_time=timestamp(page.get('archive_timestamp')) if page.get('temporal_status')=='archive_pre_cutoff_capture' else captured
+        strict = bool(cutoff and snapshot_time and snapshot_time < cutoff and
+                      page.get('temporal_status') in {'local_pre_cutoff_capture','archive_pre_cutoff_capture'})
         category = ('quarantined' if kind == 'quarantine' else
                     'pre_cutoff_snapshot' if strict else
                     'live_capture' if not cutoff else
@@ -32,6 +33,7 @@ def temporal_report(bundle):
                      'updated_at': updated.isoformat() if updated else None,
                      'captured_after_cutoff': bool(cutoff and captured and captured > cutoff),
                      'strict_snapshot_eligible': strict,
+                     'archive_timestamp':page.get('archive_timestamp'),
                      'original_temporal_status': page.get('temporal_status'),
                      'limitation': 'Publication metadata does not establish a historical body version.'})
     for url, page in bundle.get('pages', {}).items():
@@ -45,6 +47,7 @@ def temporal_report(bundle):
     for item in bundle.get('quarantine', []):
         add(item.get('page_snapshot') or item.get('hit') or item, 'quarantine')
     return {'schema': 'temporal_provenance_v1', 'as_of_utc': bundle['request'].get('as_of_utc'),
+            'historical_body_policy':bundle.get('historical_body_policy'),
             'question_text_audit': bundle['request'].get('historical_criteria_audit', 'Not audited'),
             'historical_clean': False, 'model_knowledge_leakage_controlled': False,
             'records': rows}
