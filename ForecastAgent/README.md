@@ -61,7 +61,7 @@ Skills are loaded on demand and frozen with their content hashes in each ledger.
 - Official discovery and Polymarket pagination are explicit and bounded; no automatic extra requests. BEA, SEC-specific and general official-site adapters are not implemented.
 - After completion, saved live sources have a separate update budget: three free HTTP attempts per UTC day and 24 per task lifetime. Before completion, refresh uses the original eight attempts. Updates never renew Tavily's three lifetime basic searches or the single Extract batch. Updates are operator initiated.
 - Interrupted tasks resume the original ledger. A dead local process or a lock restored from a verified completed Actions run can be recovered; an active or unknown owner remains blocked. The monitor retries incomplete tasks with backoff, stops after five failed attempts, and never labels an incomplete result as researched.
-- The manual `Three live Ultra collection trials` workflow freezes three unresolved questions outside existing monitor tasks, restores their cumulative budgets on reruns, and exports source captures without forecasts.
+- The manual `Three live Ultra collection trials` workflow freezes three unresolved questions outside the restored monitor inventory, restores their cumulative budgets on reruns, and exports source captures without forecasts.
 - Acquisition does not submit forecasts or trades. Legacy forecasting templates contain publication code and are not called by this interface.
 
 Actions and command-line operators use the same engine and snapshot paths. Codex does not need to remain online. GitHub may delay scheduled runs.

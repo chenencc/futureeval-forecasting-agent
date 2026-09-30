@@ -14,6 +14,16 @@ def post(post_id: int, question_id: int, status: str = "open") -> dict:
 
 
 class MonitorTournamentTests(TestCase):
+    @patch('ForecastAgent.monitor_tournament.get_json')
+    def test_empty_page_ends_infinite_count_pagination(self, get_json):
+        next_url = API_ROOT + '?offset=100'
+        get_json.side_effect = [{'results': [post(1, 11)], 'next': next_url},
+                                {'results': [], 'next': API_ROOT + '?offset=200'}]
+        rows, cursor, pages = collect_pages('token', _initial_url(True), 30)
+        self.assertEqual(len(rows), 1)
+        self.assertIsNone(cursor)
+        self.assertEqual(pages, 2)
+
     @patch('ForecastAgent.retrieval_agent.run_retrieval')
     @patch('ForecastAgent.monitor_tournament.get_json')
     def test_incomplete_result_is_not_completed_and_cooldown_preserves_budget(self, get_json, run_research):

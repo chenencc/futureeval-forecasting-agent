@@ -77,7 +77,8 @@ def collect_pages(token: str, start_url: str, max_pages: int) -> tuple[list[dict
         visited.add(url)
         page = get_json(url, token)
         posts.extend(row for row in page["results"] if isinstance(row, dict))
-        url = _next_url(page.get("next"))
+        # Metaculus uses an infinite-count paginator: even an empty page has next.
+        url = _next_url(page.get("next")) if page['results'] else None
         pages += 1
     return posts, url, pages
 
@@ -98,7 +99,7 @@ def collect_archive_pages(token: str, start_url: str) -> tuple[list[dict], str |
         visited.add(url)
         try:
             page = get_json(url, token)
-            next_url = _next_url(page.get("next"))
+            next_url = _next_url(page.get("next")) if page['results'] else None
         except Exception as exc:
             return posts, url, pages, f"{type(exc).__name__}: {exc}"
         posts.extend(row for row in page["results"] if isinstance(row, dict))
