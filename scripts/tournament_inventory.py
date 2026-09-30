@@ -20,6 +20,9 @@ def main():
         posts, cursor, pages = [], url, 0
         while cursor and pages < 20:
             page = get_json(cursor, os.environ['METACULUS_TOKEN'])
+            if not page['results']:
+                cursor = None
+                break
             posts.extend(page['results'])
             cursor = _next_url(page.get('next'))
             pages += 1
