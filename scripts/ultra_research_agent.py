@@ -165,8 +165,9 @@ TOOLS = [
                 "url": {"type": "string"}, "claim": {"type": "string"},
                 "source_type": {"type": "string", "enum": ["primary", "secondary", "unknown"]},
                 "quality": {"type": "string", "enum": ["high", "medium", "low", "unverified"]},
+                "evidence_chain": {"type": "string", "description": "Original dataset or reporting chain behind this claim; reports citing the same original data use the same label."},
                 "reason": {"type": "string"},
-            }, "required": ["url", "claim", "source_type", "quality", "reason"]}},
+            }, "required": ["url", "claim", "source_type", "quality", "evidence_chain", "reason"]}},
             "contradictions": {"type": "array", "items": {"type": "string"}},
             "remaining_unknowns": {"type": "array", "items": {"type": "string"}},
             "rationale": {"type": "string"},
@@ -184,6 +185,8 @@ Evidence quality rubric: high = a fetched primary record directly covering the c
 medium = a traceable secondary report or a primary record with an unresolved interpretation;
 low = indirect, stale, or weakly documented support; unverified = a claim the fetched text does not substantiate.
 Explain the rating for each cited claim. Do not turn these ordinal labels into numerical probabilities.
+Name the original evidence_chain for each claim. Reports repeating the same original dataset share one label.
+If the first search yields only secondary reports, use another search targeted at the original data before finishing.
 Do not claim to have verified a page you did not fetch. A high quality rating does not mechanically determine event probability.
 If evidence is poor, state uncertainty. Call finish_research with a concise structured final result.
 """
@@ -207,6 +210,10 @@ def validate_assessment(data: dict, pages: dict[str, dict]) -> dict:
             raise ValueError("Invalid source_type")
         if item.get("quality") not in {"high", "medium", "low", "unverified"}:
             raise ValueError("Invalid evidence quality")
+        if item["quality"] == "high" and item["source_type"] != "primary":
+            raise ValueError("High quality requires a fetched primary record")
+        if not isinstance(item.get("evidence_chain"), str) or not item["evidence_chain"].strip():
+            raise ValueError("Evidence needs its original evidence_chain")
         if not item.get("claim") or not item.get("reason"):
             raise ValueError("Evidence needs a claim and reason")
     for key in ("event_paths", "contradictions", "remaining_unknowns"):
@@ -295,6 +302,8 @@ def run_research(question: str, criteria: str, fine_print: str, tavily_key: str,
                         for match in matches
                     ]}
                 elif name == "finish_research":
+                    if not any(item.get("source_type") == "primary" for item in args.get("evidence", []) or []) and len(searches) < 2:
+                        raise ValueError("Search for an original/primary data source before finishing without one")
                     assessment = validate_assessment(args, pages)
                     result = {"accepted": True, "submitted_to_metaculus": False}
                 else:
@@ -323,5 +332,6 @@ def run_research(question: str, criteria: str, fine_print: str, tavily_key: str,
         "pages": list(pages.values()),
         "tool_transcript": transcript,
         "assessment": assessment,
+        "evidence_chains": sorted({item["evidence_chain"].strip().casefold() for item in assessment["evidence"]}) if assessment else [],
         "error": error,
     }

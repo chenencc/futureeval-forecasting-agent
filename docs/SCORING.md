@@ -6,8 +6,12 @@ must never be substituted for one another.
 1. **Evidence quality** describes how directly and reproducibly a fetched page
    supports a claim under the Metaculus resolution rules. This version stores
    `high`, `medium`, `low`, or `unverified`, the source type, the exact claim,
-   and a reason. It is an audit aid, not a probability that the event resolves
-   Yes. Search rank and publisher reputation alone are insufficient.
+   its original evidence chain, and a reason. Code rejects `high` for a
+   secondary report and requires another search for an original source if the
+   first search yielded only secondary evidence. Reports quoting the same
+   dataset count as one evidence chain. This is an audit aid, not a probability
+   that the event resolves Yes. Search rank and publisher reputation alone are
+   insufficient.
 2. **Event probability** is Ultra's `probability` for the question resolving
    Yes. The agent must also state a reference class or say none is available,
    show event paths, contradictions, unknowns, and cited fetched evidence.

@@ -20,7 +20,7 @@ class UltraResearchAgentTests(TestCase):
         assessment = {
             "probability": 0.6, "verdict": "Yes", "base_rate": "No comparable reference class",
             "event_paths": ["Yes if the total remains above the threshold"],
-            "evidence": [{"url": url, "claim": "The figure is 12", "source_type": "primary", "quality": "high", "reason": "Direct official data"}],
+            "evidence": [{"url": url, "claim": "The figure is 12", "source_type": "primary", "quality": "high", "evidence_chain": "official dataset", "reason": "Direct official data"}],
             "contradictions": [], "remaining_unknowns": [], "rationale": "The observed figure is above the threshold.",
         }
         ask.side_effect = [
@@ -32,6 +32,7 @@ class UltraResearchAgentTests(TestCase):
         self.assertFalse(report["submitted_to_metaculus"])
         self.assertEqual(report["searches_used"], 1)
         self.assertEqual(report["assessment"]["probability"], 0.6)
+        self.assertEqual(report["evidence_chains"], ["official dataset"])
         self.assertEqual(report["pages"][0]["content"], "Official figure: 12")
         self.assertIsNone(report["error"])
 
@@ -52,6 +53,15 @@ class UltraResearchAgentTests(TestCase):
         with self.assertRaisesRegex(ValueError, "fetched page"):
             validate_assessment({
                 "probability": 0.7, "verdict": "Yes", "base_rate": "", "event_paths": [],
-                "evidence": [{"url": "https://example.org/only-searched", "claim": "x", "source_type": "primary", "quality": "high", "reason": "x"}],
+                "evidence": [{"url": "https://example.org/only-searched", "claim": "x", "source_type": "primary", "quality": "high", "evidence_chain": "example", "reason": "x"}],
                 "contradictions": [], "remaining_unknowns": [], "rationale": "x",
             }, {})
+
+    def test_secondary_report_cannot_be_high_quality(self) -> None:
+        url = "https://example.org/report"
+        with self.assertRaisesRegex(ValueError, "High quality requires"):
+            validate_assessment({
+                "probability": 0.7, "verdict": "Yes", "base_rate": "", "event_paths": [],
+                "evidence": [{"url": url, "claim": "Reported total is 12", "source_type": "secondary", "quality": "high", "evidence_chain": "original dataset", "reason": "Quotes another source"}],
+                "contradictions": [], "remaining_unknowns": [], "rationale": "x",
+            }, {url: {"url": url}})
