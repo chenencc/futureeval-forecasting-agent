@@ -8,8 +8,29 @@ The live workflow is manual until API forecasting access and a smoke test are
 verified. V0 uses one research report and one prediction per question to limit
 cost. V0 pins forecasting and parsing to OpenRouter's free NVIDIA Nemotron 3
 Super endpoint. One Tavily Basic search per question supplies current source
-snippets and links. The optional Polymarket
-paper-trading track is not yet enabled.
+snippets and links. Each run now saves point-in-time research and forecast
+snapshots, with candidate Polymarket matches kept separate from the model's
+research input. Paper trading is not yet enabled.
+
+### Forecast snapshots and market candidates
+
+For each question, `snapshots/<run-id>/<question-id>.json` records the question
+and resolution criteria, research text, model output, code commit, timestamps,
+and the returned report status. Both bot workflows upload these files as a
+GitHub Actions artifact even if the bot run fails. Artifacts are retained for
+90 days; download or move them to longer-lived storage for multi-month studies.
+Local snapshots are ignored by Git. A returned report indicates that the
+framework finished; the record does not independently verify Metaculus accepted
+the prediction.
+
+The Polymarket lookup uses Gamma's public search. It records at most five
+candidate binary contracts per question, including each child's own Yes price,
+bid/ask, volume, rules, and market identifiers. A zero-volume default 50% price
+is withheld. All matches are marked as candidates needing resolution-rule
+review; differing title years are flagged. Market prices are deliberately
+excluded from the forecasting prompt, preserving a market-independent model
+probability for later edge analysis. The displayed probability is not an
+executable quote, and this version does not create paper positions or PnL.
 
 1. Use this repository as the source for deployment. The official Metaculus
    template is kept as the `upstream` remote for future reference.

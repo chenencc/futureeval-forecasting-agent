@@ -15,6 +15,8 @@ from bot_helpers import (
     silence_noisy_dependencies,
 )
 from tavily_research import search_question
+from forecast_snapshots import SnapshotStore
+from polymarket_match import search_candidates
 
 silence_noisy_dependencies()
 
@@ -131,10 +133,26 @@ class SummerTemplateBot2026(ForecastBot):
     _concurrency_limiter = asyncio.Semaphore(_max_concurrent_questions)
     _structure_output_validation_samples = 1
 
+    def _snapshot_prediction(self, question: MetaculusQuestion, prediction: object, reasoning: str) -> None:
+        snapshots: SnapshotStore | None = getattr(self, "snapshot_store", None)
+        if snapshots is not None:
+            fields: dict[str, object] = {
+                "model_name": getattr(self, "snapshot_model_name", None),
+                "model_reasoning": reasoning,
+                "model_prediction": prediction,
+                "forecast_completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if isinstance(question, BinaryQuestion) and isinstance(prediction, float):
+                fields["model_probability"] = prediction
+            snapshots.update(question, **fields)
+
     ##################################### RESEARCH #####################################
 
     async def run_research(self, question: MetaculusQuestion) -> str:
         async with self._concurrency_limiter:
+            snapshots: SnapshotStore | None = getattr(self, "snapshot_store", None)
+            if snapshots is not None:
+                snapshots.update(question, research_started_at=datetime.now(timezone.utc).isoformat())
             research = ""
             researcher = self.get_llm("researcher")
 
@@ -158,11 +176,16 @@ class SummerTemplateBot2026(ForecastBot):
             if isinstance(researcher, GeneralLlm):
                 research = await researcher.invoke(prompt)
             elif researcher == "tavily":
-                research = await asyncio.to_thread(
-                    search_question,
-                    question.question_text,
-                    os.environ["TAVILY_API_KEY"],
-                )
+                try:
+                    research = await asyncio.to_thread(
+                        search_question,
+                        question.question_text,
+                        os.environ["TAVILY_API_KEY"],
+                    )
+                except Exception as exc:
+                    if snapshots is not None:
+                        snapshots.update(question, research_error=f"{type(exc).__name__}: {exc}")
+                    raise
             elif (
                 researcher == "asknews/news-summaries"
                 or researcher == "asknews/deep-research/low-depth"
@@ -186,6 +209,23 @@ class SummerTemplateBot2026(ForecastBot):
                 research = ""
             else:
                 research = await self.get_llm("researcher", "llm").invoke(prompt)
+            if snapshots is not None:
+                snapshots.update(
+                    question,
+                    research_text=research,
+                    research_provider=str(researcher) if isinstance(researcher, str) else type(researcher).__name__,
+                    research_completed_at=datetime.now(timezone.utc).isoformat(),
+                )
+                try:
+                    markets = await asyncio.to_thread(search_candidates, question.question_text)
+                except Exception as exc:
+                    markets = {
+                        "searched_at": datetime.now(timezone.utc).isoformat(),
+                        "candidates": [],
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                    logger.warning("Polymarket lookup failed for %s: %s", question.page_url, exc)
+                snapshots.update(question, polymarket=markets)
             logger.info(f"Found Research for URL {question.page_url}:\n{research}")
             return research
 
@@ -249,6 +289,7 @@ class SummerTemplateBot2026(ForecastBot):
         logger.info(
             f"Forecasted URL {question.page_url} with prediction: {decimal_pred}."
         )
+        self._snapshot_prediction(question, decimal_pred, reasoning)
         return ReasonedPrediction(prediction_value=decimal_pred, reasoning=reasoning)
 
     ##################################### MULTIPLE CHOICE QUESTIONS #####################################
@@ -323,6 +364,7 @@ class SummerTemplateBot2026(ForecastBot):
         logger.info(
             f"Forecasted URL {question.page_url} with prediction: {predicted_option_list}."
         )
+        self._snapshot_prediction(question, predicted_option_list, reasoning)
         return ReasonedPrediction(
             prediction_value=predicted_option_list, reasoning=reasoning
         )
@@ -419,6 +461,7 @@ class SummerTemplateBot2026(ForecastBot):
         logger.info(
             f"Forecasted URL {question.page_url} with prediction: {prediction.declared_percentiles}."
         )
+        self._snapshot_prediction(question, prediction, reasoning)
         return ReasonedPrediction(prediction_value=prediction, reasoning=reasoning)
 
     ##################################### DATE QUESTIONS #####################################
@@ -517,6 +560,7 @@ class SummerTemplateBot2026(ForecastBot):
         logger.info(
             f"Forecasted URL {question.page_url} with prediction: {prediction.declared_percentiles}."
         )
+        self._snapshot_prediction(question, prediction, reasoning)
         return ReasonedPrediction(prediction_value=prediction, reasoning=reasoning)
 
     def _create_upper_and_lower_bound_messages(
@@ -585,6 +629,7 @@ class SummerTemplateBot2026(ForecastBot):
             prediction_yes=yes_info.prediction_value,  # type: ignore
             prediction_no=no_info.prediction_value,  # type: ignore
         )
+        self._snapshot_prediction(question, full_prediction, full_reasoning)
         return ReasonedPrediction(
             reasoning=full_reasoning, prediction_value=full_prediction
         )
@@ -703,6 +748,11 @@ if __name__ == "__main__":
             "parser": free_model,
         },
     )
+    template_bot.snapshot_model_name = free_model
+    template_bot.snapshot_store = SnapshotStore(
+        run_mode=run_mode,
+        publish_requested=publish_to_metaculus,
+    )
 
     # Per-mode tournament URL shown in the summary banner footer. These
     # piggyback on the forecasting_tools SDK constants and need updating
@@ -756,6 +806,9 @@ if __name__ == "__main__":
             )
         )
 
+    for report in forecast_reports:
+        if not isinstance(report, BaseException):
+            template_bot.snapshot_store.mark_report(report)
     template_bot.log_report_summary(forecast_reports)
     print_run_summary_banner(
         forecast_reports,
