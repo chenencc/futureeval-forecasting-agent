@@ -45,6 +45,34 @@ def recoverable(path, owner):
 
 
 @contextmanager
+def recovery_mutex(path):
+    """OS-owned mutex releases on process death; the file may safely persist."""
+    with path.open('a+b') as stream:
+        stream.seek(0, 2)
+        if not stream.tell():
+            stream.write(b'0')
+            stream.flush()
+        stream.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise RuntimeError('Task concurrent lock recovery is in progress') from exc
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+
+@contextmanager
 def task_lock(directory):
     directory = Path(directory)
     lock = directory / '.running.lock'
@@ -53,17 +81,10 @@ def task_lock(directory):
     record = {'id': ident, 'pid': os.getpid(), 'host': socket.gethostname(),
               'github_run_id': os.environ.get('GITHUB_RUN_ID'), 'github_run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
               'acquired_at': datetime.now(timezone.utc).isoformat()}
-    if recovery.exists():
-        raise RuntimeError('Task is already running or lock recovery is in progress')
-    try:
-        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
+    with recovery_mutex(recovery):
         try:
-            recovery_fd = os.open(recovery, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
-            raise RuntimeError('Task is already running or lock recovery is in progress')
-        os.close(recovery_fd)
-        try:
             try:
                 owner = json.loads(lock.read_text(encoding='utf-8'))
             except (ValueError, OSError):
@@ -74,10 +95,8 @@ def task_lock(directory):
                 raise RuntimeError('Task is already running or owner is unknown; concurrent recovery refused')
             lock.replace(directory / ('.abandoned-lock-' + ident + '.json'))
             descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        finally:
-            recovery.unlink()
-    with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
-        json.dump(record, stream)
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
+            json.dump(record, stream)
     try:
         yield record
     finally:

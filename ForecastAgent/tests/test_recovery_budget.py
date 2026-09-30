@@ -12,6 +12,17 @@ from ForecastAgent.runtime.budget import reserve_update
 
 
 class RecoveryBudgetTests(TestCase):
+    def test_recovery_mutex_file_survives_without_blocking_future_runs(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path / '.lock.recovery').write_bytes(b'')
+            with task_lock(path):
+                with self.assertRaises(RuntimeError):
+                    with task_lock(path):
+                        pass
+            with task_lock(path):
+                pass
+
     def test_dead_owner_is_recovered_but_live_owner_is_refused(self):
         with TemporaryDirectory() as directory:
             path = Path(directory)
