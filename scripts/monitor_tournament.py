@@ -2,8 +2,10 @@
 
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
@@ -21,8 +23,21 @@ def get_json(url: str, token: str) -> dict:
         "Accept": "application/json",
         "User-Agent": "futureeval-question-monitor/0.1",
     })
-    with urlopen(request, timeout=30) as response:
-        return json.load(response)
+    for attempt in range(3):
+        try:
+            with urlopen(request, timeout=30) as response:
+                return json.load(response)
+        except HTTPError as exc:
+            if exc.code != 429 or attempt == 2:
+                raise
+            retry_after = exc.headers.get("Retry-After")
+            try:
+                delay = min(max(int(retry_after), 1), 90) if retry_after else 15 * (attempt + 1)
+            except ValueError:
+                delay = 15 * (attempt + 1)
+            print(f"Metaculus rate-limited request; retrying in {delay}s (attempt {attempt + 2}/3)")
+            time.sleep(delay)
+    raise AssertionError("Unreachable retry state")
 
 
 def collect_questions(token: str) -> list[dict]:
@@ -39,7 +54,17 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Pa
     now = datetime.now(timezone.utc)
     output = root / now.strftime("%Y%m%dT%H%M%SZ")
     output.mkdir(parents=True, exist_ok=True)
-    posts = collect_questions(token)
+    try:
+        posts = collect_questions(token)
+    except Exception as exc:
+        (output / "index.json").write_text(json.dumps({
+            "tournament": TOURNAMENT,
+            "retrieved_at_utc": now.isoformat(),
+            "question_count": None,
+            "questions": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        raise
     index = []
     for post in posts:
         post_id = post.get("id")

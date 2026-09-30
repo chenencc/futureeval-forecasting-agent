@@ -3,7 +3,7 @@
 ## Fall 2026 V0 setup
 
 This checkout is based on the official Metaculus template. The scheduled
-workflow reads `fall-futureeval-2026` questions every 15 minutes and saves
+workflow reads `fall-futureeval-2026` questions hourly and saves
 an index plus one JSON detail snapshot per question as a GitHub Actions
 artifact. It never forecasts or submits. GitHub may delay scheduled runs.
 
