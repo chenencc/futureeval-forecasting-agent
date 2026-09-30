@@ -33,6 +33,17 @@ class SourceTests(TestCase):
         with self.assertRaisesRegex(ValueError, 'did not confirm'):
             fetch_structured('https://fred.stlouisfed.org/series/DGS30', cutoff, fetch)
 
+    def test_alfred_real_compact_vintage_and_wrong_version_rejection(self):
+        cutoff = datetime(2026, 8, 20, tzinfo=timezone.utc)
+        raw = b'observation_date,DGS30_20260819\n2026-08-18,5.2\n2026-08-19,\n'
+        fetch = Mock(return_value={'raw_response_base64': base64.b64encode(raw).decode()})
+        page = fetch_structured('https://fred.stlouisfed.org/series/DGS30', cutoff, fetch)
+        self.assertEqual(page['rows'], [{'date': '2026-08-18', 'value': 5.2, 'vintage': '2026-08-19'}])
+        for label in [b'DGS30_20260820', b'DGS30_20260819_unverified']:
+            fetch.return_value = {'raw_response_base64': base64.b64encode(b'observation_date,'+label+b'\n2026-08-18,5.2\n').decode()}
+            with self.assertRaisesRegex(ValueError, 'did not confirm'):
+                fetch_structured('https://fred.stlouisfed.org/series/DGS30', cutoff, fetch)
+
     def test_source_urls_and_platform_credential_refusal(self):
         self.assertEqual(source_urls('[guide](https://example.org/guide.pdf)'), ['https://example.org/guide.pdf'])
         self.assertFalse(allowed_source('https://secret:token@example.org'))

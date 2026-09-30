@@ -82,7 +82,8 @@ def fetch_structured(url, cutoff, fetch):
         page = fetch(api_url)
         reader = csv.DictReader(io.StringIO(base64.b64decode(page['raw_response_base64']).decode('utf-8-sig')))
         columns = reader.fieldnames or []
-        value_columns = [c for c in columns if c.startswith(ident+'_') and vintage in c]
+        vintage_columns = {ident + '_' + vintage, ident + '_' + vintage.replace('-', '')}
+        value_columns = [c for c in columns if c in vintage_columns]
         if not value_columns:
             raise ValueError('ALFRED response did not confirm requested vintage; refusing current series')
         rows = []; withheld = 0
