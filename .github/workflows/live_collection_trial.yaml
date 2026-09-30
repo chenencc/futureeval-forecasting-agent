@@ -30,6 +30,7 @@ jobs:
             async function latest(workflow, artifact) {
               const {data} = await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: workflow, status:'completed', per_page:30});
               for (const run of data.workflow_runs) {
+                if (run.id === context.runId) continue;
                 const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
                 const state = list.artifacts.find(a => a.name === artifact && !a.expired);
                 if (state) return {id:run.id, name:state.name};
@@ -39,7 +40,7 @@ jobs:
                 const legacy = list.artifacts.find(a => a.name === `futureeval-questions-${run.id}` && !a.expired);
                 if (workflow === 'run_bot_on_tournament.yaml' && run.conclusion === 'success' && legacy && !steps.some(s => s.name === 'Install free document parser')) return {id:run.id, name:legacy.name};
                 if (acquisition && acquisition.conclusion === 'skipped') continue;
-                throw new Error('Executed acquisition has no durable state; refusing budget reset');
+                throw new Error(`Run ${run.id} has no durable state and no confirmed skipped acquisition; refusing budget reset`);
               }
               return null;
             }
