@@ -128,7 +128,18 @@ def _write_json(path: Path, value: object) -> None:
 
 def _load_state(path: Path) -> dict:
     if not path.exists():
-        return {"schema_version": 1, "seen_question_ids": [], "researched_question_ids": [], "archive_next_url": None}
+        # Legacy snapshot artifacts have indexes but no durable state.json.
+        # Import known IDs without claiming that acquisition was completed.
+        seen = set()
+        for index_path in path.parent.rglob('index.json'):
+            index = json.loads(index_path.read_text(encoding='utf-8'))
+            if index.get('tournament') != TOURNAMENT:
+                continue
+            for row in index.get('questions', []):
+                if row.get('snapshot_saved') and isinstance(row.get('question_id'), int):
+                    seen.add(row['question_id'])
+        return {"schema_version": 1, "seen_question_ids": sorted(seen), "researched_question_ids": [], "archive_next_url": None,
+                'legacy_snapshot_ids_imported': len(seen)}
     state = json.loads(path.read_text(encoding="utf-8"))
     if state.get("schema_version") != 1:
         raise ValueError("Unsupported monitor state schema")

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
-from ForecastAgent.monitor_tournament import API_ROOT, _initial_url, collect_archive_pages, collect_pages, snapshot_questions
+from ForecastAgent.monitor_tournament import API_ROOT, TOURNAMENT, _load_state, _initial_url, collect_archive_pages, collect_pages, snapshot_questions
 
 
 def post(post_id: int, question_id: int, status: str = "open") -> dict:
@@ -14,6 +14,17 @@ def post(post_id: int, question_id: int, status: str = "open") -> dict:
 
 
 class MonitorTournamentTests(TestCase):
+    def test_legacy_indexes_import_known_ids_without_claiming_research(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'old').mkdir()
+            (root / 'old' / 'index.json').write_text(json.dumps({'tournament': TOURNAMENT,
+                'questions': [{'question_id': 11, 'snapshot_saved': True},
+                              {'question_id': None, 'snapshot_saved': True}]}))
+            state = _load_state(root / 'state.json')
+            self.assertEqual(state['seen_question_ids'], [11])
+            self.assertEqual(state['researched_question_ids'], [])
+
     @patch('ForecastAgent.monitor_tournament.get_json')
     def test_empty_page_ends_infinite_count_pagination(self, get_json):
         next_url = API_ROOT + '?offset=100'
