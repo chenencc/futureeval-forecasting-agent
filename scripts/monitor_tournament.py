@@ -23,25 +23,25 @@ def get_json(url: str, token: str) -> dict:
         "Accept": "application/json",
         "User-Agent": "futureeval-question-monitor/0.1",
     })
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             with urlopen(request, timeout=30) as response:
                 return json.load(response)
         except HTTPError as exc:
-            if exc.code != 429 or attempt == 2:
+            if exc.code != 429 or attempt == 1:
                 raise
             retry_after = exc.headers.get("Retry-After")
             try:
-                delay = min(max(int(retry_after), 1), 90) if retry_after else 15 * (attempt + 1)
+                delay = min(max(int(retry_after), 1), 30) if retry_after else 15
             except ValueError:
-                delay = 15 * (attempt + 1)
-            print(f"Metaculus rate-limited request; retrying in {delay}s (attempt {attempt + 2}/3)")
+                delay = 15
+            print(f"Metaculus rate-limited request; retrying in {delay}s (attempt 2/2)")
             time.sleep(delay)
     raise AssertionError("Unreachable retry state")
 
 
 def collect_questions(token: str) -> list[dict]:
-    url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 100})
+    url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 20})
     posts: list[dict] = []
     while url:
         page = get_json(url, token)
@@ -71,10 +71,6 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Pa
         if not isinstance(post_id, int):
             continue
         record = {"post": post, "retrieved_at_utc": now.isoformat()}
-        try:
-            record["detail"] = get_json(f"{API_ROOT}{post_id}/", token)
-        except Exception as exc:
-            record["detail_error"] = f"{type(exc).__name__}: {exc}"
         (output / f"{post_id}.json").write_text(
             json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
         )
@@ -86,7 +82,7 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Pa
             "open_time": post.get("open_time"),
             "close_time": post.get("close_time"),
             "url": f"https://www.metaculus.com/questions/{post_id}/",
-            "detail_saved": "detail" in record,
+            "snapshot_saved": True,
         })
     (output / "index.json").write_text(json.dumps({
         "tournament": TOURNAMENT,
