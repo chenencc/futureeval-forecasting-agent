@@ -172,3 +172,6 @@ cython_debug/
 
 # MacOS
 .DS_Store
+
+# Local official GitHub CLI runtime; never publish binaries or credentials.
+.tmp/github-cli/

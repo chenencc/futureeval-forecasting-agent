@@ -27,6 +27,10 @@ Input requires `question` and `resolution_criteria`. Live collection uses `"mode
 
 ## Tools and output
 
+The independent [local data synchronizer](docs/LOCAL_DATA.md) pulls Actions
+artifacts into `E:\metaculus_data`, retaining immutable archives and a structured
+SQLite index. Its Windows schedule does not acquire evidence or submit forecasts.
+
 - `list_channels`: supported channels, formats, credential names and limits.
 - `search_tavily`: general, news or finance discovery with optional official-domain and exact-entity targeting.
 - `fetch_page` / `fetch_pages`: free reading, including automatic Yahoo/ALFRED adapters for recognized discovered URLs.
