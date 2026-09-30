@@ -8,11 +8,17 @@ an index plus one JSON listing snapshot per question as a GitHub Actions
 artifact. It never forecasts or submits. GitHub may delay scheduled runs.
 
 The separate, manually triggered read-only research demo runs one previously
-collected question through two Tavily searches and NVIDIA Nemotron 3 Ultra.
-Tavily keeps up to 10 results in each round; the second round removes sources
-already seen in the first. The demo saves the two search batches, follow-up
-query, model assessment, and probability without submitting a forecast.
-Artifacts are retained for 90 days. Paper trading is not yet enabled.
+collected question through an Ultra-directed research loop. Ultra chooses up to
+three Tavily basic searches (ten new URLs per search) and up to five free
+direct public-page fetches. It can inspect long saved pages with `find_in_page`.
+The code enforces those limits, records raw readable page content, URL, UTC
+retrieval time, SHA-256 digest, tool decisions, per-claim source assessments,
+contradictions, and a final probability. A failed fetch is recorded as an error,
+not treated as verified evidence. No forecast is submitted. Artifacts are
+retained for 90 days. Paper trading is not yet enabled.
+
+The three different meanings of evidence grade, event probability, and later
+forecast performance are specified in [docs/SCORING.md](docs/SCORING.md).
 
 ### Forecast snapshots and market candidates
 
@@ -44,16 +50,12 @@ executable quote, and this version does not create paper positions or PnL.
 4. Enable API forecasting for the dedicated bot account in [Metaculus account
    settings](https://www.metaculus.com/accounts/settings/account/#api-forecasting-access).
    The token in `METACULUS_TOKEN` must belong to that account.
-5. Enable GitHub Actions. Run **Test Bot** manually with its default dry-run
-   setting. Once API access works, rerun with **publish** checked and verify a
-   forecast on the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
-6. The **Forecast on new AI tournament questions** workflow handles the live
-   tournament and MiniBench. It checks hourly and skips previously forecasted
-   questions. You can also run it manually after the smoke test succeeds.
+5. Enable GitHub Actions. The scheduled **Monitor FutureEval questions** workflow
+   only reads and snapshots tournament questions. The **Read-only research demo**
+   is manual and saves an agent research report without publishing.
 
-The test workflow forecasts one question without posting by default; its
-**publish** input posts to the testing area. The hourly live workflow
-posts actual forecasts to the competition when new questions are available.
+Other template workflows can still publish if deliberately run with publishing
+enabled. Do not trigger those workflows while operating in read-only mode.
 See the upstream instructions below
 for local setup and other optional API keys.
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
