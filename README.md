@@ -4,8 +4,8 @@
 
 This checkout is based on the official Metaculus template. `main.py --mode tournament`
 forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
-The live workflow is manual until API forecasting access and a smoke test are
-verified. V0 uses one research report and one prediction per question to limit
+The live workflow checks for new questions hourly and can also be run manually.
+V0 uses one research report and one prediction per question to limit
 cost. V0 pins forecasting and parsing to OpenRouter's free NVIDIA Nemotron 3
 Super endpoint. One Tavily Basic search per question supplies current source
 snippets and links. Each run now saves point-in-time research and forecast
@@ -46,11 +46,13 @@ executable quote, and this version does not create paper positions or PnL.
    setting. Once API access works, rerun with **publish** checked and verify a
    forecast on the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
 6. The **Forecast on new AI tournament questions** workflow handles the live
-   tournament and MiniBench. Run it manually after the smoke test succeeds.
+   tournament and MiniBench. It checks hourly and skips previously forecasted
+   questions. You can also run it manually after the smoke test succeeds.
 
 The test workflow forecasts one question without posting by default; its
-**publish** input posts to the testing area. The live workflow
-posts actual forecasts to the competition. See the upstream instructions below
+**publish** input posts to the testing area. The hourly live workflow
+posts actual forecasts to the competition when new questions are available.
+See the upstream instructions below
 for local setup and other optional API keys.
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
 
