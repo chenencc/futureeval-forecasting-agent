@@ -35,6 +35,15 @@ Snapshots preserve the frozen baseline, final probability, and their difference.
 These checks are model self-review; statistical calibration still requires
 prospective resolved-question data.
 
+The manual **Historical read-only pipeline trial** workflow downloads five
+resolved binary questions from Spring 2026 and researches three through the
+current pipeline. Its artifact contains `questions.json`, per-question reports,
+and `summary.json`. Resolution labels are kept out of the model prompt, but
+current model knowledge and web pages can reveal outcomes. All reports therefore
+set `retrospective_demo=true` and `out_of_sample=false`; this is a flow check,
+not a historical accuracy benchmark. Questions without resolution criteria are
+saved as failures rather than researched from their title alone.
+
 The three different meanings of evidence grade, event probability, and later
 forecast performance are specified in [docs/SCORING.md](docs/SCORING.md).
 

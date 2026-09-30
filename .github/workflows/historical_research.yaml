@@ -1,0 +1,31 @@
+name: Historical read-only pipeline trial
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download five resolved questions and research three without submission
+        run: python -m scripts.historical_research
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      - name: Upload historical questions and pipeline results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-pipeline-${{ github.run_id }}
+          path: snapshots/historical/
+          if-no-files-found: error
+          retention-days: 90
