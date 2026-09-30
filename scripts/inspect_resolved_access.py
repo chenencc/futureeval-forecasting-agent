@@ -28,6 +28,14 @@ def main() -> None:
             data = json.load(response)
     except HTTPError as error:
         print(f"Metaculus API returned HTTP {error.code}")
+        try:
+            body = json.load(error)
+        except (ValueError, UnicodeDecodeError):
+            body = {}
+        if isinstance(body, dict):
+            for field in ("detail", "error", "code"):
+                if isinstance(body.get(field), str):
+                    print(f"{field}: {body[field][:300]}")
         raise SystemExit(1) from None
 
     posts = data.get("results", [])
