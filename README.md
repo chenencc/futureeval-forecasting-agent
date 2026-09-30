@@ -3,12 +3,18 @@
 ## Fall 2026 V0 setup
 
 This checkout is based on the official Metaculus template. The scheduled
-workflow reads `fall-futureeval-2026` questions hourly and saves
-an index plus one JSON listing snapshot per question as a GitHub Actions
-artifact. It never forecasts or submits. GitHub may delay scheduled runs.
+workflow polls `fall-futureeval-2026` every 20 minutes. It follows every page
+of open questions, then scans up to five pages of the full tournament archive
+per run to catch questions that closed between polls. It snapshots question
+posts and an index as a GitHub Actions artifact. A separate state artifact
+persists seen question IDs, researched IDs, and the archive pagination cursor
+between runners. It never submits a forecast or trade. GitHub may delay or
+drop scheduled runs.
 
-The separate, manually triggered read-only research demo runs one previously
-collected question through an Ultra-directed research loop. Ultra chooses up to
+For each newly observed open binary question, the scheduled monitor runs the
+same bounded Ultra research loop, at most two questions per run; failures stay
+pending for retry. The separate manual research demo runs one previously
+collected question through the loop. Ultra chooses up to
 three Tavily basic searches (ten new URLs per search) and up to five free
 direct public-page fetches. It can inspect long saved pages with `find_in_page`.
 The code enforces those limits, records raw readable page content, URL, UTC
@@ -51,8 +57,11 @@ executable quote, and this version does not create paper positions or PnL.
    settings](https://www.metaculus.com/accounts/settings/account/#api-forecasting-access).
    The token in `METACULUS_TOKEN` must belong to that account.
 5. Enable GitHub Actions. The scheduled **Monitor FutureEval questions** workflow
-   only reads and snapshots tournament questions. The **Read-only research demo**
-   is manual and saves an agent research report without publishing.
+   reads and snapshots tournament questions, and runs read-only research for
+   new open binary questions. The **Read-only research demo** is manual and
+   saves an agent research report without publishing. Check for an actual
+   `schedule` run and its artifacts; a manual run alone does not prove the
+   schedule is firing.
 
 Other template workflows can still publish if deliberately run with publishing
 enabled. Do not trigger those workflows while operating in read-only mode.

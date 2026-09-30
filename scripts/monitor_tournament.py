@@ -1,4 +1,6 @@
-"""Read and snapshot FutureEval questions without forecasting or submitting."""
+"""Poll FutureEval without submitting forecasts; save point-in-time snapshots."""
+
+from __future__ import annotations
 
 import json
 import os
@@ -9,96 +11,209 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
-
 API_ROOT = "https://www.metaculus.com/api/posts/"
 TOURNAMENT = "fall-futureeval-2026"
+OPEN_PAGE_LIMIT = 30
+ARCHIVE_PAGES_PER_RUN = 5
+RESEARCH_PER_RUN = 2
 
 
 def get_json(url: str, token: str) -> dict:
     parts = urlsplit(url)
-    if parts.scheme != "https" or parts.netloc != "www.metaculus.com":
-        raise ValueError("Refusing non-Metaculus API URL")
+    if parts.scheme != "https" or parts.netloc != "www.metaculus.com" or not parts.path.startswith("/api/posts/"):
+        raise ValueError("Refusing non-Metaculus posts API URL")
     request = Request(url, headers={
-        "Authorization": f"Token {token}",
-        "Accept": "application/json",
-        "User-Agent": "futureeval-question-monitor/0.1",
+        "Authorization": f"Token {token}", "Accept": "application/json",
+        "User-Agent": "futureeval-question-monitor/0.2",
     })
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             with urlopen(request, timeout=30) as response:
-                return json.load(response)
+                data = json.load(response)
+            if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+                raise ValueError("Unexpected Metaculus posts response")
+            return data
         except HTTPError as exc:
-            if exc.code != 429 or attempt == 1:
+            if exc.code not in {429, 500, 502, 503, 504} or attempt == 2:
                 raise
             retry_after = exc.headers.get("Retry-After")
             try:
-                delay = min(max(int(retry_after), 1), 30) if retry_after else 15
+                delay = min(max(int(retry_after), 1), 30) if retry_after else 5 * (attempt + 1)
             except ValueError:
-                delay = 15
-            print(f"Metaculus rate-limited request; retrying in {delay}s (attempt 2/2)")
+                delay = 5 * (attempt + 1)
+            print(f"Metaculus HTTP {exc.code}; retrying in {delay}s", flush=True)
             time.sleep(delay)
     raise AssertionError("Unreachable retry state")
 
 
+def _initial_url(open_only: bool) -> str:
+    params = {"tournaments": TOURNAMENT, "limit": 100, "include_description": "true"}
+    if open_only:
+        params["statuses"] = "open"
+    return API_ROOT + "?" + urlencode(params)
+
+
+def _next_url(value: object) -> str | None:
+    if not value:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("Unexpected pagination URL")
+    parts = urlsplit(value)
+    if parts.scheme != "https" or parts.netloc != "www.metaculus.com" or parts.path != "/api/posts/":
+        raise ValueError("Unexpected pagination destination")
+    return value
+
+
+def collect_pages(token: str, start_url: str, max_pages: int) -> tuple[list[dict], str | None, int]:
+    posts: list[dict] = []
+    visited: set[str] = set()
+    url: str | None = start_url
+    pages = 0
+    while url and pages < max_pages:
+        if url in visited:
+            raise ValueError("Metaculus pagination loop")
+        visited.add(url)
+        page = get_json(url, token)
+        posts.extend(row for row in page["results"] if isinstance(row, dict))
+        url = _next_url(page.get("next"))
+        pages += 1
+    return posts, url, pages
+
+
 def collect_questions(token: str) -> tuple[list[dict], bool]:
-    # A single bounded request keeps the scheduled monitor safe under API
-    # throttling. The API may return fewer than the requested limit.
-    url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 100})
-    page = get_json(url, token)
-    posts = page.get("results") or []
-    has_more = bool(page.get("next"))
-    if has_more:
-        print("WARNING: API has another page; this snapshot contains the latest page only.", flush=True)
-    return posts, has_more
+    posts, next_url, _ = collect_pages(token, _initial_url(True), OPEN_PAGE_LIMIT)
+    return posts, next_url is None
 
 
-def snapshot_questions(token: str, root: Path = Path("snapshots/monitor")) -> Path:
+def collect_archive_pages(token: str, start_url: str) -> tuple[list[dict], str | None, int, str | None]:
+    posts: list[dict] = []
+    url: str | None = start_url
+    visited: set[str] = set()
+    pages = 0
+    while url and pages < ARCHIVE_PAGES_PER_RUN:
+        if url in visited:
+            return posts, url, pages, "Metaculus pagination loop"
+        visited.add(url)
+        try:
+            page = get_json(url, token)
+            next_url = _next_url(page.get("next"))
+        except Exception as exc:
+            return posts, url, pages, f"{type(exc).__name__}: {exc}"
+        posts.extend(row for row in page["results"] if isinstance(row, dict))
+        url = next_url
+        pages += 1
+    return posts, url, pages, None
+
+
+def _questions(post: dict) -> list[dict]:
+    rows = []
+    question = post.get("question")
+    if isinstance(question, dict) and isinstance(question.get("id"), int):
+        rows.append(question)
+    group = post.get("group_of_questions")
+    if isinstance(group, dict):
+        rows.extend(row for row in group.get("questions") or [] if isinstance(row, dict) and isinstance(row.get("id"), int))
+    return rows
+
+
+def _write_json(path: Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def _load_state(path: Path) -> dict:
+    if not path.exists():
+        return {"schema_version": 1, "seen_question_ids": [], "researched_question_ids": [], "archive_next_url": None}
+    state = json.loads(path.read_text(encoding="utf-8"))
+    if state.get("schema_version") != 1:
+        raise ValueError("Unsupported monitor state schema")
+    return state
+
+
+def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, research: bool = False) -> Path:
     now = datetime.now(timezone.utc)
     output = root / now.strftime("%Y%m%dT%H%M%SZ")
     output.mkdir(parents=True, exist_ok=True)
+    state_path = root / "state.json"
+    state = _load_state(state_path)
+    seen = set(state["seen_question_ids"])
+    researched = set(state["researched_question_ids"])
     try:
-        posts, has_more = collect_questions(token)
+        open_posts, open_complete = collect_questions(token)
     except Exception as exc:
-        (output / "index.json").write_text(json.dumps({
-            "tournament": TOURNAMENT,
-            "retrieved_at_utc": now.isoformat(),
-            "question_count": None,
-            "questions": [],
-            "error": f"{type(exc).__name__}: {exc}",
-        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        _write_json(output / "index.json", {"tournament": TOURNAMENT, "retrieved_at_utc": now.isoformat(),
+                                            "error": f"Open scan failed: {type(exc).__name__}: {exc}", "questions": []})
         raise
-    index = []
-    for post in posts:
-        post_id = post.get("id")
-        if not isinstance(post_id, int):
+
+    archive_start = state.get("archive_next_url") or _initial_url(False)
+    archive_posts, archive_next, archive_pages, archive_error = collect_archive_pages(token, archive_start)
+
+    posts = {row["id"]: row for row in archive_posts if isinstance(row.get("id"), int)}
+    posts.update({row["id"]: row for row in open_posts if isinstance(row.get("id"), int)})
+    index: list[dict] = []
+    pending_research: list[tuple[dict, dict]] = []
+    for post in posts.values():
+        questions = _questions(post)
+        if not questions:  # Ignore announcements.
             continue
-        record = {"post": post, "retrieved_at_utc": now.isoformat()}
-        (output / f"{post_id}.json").write_text(
-            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-        index.append({
-            "post_id": post_id,
-            "question_id": (post.get("question") or {}).get("id"),
-            "title": post.get("title"),
-            "status": post.get("status"),
-            "open_time": post.get("open_time"),
-            "close_time": post.get("close_time"),
-            "url": f"https://www.metaculus.com/questions/{post_id}/",
-            "snapshot_saved": True,
-        })
-    (output / "index.json").write_text(json.dumps({
-        "tournament": TOURNAMENT,
-        "retrieved_at_utc": now.isoformat(),
-        "question_count": len(index),
-        "scope": "latest_page_only" if has_more else "complete_api_result",
-        "has_more_pages": has_more,
-        "questions": index,
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Saved {len(index)} tournament questions to {output}")
-    for question in index:
-        print(f"{question['post_id']} [{question['status']}] {question['title']}")
+        post_id = post["id"]
+        _write_json(output / f"{post_id}.json", {"post": post, "retrieved_at_utc": now.isoformat()})
+        for question in questions:
+            qid = question["id"]
+            is_new = qid not in seen
+            is_open = post.get("status") == "open" and question.get("status", "open") == "open"
+            index.append({"post_id": post_id, "question_id": qid,
+                          "title": question.get("title") or post.get("title"),
+                          "type": question.get("type"), "status": question.get("status") or post.get("status"),
+                          "url": f"https://www.metaculus.com/questions/{post_id}/",
+                          "new": is_new, "open": is_open, "snapshot_saved": True})
+            seen.add(qid)
+            if is_open and question.get("type") == "binary" and qid not in researched:
+                pending_research.append((post, question))
+
+    research_results = []
+    if research and open_complete:
+        from scripts.ultra_research_agent import run_research
+        for post, question in pending_research[:RESEARCH_PER_RUN]:
+            qid = question["id"]
+            try:
+                report = run_research(question.get("title") or post.get("title") or "",
+                                      question.get("resolution_criteria") or post.get("resolution_criteria") or "",
+                                      question.get("fine_print") or post.get("fine_print") or "",
+                                      os.environ["TAVILY_API_KEY"], os.environ["OPENROUTER_API_KEY"])
+                _write_json(output / f"research-{qid}.json", report)
+                if report.get("assessment") is None or report.get("error"):
+                    raise RuntimeError(report.get("error") or "No assessment returned")
+                researched.add(qid)
+                research_results.append({"question_id": qid, "status": "saved"})
+            except Exception as exc:
+                research_results.append({"question_id": qid, "status": "failed", "error": f"{type(exc).__name__}: {exc}"})
+
+    _write_json(output / "index.json", {
+        "tournament": TOURNAMENT, "retrieved_at_utc": now.isoformat(), "code_commit": os.environ.get("GITHUB_SHA"),
+        "question_count": len(index), "new_question_count": sum(row["new"] for row in index),
+        "open_scan_complete": open_complete, "open_question_count": sum(row["open"] for row in index),
+        "archive_pages_scanned": archive_pages, "archive_cycle_complete": archive_next is None,
+        "archive_error": archive_error, "research": research_results, "questions": index,
+    })
+    state.update({"seen_question_ids": sorted(seen), "researched_question_ids": sorted(researched),
+                  "archive_next_url": archive_next, "updated_at_utc": now.isoformat()})
+    _write_json(state_path, state)
+    print(f"Saved {len(index)} snapshots; {sum(row['new'] for row in index)} new; "
+          f"open complete={open_complete}; archive pages={archive_pages}; archive error={archive_error}", flush=True)
+    for row in index:
+        if row["new"]:
+            print(f"NEW {row['question_id']} [{row['status']}] {row['title']}", flush=True)
+    if not open_complete:
+        raise RuntimeError("Open-question scan exceeded page limit; snapshot is incomplete")
+    if archive_error:
+        raise RuntimeError(f"Archive scan incomplete: {archive_error}")
+    if any(row["status"] == "failed" for row in research_results):
+        raise RuntimeError("One or more read-only research snapshots failed; see index.json")
     return output
 
 
 if __name__ == "__main__":
-    snapshot_questions(os.environ["METACULUS_TOKEN"])
+    snapshot_questions(os.environ["METACULUS_TOKEN"], research=os.environ.get("RUN_READ_ONLY_RESEARCH") == "1")
