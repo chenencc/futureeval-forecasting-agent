@@ -65,6 +65,27 @@ def main() -> None:
         }
         print(json.dumps(record, ensure_ascii=False))
 
+    if posts:
+        detail_url = f"https://www.metaculus.com/api/posts/{posts[0]['id']}/"
+        detail_request = Request(detail_url, headers=dict(request.header_items()))
+        try:
+            with urlopen(detail_request, timeout=30) as response:
+                detail = json.load(response)
+            detail_question = detail.get("question") or {}
+            print(
+                "First post detail: "
+                + json.dumps(
+                    {
+                        "post_id": detail.get("id"),
+                        "resolution_visible": detail_question.get("resolution") is not None,
+                        "resolution": detail_question.get("resolution"),
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        except HTTPError as error:
+            print(f"First post detail returned HTTP {error.code}")
+
 
 if __name__ == "__main__":
     main()
