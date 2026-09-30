@@ -1,7 +1,7 @@
 """Bounded downloading only; decoding and parsing belong to readers."""
 from urllib.request import Request
 
-SUPPORTED = {"text/html", "text/plain", "application/xhtml+xml", "application/pdf", "text/csv", "application/json"}
+SUPPORTED = {"text/html", "text/plain", "application/xhtml+xml", "application/pdf", "text/csv", "application/csv", "application/json"}
 
 
 def download(url, *, public_check, opener_factory, max_page_bytes=1_500_000):

@@ -57,7 +57,11 @@ def main():
         check(name, lambda n=name, u=url: read_probe(n, u))
     cutoff = datetime(2026, 8, 20, tzinfo=timezone.utc)
     def finance_probe(name, url):
-        page = fetch_structured(url, cutoff, fetch_public_page)
+        def capture(endpoint):
+            response = fetch_public_page(endpoint)
+            (ROOT / f"{name}-raw.json").write_text(json.dumps(response), encoding="utf-8")
+            return response
+        page = fetch_structured(url, cutoff, capture)
         assert page and page["rows"] and all(row["date"] < "2026-08-20" for row in page["rows"])
         (ROOT / f"{name}.json").write_text(json.dumps(page), encoding="utf-8")
         return {"rows": len(page["rows"]), "latest": page["rows"][-1]["date"], "endpoint": page["data_endpoint"]}

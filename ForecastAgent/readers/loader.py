@@ -19,7 +19,7 @@ def load_response(response, *, retrieved_at, max_chars=150_000):
         if kind in {"text/html", "application/xhtml+xml"}:
             text, metadata, links = parse_html(text, source)
             documents = [Document(text, {"source": source, "format": "html"})]
-        elif kind == "text/csv":
+        elif kind in {"text/csv", "application/csv"}:
             documents = parse_csv(text, source)
         elif kind == "application/json":
             documents = parse_json(text, source)

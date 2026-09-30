@@ -15,6 +15,12 @@ def load(raw, kind, maximum=150_000):
 
 
 class ReaderTests(TestCase):
+    def test_application_csv_provider_mime_is_supported(self):
+        from ForecastAgent.providers.http import SUPPORTED
+        self.assertIn("application/csv", SUPPORTED)
+        result = load(b'date,value\n2026-08-19,5.19\n', "application/csv")
+        self.assertEqual(result["documents"][0]["metadata"]["format"], "csv")
+
     def test_csv_keeps_row_provenance_and_original_bytes(self):
         raw = b'date,value\n2026-08-19,5.19\n2026-08-20,5.20\n'
         result = load(raw, "text/csv")
