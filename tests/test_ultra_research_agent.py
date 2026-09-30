@@ -1,8 +1,9 @@
 import json
+from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.ultra_research_agent import run_research, validate_assessment
+from scripts.ultra_research_agent import ask_ultra, run_research, validate_assessment
 
 
 def tool_call(name: str, arguments: dict, ident: str) -> dict:
@@ -10,6 +11,17 @@ def tool_call(name: str, arguments: dict, ident: str) -> dict:
 
 
 class UltraResearchAgentTests(TestCase):
+    @patch("scripts.ultra_research_agent.time.sleep")
+    @patch("scripts.ultra_research_agent.urlopen")
+    def test_openrouter_missing_choices_gets_one_retry(self, urlopen, sleep) -> None:
+        urlopen.side_effect = [
+            BytesIO(b'{"error":{"message":"temporary provider issue"}}'),
+            BytesIO(b'{"choices":[{"message":{"tool_calls":[]}}]}'),
+        ]
+        self.assertEqual(ask_ultra([], "router"), {"tool_calls": []})
+        self.assertEqual(urlopen.call_count, 2)
+        sleep.assert_called_once()
+
     @patch("scripts.ultra_research_agent.fetch_public_page")
     @patch("scripts.ultra_research_agent.search_batch")
     @patch("scripts.ultra_research_agent.ask_ultra")

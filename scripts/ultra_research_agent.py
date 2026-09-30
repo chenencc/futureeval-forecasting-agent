@@ -8,8 +8,10 @@ import json
 import os
 import re
 import socket
+import time
 from datetime import datetime, timezone
 from html.parser import HTMLParser
+from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
@@ -133,8 +135,25 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False) -
         },
         method="POST",
     )
-    with urlopen(request, timeout=180) as response:
-        return json.load(response)["choices"][0]["message"]
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=180) as response:
+                payload = json.load(response)
+        except HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:800]
+            if attempt == 0 and exc.code in {429, 500, 502, 503, 504}:
+                time.sleep(3)
+                continue
+            raise RuntimeError(f"OpenRouter HTTP {exc.code}: {detail}") from exc
+        choices = payload.get("choices") if isinstance(payload, dict) else None
+        if isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get("message"), dict):
+            return choices[0]["message"]
+        error = payload.get("error") if isinstance(payload, dict) else None
+        if attempt == 0:
+            time.sleep(3)
+            continue
+        raise RuntimeError(f"OpenRouter returned no choices: {str(error or payload)[:800]}")
+    raise AssertionError("Unreachable OpenRouter retry state")
 
 
 TOOLS = [
