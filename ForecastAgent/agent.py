@@ -8,6 +8,7 @@ from ForecastAgent import retrieval_agent
 from ForecastAgent.skill_loader import SKILLS
 from ForecastAgent.tools.channels import channel_catalog
 from ForecastAgent.evidence.intelligence import export_intelligence
+from ForecastAgent.evidence.acceptance import collection_acceptance
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -32,6 +33,7 @@ def inspect_task(directory):
                           "basic_extract_batches": len(bundle.get("extract_attempts", []))},
             "result": bundle.get("result"), "evidence": evidence,
             "pipeline": bundle.get("pipeline", "legacy"), "excerpts": bundle.get("excerpts", []),
+            "market_snapshot_count": len(bundle.get('market_snapshots', {})), 'acceptance': collection_acceptance(bundle),
             "pages": [{"url": url, "capture_method": page.get("capture_method"),
                        "temporal_status": page.get("temporal_status"),
                        "retrieved_at_utc": page.get("retrieved_at_utc")}
@@ -59,6 +61,29 @@ class ForecastAgent:
         bundle = retrieval_agent.run_retrieval({}, path, "", "", replay=True)
         return {"path": export_intelligence(bundle, path), "truth_verified": False}
 
+    def acceptance(self, task_directory):
+        path = self.task_path(task_directory)
+        bundle = retrieval_agent.run_retrieval({}, path, '', '', replay=True)
+        return collection_acceptance(bundle)
+
+    def refresh(self, task_directory, urls):
+        """Incremental live acquisition under the same exclusive task lock."""
+        path = self.task_path(task_directory)
+        if not (path / 'bundle.json').exists():
+            raise ValueError('Refresh requires an existing ledger')
+        lock = path / '.running.lock'
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            raise RuntimeError('Task is already running; refresh refused')
+        os.close(descriptor)
+        try:
+            original = json.loads((path / 'bundle.json').read_text(encoding='utf-8'))
+            task = retrieval_agent.RetrievalTask(path, original['request'])
+            return task.execute('refresh_sources', {'urls': urls}, '')
+        finally:
+            lock.unlink()
+
     def run(self, task_directory, request=None):
         path = self.task_path(task_directory)
         if (path / "bundle.json").exists():
@@ -74,9 +99,10 @@ class ForecastAgent:
 
 def main():
     parser = argparse.ArgumentParser(description="Ultra-led retrieval only")
-    parser.add_argument("action", choices=["skills", "channels", "export", "inspect", "replay", "run"])
+    parser.add_argument("action", choices=["skills", "channels", "export", "acceptance", "refresh", "inspect", "replay", "run"])
     parser.add_argument("--task-dir")
     parser.add_argument("--input", type=Path)
+    parser.add_argument('--urls', nargs='+')
     args = parser.parse_args()
     agent = ForecastAgent()
     if args.action == "skills":
@@ -90,6 +116,12 @@ def main():
             result = agent.inspect(args.task_dir)
         elif args.action == "export":
             result = agent.export(args.task_dir)
+        elif args.action == 'acceptance':
+            result = agent.acceptance(args.task_dir)
+        elif args.action == 'refresh':
+            if not args.urls:
+                parser.error('--urls is required for refresh')
+            result = agent.refresh(args.task_dir, args.urls)
         else:
             request = json.loads(args.input.read_text(encoding="utf-8")) if args.input else None
             result = agent.run(args.task_dir, request)

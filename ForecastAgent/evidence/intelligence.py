@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from ForecastAgent.tavily_research import canonical_url
+from ForecastAgent.evidence.acceptance import collection_acceptance
 
 
 def intelligence_package(bundle):
@@ -14,6 +15,8 @@ def intelligence_package(bundle):
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             "pages": bundle.get("pages", {}), "excerpts": bundle.get("excerpts", []),
+            "page_history": bundle.get('page_history', {}), "updates": bundle.get('updates', []),
+            "market_snapshots": bundle.get('market_snapshots', {}), "acceptance": collection_acceptance(bundle),
             "fetch_attempts": bundle.get("fetch_attempts", []), "extract_attempts": bundle.get("extract_attempts", []),
             "quarantine": bundle.get("quarantine", []), "channel_catalog": bundle.get("channel_catalog"),
             "truth_verified": False, "out_of_sample": False,

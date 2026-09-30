@@ -27,16 +27,28 @@ CHANNELS = [
      "formats": ["text", "pdf_page", "csv_row", "json", "series_row"], "cost": "No network or provider call",
      "credentials": [], "limits": "Only saved text; bounded output; truncation is reported.",
      "temporal_support": "Inherits the saved source's temporal status.", "availability": "implemented"},
-    {"id": "polymarket_gamma", "kind": "market_discovery", "tools": [],
+    {"id": "polymarket_gamma", "kind": "market_discovery", "tools": ['collect_polymarket', 'read_market_snapshot'],
      "formats": ["market_candidates"], "cost": "Public HTTP", "credentials": [],
-     "limits": "Standalone module only; not yet available to this agent tool loop.",
-     "temporal_support": "Current snapshots only.", "availability": "standalone_only"},
+     "limits": "Active discovery; explicit pages one to three; each call shares the eight HTTP attempt cap; no executable quotes or equivalence verdict.",
+     "temporal_support": "Current snapshots only; historical modes refuse requests.", "availability": "implemented"},
+    {'id': 'official_government', 'kind': 'structured_data', 'tools': ['list_official_datasets', 'collect_official'],
+     'formats': ['series_rows', 'fiscal_rows', 'document_leads'], 'cost': 'No paid provider call', 'credentials': [],
+     'limits': 'BLS CPI/unemployment/payrolls, Treasury debt, Federal Register; bounded explicit pages; shares eight HTTP attempts.',
+     'temporal_support': 'Current captures only; no historical release-vintage claim.', 'availability': 'implemented'},
+    {'id': 'incremental_refresh', 'kind': 'update', 'tools': ['refresh_sources'],
+     'formats': ['version_changes'], 'cost': 'No paid provider call', 'credentials': [],
+     'limits': 'Saved live pages only; same ledger and remaining HTTP budget; hashes do not avoid downloads.',
+     'temporal_support': 'New live captures with preserved previous versions.', 'availability': 'implemented'},
+    {'id': 'collection_acceptance', 'kind': 'local_check', 'tools': ['collection_acceptance'],
+     'formats': ['integrity_report'], 'cost': 'No network', 'credentials': [],
+     'limits': 'Integrity, coordinates and gaps only; no reliability or forecast score.',
+     'temporal_support': 'Reports stored metadata limitations.', 'availability': 'implemented'},
 ]
 
 
 def channel_catalog():
     from copy import deepcopy
-    return {"version": 1, "channels": deepcopy(CHANNELS),
+    return {"version": 2, "channels": deepcopy(CHANNELS),
             "policy": "Catalog descriptions do not grant URLs, credentials, extra calls or historical eligibility."}
 
 

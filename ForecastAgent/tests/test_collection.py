@@ -69,13 +69,13 @@ class CollectionTests(TestCase):
             task.save()
             with patch('ForecastAgent.runtime.retrieval.channel_catalog', return_value={'version': 999}):
                 restored = RetrievalTask(Path(directory), REQUEST)
-            self.assertEqual(restored.execute('list_channels', {}, '')['version'], 1)
+            self.assertEqual(restored.execute('list_channels', {}, '')['version'], 2)
             for name in ['audit_evidence', 'record_evidence', 'finish_retrieval']:
                 with self.assertRaisesRegex(ValueError, 'unavailable'):
                     restored.execute(name, {}, '')
             self.assertNotIn('audit_evidence', [t['function']['name'] for t in COLLECTION_TOOLS])
             catalog = channel_catalog()
-            self.assertEqual(next(c for c in catalog['channels'] if c['id'] == 'polymarket_gamma')['availability'], 'standalone_only')
+            self.assertEqual(next(c for c in catalog['channels'] if c['id'] == 'polymarket_gamma')['availability'], 'implemented')
 
     def test_local_read_search_excerpt_preserve_unicode_positions_and_budgets(self):
         with TemporaryDirectory() as directory:

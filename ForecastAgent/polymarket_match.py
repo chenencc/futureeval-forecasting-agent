@@ -161,7 +161,9 @@ def parse_candidates(payload: Any, question_text: str, *, limit: int = 5) -> lis
     return candidates[:limit]
 
 
-def search_candidates(question_text: str, *, query: str | None = None, as_of_utc: str | None = None) -> dict[str, Any]:
+def search_candidates(question_text: str, *, query: str | None = None, as_of_utc: str | None = None, page: int = 1) -> dict[str, Any]:
+    if type(page) is not int or not 1 <= page <= 3:
+        raise ValueError("Market page must be between one and three")
     searched_at = datetime.now(UTC).isoformat()
     if as_of_utc is not None:
         cutoff = datetime.fromisoformat(as_of_utc.replace("Z", "+00:00"))
@@ -173,7 +175,7 @@ def search_candidates(question_text: str, *, query: str | None = None, as_of_utc
     query = " ".join((question_text if query is None else query).split())[:250]
     if not query:
         return {"searched_at": searched_at, "query": query, "candidates": [], "error": "empty_question"}
-    url = SEARCH_URL + "?" + urlencode({"q": query, "limit_per_type": 10, "events_status": "active"})
+    url = SEARCH_URL + "?" + urlencode({"q": query, "limit_per_type": 10, "events_status": "active", "page": page})
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "futureeval-research-bot/0.1"})
     with urlopen(request, timeout=15) as response:
         raw = response.read(8_000_001)

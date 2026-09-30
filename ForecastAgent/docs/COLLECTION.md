@@ -6,6 +6,8 @@
 
 The task keeps `bundle.json` as its durable ledger and writes `intelligence.json` on completion or interruption. `python -m ForecastAgent export --task-dir ...` regenerates the package offline without modifying the ledger. It includes the frozen input, plan, channel catalog, source leads, searches and raw responses, page captures and raw bytes, exact excerpts, failures, quarantine and resource counts. Export stays in the task directory.
 
+Packages also include separate `market_snapshots`, `page_history`, incremental `updates` and a mechanical `acceptance` report. Old source versions remain available for previous excerpt coordinates. Raw response and parsed-document hashes distinguish source bytes from parser layouts.
+
 ## Navigation
 
 `list_documents` returns up to 100 metadata records per request. `document_index` is one-based within a source, independent of PDF page or CSV row metadata. Omit it in `read_document` to read combined saved content; include it to read a specific parsed document. Maximum read size is 18,000 characters.

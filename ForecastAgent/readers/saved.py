@@ -1,5 +1,12 @@
 """Bounded local document access with exact character coordinates."""
 from ForecastAgent.tavily_research import canonical_url
+import hashlib
+import json
+
+
+def version_digest(page):
+    return hashlib.sha256(json.dumps({'content': page['content'], 'documents': page.get('documents', [])},
+                                    sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
 def documents(pages):

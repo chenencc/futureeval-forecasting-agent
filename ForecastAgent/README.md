@@ -18,6 +18,8 @@ python -m ForecastAgent run --input question.json --task-dir snapshots/retrieval
 python -m ForecastAgent inspect --task-dir snapshots/retrieval/question-123
 python -m ForecastAgent replay --task-dir snapshots/retrieval/question-123
 python -m ForecastAgent export --task-dir snapshots/retrieval/question-123
+python -m ForecastAgent acceptance --task-dir snapshots/retrieval/question-123
+python -m ForecastAgent refresh --task-dir snapshots/retrieval/question-123 --urls https://example.org/saved-source
 python -m unittest discover -s ForecastAgent/tests
 ```
 
@@ -34,6 +36,10 @@ Input requires `question` and `resolution_criteria`. Live collection uses `"mode
 - `search_saved_text`: paginated, case-sensitive literal search in saved documents.
 - `record_excerpt`: exact source slices with character/page/row provenance and need IDs, without a truth claim.
 - `finish_collection`: captured material and explicit gaps, without requiring an audit.
+- `list_official_datasets` / `collect_official`: BLS CPI, unemployment and payroll series, Treasury debt data, and Federal Register document discovery.
+- `collect_polymarket` / `read_market_snapshot`: save current Gamma responses and inspect saved child contracts without declaring equivalence.
+- `refresh_sources`: update saved live sources in the same ledger, preserve old versions, and report new/changed/unchanged content.
+- `collection_acceptance`: check capture integrity, exact excerpt coordinates, resource limits and acquisition gaps, without judging truth.
 
 Agent-facing results use `tool_result_v1`: `tool`, `ok`, `status`, `data`, `error`, `provenance` and `budget_remaining`. Provider-native responses stay in the ledger. The channel catalog is frozen per task. See [tool architecture](tools/README.md) and [collection contract](docs/COLLECTION.md).
 
@@ -46,12 +52,16 @@ Skills are loaded on demand and frozen with their content hashes in each ledger.
 ## Limits
 
 - At most **three Tavily basic attempts per task**, including failures and resumed runs.
-- Eight new free fetch attempts; one basic Extract batch with at most five URLs.
+- Eight free HTTP attempts shared by page reads, official adapters, Polymarket and refresh; one basic Extract batch with at most five URLs. Failures consume attempts.
 - Local reading and export do not spend search or fetch budget.
 - Task input, pipeline, skill versions and budget state survive restarts.
 - Historical strict requires pre-cutoff captures; publication filters do not restore old pages or remove model knowledge leakage.
 - Readers expose bounded parsed text and report truncation. PDF OCR, table reconstruction and dynamic browser rendering are not implemented.
-- Polymarket remains a standalone module, not an acquisition tool in this release.
+- Current Polymarket and official adapters refuse historical modes. Yahoo/ALFRED retain their existing cutoff-aware behavior.
+- Official discovery and Polymarket pagination are explicit and bounded; no automatic extra requests. BEA, SEC-specific and general official-site adapters are not implemented.
+- Refresh does not renew budgets or trigger automatically in the tournament monitor. Exhausted tasks cannot refresh further; changing this policy requires an explicit future budget design.
 - Acquisition does not submit forecasts or trades. Legacy forecasting templates contain publication code and are not called by this interface.
 
 Actions and command-line operators use the same engine and snapshot paths. Codex does not need to remain online. GitHub may delay scheduled runs.
+
+See [adapter and incremental collection details](docs/ACQUISITION_CHANNELS.md). Acceptance reports are technical checks, not reliability or forecast scores.

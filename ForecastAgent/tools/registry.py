@@ -67,5 +67,21 @@ LOCAL_TOOLS = [
          {"gaps": {"type": "array", "items": STRING}}, ["gaps"]),
 ]
 TOOLS.extend(LOCAL_TOOLS)
+TOOLS.extend([
+    tool('list_official_datasets', 'Inspect supported government datasets, exact series identifiers, units and temporal limits. No network.', {}, []),
+    tool('collect_official', 'Capture a supported government dataset. One of the shared eight free HTTP attempts; live mode only. Cache is reused.',
+         {'dataset': {'type': 'string', 'enum': ['bls_cpi', 'bls_unemployment', 'bls_payrolls', 'treasury_debt', 'federal_register']},
+          'query': STRING, 'page': {'type': 'integer', 'minimum': 1, 'maximum': 3},
+          'need_ids': {'type': 'array', 'items': STRING}}, ['dataset', 'need_ids']),
+    tool('collect_polymarket', 'Save active Gamma event/child-contract candidates, rules and display prices separately. No equivalence verdict or edge. Shares eight free HTTP attempts; current data only.',
+         {'query': STRING, 'page': {'type': 'integer', 'minimum': 1, 'maximum': 3}, 'refresh': {'type': 'boolean'},
+          'need_ids': {'type': 'array', 'items': STRING}}, ['query', 'need_ids']),
+    tool('read_market_snapshot', 'Read saved Gamma snapshot metadata or a specific child contract without network calls. Market rules and prices remain unverified signals.',
+         {'snapshot_id': STRING, 'market_id': STRING, 'offset': {'type': 'integer', 'minimum': 0},
+          'limit': {'type': 'integer', 'minimum': 1, 'maximum': 20}}, ['snapshot_id']),
+    tool('refresh_sources', 'Re-fetch one to five saved live sources within the SAME ledger and remaining eight-attempt budget. Hash unchanged material; retain changed versions. No Tavily calls.',
+         {'urls': {'type': 'array', 'items': STRING, 'minItems': 1, 'maxItems': 5}}, ['urls']),
+    tool('collection_acceptance', 'Inspect raw response integrity, excerpt coordinates, budget and acquisition gaps. Mechanical checks only; no truth verification.', {}, []),
+])
 COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
                     {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]
