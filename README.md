@@ -6,10 +6,13 @@ This checkout is based on the official Metaculus template. `main.py --mode tourn
 forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
 The live workflow checks for new questions hourly and can also be run manually.
 V0 uses one research report and one prediction per question to limit
-cost. V0 pins forecasting and parsing to OpenRouter's free NVIDIA Nemotron 3
-Super endpoint. One Tavily Basic search per question supplies current source
-snippets and links. Each run now saves point-in-time research and forecast
-snapshots, with candidate Polymarket matches kept separate from the model's
+cost. V0 pins forecasting, parsing, and the follow-up query to OpenRouter's
+free NVIDIA Nemotron 3 Ultra endpoint. Tavily first returns up to 10 Basic
+search results. Ultra then identifies a missing fact and writes a targeted
+second query; Tavily returns up to 10 more results, with URLs already seen in
+the first round removed. Each run saves both queries, result batches, and
+point-in-time research and forecast snapshots. Candidate Polymarket matches
+are kept separate from the model's
 research input. Paper trading is not yet enabled.
 
 ### Forecast snapshots and market candidates

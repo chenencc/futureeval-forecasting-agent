@@ -14,7 +14,7 @@ from bot_helpers import (
     print_startup_banner,
     silence_noisy_dependencies,
 )
-from tavily_research import search_question
+from tavily_research import followup_query_from_response, format_batch, search_batch
 from forecast_snapshots import SnapshotStore
 from polymarket_match import search_candidates
 
@@ -177,15 +177,64 @@ class SummerTemplateBot2026(ForecastBot):
                 research = await researcher.invoke(prompt)
             elif researcher == "tavily":
                 try:
-                    research = await asyncio.to_thread(
-                        search_question,
-                        question.question_text,
-                        os.environ["TAVILY_API_KEY"],
-                    )
+                    api_key = os.environ["TAVILY_API_KEY"]
+                    first_batch = await asyncio.to_thread(search_batch, question.question_text, api_key)
                 except Exception as exc:
                     if snapshots is not None:
                         snapshots.update(question, research_error=f"{type(exc).__name__}: {exc}")
                     raise
+                first_report = format_batch(first_batch, label="Initial web search")
+                if snapshots is not None:
+                    snapshots.update(question, research_rounds=[first_batch])
+
+                gap_prompt = clean_indents(
+                    f"""
+                    You are selecting a second web search for a forecasting question.
+                    Review the question, resolution rules, and first search results. Identify the
+                    single most consequential missing or uncertain fact that a web search could clarify.
+                    Return exactly one line in this format: QUERY: <search terms>
+                    The query must be suitable for Tavily, specific, and at most 350 characters.
+                    Do not provide a forecast, explanation, or URLs.
+
+                    Question: {question.question_text}
+                    Resolution criteria: {question.resolution_criteria}
+                    Fine print: {question.fine_print}
+
+                    First search results:
+                    {first_report}
+                    """
+                )
+                gap_response = ""
+                gap_error = None
+                try:
+                    gap_response = await self.get_llm("default", "llm").invoke(gap_prompt)
+                except Exception as exc:
+                    gap_error = f"{type(exc).__name__}: {exc}"
+                    logger.warning("Gap query model failed for %s: %s", question.page_url, exc)
+                followup_query = followup_query_from_response(gap_response, question.question_text)
+                if snapshots is not None:
+                    snapshots.update(
+                        question,
+                        research_followup_query=followup_query,
+                        research_gap_model=getattr(self, "snapshot_model_name", None),
+                        research_gap_response=gap_response[:1000],
+                        research_gap_error=gap_error,
+                    )
+                research = first_report
+                try:
+                    second_batch = await asyncio.to_thread(
+                        search_batch,
+                        followup_query,
+                        api_key,
+                        exclude_urls=tuple(hit["url"] for hit in first_batch["results"]),
+                    )
+                    research += "\n\n" + format_batch(second_batch, label="Follow-up web search (new sources only)")
+                    if snapshots is not None:
+                        snapshots.update(question, research_rounds=[first_batch, second_batch])
+                except Exception as exc:
+                    logger.warning("Follow-up Tavily search failed for %s: %s", question.page_url, exc)
+                    if snapshots is not None:
+                        snapshots.update(question, research_followup_error=f"{type(exc).__name__}: {exc}")
             elif (
                 researcher == "asknews/news-summaries"
                 or researcher == "asknews/deep-research/low-depth"
@@ -725,8 +774,8 @@ if __name__ == "__main__":
     publish_to_metaculus = not args.dry_run
     print_startup_banner(run_mode, will_publish=publish_to_metaculus)
 
-    # Pin all LLM calls to a free endpoint and use Tavily for current research.
-    free_model = "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
+    # Use Ultra for forecasting and the follow-up search query.
+    free_model = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
     template_bot = SummerTemplateBot2026(
         research_reports_per_question=1,
         predictions_per_research_report=1,
