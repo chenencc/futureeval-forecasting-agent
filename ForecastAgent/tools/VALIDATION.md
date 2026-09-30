@@ -1,5 +1,7 @@
 # 功能验证记录
 
+追加：2026-09-30 完成 [Polymarket 真实接口专项验证](../docs/POLYMARKET_VALIDATION.md)，十次题目搜索及两个真实子合约正例，完整套件65项通过。以下表格是此前通用功能验证的记录。
+
 验证日期：2026-09-30。最终代码：4f3371b。
 
 [成功运行与完整快照](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/36714712263)
