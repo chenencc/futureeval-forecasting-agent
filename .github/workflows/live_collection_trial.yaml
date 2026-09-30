@@ -28,18 +28,27 @@ jobs:
           script: |
             const {owner, repo} = context.repo;
             async function latest(workflow, artifact) {
-              const {data} = await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: workflow, status:'completed', per_page:1});
-              if (!data.workflow_runs.length) return null;
-              const run = data.workflow_runs[0];
-              const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
-              if (!list.artifacts.some(a => a.name === artifact && !a.expired)) throw new Error('Latest durable state missing; refusing budget reset');
-              return run.id;
+              const {data} = await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: workflow, status:'completed', per_page:30});
+              for (const run of data.workflow_runs) {
+                const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
+                const state = list.artifacts.find(a => a.name === artifact && !a.expired);
+                if (state) return {id:run.id, name:state.name};
+                const {data: jobs} = await github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:run.id});
+                const steps = jobs.jobs.flatMap(j => j.steps || []);
+                const acquisition = steps.find(s => ['Run real Ultra acquisition without predictions','Save read-only question snapshot'].includes(s.name));
+                const legacy = list.artifacts.find(a => a.name === `futureeval-questions-${run.id}` && !a.expired);
+                if (workflow === 'run_bot_on_tournament.yaml' && run.conclusion === 'success' && legacy && !steps.some(s => s.name === 'Install free document parser')) return {id:run.id, name:legacy.name};
+                if (acquisition && acquisition.conclusion === 'skipped') continue;
+                throw new Error('Executed acquisition has no durable state; refusing budget reset');
+              }
+              return null;
             }
             const trial = await latest('live_collection_trial.yaml', 'live-collection-state');
             const monitor = await latest('run_bot_on_tournament.yaml', 'futureeval-monitor-state');
-            core.setOutput('trial', trial || '');
-            core.setOutput('monitor', monitor || '');
-            core.setOutput('completed', [trial, monitor].filter(Boolean).join(','));
+            core.setOutput('trial', trial?.id || '');
+            core.setOutput('monitor', monitor?.id || '');
+            core.setOutput('monitor_name', monitor?.name || '');
+            core.setOutput('completed', [trial?.id, monitor?.id].filter(Boolean).join(','));
       - name: Restore existing trial selection and budgets
         if: steps.previous.outputs.trial != ''
         uses: actions/download-artifact@v4
@@ -52,7 +61,7 @@ jobs:
         if: steps.previous.outputs.monitor != ''
         uses: actions/download-artifact@v4
         with:
-          name: futureeval-monitor-state
+          name: ${{ steps.previous.outputs.monitor_name }}
           run-id: ${{ steps.previous.outputs.monitor }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/live-collection/monitor-state/
