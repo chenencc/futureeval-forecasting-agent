@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from ForecastAgent.retrieval_agent import RetrievalTask, run_retrieval, MAX_TURNS
 
-REQUEST = {'question': 'Will Agency announce a price change?', 'resolution_criteria': 'Announcement per [guide](https://example.org/guide.pdf)', 'mode': 'live'}
+REQUEST = {'question': 'Will Agency announce a price change?', 'resolution_criteria': 'Announcement per [guide](https://example.org/guide.pdf)', 'mode': 'live', 'pipeline': 'legacy'}
 PLAN = {'needs': [{'id': 'n', 'condition': 'Price announcement', 'priority': 'critical', 'expected_source': 'Agency', 'query': 'Agency announcement'}]}
 URL = 'https://example.org/guide.pdf'
 def call(name, args, ident='x'):

@@ -2,6 +2,8 @@
 
 All maintained implementation code, research skills, fixtures and tests live in [ForecastAgent/](ForecastAgent/README.md). Codex is an operator only; the agent runs independently in GitHub Actions or the command line. Old root modules and scripts are compatibility entry points. Existing snapshot paths and per-task budgets remain unchanged.
 
+New tasks use collection-only mode: capture source material and exact excerpts, then export `intelligence.json` without a truth verdict, probability or audit requirement. Channel catalogs and local long-document tools are documented in [the collection contract](ForecastAgent/docs/COLLECTION.md). Existing ledgers retain their prior pipeline and consumed budgets.
+
 # Simple Metaculus forecasting bot
 
 ## Fall 2026 V0 setup
@@ -19,14 +21,14 @@ For each newly observed open binary question, the scheduled monitor now runs
 the independent Ultra retrieval agent, at most two questions per run. It plans
 evidence requirements, uses at most THREE Tavily basic attempts per task
 (including failures and interrupted reservations), fetches up to eight public
-pages for free, validates exact evidence quotes, and saves coverage, gaps and
-conflicts without producing a forecast. Stable question task directories and
+pages for free, preserves exact source excerpts, and exports captured material
+and gaps without producing a forecast or requiring a truth audit. Stable question task directories and
 restored state artifacts preserve budgets across runs. Missing latest state
 stops the workflow. Completed partial/failed evidence bundles are recorded
 rather than automatically restarting their search budget.
 
 Bundles include raw search results, page response bytes, text, hashes, temporal
-flags, model decisions and quality dimensions. Local replay makes zero API
+flags, acquisition decisions and exact excerpts. Local replay makes zero API
 calls. Historical modes enforce a fixed search date and quarantine unknown or
 late dates; strict mode accepts suitable local historical captures and refuses
 today's pages. See [retrieval usage and limits](docs/RETRIEVAL.md).

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from ForecastAgent.retrieval_agent import RetrievalTask, run_retrieval
 
-REQUEST = {"question": "Will the agency publish the figure?", "resolution_criteria": "Official announcement by the deadline", "mode": "live"}
+REQUEST = {"question": "Will the agency publish the figure?", "resolution_criteria": "Official announcement by the deadline", "mode": "live", "pipeline": "legacy"}
 PLAN = {"needs": [{"id": "status", "condition": "Official publication", "priority": "critical", "expected_source": "Agency", "query": "agency publication"}]}
 SEARCH = {"query": "agency status", "need_ids": ["status"], "reason": "Find official current status"}
 URL = "https://example.org/announcement"

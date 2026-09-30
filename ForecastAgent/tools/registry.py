@@ -48,3 +48,24 @@ TOOLS.insert(-1, tool("audit_evidence", "Review ALL saved evidence before finish
     {"reviews": {"type": "array", "items": {"type": "object", "properties": {"evidence_id": STRING,
      "entity_matches": {"type": "boolean"}, "quote_supports_claim": {"type": "boolean"},
      "time_valid": {"type": "boolean"}, "reason": STRING}, "required": ["evidence_id", "entity_matches", "quote_supports_claim", "time_valid", "reason"]}}}, ["reviews"]))
+
+LOCAL_TOOLS = [
+    tool("list_channels", "Inspect implemented acquisition channels, formats, credential names and limits. No network.", {}, []),
+    tool("list_documents", "List saved document/page/row metadata with one-based document indices. No network.",
+         {"url": STRING, "offset": {"type": "integer", "minimum": 0}, "limit": {"type": "integer", "minimum": 1, "maximum": 100}}, []),
+    tool("read_document", "Read saved content or a saved PDF page/data row by document index. Character offsets refer to saved parsed text. No fetch.",
+         {"url": STRING, "document_index": {"type": "integer", "minimum": 1}, "start_char": {"type": "integer", "minimum": 0},
+          "max_chars": {"type": "integer", "minimum": 1, "maximum": 18000}}, ["url"]),
+    tool("search_saved_text", "Case-sensitive literal search across saved documents; return exact match coordinates and bounded context. No web search.",
+         {"query": STRING, "url": STRING, "offset": {"type": "integer", "minimum": 0},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 20}}, ["query"]),
+    tool("record_excerpt", "Save an exact text slice with page/row/character provenance. No claim, stance, probability or quality score.",
+         {"url": STRING, "document_index": {"type": "integer", "minimum": 1},
+          "start_char": {"type": "integer", "minimum": 0}, "end_char": {"type": "integer", "minimum": 1},
+          "need_ids": {"type": "array", "items": STRING}}, ["url", "start_char", "end_char", "need_ids"]),
+    tool("finish_collection", "Finish acquisition and export all saved material even without excerpts or audit. State unread items and gaps. Never assert truth or predict.",
+         {"gaps": {"type": "array", "items": STRING}}, ["gaps"]),
+]
+TOOLS.extend(LOCAL_TOOLS)
+COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
+                    {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]

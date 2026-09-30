@@ -6,6 +6,8 @@ from pathlib import Path
 
 from ForecastAgent import retrieval_agent
 from ForecastAgent.skill_loader import SKILLS
+from ForecastAgent.tools.channels import channel_catalog
+from ForecastAgent.evidence.intelligence import export_intelligence
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -29,6 +31,7 @@ def inspect_task(directory):
                           "page_fetch_attempts": len(bundle.get("fetch_attempts", [])),
                           "basic_extract_batches": len(bundle.get("extract_attempts", []))},
             "result": bundle.get("result"), "evidence": evidence,
+            "pipeline": bundle.get("pipeline", "legacy"), "excerpts": bundle.get("excerpts", []),
             "pages": [{"url": url, "capture_method": page.get("capture_method"),
                        "temporal_status": page.get("temporal_status"),
                        "retrieved_at_utc": page.get("retrieved_at_utc")}
@@ -50,6 +53,12 @@ class ForecastAgent:
     def inspect(self, task_directory):
         return inspect_task(self.task_path(task_directory))
 
+    def export(self, task_directory):
+        """Export an existing ledger without network calls or budget changes."""
+        path = self.task_path(task_directory)
+        bundle = retrieval_agent.run_retrieval({}, path, "", "", replay=True)
+        return {"path": export_intelligence(bundle, path), "truth_verified": False}
+
     def run(self, task_directory, request=None):
         path = self.task_path(task_directory)
         if (path / "bundle.json").exists():
@@ -65,18 +74,22 @@ class ForecastAgent:
 
 def main():
     parser = argparse.ArgumentParser(description="Ultra-led retrieval only")
-    parser.add_argument("action", choices=["skills", "inspect", "replay", "run"])
+    parser.add_argument("action", choices=["skills", "channels", "export", "inspect", "replay", "run"])
     parser.add_argument("--task-dir")
     parser.add_argument("--input", type=Path)
     args = parser.parse_args()
     agent = ForecastAgent()
     if args.action == "skills":
         result = SKILLS
+    elif args.action == "channels":
+        result = channel_catalog()
     else:
         if not args.task_dir:
             parser.error("--task-dir is required")
         if args.action in {"inspect", "replay"}:
             result = agent.inspect(args.task_dir)
+        elif args.action == "export":
+            result = agent.export(args.task_dir)
         else:
             request = json.loads(args.input.read_text(encoding="utf-8")) if args.input else None
             result = agent.run(args.task_dir, request)

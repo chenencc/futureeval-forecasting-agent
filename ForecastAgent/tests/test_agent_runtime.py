@@ -8,7 +8,7 @@ from ForecastAgent.agent import ForecastAgent, inspect_task
 from ForecastAgent.retrieval_agent import run_retrieval, RetrievalTask
 from ForecastAgent.skill_loader import freeze_skills, load_skill
 
-REQUEST = {"question": "Will Agency announce a change?", "resolution_criteria": "Official announcement", "mode": "live"}
+REQUEST = {"question": "Will Agency announce a change?", "resolution_criteria": "Official announcement", "mode": "live", "pipeline": "legacy"}
 
 
 def call(name, args, ident):
@@ -39,7 +39,7 @@ class AgentRuntimeTests(TestCase):
             self.assertEqual(result["loaded_skills"], ["official-events"])
             self.assertEqual(result["resources"]["tavily_basic_attempts"], 0)
             self.assertEqual(result["agent_runtime"]["stage"], "complete")
-            body = result["transcript"][1]["result"]
+            body = result["transcript"][1]["result"]["data"]
             self.assertIn("content", body)
             path = Path(directory) / "bundle.json"
             before = path.read_bytes()
