@@ -68,6 +68,12 @@ def check_environment(strict: bool = True) -> None:
             "Get one at https://www.metaculus.com/futureeval/participate/"
         )
 
+    if not _is_real_env("TAVILY_API_KEY"):
+        problems.append(
+            "TAVILY_API_KEY is missing. Store TAVILY_KEY1 as a GitHub Actions "
+            "secret, or set TAVILY_API_KEY locally."
+        )
+
     has_llm_key = any(
         _is_real_env(k)
         for k in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY")

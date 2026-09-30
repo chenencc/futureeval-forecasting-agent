@@ -2,6 +2,11 @@ name: Test Bot
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Submit the test forecast to Metaculus
+        type: boolean
+        default: false
 
 # Add concurrency group to prevent parallel runs
 concurrency:
@@ -37,7 +42,11 @@ jobs:
         run: poetry install --no-interaction --no-root
       - name: Run bot
         run: |
-          poetry run python main.py --mode test_questions
+          if [ "${{ inputs.publish }}" = "true" ]; then
+            poetry run python main.py --mode test_questions
+          else
+            poetry run python main.py --mode test_questions --dry-run
+          fi
         # this reads the environment variables from the github repository.
         # Store under Settings --> Secrets and variables --> Actions
         env:
@@ -46,6 +55,7 @@ jobs:
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ASKNEWS_CLIENT_ID: ${{ secrets.ASKNEWS_CLIENT_ID }}
           ASKNEWS_SECRET: ${{ secrets.ASKNEWS_SECRET }}

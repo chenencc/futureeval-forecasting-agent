@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -13,6 +14,7 @@ from bot_helpers import (
     print_startup_banner,
     silence_noisy_dependencies,
 )
+from tavily_research import search_question
 
 silence_noisy_dependencies()
 
@@ -155,6 +157,12 @@ class SummerTemplateBot2026(ForecastBot):
 
             if isinstance(researcher, GeneralLlm):
                 research = await researcher.invoke(prompt)
+            elif researcher == "tavily":
+                research = await asyncio.to_thread(
+                    search_question,
+                    question.question_text,
+                    os.environ["TAVILY_API_KEY"],
+                )
             elif (
                 researcher == "asknews/news-summaries"
                 or researcher == "asknews/deep-research/low-depth"
@@ -660,16 +668,19 @@ if __name__ == "__main__":
         default="tournament",
         help="What to forecast on (default: tournament)",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Generate forecasts without submitting them to Metaculus",
+    )
     args = parser.parse_args()
     run_mode: Literal["tournament", "metaculus_cup", "test_questions"] = args.mode
 
     check_environment(strict=True)
-    publish_to_metaculus = True
+    publish_to_metaculus = not args.dry_run
     print_startup_banner(run_mode, will_publish=publish_to_metaculus)
 
-    # Pin every LLM role to OpenRouter free endpoints. The template's
-    # default researcher uses a retired search model and fails before
-    # forecasting starts. Current-news retrieval can be added separately.
+    # Pin all LLM calls to a free endpoint and use Tavily for current research.
     free_model = "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
     template_bot = SummerTemplateBot2026(
         research_reports_per_question=1,
@@ -687,7 +698,7 @@ if __name__ == "__main__":
                 allowed_tries=2,
             ),
             "summarizer": free_model,
-            "researcher": "no_research",
+            "researcher": "tavily",
             "parser": free_model,
         },
     )

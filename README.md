@@ -7,25 +7,28 @@ forecasts new questions in `fall-futureeval-2026` and the current `minibench`.
 The live workflow is manual until API forecasting access and a smoke test are
 verified. V0 uses one research report and one prediction per question to limit
 cost. V0 pins forecasting and parsing to OpenRouter's free NVIDIA Nemotron 3
-Super endpoint. The retired template research model is disabled, so forecasts use
-the question context without current-news retrieval. The optional Polymarket
+Super endpoint. One Tavily Basic search per question supplies current source
+snippets and links. The optional Polymarket
 paper-trading track is not yet enabled.
 
 1. Use this repository as the source for deployment. The official Metaculus
    template is kept as the `upstream` remote for future reference.
-2. Add `METACULUS_TOKEN` and `OPENROUTER` under **Settings → Secrets and
+2. Add `METACULUS_TOKEN`, `OPENROUTER`, and `TAVILY_KEY1` under **Settings → Secrets and
    variables → Actions**. The workflow maps `OPENROUTER` to the runtime variable
-   `OPENROUTER_API_KEY`. Never commit `.env` or share either key in a chat.
+   `OPENROUTER_API_KEY` and `TAVILY_KEY1` to `TAVILY_API_KEY`. Never commit `.env`
+   or share keys in a chat.
 3. Submit the [Fall 2026 participation form](https://forms.gle/aQdYMq9Pisrf1v7d8).
 4. Enable API forecasting for the dedicated bot account in [Metaculus account
    settings](https://www.metaculus.com/accounts/settings/account/#api-forecasting-access).
    The token in `METACULUS_TOKEN` must belong to that account.
-5. Enable GitHub Actions. Run **Test Bot** manually, then verify a forecast on
-   the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
+5. Enable GitHub Actions. Run **Test Bot** manually with its default dry-run
+   setting. Once API access works, rerun with **publish** checked and verify a
+   forecast on the [bot testing area](https://www.metaculus.com/tournament/bot-testing-area/).
 6. The **Forecast on new AI tournament questions** workflow handles the live
    tournament and MiniBench. Run it manually after the smoke test succeeds.
 
-The test workflow posts one actual forecast to the testing area. The live workflow
+The test workflow forecasts one question without posting by default; its
+**publish** input posts to the testing area. The live workflow
 posts actual forecasts to the competition. See the upstream instructions below
 for local setup and other optional API keys.
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
