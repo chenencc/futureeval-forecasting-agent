@@ -41,12 +41,13 @@ def get_json(url: str, token: str) -> dict:
 
 
 def collect_questions(token: str) -> list[dict]:
-    url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 20})
-    posts: list[dict] = []
-    while url:
-        page = get_json(url, token)
-        posts.extend(page.get("results") or [])
-        url = page.get("next")
+    # A single bounded request keeps the scheduled monitor safe under API
+    # throttling. The tournament currently has far fewer than 100 posts.
+    url = API_ROOT + "?" + urlencode({"tournaments": TOURNAMENT, "limit": 100})
+    page = get_json(url, token)
+    posts = page.get("results") or []
+    if page.get("next"):
+        print("WARNING: More than 100 questions available; this snapshot contains only the first page.", flush=True)
     return posts
 
 

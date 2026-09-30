@@ -9,12 +9,9 @@ from scripts.monitor_tournament import collect_questions, snapshot_questions
 
 class MonitorTournamentTests(TestCase):
     @patch("scripts.monitor_tournament.get_json")
-    def test_paginates_and_saves_question_snapshot(self, get_json) -> None:
+    def test_saves_question_snapshot_from_one_request(self, get_json) -> None:
         post = {"id": 123, "title": "Will it happen?", "status": "open", "question": {"id": 456, "resolution_criteria": "Official announcement"}}
-        get_json.side_effect = [
-            {"results": [post], "next": "https://www.metaculus.com/api/posts/?page=2"},
-            {"results": [], "next": None},
-        ]
+        get_json.return_value = {"results": [post], "next": None}
         with tempfile.TemporaryDirectory() as directory:
             output = snapshot_questions("test-token", Path(directory))
             index = json.loads((output / "index.json").read_text(encoding="utf-8"))
@@ -23,7 +20,7 @@ class MonitorTournamentTests(TestCase):
         self.assertEqual(index["question_count"], 1)
         self.assertEqual(index["questions"][0]["question_id"], 456)
         self.assertEqual(saved["post"]["question"]["resolution_criteria"], "Official announcement")
-        self.assertEqual(get_json.call_count, 2)
+        self.assertEqual(get_json.call_count, 1)
 
     @patch("scripts.monitor_tournament.get_json")
     def test_empty_tournament_is_valid(self, get_json) -> None:
