@@ -83,11 +83,11 @@ class MonitorTournamentTests(TestCase):
         self.assertEqual(pages, 1)
         self.assertIn("rate limit", error)
 
-    @patch("scripts.ultra_research_agent.run_research")
+    @patch("scripts.retrieval_agent.run_retrieval")
     @patch("scripts.monitor_tournament.get_json")
     def test_researches_open_binary_once_without_submission(self, get_json, run_research) -> None:
         get_json.return_value = {"results": [post(1, 11)], "next": None}
-        run_research.return_value = {"assessment": {"probability": 0.6}, "error": None}
+        run_research.return_value = {"result": {"status": "partial"}}
         with patch.dict("os.environ", {"TAVILY_API_KEY": "test", "OPENROUTER_API_KEY": "test"}):
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)

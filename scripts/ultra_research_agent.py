@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import base64
 import ipaddress
 import json
 import os
@@ -108,6 +109,18 @@ def fetch_public_page(url: str) -> dict:
             raise ValueError("Page exceeds size limit")
         charset = response.headers.get_content_charset() or "utf-8"
     decoded = raw.decode(charset, errors="replace")
+    metadata = {}
+    if content_type in {"text/html", "application/xhtml+xml"}:
+        class Dates(HTMLParser):
+            def handle_starttag(self, tag, attrs):
+                values = dict(attrs)
+                if tag == "meta":
+                    label = (values.get("property") or values.get("name") or values.get("itemprop") or "").lower()
+                    if label in {"article:published_time", "datepublished", "date", "pubdate"}:
+                        metadata["published_at"] = values.get("content")
+                    if label in {"article:modified_time", "datemodified", "last-modified"}:
+                        metadata["updated_at"] = values.get("content")
+        Dates().feed(decoded)
     if content_type in {"text/html", "application/xhtml+xml"}:
         parser = ReadableHTML()
         parser.feed(decoded)
@@ -122,19 +135,21 @@ def fetch_public_page(url: str) -> dict:
         "retrieved_at_utc": utc_now(),
         "content_type": content_type,
         "sha256": hashlib.sha256(raw).hexdigest(),
+        "raw_response_base64": base64.b64encode(raw).decode("ascii"),
+        "page_date_metadata": metadata,
         "content": content,
         "content_truncated": len(decoded) > MAX_SAVED_CHARS,
     }
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False) -> dict:
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None) -> dict:
     request = Request(
         OPENROUTER_URL,
         data=json.dumps({
             "model": MODEL,
             "messages": messages,
-            "tools": TOOLS,
-            "tool_choice": {"type": "function", "function": {"name": "search_tavily"}} if first_turn else "auto",
+            "tools": TOOLS if tools is None else tools,
+            "tool_choice": {"type": "function", "function": {"name": forced_tool or "search_tavily"}} if first_turn or forced_tool else "auto",
             "temperature": 0.2,
             "max_tokens": 3000,
         }).encode("utf-8"),

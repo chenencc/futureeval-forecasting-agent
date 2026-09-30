@@ -175,19 +175,23 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
 
     research_results = []
     if research and open_complete:
-        from scripts.ultra_research_agent import run_research
+        from scripts.retrieval_agent import run_retrieval
         for post, question in pending_research[:RESEARCH_PER_RUN]:
             qid = question["id"]
             try:
-                report = run_research(question.get("title") or post.get("title") or "",
-                                      question.get("resolution_criteria") or post.get("resolution_criteria") or "",
-                                      question.get("fine_print") or post.get("fine_print") or "",
-                                      os.environ["TAVILY_API_KEY"], os.environ["OPENROUTER_API_KEY"])
+                task_directory = root / "retrieval" / str(qid)
+                request = {"question": question.get("title") or post.get("title") or "",
+                           "resolution_criteria": question.get("resolution_criteria") or post.get("resolution_criteria") or "",
+                           "fine_print": question.get("fine_print") or post.get("fine_print") or "", "mode": "live"}
+                # Existing task input stays frozen even if the upstream question changes.
+                # Updated question snapshots remain available separately for review.
+                existing = task_directory / "bundle.json"
+                if existing.exists():
+                    request = json.loads(existing.read_text(encoding="utf-8"))["request"]
+                report = run_retrieval(request, task_directory, os.environ["TAVILY_API_KEY"], os.environ["OPENROUTER_API_KEY"])
                 _write_json(output / f"research-{qid}.json", report)
-                if report.get("assessment") is None or report.get("error"):
-                    raise RuntimeError(report.get("error") or "No assessment returned")
                 researched.add(qid)
-                research_results.append({"question_id": qid, "status": "saved"})
+                research_results.append({"question_id": qid, "status": "saved", "retrieval_status": report["result"]["status"]})
             except Exception as exc:
                 research_results.append({"question_id": qid, "status": "failed", "error": f"{type(exc).__name__}: {exc}"})
 

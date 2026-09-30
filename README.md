@@ -11,17 +11,25 @@ persists seen question IDs, researched IDs, and the archive pagination cursor
 between runners. It never submits a forecast or trade. GitHub may delay or
 drop scheduled runs.
 
-For each newly observed open binary question, the scheduled monitor runs the
-same bounded Ultra research loop, at most two questions per run; failures stay
-pending for retry. The separate manual research demo runs one previously
-collected question through the loop. Ultra chooses up to
-three Tavily basic searches (ten new URLs per search) and up to five free
-direct public-page fetches. It can inspect long saved pages with `find_in_page`.
-The code enforces those limits, records raw readable page content, URL, UTC
-retrieval time, SHA-256 digest, tool decisions, per-claim source assessments,
-contradictions, and a final probability. A failed fetch is recorded as an error,
-not treated as verified evidence. No forecast is submitted. Artifacts are
-retained for 90 days. Paper trading is not yet enabled.
+For each newly observed open binary question, the scheduled monitor now runs
+the independent Ultra retrieval agent, at most two questions per run. It plans
+evidence requirements, uses at most THREE Tavily basic attempts per task
+(including failures and interrupted reservations), fetches up to eight public
+pages for free, validates exact evidence quotes, and saves coverage, gaps and
+conflicts without producing a forecast. Stable question task directories and
+restored state artifacts preserve budgets across runs. Missing latest state
+stops the workflow. Completed partial/failed evidence bundles are recorded
+rather than automatically restarting their search budget.
+
+Bundles include raw search results, page response bytes, text, hashes, temporal
+flags, model decisions and quality dimensions. Local replay makes zero API
+calls. Historical modes enforce a fixed search date and quarantine unknown or
+late dates; strict mode accepts suitable local historical captures and refuses
+today's pages. See [retrieval usage and limits](docs/RETRIEVAL.md).
+Artifacts are retained for 90 days. Paper trading is not yet enabled.
+
+The older manual research demo still includes forecasting; it is separate from
+the monitor's retrieval-only path. The following describes that legacy loop.
 
 The `outside_inside_v1` pipeline keeps Ultra as the sole planning and forecasting
 model. It labels Tavily searches as historical, current, or gap, with a shared

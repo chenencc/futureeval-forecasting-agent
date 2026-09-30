@@ -34,7 +34,7 @@ def canonical_url(url: str) -> str:
     return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/") or "/", query, ""))
 
 
-def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()) -> dict:
+def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = (), end_date: str | None = None) -> dict:
     """Search once and retain at most ten new, distinct Tavily hits."""
     query = " ".join(query.split())[:350]
     if not query:
@@ -50,6 +50,11 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
         "include_published_date": True,
         "exclude_domains": ["metaculus.com"],
     }
+    if end_date is not None:
+        from datetime import date
+        if date.fromisoformat(end_date).isoformat() != end_date:
+            raise ValueError("end_date must be YYYY-MM-DD")
+        payload["end_date"] = end_date
     request = Request(
         TAVILY_SEARCH_URL,
         data=json.dumps(payload).encode("utf-8"),
@@ -80,6 +85,8 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
         "query": query,
         "searched_at": datetime.now(timezone.utc).isoformat(),
         "results": results,
+        "raw_results": raw_results,
+        "end_date": end_date,
     }
 
 

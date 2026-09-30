@@ -7,6 +7,15 @@ from tavily_research import followup_query_from_response, search_batch, search_q
 
 
 class TavilyResearchTests(TestCase):
+    @patch("tavily_research.urlopen")
+    def test_historical_date_is_sent_with_basic_and_no_answer(self, urlopen):
+        urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"results":[]}')
+        search_batch("historical status", "key", end_date="2026-08-19")
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(payload["end_date"], "2026-08-19")
+        self.assertEqual(payload["search_depth"], "basic")
+        self.assertFalse(payload["include_answer"])
+        self.assertEqual(urlopen.call_count, 1)
     def test_followup_query_parses_ultra_response_and_falls_back(self) -> None:
         self.assertEqual(
             followup_query_from_response("Reasoning\nQUERY:  agency  2026  update", "Will it happen?"),

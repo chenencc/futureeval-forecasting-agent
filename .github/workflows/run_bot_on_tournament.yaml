@@ -32,13 +32,14 @@ jobs:
               owner, repo, workflow_id: 'run_bot_on_tournament.yaml',
               branch: 'main', status: 'completed', per_page: 30,
             });
-            for (const run of data.workflow_runs) {
+            for (const run of data.workflow_runs.slice(0, 1)) {
               const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                 owner, repo, run_id: run.id, per_page: 100,
               });
               if (artifacts.data.artifacts.some(a => a.name === 'futureeval-monitor-state' && !a.expired)) {
                 return run.id;
               }
+              throw new Error('Latest monitor state unavailable: refusing to reset per-task search budgets');
             }
             return null;
       - name: Restore question IDs and archive cursor
@@ -61,7 +62,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: futureeval-monitor-state
-          path: snapshots/monitor/state.json
+          path: |
+            snapshots/monitor/state.json
+            snapshots/monitor/retrieval/
           if-no-files-found: warn
           retention-days: 90
       - name: Upload question snapshots
