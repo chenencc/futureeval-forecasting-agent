@@ -17,6 +17,51 @@ def call(name, args, ident):
     return {"id": ident, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
 
 class RetrievalTests(TestCase):
+    @patch("scripts.retrieval_agent.extract_basic")
+    def test_extract_rescue_eligibility_partial_response_and_restart_budget(self, extract):
+        other = "https://example.org/other"
+        extract.return_value = {"results": [{"url": URL, "raw_content": "Official announcement establishes the current status. " * 3},
+                                              {"url": "https://unrequested.example/", "raw_content": "Unrequested text " * 20}],
+                                "failed_results": [{"url": other, "error": "unavailable"}], "usage": {"credits": 0}}
+        with TemporaryDirectory() as directory:
+            task = RetrievalTask(Path(directory), REQUEST)
+            task.execute("plan_evidence", PLAN, "key")
+            task.bundle["searches"] = [{"results": [{"url": URL}, {"url": other}]}]
+            args = {"urls": [URL, other], "need_ids": ["status"], "reason": "Official sources for critical status"}
+            with self.assertRaisesRegex(ValueError, "free-fetch-failed"):
+                task.execute("extract_failed_pages", args, "key")
+            extract.assert_not_called()
+            task.bundle["fetch_attempts"] = [{"url": u, "status": "failed"} for u in args["urls"]]
+            result = task.execute("extract_failed_pages", args, "key")
+            self.assertEqual(len(result["pages"]), 1)
+            self.assertEqual(len(result["failed_results"]), 1)
+            self.assertEqual(len(task.bundle["pages"]), 1)
+            self.assertEqual(task.bundle["pages"][URL]["capture_method"], "tavily_basic_extract")
+            restored = RetrievalTask(Path(directory), REQUEST)
+            with self.assertRaisesRegex(ValueError, "batch budget exhausted"):
+                restored.execute("extract_failed_pages", args, "key")
+            self.assertEqual(extract.call_count, 1)
+            self.assertEqual(restored.budget()["basic_extract_batches_remaining"], 0)
+
+    @patch("scripts.retrieval_agent.extract_basic", side_effect=RuntimeError("offline"))
+    def test_extract_failure_consumes_budget_and_strict_blocks_network(self, extract):
+        with TemporaryDirectory() as directory:
+            task = RetrievalTask(Path(directory), REQUEST)
+            task.execute("plan_evidence", PLAN, "key")
+            task.bundle["searches"] = [{"results": [{"url": URL}]}]
+            task.bundle["fetch_attempts"] = [{"url": URL, "status": "failed"}]
+            args = {"urls": [URL], "need_ids": ["status"], "reason": "Critical status"}
+            with self.assertRaisesRegex(RuntimeError, "budget consumed"):
+                task.execute("extract_failed_pages", args, "key")
+            restored = RetrievalTask(Path(directory), REQUEST)
+            with self.assertRaises(ValueError):
+                restored.execute("extract_failed_pages", args, "key")
+            strict = RetrievalTask(Path(directory) / "strict", {**REQUEST, "mode": "historical_strict", "as_of_utc": "2026-08-20T00:00:00Z"})
+            strict.execute("plan_evidence", PLAN, "key")
+            with self.assertRaisesRegex(ValueError, "strict forbids"):
+                strict.execute("extract_failed_pages", args, "key")
+            self.assertEqual(extract.call_count, 1)
+
     def test_historical_current_capture_cannot_finish_as_sufficient(self):
         with TemporaryDirectory() as directory:
             task = RetrievalTask(Path(directory), {**REQUEST, "mode": "historical_exploratory", "as_of_utc": "2026-08-20T00:00:00Z"})

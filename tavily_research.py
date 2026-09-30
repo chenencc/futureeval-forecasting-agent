@@ -43,6 +43,7 @@ def search_batch(query: str, api_key: str, *, exclude_urls: tuple[str, ...] = ()
     payload = {
         "query": query,
         "search_depth": "basic",
+        "auto_parameters": False,
         "topic": "general",
         "max_results": MAX_RESULTS,
         "include_answer": False,
