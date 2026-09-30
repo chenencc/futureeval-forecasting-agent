@@ -1,0 +1,37 @@
+[
+  {
+    "id": "44925",
+    "question": "Will the Royal Mail raise prices on any letters or parcels before September 10, 2026?",
+    "resolution_criteria": "This question resolves as **Yes** if, after August 10, 2026 and before September 10, 2026, Royal Mail Group announces a newly scheduled increase of any of these [prices](https://www.royalmail.com/sites/royalmail.com/files/2026-06/online-price-guide-july-2026-v2.pdf):\n\n| Category | Service              | Price from |\n| -------- | -------------------- | ---------: |\n| Letters  | 1st Class            |      £1.80 |\n| Letters  | 1st Class Signed For |      £3.80 |\n| Letters  | 2nd Class            |        91p |\n| Letters  | 2nd Class Signed For |      £2.91 |\n| Parcels  | 1st Class            |      £5.15 |\n| Parcels  | Tracked 24           |      £4.65 |\n| Parcels  | express24            |     £12.50 |\n| Parcels  | expressAM            |     £16.50 |\n| Parcels  | express10            |     £28.10 |\n| Parcels  | 2nd Class            |      £3.95 |\n| Parcels  | Tracked 48           |      £3.65 |\n| Parcels  | express48            |     £11.95 |\n| Parcels  | express48large       |     £51.65 |",
+    "as_of_utc": "2026-08-20T00:00:00+00:00",
+    "mode": "historical_exploratory"
+  },
+  {
+    "id": "44448",
+    "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before September 2026?",
+    "resolution_criteria": "This question resolves as **Yes** if Anthropic, or any subsidiary directly involved in the creation or commercialization of Claude, files a public, non-confidential [SEC Form S-1](https://www.investopedia.com/terms/s/sec-form-s-1.asp) at the U.S. Security and Exchange Commission's [EDGAR](https://www.sec.gov/search-filings) database with a filing date before September 1, 2026.",
+    "as_of_utc": "2026-08-20T00:00:00+00:00",
+    "mode": "historical_exploratory"
+  },
+  {
+    "id": "43703",
+    "question": "Will a hurricane make landfall in the continental United States before September 1, 2026?",
+    "resolution_criteria": "This question resolves as **Yes** if, before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions) such as the U.S. [National Hurricane Center](https://www.nhc.noaa.gov/cyclones/), the center of a tropical cyclone reaches the coastline of the continental United States with sustained winds of at least 64 knots (74 mph or 119 km/hr).",
+    "as_of_utc": "2026-08-06T00:00:00+00:00",
+    "mode": "historical_exploratory"
+  },
+  {
+    "id": "44986",
+    "question": "Will the U.S. government's 30-year treasury bond remain in the  ≥5% \"danger zone\" for the entire month of August 2026?",
+    "resolution_criteria": "This question resolves as **Yes** if, according to Yahoo Finance's Treasury Yield 30 Years [Historical Data](https://finance.yahoo.com/quote/%5ETYX/history/) or credible sources, the Close yield of each trading day is greater than or equal to 5.00%.&#x20;",
+    "as_of_utc": "2026-08-20T00:00:00+00:00",
+    "mode": "historical_exploratory"
+  },
+  {
+    "id": "44244",
+    "question": "Will another company get dropped from the Dow Jones Industrial Average in July or August 2026?",
+    "resolution_criteria": "This question resolves as **Yes** upon any official announcement or confirmation or [credible source ](https://www.metaculus.com/faq/#definitions)reporting after June 30, 2026 and before September 1, 2026 that one of these companies will no longer be a component of the Dow Jones Industrial Average (DJIA) index:\n\n3M&#x20;\nAlphabet\nAmerican Express\nAmgen\nAmazon\nApple\nBoeing\nCaterpillar\nChevron\nCisco\nCoca-Cola\nDisney\nGoldman Sachs\nHome Depot\nHoneywell\nIBM\nJohnson & Johnson\nJPMorgan Chase\nMcDonald's\nMerck\nMicrosoft\nNike\nNvidia\nProcter & Gamble\nSalesforce\nSherwin-Williams\nTravelers Companies\nUnitedHealth Group\nVisa\nWalmart\n\nIf no such announcement or reporting occurs before September 1, 2026, this question resolves as **No**.",
+    "as_of_utc": "2026-08-06T00:00:00+00:00",
+    "mode": "historical_exploratory"
+  }
+]
