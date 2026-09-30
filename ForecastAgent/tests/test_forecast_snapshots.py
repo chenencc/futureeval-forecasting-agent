@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase
 
-from forecast_snapshots import SnapshotStore
+from ForecastAgent.forecast_snapshots import SnapshotStore
 
 
 class SnapshotStoreTests(TestCase):

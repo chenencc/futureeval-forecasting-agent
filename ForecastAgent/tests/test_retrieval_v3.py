@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.retrieval_agent import RetrievalTask, run_retrieval, MAX_TURNS
+from ForecastAgent.retrieval_agent import RetrievalTask, run_retrieval, MAX_TURNS
 
 REQUEST = {'question': 'Will Agency announce a price change?', 'resolution_criteria': 'Announcement per [guide](https://example.org/guide.pdf)', 'mode': 'live'}
 PLAN = {'needs': [{'id': 'n', 'condition': 'Price announcement', 'priority': 'critical', 'expected_source': 'Agency', 'query': 'Agency announcement'}]}
@@ -20,7 +20,7 @@ def evidence(**extra):
 
 
 class ImprovedRetrievalTests(TestCase):
-    @patch('scripts.retrieval_agent.fetch_public_page')
+    @patch('ForecastAgent.retrieval_agent.fetch_public_page')
     def test_real_question_and_page_links_batch_cache_and_budget(self, fetch):
         fetch.return_value = {'content': 'Actual source text. ' * 10, 'url': URL,
                               'retrieved_at_utc': '2026-09-30T00:00:00Z', 'links': ['https://example.org/child']}
@@ -67,8 +67,8 @@ class ImprovedRetrievalTests(TestCase):
             with self.assertRaisesRegex(ValueError, 'future data'):
                 task.execute('record_evidence', evidence(quote='Aug 31, 2026 close yield 5.25',claim='Yield value',event_time='2026-08-19',time_role='observation'), '')
 
-    @patch('scripts.retrieval_agent.ask_ultra')
-    @patch('scripts.retrieval_agent.fetch_public_page')
+    @patch('ForecastAgent.retrieval_agent.ask_ultra')
+    @patch('ForecastAgent.retrieval_agent.fetch_public_page')
     def test_three_invalid_requests_force_finish_without_network(self, fetch, ask):
         ask.side_effect = [call('plan_evidence', PLAN, 'p'), *[call('fetch_page', {'url': f'https://example.org/invented{i}'}, str(i)) for i in range(3)],
                            call('finish_retrieval', {'status':'failed','gaps':['No valid sources read'],'conflicts':[],'summary':'Insufficient'}, 'f')]
@@ -79,7 +79,7 @@ class ImprovedRetrievalTests(TestCase):
             self.assertFalse(bundle['result'].get('incomplete', False))
             fetch.assert_not_called()
 
-    @patch('scripts.retrieval_agent.ask_ultra')
+    @patch('ForecastAgent.retrieval_agent.ask_ultra')
     def test_last_turn_is_reserved_for_explicit_finish(self, ask):
         count = 0
         def respond(messages, key, **kwargs):

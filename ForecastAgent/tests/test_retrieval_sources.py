@@ -5,8 +5,8 @@ import json
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from scripts.retrieval_sources import fetch_structured, allowed_source, source_urls
-from scripts.ultra_research_agent import fetch_public_page
+from ForecastAgent.retrieval_sources import fetch_structured, allowed_source, source_urls
+from ForecastAgent.ultra_research_agent import fetch_public_page
 
 
 class SourceTests(TestCase):
@@ -39,8 +39,8 @@ class SourceTests(TestCase):
         self.assertFalse(allowed_source('https://www.metaculus.com/questions/1'))
         self.assertFalse(allowed_source('file:///local'))
 
-    @patch('scripts.ultra_research_agent.public_url', return_value=True)
-    @patch('scripts.ultra_research_agent.build_opener')
+    @patch('ForecastAgent.ultra_research_agent.public_url', return_value=True)
+    @patch('ForecastAgent.ultra_research_agent.build_opener')
     def test_direct_page_discovers_real_relative_links_and_raw_snapshot(self, opener, public):
         raw = b'<html><p>Actual source text for an announcement.</p><a href="/filing.pdf">Filing</a><a href="javascript:evil()">No</a></html>'
         response = Mock()
@@ -53,15 +53,15 @@ class SourceTests(TestCase):
         self.assertEqual(page['links'], ['https://example.org/filing.pdf'])
         self.assertEqual(base64.b64decode(page['raw_response_base64']), raw)
 
-    @patch('scripts.ultra_research_agent.public_url', return_value=False)
-    @patch('scripts.ultra_research_agent.build_opener')
+    @patch('ForecastAgent.ultra_research_agent.public_url', return_value=False)
+    @patch('ForecastAgent.ultra_research_agent.build_opener')
     def test_untrusted_public_check_fails_before_fetch(self, opener, public):
         with self.assertRaises(ValueError):
             fetch_public_page('http://127.0.0.1/private')
         opener.assert_not_called()
 
-    @patch('scripts.ultra_research_agent.public_url', return_value=True)
-    @patch('scripts.ultra_research_agent.build_opener')
+    @patch('ForecastAgent.ultra_research_agent.public_url', return_value=True)
+    @patch('ForecastAgent.ultra_research_agent.build_opener')
     def test_pdf_saved_with_page_numbers(self, opener, public):
         from pypdf import PdfWriter
         from pypdf.generic import DictionaryObject, NameObject, DecodedStreamObject

@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run bounded Tavily, free page fetch, and Ultra research without submission
-        run: python -m scripts.demo_research
+        run: python -m ForecastAgent.demo_research
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}

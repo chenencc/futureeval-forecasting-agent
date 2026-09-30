@@ -3,7 +3,7 @@ from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.ultra_research_agent import ask_ultra, canonical_evidence_chain, run_research, validate_assessment, validate_baseline, validate_forecast_steps
+from ForecastAgent.ultra_research_agent import ask_ultra, canonical_evidence_chain, run_research, validate_assessment, validate_baseline, validate_forecast_steps
 
 
 def tool_call(name: str, arguments: dict, ident: str) -> dict:
@@ -19,8 +19,8 @@ class UltraResearchAgentTests(TestCase):
         ]
         self.assertEqual({canonical_evidence_chain(label) for label in labels}, {"sosovalue", "coinglass"})
 
-    @patch("scripts.ultra_research_agent.time.sleep")
-    @patch("scripts.ultra_research_agent.urlopen")
+    @patch("ForecastAgent.ultra_research_agent.time.sleep")
+    @patch("ForecastAgent.ultra_research_agent.urlopen")
     def test_openrouter_missing_choices_gets_one_retry(self, urlopen, sleep) -> None:
         urlopen.side_effect = [
             BytesIO(b'{"error":{"message":"temporary provider issue"}}'),
@@ -30,9 +30,9 @@ class UltraResearchAgentTests(TestCase):
         self.assertEqual(urlopen.call_count, 2)
         sleep.assert_called_once()
 
-    @patch("scripts.ultra_research_agent.fetch_public_page")
-    @patch("scripts.ultra_research_agent.search_batch")
-    @patch("scripts.ultra_research_agent.ask_ultra")
+    @patch("ForecastAgent.ultra_research_agent.fetch_public_page")
+    @patch("ForecastAgent.ultra_research_agent.search_batch")
+    @patch("ForecastAgent.ultra_research_agent.ask_ultra")
     def test_ultra_selects_search_and_fetch_before_read_only_assessment(self, ask, search, fetch) -> None:
         url = "https://example.org/data"
         search.return_value = {"query": "event data", "searched_at": "2026-09-30T00:00:00Z", "results": [{"url": url, "title": "Data"}]}
@@ -67,8 +67,8 @@ class UltraResearchAgentTests(TestCase):
         self.assertIn("record_base_rate", report["tool_transcript"][2]["result"]["error"])
         self.assertIn("already frozen", report["tool_transcript"][4]["result"]["error"])
 
-    @patch("scripts.ultra_research_agent.search_batch")
-    @patch("scripts.ultra_research_agent.ask_ultra")
+    @patch("ForecastAgent.ultra_research_agent.search_batch")
+    @patch("ForecastAgent.ultra_research_agent.ask_ultra")
     def test_failed_and_batched_searches_share_three_call_budget(self, ask, search) -> None:
         search.side_effect = RuntimeError("Tavily unavailable")
         ask.side_effect = [
@@ -98,8 +98,8 @@ class UltraResearchAgentTests(TestCase):
         with self.assertRaisesRegex(ValueError, "assessed evidence"):
             validate_forecast_steps(data, {}, {"probability": 0.4})
 
-    @patch("scripts.ultra_research_agent.search_batch")
-    @patch("scripts.ultra_research_agent.ask_ultra")
+    @patch("ForecastAgent.ultra_research_agent.search_batch")
+    @patch("ForecastAgent.ultra_research_agent.ask_ultra")
     def test_fourth_search_is_rejected_by_code(self, ask, search) -> None:
         search.return_value = {"query": "query", "searched_at": "now", "results": []}
         ask.side_effect = [

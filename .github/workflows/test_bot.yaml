@@ -43,9 +43,9 @@ jobs:
       - name: Run bot
         run: |
           if [ "${{ inputs.publish }}" = "true" ]; then
-            poetry run python main.py --mode test_questions
+            poetry run python -m ForecastAgent.main --mode test_questions
           else
-            poetry run python main.py --mode test_questions --dry-run
+            poetry run python -m ForecastAgent.main --mode test_questions --dry-run
           fi
         # this reads the environment variables from the github repository.
         # Store under Settings --> Secrets and variables --> Actions

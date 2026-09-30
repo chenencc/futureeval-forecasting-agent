@@ -1,43 +1,8 @@
-"""Five fixed historical retrieval tasks, with durable per-question budgets."""
-import json
-import os
-from pathlib import Path
-
-from scripts.retrieval_agent import run_retrieval
-
-
-def main():
-    experiment = os.environ.get("RETRIEVAL_EXPERIMENT", "five")
-    if experiment not in {"five", "v2-three", "v3-three"}:
-        raise ValueError("Unknown experiment; refusing arbitrary budget reset")
-    root = Path("snapshots/retrieval-five" if experiment == "five" else f"snapshots/retrieval-{experiment}")
-    root.mkdir(parents=True, exist_ok=True)
-    questions = json.loads(Path("fixtures/retrieval_2026_five.json").read_text(encoding="utf-8"))
-    if experiment in {"v2-three", "v3-three"}:
-        questions = [q for q in questions if q["id"] in {"44925", "44448", "44986"}]
-    rows = []
-    for question in questions:
-        ident = question["id"]
-        print(f"START {ident}: {question['question']}", flush=True)
-        try:
-            bundle = run_retrieval(question, root / ident, os.environ["TAVILY_API_KEY"], os.environ["OPENROUTER_API_KEY"])
-            coverage = bundle["result"].get("coverage", [])
-            critical = [n for n in coverage if n["priority"] == "critical"]
-            row = {"id": ident, "question": question["question"], "status": bundle["result"]["status"],
-                   "searches": len(bundle["searches"]), "pages": len(bundle["pages"]), "evidence": len(bundle["evidence"]),
-                   "critical_covered": sum(bool(n["evidence_ids"]) for n in critical), "critical_total": len(critical),
-                   "quarantined": len(bundle["quarantine"]), "summary": bundle["result"]["summary"],
-                   "extract_batches": len(bundle.get("extract_attempts", [])),
-                   "gaps": bundle["result"].get("gaps", []), "conflicts": bundle["result"].get("conflicts", []),
-                   "last_error": bundle.get("last_error"), "last_error_detail": bundle.get("last_error_detail")}
-        except Exception as exc:
-            row = {"id": ident, "question": question["question"], "status": "failed", "error": str(exc)[:500]}
-        rows.append(row)
-        (root / "summary.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(json.dumps(row, ensure_ascii=True), flush=True)
-    if any(r["status"] == "failed" for r in rows):
-        raise RuntimeError("One or more retrieval tasks failed; inspect saved bundles")
-
-
+"""Compatibility entry point; maintain ForecastAgent/retrieval_trial.py instead."""
+import sys
 if __name__ == "__main__":
-    main()
+    import runpy
+    runpy.run_module("ForecastAgent.retrieval_trial", run_name="__main__")
+else:
+    from ForecastAgent import retrieval_trial as _implementation
+    sys.modules[__name__] = _implementation

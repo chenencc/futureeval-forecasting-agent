@@ -19,8 +19,8 @@ Ultra's audit is self-review, not an independent fact-check or calibrated qualit
 Create a JSON object containing `question`, `resolution_criteria`, optional `fine_print`/`background`, and `mode` (`live`, `historical_exploratory`, or `historical_strict`). Historical modes require `as_of_utc` with timezone. Do not include outcome labels or community probabilities.
 
 ```
-python -m scripts.retrieval_agent --input question.json --task-dir snapshots/retrieval/task-123
-python -m scripts.retrieval_agent --task-dir snapshots/retrieval/task-123 --replay
+python -m ForecastAgent.retrieval_agent --input question.json --task-dir snapshots/retrieval/task-123
+python -m ForecastAgent.retrieval_agent --task-dir snapshots/retrieval/task-123 --replay
 ```
 
 Collection uses `TAVILY_API_KEY` and `OPENROUTER_API_KEY`. Replay reads only local files and requires no keys. Use the SAME task directory for retries; changing inputs there is rejected. A new directory is a new task, not a retry. Never delete bundle files to recover budget.

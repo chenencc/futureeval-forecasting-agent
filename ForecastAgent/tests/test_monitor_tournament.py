@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.monitor_tournament import API_ROOT, _initial_url, collect_archive_pages, collect_pages, snapshot_questions
+from ForecastAgent.monitor_tournament import API_ROOT, _initial_url, collect_archive_pages, collect_pages, snapshot_questions
 
 
 def post(post_id: int, question_id: int, status: str = "open") -> dict:
@@ -14,7 +14,7 @@ def post(post_id: int, question_id: int, status: str = "open") -> dict:
 
 
 class MonitorTournamentTests(TestCase):
-    @patch("scripts.monitor_tournament.get_json")
+    @patch("ForecastAgent.monitor_tournament.get_json")
     def test_follows_next_even_when_first_page_is_short(self, get_json) -> None:
         page_two = API_ROOT + "?offset=5"
         get_json.side_effect = [
@@ -26,7 +26,7 @@ class MonitorTournamentTests(TestCase):
         self.assertIsNone(next_url)
         self.assertEqual(pages, 2)
 
-    @patch("scripts.monitor_tournament.get_json")
+    @patch("ForecastAgent.monitor_tournament.get_json")
     def test_new_ids_are_persisted_and_closed_questions_are_archived(self, get_json) -> None:
         get_json.side_effect = [
             {"results": [post(1, 11)], "next": None},
@@ -48,7 +48,7 @@ class MonitorTournamentTests(TestCase):
         self.assertEqual(second_index["new_question_count"], 0)
         self.assertEqual(state["seen_question_ids"], [11, 22])
 
-    @patch("scripts.monitor_tournament.get_json")
+    @patch("ForecastAgent.monitor_tournament.get_json")
     def test_archive_cursor_resumes_next_run(self, get_json) -> None:
         urls = []
         pages = [API_ROOT + f"?offset={n}" for n in range(1, 6)]
@@ -70,7 +70,7 @@ class MonitorTournamentTests(TestCase):
             snapshot_questions("token", root)
         self.assertEqual(urls[7], pages[4])
 
-    @patch("scripts.monitor_tournament.get_json")
+    @patch("ForecastAgent.monitor_tournament.get_json")
     def test_archive_keeps_completed_pages_after_a_failed_request(self, get_json) -> None:
         page_two = API_ROOT + "?offset=5"
         get_json.side_effect = [
@@ -83,8 +83,8 @@ class MonitorTournamentTests(TestCase):
         self.assertEqual(pages, 1)
         self.assertIn("rate limit", error)
 
-    @patch("scripts.retrieval_agent.run_retrieval")
-    @patch("scripts.monitor_tournament.get_json")
+    @patch("ForecastAgent.retrieval_agent.run_retrieval")
+    @patch("ForecastAgent.monitor_tournament.get_json")
     def test_researches_open_binary_once_without_submission(self, get_json, run_research) -> None:
         get_json.return_value = {"results": [post(1, 11)], "next": None}
         run_research.return_value = {"result": {"status": "partial"}}

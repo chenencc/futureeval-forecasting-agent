@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Download five resolved questions and research three without submission
-        run: python -m scripts.historical_research
+        run: python -m ForecastAgent.historical_research
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}

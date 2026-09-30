@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.retrieval_agent import RetrievalTask, run_retrieval
+from ForecastAgent.retrieval_agent import RetrievalTask, run_retrieval
 
 REQUEST = {"question": "Will the agency publish the figure?", "resolution_criteria": "Official announcement by the deadline", "mode": "live"}
 PLAN = {"needs": [{"id": "status", "condition": "Official publication", "priority": "critical", "expected_source": "Agency", "query": "agency publication"}]}
@@ -17,7 +17,7 @@ def call(name, args, ident):
     return {"id": ident, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
 
 class RetrievalTests(TestCase):
-    @patch("scripts.retrieval_agent.search_batch", return_value={"results": []})
+    @patch("ForecastAgent.retrieval_agent.search_batch", return_value={"results": []})
     def test_model_search_choices_are_durable_with_same_three_attempt_cap(self, search):
         with TemporaryDirectory() as directory:
             task = RetrievalTask(Path(directory), REQUEST)
@@ -34,7 +34,7 @@ class RetrievalTests(TestCase):
                 restored.execute("search_tavily", choices, "key")
             self.assertEqual(search.call_count, 3)
 
-    @patch("scripts.retrieval_agent.extract_basic")
+    @patch("ForecastAgent.retrieval_agent.extract_basic")
     def test_extract_rescue_eligibility_partial_response_and_restart_budget(self, extract):
         other = "https://example.org/other"
         extract.return_value = {"results": [{"url": URL, "raw_content": "Official announcement establishes the current status. " * 3},
@@ -60,7 +60,7 @@ class RetrievalTests(TestCase):
             self.assertEqual(extract.call_count, 1)
             self.assertEqual(restored.budget()["basic_extract_batches_remaining"], 0)
 
-    @patch("scripts.retrieval_agent.extract_basic", side_effect=RuntimeError("offline"))
+    @patch("ForecastAgent.retrieval_agent.extract_basic", side_effect=RuntimeError("offline"))
     def test_extract_failure_consumes_budget_and_strict_blocks_network(self, extract):
         with TemporaryDirectory() as directory:
             task = RetrievalTask(Path(directory), REQUEST)
@@ -97,7 +97,7 @@ class RetrievalTests(TestCase):
             request = {**REQUEST, "mode": "historical_strict", "as_of_utc": "2026-08-20T00:00:00Z", "historical_snapshot_bundle": str(source)}
             task = RetrievalTask(Path(directory) / "task", request)
             task.execute("plan_evidence", PLAN, "")
-            with patch("scripts.retrieval_agent.fetch_public_page") as fetch:
+            with patch("ForecastAgent.retrieval_agent.fetch_public_page") as fetch:
                 result = task.execute("fetch_page", {"url": URL}, "")
                 self.assertEqual(result["temporal_status"], "local_pre_cutoff_capture")
                 fetch.assert_not_called()
@@ -106,7 +106,7 @@ class RetrievalTests(TestCase):
             source.write_text(json.dumps({"pages": {URL: page}}))
             with self.assertRaisesRegex(ValueError, "hash mismatch"):
                 RetrievalTask(Path(directory) / "other", request)
-    @patch("scripts.retrieval_agent.search_batch", side_effect=RuntimeError("offline"))
+    @patch("ForecastAgent.retrieval_agent.search_batch", side_effect=RuntimeError("offline"))
     def test_failed_search_budget_survives_process_restart(self, search):
         with TemporaryDirectory() as directory:
             path = Path(directory)
@@ -123,7 +123,7 @@ class RetrievalTests(TestCase):
             with self.assertRaisesRegex(ValueError, "different input"):
                 RetrievalTask(path, {**REQUEST, "question": "Changed"})
 
-    @patch("scripts.retrieval_agent.search_batch")
+    @patch("ForecastAgent.retrieval_agent.search_batch")
     def test_fixed_cutoff_quarantines_unknown_and_future_dates(self, search):
         search.return_value = {"results": [{"url": URL, "published_date": "2026-08-19"},
             {"url": "https://example.org/future", "published_date": "2026-08-21"},
@@ -135,14 +135,14 @@ class RetrievalTests(TestCase):
             self.assertEqual(search.call_args.kwargs["end_date"], "2026-08-19")
             self.assertEqual(len(result["results"]), 1)
             self.assertEqual(len(task.bundle["quarantine"]), 2)
-            with patch("scripts.retrieval_agent.fetch_public_page") as fetch:
+            with patch("ForecastAgent.retrieval_agent.fetch_public_page") as fetch:
                 with self.assertRaisesRegex(ValueError, "current web fetch forbidden"):
                     task.execute("fetch_page", {"url": URL}, "key")
                 fetch.assert_not_called()
 
-    @patch("scripts.retrieval_agent.fetch_public_page")
-    @patch("scripts.retrieval_agent.search_batch")
-    @patch("scripts.retrieval_agent.ask_ultra")
+    @patch("ForecastAgent.retrieval_agent.fetch_public_page")
+    @patch("ForecastAgent.retrieval_agent.search_batch")
+    @patch("ForecastAgent.retrieval_agent.ask_ultra")
     def test_full_collection_exact_quotes_coverage_and_zero_network_replay(self, ask, search, fetch):
         search.return_value = {"results": [{"url": URL, "published_date": "2026-09-29"}]}
         text = "The official agency published the figure on September 29. " * 3
@@ -168,8 +168,8 @@ class RetrievalTests(TestCase):
             self.assertEqual(counts, (ask.call_count, search.call_count, fetch.call_count))
             self.assertNotIn("probability", bundle["result"])
 
-    @patch("scripts.retrieval_agent.search_batch", return_value={"results": []})
-    @patch("scripts.retrieval_agent.ask_ultra")
+    @patch("ForecastAgent.retrieval_agent.search_batch", return_value={"results": []})
+    @patch("ForecastAgent.retrieval_agent.ask_ultra")
     def test_four_searches_in_one_model_message_cannot_exceed_budget(self, ask, search):
         ask.side_effect = [{"tool_calls": [call("plan_evidence", PLAN, "p")]},
             {"tool_calls": [call("search_tavily", {**SEARCH, "query": f"agency status {n}"}, str(n)) for n in range(4)]},
@@ -183,7 +183,7 @@ class RetrievalTests(TestCase):
     def test_concurrent_run_fails_before_network(self):
         with TemporaryDirectory() as directory:
             (Path(directory) / ".running.lock").touch()
-            with patch("scripts.retrieval_agent.ask_ultra") as ask:
+            with patch("ForecastAgent.retrieval_agent.ask_ultra") as ask:
                 with self.assertRaisesRegex(RuntimeError, "concurrent"):
                     run_retrieval(REQUEST, directory, "key", "router")
                 ask.assert_not_called()

@@ -3,11 +3,11 @@ import json
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from tavily_research import followup_query_from_response, search_batch, search_question, search_options
+from ForecastAgent.tavily_research import followup_query_from_response, search_batch, search_question, search_options
 
 
 class TavilyResearchTests(TestCase):
-    @patch("tavily_research.urlopen")
+    @patch("ForecastAgent.tavily_research.urlopen")
     def test_targeted_search_payload_and_restrict_boundary(self, urlopen):
         body = {"results": [{"url": "https://www.sec.gov/Archives/a"},
                             {"url": "https://sec.gov.evil.example/a"},
@@ -26,7 +26,7 @@ class TavilyResearchTests(TestCase):
         self.assertEqual(batch["usage"]["credits"], 1)
         self.assertEqual(len(batch["raw_results"]), 3)
 
-    @patch("tavily_research.urlopen")
+    @patch("ForecastAgent.tavily_research.urlopen")
     def test_invalid_search_choices_never_use_network(self, urlopen):
         for options in [{"topic": "advanced"}, {"include_domains_mode": "restrict"},
                         {"exact_match": True}, {"exact_match": "false"},
@@ -35,7 +35,7 @@ class TavilyResearchTests(TestCase):
                 search_batch("agency status", "key", **options)
         urlopen.assert_not_called()
 
-    @patch("tavily_research.urlopen")
+    @patch("ForecastAgent.tavily_research.urlopen")
     def test_historical_date_is_sent_with_basic_and_no_answer(self, urlopen):
         urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"results":[]}')
         search_batch("historical status", "key", end_date="2026-08-19")
@@ -54,7 +54,7 @@ class TavilyResearchTests(TestCase):
             followup_query_from_response("No parseable query", "Will it happen?"),
         )
 
-    @patch("tavily_research.urlopen")
+    @patch("ForecastAgent.tavily_research.urlopen")
     def test_uses_one_basic_search_and_returns_cited_snippets(self, urlopen: Mock) -> None:
         body = {
             "results": [
@@ -90,7 +90,7 @@ class TavilyResearchTests(TestCase):
         self.assertIn("Latest data with details", report)
         self.assertNotIn("test-secret", report)
 
-    @patch("tavily_research.urlopen")
+    @patch("ForecastAgent.tavily_research.urlopen")
     def test_followup_keeps_only_new_urls_up_to_ten(self, urlopen: Mock) -> None:
         body = {"results": [
             {"url": "https://example.org/old/?utm_source=search", "title": "Old"},

@@ -3,7 +3,7 @@ import io
 from unittest.mock import patch
 from unittest import TestCase
 
-from polymarket_match import parse_candidates, search_candidates
+from ForecastAgent.polymarket_match import parse_candidates, search_candidates
 
 
 class PolymarketMatchTests(TestCase):
@@ -34,7 +34,7 @@ class PolymarketMatchTests(TestCase):
         self.assertIsNone(rows[0]["yes_probability_display"])
         self.assertEqual(rows[1]["match_status"], "year_conflict")
 
-    @patch("polymarket_match.urlopen")
+    @patch("ForecastAgent.polymarket_match.urlopen")
     def test_search_records_lookup_time_and_active_filter(self, urlopen) -> None:
         urlopen.return_value.__enter__.return_value = io.BytesIO(b'{"events": []}')
         result = search_candidates("Will the Fed cut rates in 2026?")

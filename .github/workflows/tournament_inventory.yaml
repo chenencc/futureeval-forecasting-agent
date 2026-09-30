@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Read question metadata and official categories
-        run: python -u -m scripts.tournament_inventory
+        run: python -u -m ForecastAgent.tournament_inventory
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
       - uses: actions/upload-artifact@v4

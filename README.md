@@ -1,3 +1,7 @@
+## Current architecture: ForecastAgent
+
+All maintained implementation code, research skills, fixtures and tests live in [ForecastAgent/](ForecastAgent/README.md). Codex is an operator only; the agent runs independently in GitHub Actions or the command line. Old root modules and scripts are compatibility entry points. Existing snapshot paths and per-task budgets remain unchanged.
+
 # Simple Metaculus forecasting bot
 
 ## Fall 2026 V0 setup

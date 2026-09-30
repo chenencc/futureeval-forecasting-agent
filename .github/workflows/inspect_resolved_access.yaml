@@ -12,6 +12,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Inspect five resolved FutureEval questions
-        run: python scripts/inspect_resolved_access.py
+        run: python -m ForecastAgent.inspect_resolved_access
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
