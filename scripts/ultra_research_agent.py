@@ -32,6 +32,17 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def canonical_evidence_chain(label: str) -> str:
+    """Group reports by the named original data source, not the reporting outlet."""
+    name = re.split(
+        r"\b(?:primary data|original data|reported by|cited by|cited in|published|analysis|according to)\b",
+        label,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    return " ".join(name.strip(" .,:;-").casefold().split())
+
+
 def public_url(url: str) -> bool:
     """Reject local/credentialed targets, including redirects to them."""
     parts = urlsplit(url)
@@ -184,7 +195,7 @@ TOOLS = [
                 "url": {"type": "string"}, "claim": {"type": "string"},
                 "source_type": {"type": "string", "enum": ["primary", "secondary", "unknown"]},
                 "quality": {"type": "string", "enum": ["high", "medium", "low", "unverified"]},
-                "evidence_chain": {"type": "string", "description": "Original dataset or reporting chain behind this claim; reports citing the same original data use the same label."},
+                "evidence_chain": {"type": "string", "description": "Name only the original data provider or publisher, e.g. SoSoValue or CoinGlass. Do not include this report's outlet or publication date."},
                 "reason": {"type": "string"},
             }, "required": ["url", "claim", "source_type", "quality", "evidence_chain", "reason"]}},
             "contradictions": {"type": "array", "items": {"type": "string"}},
@@ -204,7 +215,8 @@ Evidence quality rubric: high = a fetched primary record directly covering the c
 medium = a traceable secondary report or a primary record with an unresolved interpretation;
 low = indirect, stale, or weakly documented support; unverified = a claim the fetched text does not substantiate.
 Explain the rating for each cited claim. Do not turn these ordinal labels into numerical probabilities.
-Name the original evidence_chain for each claim. Reports repeating the same original dataset share one label.
+Name only the original data provider as evidence_chain. Reports repeating its data share exactly one label;
+do not include the reporting outlet or its publication date in that label, and do not call those reports independent.
 If the first search yields only secondary reports, use another search targeted at the original data before finishing.
 If original pages refuse access, state that limit and use at most medium quality for traceable secondary reports.
 When search and fetch budgets are exhausted, finish with the evidence available and explicit uncertainty.
@@ -353,6 +365,6 @@ def run_research(question: str, criteria: str, fine_print: str, tavily_key: str,
         "pages": list(pages.values()),
         "tool_transcript": transcript,
         "assessment": assessment,
-        "evidence_chains": sorted({item["evidence_chain"].strip().casefold() for item in assessment["evidence"]}) if assessment else [],
+        "evidence_chains": sorted({canonical_evidence_chain(item["evidence_chain"]) for item in assessment["evidence"]}) if assessment else [],
         "error": error,
     }

@@ -3,7 +3,7 @@ from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch
 
-from scripts.ultra_research_agent import ask_ultra, run_research, validate_assessment
+from scripts.ultra_research_agent import ask_ultra, canonical_evidence_chain, run_research, validate_assessment
 
 
 def tool_call(name: str, arguments: dict, ident: str) -> dict:
@@ -11,6 +11,14 @@ def tool_call(name: str, arguments: dict, ident: str) -> dict:
 
 
 class UltraResearchAgentTests(TestCase):
+    def test_reports_citing_one_dataset_share_one_chain(self) -> None:
+        labels = [
+            "SoSoValue primary data reported by Finbold on May 1, 2026",
+            "SoSoValue primary data cited in Ryder analysis published July 15, 2026",
+            "CoinGlass primary data cited by Phemex on May 4, 2026",
+        ]
+        self.assertEqual({canonical_evidence_chain(label) for label in labels}, {"sosovalue", "coinglass"})
+
     @patch("scripts.ultra_research_agent.time.sleep")
     @patch("scripts.ultra_research_agent.urlopen")
     def test_openrouter_missing_choices_gets_one_retry(self, urlopen, sleep) -> None:
