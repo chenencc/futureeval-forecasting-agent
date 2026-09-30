@@ -83,7 +83,7 @@ class RetrievalTests(TestCase):
         with TemporaryDirectory() as directory:
             task = RetrievalTask(Path(directory), {**REQUEST, "mode": "historical_exploratory", "as_of_utc": "2026-08-20T00:00:00Z"})
             task.execute("plan_evidence", PLAN, "")
-            task.bundle["evidence"] = [{"id": "E1", "need_ids": ["status"], "evidence_chain": "agency", "temporal_status": "current_capture_possible_later_edits"}]
+            task.bundle["evidence"] = [{"id": "E1", "claim": "Agency publication", "need_ids": ["status"], "evidence_chain": "agency", "temporal_status": "current_capture_possible_later_edits", "audit": {"accepted": True}}]
             result = task.execute("finish_retrieval", {"status": "sufficient", "gaps": [], "conflicts": [], "summary": "Critical condition covered"}, "")
             self.assertEqual(result["status"], "partial")
             self.assertIn("pre-cutoff availability", result["gaps"][0])
@@ -154,7 +154,8 @@ class RetrievalTests(TestCase):
         ask.side_effect = [{"tool_calls": [call(n, a, str(i))]} for i, (n, a) in enumerate([
             ("plan_evidence", PLAN), ("search_tavily", SEARCH), ("fetch_page", {"url": URL}),
             ("record_evidence", {**evidence, "quote": "A fabricated quote does not occur here"}),
-            ("finish_retrieval", finish), ("record_evidence", evidence), ("finish_retrieval", finish)])]
+            ("finish_retrieval", finish), ("record_evidence", evidence),
+            ("audit_evidence", {"reviews": [{"evidence_id": "E1", "entity_matches": True, "quote_supports_claim": True, "time_valid": True, "reason": "Direct agency publication"}]}), ("finish_retrieval", finish)])]
         with TemporaryDirectory() as directory:
             bundle = run_retrieval(REQUEST, directory, "tavily", "router")
             self.assertEqual(bundle["result"]["status"], "sufficient")
@@ -171,7 +172,7 @@ class RetrievalTests(TestCase):
     @patch("scripts.retrieval_agent.ask_ultra")
     def test_four_searches_in_one_model_message_cannot_exceed_budget(self, ask, search):
         ask.side_effect = [{"tool_calls": [call("plan_evidence", PLAN, "p")]},
-            {"tool_calls": [call("search_tavily", SEARCH, str(n)) for n in range(4)]},
+            {"tool_calls": [call("search_tavily", {**SEARCH, "query": f"agency status {n}"}, str(n)) for n in range(4)]},
             {"tool_calls": [call("finish_retrieval", {"status": "failed", "gaps": ["No evidence"], "conflicts": [], "summary": "Unavailable"}, "f")]}]
         with TemporaryDirectory() as directory:
             bundle = run_retrieval(REQUEST, directory, "key", "router")

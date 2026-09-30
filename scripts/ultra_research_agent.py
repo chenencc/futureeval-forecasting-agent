@@ -11,9 +11,10 @@ import re
 import socket
 import time
 from datetime import datetime, timezone
+from io import BytesIO
 from html.parser import HTMLParser
 from urllib.error import HTTPError
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urljoin
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from tavily_research import canonical_url, search_batch
@@ -75,8 +76,13 @@ class ReadableHTML(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
         self.skip_depth = 0
+        self.links = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
+        if tag == "a" and not self.skip_depth:
+            href = dict(attrs).get("href")
+            if href and len(self.links) < 200:
+                self.links.append(href)
         if tag in self.SKIP:
             self.skip_depth += 1
         if not self.skip_depth and tag in {"p", "li", "tr", "td", "th", "h1", "h2", "h3", "br"}:
@@ -96,20 +102,36 @@ class ReadableHTML(HTMLParser):
 def fetch_public_page(url: str) -> dict:
     if not public_url(url):
         raise ValueError("URL is not a public HTTP URL")
-    request = Request(url, headers={"User-Agent": "FutureEvalReadOnlyResearch/0.2", "Accept": "text/html,text/plain"})
+    request = Request(url, headers={"User-Agent": "FutureEvalReadOnlyResearch/0.3", "Accept": "text/html,text/plain,application/pdf,text/csv,application/json"})
     with build_opener(SafeRedirects()).open(request, timeout=20) as response:
         final_url = response.geturl()
         if not public_url(final_url):
             raise ValueError("Final URL is not public")
         content_type = response.headers.get_content_type()
-        if content_type not in {"text/html", "text/plain", "application/xhtml+xml"}:
+        if content_type not in {"text/html", "text/plain", "application/xhtml+xml", "application/pdf", "text/csv", "application/json"}:
             raise ValueError(f"Unsupported content type: {content_type}")
-        raw = response.read(MAX_PAGE_BYTES + 1)
-        if len(raw) > MAX_PAGE_BYTES:
+        byte_limit = 8_000_000 if content_type == "application/pdf" else MAX_PAGE_BYTES
+        raw = response.read(byte_limit + 1)
+        if len(raw) > byte_limit:
             raise ValueError("Page exceeds size limit")
         charset = response.headers.get_content_charset() or "utf-8"
     decoded = raw.decode(charset, errors="replace")
     metadata = {}
+    links = []
+    if content_type == "application/pdf":
+        from pypdf import PdfReader
+        reader = PdfReader(BytesIO(raw))
+        if reader.is_encrypted or len(reader.pages) > 100:
+            raise ValueError("Encrypted or oversized PDF; cannot read within budget")
+        parts = []
+        for i, page in enumerate(reader.pages):
+            stream = page.get_contents()
+            if stream and len(stream.get_data()) > 10_000_000:
+                raise ValueError("PDF page stream exceeds extraction budget")
+            parts.append(f"[PDF page {i+1}]\n" + (page.extract_text(extraction_mode="layout") or ""))
+        decoded = "\n".join(parts)
+        if not any(part.split("\n", 1)[-1].strip() for part in parts):
+            raise ValueError("Scanned/empty PDF requires OCR; no text extracted")
     if content_type in {"text/html", "application/xhtml+xml"}:
         class Dates(HTMLParser):
             def handle_starttag(self, tag, attrs):
@@ -125,6 +147,8 @@ def fetch_public_page(url: str) -> dict:
         parser = ReadableHTML()
         parser.feed(decoded)
         decoded = "".join(parser.parts)
+        links = list(dict.fromkeys(urljoin(final_url, href) for href in parser.links
+                                  if canonical_url(urljoin(final_url, href))))
     content = re.sub(r"[ \t]+", " ", decoded)
     content = re.sub(r"\n\s*\n+", "\n", content).strip()[:MAX_SAVED_CHARS]
     if not content:
@@ -139,6 +163,8 @@ def fetch_public_page(url: str) -> dict:
         "page_date_metadata": metadata,
         "content": content,
         "content_truncated": len(decoded) > MAX_SAVED_CHARS,
+        "links": links,
+        "capture_method": "pdf_text" if content_type == "application/pdf" else "direct_http",
     }
 
 

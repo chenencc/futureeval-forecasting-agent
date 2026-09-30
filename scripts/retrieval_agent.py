@@ -13,6 +13,7 @@ import re
 
 from tavily_research import canonical_url, search_batch, search_options
 from scripts.tavily_extract import extract_basic
+from scripts.retrieval_sources import allowed_source, source_urls, fetch_structured, quoted_dates, structured_url
 from scripts.ultra_research_agent import ask_ultra, fetch_public_page, utc_now, canonical_evidence_chain
 
 MAX_SEARCHES = 3
@@ -37,6 +38,8 @@ TOOLS = [
           "include_domains_mode": {"type": "string", "enum": ["prefer", "restrict"]},
           "exact_match": {"type": "boolean"}}, ["query", "need_ids", "reason", "topic", "include_domains", "include_domains_mode", "exact_match"]),
     tool("fetch_page", "Read a discovered URL using free HTTP fetching. Failed reads are logged. Historical strict mode refuses today's pages.", {"url": STRING}, ["url"]),
+    tool("fetch_pages", "Read up to five REAL URLs from the source catalog in one turn. Caches, PDF parsing and financial data adapters are automatic. Each new URL consumes one of eight free fetch attempts.",
+         {"urls": {"type": "array", "items": STRING, "minItems": 1, "maxItems": 5}}, ["urls"]),
     tool("extract_failed_pages", "One basic Extract rescue batch per task, up to five URLs. Only important accepted pages whose free fetch failed; batch candidates together. Never historical strict.",
          {"urls": {"type": "array", "items": STRING, "minItems": 1, "maxItems": 5}, "need_ids": {"type": "array", "items": STRING}, "reason": STRING}, ["urls", "need_ids", "reason"]),
     tool("record_evidence", "Extract a concrete fact with an exact supporting quote from a fetched page. Explain quality dimensions separately; identify the ORIGINAL data provider for independence.",
@@ -50,6 +53,22 @@ TOOLS = [
           "gaps": {"type": "array", "items": STRING}, "conflicts": {"type": "array", "items": STRING}, "summary": STRING},
          ["status", "gaps", "conflicts", "summary"]),
 ]
+PLAN_SCHEMA = TOOLS[0]["function"]["parameters"]
+PLAN_SCHEMA["properties"]["entity_card"] = {"type": "object", "properties": {k: STRING for k in ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"]}, "required": ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"]}
+PLAN_SCHEMA["required"].append("entity_card")
+FETCH_SCHEMA = next(t["function"]["parameters"] for t in TOOLS if t["function"]["name"] == "fetch_page")
+FETCH_SCHEMA["properties"]["start_char"] = {"type": "integer", "minimum": 0}
+EVIDENCE_PROPERTIES = next(t["function"]["parameters"]["properties"] for t in TOOLS if t["function"]["name"] == "record_evidence")
+EVIDENCE_PROPERTIES.update(time_role={"type": "string", "enum": ["announcement", "observation", "definition", "future_schedule"]},
+                           announcement_at=STRING, effective_at=STRING)
+TOOLS.insert(-1, tool("record_evidence_batch", "Bank up to eight independent concrete facts in one turn; exact saved quotes and dates remain mandatory. Each item is validated separately.",
+    {"items": {"type": "array", "minItems": 1, "maxItems": 8, "items": {"type": "object", "properties": EVIDENCE_PROPERTIES,
+     "required": [k for k in EVIDENCE_PROPERTIES if k not in {"time_role", "announcement_at", "effective_at"}]}}}, ["items"]))
+TOOLS.insert(-1, tool("list_sources", "Inspect real source URLs and saved evidence; no network or search cost. Use this instead of guessing paths. Also lists Extract-eligible failed pages.", {}, []))
+TOOLS.insert(-1, tool("audit_evidence", "Review ALL saved evidence before finishing. Check exact entity/form identity, whether quote entails entire claim, announcement versus effective time, observation availability, absence claims and source independence. Reject overbroad claims; never infer absence from failed search.",
+    {"reviews": {"type": "array", "items": {"type": "object", "properties": {"evidence_id": STRING,
+     "entity_matches": {"type": "boolean"}, "quote_supports_claim": {"type": "boolean"},
+     "time_valid": {"type": "boolean"}, "reason": STRING}, "required": ["evidence_id", "entity_matches", "quote_supports_claim", "time_valid", "reason"]}}}, ["reviews"]))
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -58,6 +77,10 @@ Choose each search topic: general for official documents/definitions/base rates;
 Choose genuine official domains based on resolution criteria or discovered sources; never invent an authority. Empty include_domains searches broadly. Prefer boosts selected domains while preserving wider coverage; restrict is for verifying a named authority only and requires domains. These labels are not proof of source reliability.
 For ambiguous entities or a specific announcement, use exact_match=true and put the entity/phrase in double quotes within query. Avoid quoting the entire question or over-constraining broad discovery. If no results, consciously relax parameters only within the remaining THREE attempts; there are no automatic fallback searches.
 After each search select relevant primary/official pages, fetch their text, record exact supporting quotes and evaluate coverage before searching again.
+Use fetch_pages and record_evidence_batch to do useful work in batches. Read URLs from resolution criteria, accepted searches, or real links returned by fetched pages. Never synthesize SEC paths/CIKs. The source catalog lists legitimate next URLs.
+Freeze subject identity, required document/form, announcement window and effective/observation time in the evidence plan. Same-name funds/ETFs do not identify the Claude developer; Yahoo is a designated commercial source, not a government publisher.
+After each relevant page read, promptly bank its useful facts, including facts disproving a candidate's entity/form match. Resolve positive local facts before pursuing global absence.
+audit_evidence must check each saved fact. An October EFFECTIVE date cannot show absence of an August ANNOUNCEMENT. A quote stating one change cannot show it is the only change. Never answer the future outcome in a retrieval summary; report known facts, unknowns and cutoff limitations.
 If free fetch fails for important evidence, collect failed candidates and use extract_failed_pages ONCE (up to five URLs). Explain which critical gaps they address. No Extract for pages already read or unavailable due to temporal quarantine. Extract is a current vendor capture, not an archived original HTML page.
 Search snippets are unverified leads, never formal evidence. News copies citing one original source are one evidence chain.
 Dates in article titles and dates claimed by the model do not establish historical availability. The program determines temporal eligibility.
@@ -104,7 +127,7 @@ class RetrievalTask:
             if self.bundle["request_hash"] != fingerprint:
                 raise ValueError("Task directory belongs to different input; refusing to reset its budget")
         else:
-            self.bundle = {"version": "retrieval_v1", "request_hash": fingerprint, "request": request,
+            self.bundle = {"version": "retrieval_v3", "request_hash": fingerprint, "request": request,
                 "created_at": utc_now(), "mode": mode, "end_date": self.end_date,
                 "plan": None, "searches": [], "pages": {}, "fetch_attempts": [], "evidence": [],
                 "quarantine": [], "transcript": [], "messages": [], "result": None,
@@ -134,6 +157,37 @@ class RetrievalTask:
                     "warning": "Local capture timestamps rely on the provenance of the supplied bundle; not independently notarized."}
 
         self.bundle.setdefault("extract_attempts", [])
+        self.bundle.setdefault("source_leads", {})
+        self.bundle.setdefault("control", {"consecutive_errors": 0, "forced_close": False})
+        for field in ["resolution_criteria", "fine_print", "background"]:
+            for url in source_urls(request.get(field, "")):
+                if allowed_source(url):
+                    self.bundle["source_leads"].setdefault(canonical_url(url), {"url": url, "origin": "question_"+field, "published_date": None})
+
+    def catalog(self):
+        leads = dict(self.bundle["source_leads"])
+        for search in self.bundle["searches"]:
+            for hit in search["results"]:
+                if allowed_source(hit["url"]):
+                    leads[canonical_url(hit["url"])] = hit
+        return leads
+
+    def rescue_candidates(self):
+        quarantined = {canonical_url(q.get("url", "")) for q in self.bundle["quarantine"]}
+        return list(dict.fromkeys(a["url"] for a in self.bundle["fetch_attempts"]
+                    if a["status"] == "failed" and canonical_url(a["url"]) in self.catalog()
+                    and canonical_url(a["url"]) not in self.bundle["pages"]
+                    and not (self.cutoff and structured_url(a["url"]))
+                    and canonical_url(a["url"]) not in quarantined))
+
+    def page_view(self, page, start=0):
+        text = page["content"]
+        if type(start) is not int or start < 0 or start > len(text):
+            raise ValueError("Invalid page offset")
+        end = min(start+18000, len(text))
+        view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content"}}
+        view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
+        return view
 
     def save(self):
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -153,7 +207,7 @@ class RetrievalTask:
             raise ValueError("Reference existing evidence need IDs")
 
     def coverage(self):
-        return [{**n, "evidence_ids": [e["id"] for e in self.bundle["evidence"] if n["id"] in e["need_ids"]]}
+        return [{**n, "evidence_ids": [e["id"] for e in self.bundle["evidence"] if n["id"] in e["need_ids"] and e.get("audit", {}).get("accepted") is not False]}
                 for n in self.bundle["plan"] or []]
 
     def execute(self, name, args, key):
@@ -173,10 +227,17 @@ class RetrievalTask:
             for n in needs:
                 if n.get("priority") not in {"critical", "useful"} or not all(isinstance(n.get(k), str) and n[k].strip() for k in ["id", "condition", "expected_source", "query"]):
                     raise ValueError("Incomplete evidence plan")
+            card = args.get("entity_card")
+            if card is not None and (not isinstance(card, dict) or not all(isinstance(card.get(k), str) and card[k].strip() for k in ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"])):
+                raise ValueError("Complete the subject, identity, form and timing card")
             b["plan"] = needs
+            b["entity_card"] = args.get("entity_card", {"status": "Legacy input: identity and timing card absent"})
             return {"plan": needs}
         if b["plan"] is None:
             raise ValueError("Freeze an evidence plan first")
+        if name == "list_sources":
+            return {"source_catalog": list(self.catalog().values())[:120], "saved_evidence": b["evidence"],
+                    "extract_eligible": self.rescue_candidates(), "coverage": self.coverage()}
         if name == "search_tavily":
             self.needs(args)
             if not args.get("reason") or not args.get("query"):
@@ -208,9 +269,9 @@ class RetrievalTask:
         if name == "fetch_page":
             url = args.get("url", "")
             canonical = canonical_url(url)
-            hits = [r for s in b["searches"] for r in s["results"] if canonical_url(r["url"]) == canonical]
+            hits = [self.catalog()[canonical]] if canonical in self.catalog() else []
             if not hits and canonical not in b["pages"]:
-                raise ValueError("Fetch only URLs from this task's accepted searches")
+                raise ValueError("Fetch only URLs from this task's accepted searches, question links or captured page links; use source_catalog")
             if canonical in b["pages"]:
                 page = b["pages"][canonical]
             else:
@@ -222,7 +283,7 @@ class RetrievalTask:
                 b["fetch_attempts"].append(attempt)
                 self.save()
                 try:
-                    page = fetch_public_page(url)
+                    page = fetch_structured(url, self.cutoff, fetch_public_page) or fetch_public_page(url)
                     text = page["content"]
                     if len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
                         raise ValueError("Empty page or access interstitial")
@@ -237,13 +298,30 @@ class RetrievalTask:
                         raise ValueError("Page publication/update metadata is after cutoff")
                     page["independence_note"] = "Original-source grouping is assessed by Ultra, not automatically verified"
                     b["pages"][canonical] = page
+                    for link in page.get("links", []):
+                        if allowed_source(link):
+                            b["source_leads"].setdefault(canonical_url(link), {"url": link, "origin": "page_link", "parent_url": url, "published_date": None})
                     attempt["status"] = "completed"
                 except Exception as exc:
                     attempt.update(status="failed", error=type(exc).__name__)
                     raise RuntimeError("Page unavailable; this does not imply event absence") from exc
                 finally:
                     self.save()
-            return {k: v for k, v in page.items() if k != "raw_response_base64"}
+            return self.page_view(page, args.get("start_char", 0))
+        if name in {"fetch_pages", "record_evidence_batch"}:
+            values = args.get("urls" if name == "fetch_pages" else "items")
+            maximum = 5 if name == "fetch_pages" else 8
+            if not isinstance(values, list) or not 1 <= len(values) <= maximum:
+                raise ValueError("Invalid batch size")
+            results = []
+            for item in values:
+                try:
+                    result = self.execute("fetch_page" if name == "fetch_pages" else "record_evidence", {"url": item} if name == "fetch_pages" else item, key)
+                    results.append({"ok": True, "result": result})
+                except Exception as exc:
+                    results.append({"ok": False, "error": str(exc)[:500]})
+                self.save()
+            return {"items": results, "source_catalog": list(self.catalog().values())[:60]}
         if name == "extract_failed_pages":
             self.needs(args)
             if b["mode"] == "historical_strict":
@@ -254,11 +332,13 @@ class RetrievalTask:
             if not isinstance(urls, list) or not 1 <= len(urls) <= 5 or not args.get("reason"):
                 raise ValueError("Explain importance; batch 1 to 5 failed URLs")
             keys = [canonical_url(u) for u in urls if isinstance(u, str)]
-            accepted = {canonical_url(r["url"]): r for s in b["searches"] for r in s["results"]}
+            accepted = self.catalog()
             failed = {canonical_url(a["url"]) for a in b["fetch_attempts"] if a["status"] == "failed"}
             quarantined = {canonical_url(q.get("url", "")) for q in b["quarantine"]}
             if len(keys) != len(urls) or len(set(keys)) != len(keys) or any(not u or u not in accepted or u not in failed or u in b["pages"] or u in quarantined for u in keys):
                 raise ValueError("Extract only accepted, free-fetch-failed, uncached, non-quarantined URLs")
+            if self.cutoff and any(structured_url(u) for u in urls):
+                raise ValueError("Historical financial data must use cutoff-aware adapter; current Extract cannot replace failed vintage/data fetch")
             attempt = {"urls": urls, "need_ids": args["need_ids"], "reason": args["reason"],
                        "depth": "basic", "at": utc_now(), "status": "reserved"}
             b["extract_attempts"].append(attempt)
@@ -281,7 +361,7 @@ class RetrievalTask:
                             "temporal_status": "current_capture_possible_later_edits" if self.cutoff else "live_capture",
                             "date_metadata_warning": "Extract does not prove historical availability or last-update time"}
                     b["pages"][canonical] = page
-                    rescued.append({k: v for k, v in page.items() if k != "raw_response_base64"})
+                    rescued.append(self.page_view(page))
                 attempt["status"] = "completed"
                 attempt["accepted_urls"] = [p["url"] for p in rescued]
             except Exception as exc:
@@ -296,6 +376,21 @@ class RetrievalTask:
             quote = args.get("quote", "")
             if not page or len(quote.strip()) < 15 or normalize(quote) not in normalize(page["content"]):
                 raise ValueError("Supporting quote must occur in saved page text")
+            absence_claim = re.search(r"\b(?:no\b.{0,60}(?:announc|fil|occur)|only\b)", args.get("claim", ""), re.I)
+            if absence_claim and not re.search(r"\b(?:no|not|none|only|never|absence)\b", quote, re.I):
+                raise ValueError("Quote establishes a local fact, not an exhaustive absence/only claim; narrow the claim")
+            if self.cutoff:
+                fact_time = args.get("event_time", "")
+                if args.get("time_role") == "future_schedule":
+                    fact_time = args.get("announcement_at", "")
+                    if not parse_time(fact_time):
+                        raise ValueError("Future schedule requires the known pre-cutoff announcement_at")
+                dates = re.findall(r"\b\d{4}-\d{2}-\d{2}\b", fact_time)
+                if any(date.fromisoformat(d) >= self.cutoff.date() for d in dates):
+                    raise ValueError("Evidence event_time reaches cutoff day or later; record only pre-cutoff facts, separate planned effective dates from known announcement")
+                if args.get("time_role") == "observation" or page.get("capture_method") == "structured_data":
+                    if any(date.fromisoformat(d) >= self.cutoff.date() for d in quoted_dates(quote)):
+                        raise ValueError("Quoted observations include cutoff-day/future data")
             if not args.get("claim") or not args.get("original_source") or args.get("stance") not in {"supports", "opposes", "neutral"}:
                 raise ValueError("Incomplete evidence")
             if not all(isinstance(args.get("quality", {}).get(k), str) and args["quality"][k].strip() for k in ["authority", "directness", "relevance", "verifiability"]):
@@ -307,10 +402,24 @@ class RetrievalTask:
                 raise ValueError("Evidence already recorded")
             b["evidence"].append(evidence)
             return {"recorded": evidence, "coverage": self.coverage()}
+        if name == "audit_evidence":
+            reviews = args.get("reviews")
+            ids = {e["id"] for e in b["evidence"]}
+            if not isinstance(reviews, list) or {r.get("evidence_id") for r in reviews} != ids or len(reviews) != len(ids):
+                raise ValueError("Audit must review every saved evidence ID exactly once")
+            for review in reviews:
+                if not review.get("reason") or any(type(review.get(k)) is not bool for k in ["entity_matches", "quote_supports_claim", "time_valid"]):
+                    raise ValueError("Explain each entity, support-scope and timing verdict")
+            for review in reviews:
+                evidence = next(e for e in b["evidence"] if e["id"] == review["evidence_id"])
+                evidence["audit"] = {**review, "accepted": all(review[k] for k in ["entity_matches", "quote_supports_claim", "time_valid"]), "auditor": "Ultra_self_review_not_independent_truth_check"}
+            return {"evidence": b["evidence"], "coverage": self.coverage()}
         if name == "finish_retrieval":
             status = args.get("status")
             if status not in {"sufficient", "partial", "conflicted", "failed"} or not isinstance(args.get("gaps"), list) or not isinstance(args.get("conflicts"), list) or not args.get("summary"):
                 raise ValueError("Invalid retrieval completion")
+            if any("audit" not in e for e in b["evidence"]) and not b["control"]["forced_close"]:
+                raise ValueError("Audit saved evidence before finishing")
             coverage = self.coverage()
             missing = [n["id"] for n in coverage if n["priority"] == "critical" and not n["evidence_ids"]]
             if status == "sufficient" and (missing or args["conflicts"] or args["gaps"]):
@@ -320,6 +429,14 @@ class RetrievalTask:
             if not b["evidence"]:
                 status = "failed"
             temporal_gaps = []
+            unaudited = [e["id"] for e in b["evidence"] if "audit" not in e]
+            rejected = [e["id"] for e in b["evidence"] if e.get("audit", {}).get("accepted") is False]
+            if b["evidence"] and len(rejected) == len(b["evidence"]):
+                status = "failed"
+            if unaudited or rejected:
+                temporal_gaps.append(f"Evidence audit pending={unaudited}, rejected={rejected}")
+                if status == "sufficient":
+                    status = "partial"
             if self.cutoff and any(e["temporal_status"] == "current_capture_possible_later_edits" for e in b["evidence"]):
                 temporal_gaps.append("Historical article bodies were fetched today; pre-cutoff availability is unverified")
                 if status == "sufficient":
@@ -327,6 +444,12 @@ class RetrievalTask:
             b["result"] = {**args, "status": status, "coverage": coverage, "uncovered_critical_ids": missing,
                            "gaps": args["gaps"] + temporal_gaps,
                            "evidence_chains": sorted({e["evidence_chain"] for e in b["evidence"]}), "finished_at": utc_now()}
+            b["result"]["model_summary"] = args["summary"]
+            if temporal_gaps or missing or args["gaps"] or rejected:
+                accepted_evidence = [e for e in b["evidence"] if e.get("audit", {}).get("accepted") is True]
+                gaps = b["result"]["gaps"] + (["Uncovered critical needs: " + ",".join(missing)] if missing else [])
+                b["result"]["summary"] = "Retrieval incomplete/unverified. Audited facts: " + "; ".join(e["claim"] for e in accepted_evidence) + ". Gaps: " + "; ".join(gaps)
+            b["result"]["extract_eligible_unread"] = self.rescue_candidates()
             return b["result"]
         raise ValueError("Unknown retrieval tool")
 
@@ -367,9 +490,24 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             for call in m.get("tool_calls") or []:
                 if call["id"] not in answered:
                     messages.append({"role": "tool", "tool_call_id": call["id"], "content": "Interrupted before tool reply; inspect durable bundle; search reservations remain consumed."})
-        for _ in range(MAX_TURNS):
+        seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
+        for turn in range(MAX_TURNS):
+            control = task.bundle["control"]
+            if turn >= MAX_TURNS-2 or control["consecutive_errors"] >= 3:
+                control["forced_close"] = True
+            pending_audit = any("audit" not in e for e in task.bundle["evidence"])
+            forced = None
+            if task.bundle["plan"] is None:
+                forced = "plan_evidence"
+            elif control["forced_close"]:
+                forced = "audit_evidence" if pending_audit and turn < MAX_TURNS-1 else "finish_retrieval"
+            if forced in {"audit_evidence", "finish_retrieval"}:
+                messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
+                    "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),
+                    "instruction": "Conclude from saved facts and explicit gaps; no outcome assertion or guessed URLs."})})
+            task.save()
             try:
-                message = ask_ultra(messages, router_key, tools=TOOLS, forced_tool="plan_evidence" if task.bundle["plan"] is None else None)
+                message = ask_ultra(messages, router_key, tools=TOOLS, forced_tool=forced)
                 task.bundle.pop("last_error", None)
                 task.bundle.pop("last_error_detail", None)
             except Exception as exc:
@@ -383,15 +521,30 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
             if not calls:
+                control["consecutive_errors"] += 1
                 messages.append({"role": "user", "content": "Use the retrieval tools. Finish explicitly with gaps if evidence is inadequate."})
             for call in calls:
                 name = (call.get("function") or {}).get("name")
                 try:
                     args = json.loads(call["function"]["arguments"])
+                    if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "plan_evidence"}:
+                        raise ValueError("Closing phase: audit saved facts or finish with gaps")
+                    signature = (name, json.dumps(args, sort_keys=True))
+                    if signature in seen_calls and name in {"search_tavily", "fetch_page", "fetch_pages", "extract_failed_pages"}:
+                        raise ValueError("Repeated identical tool request blocked; use list_sources or existing evidence")
+                    seen_calls.add(signature)
+                    control["seen_calls"] = [list(item) for item in sorted(seen_calls)]
+                    task.save()
                     result = task.execute(name, args, tavily_key)
                 except Exception as exc:
                     result = {"error": str(exc)[:500]}
+                failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
+                control["consecutive_errors"] = control["consecutive_errors"]+1 if failed else 0
+                if control["consecutive_errors"] >= 3:
+                    control["forced_close"] = True
                 result = {**result, "budget_remaining": task.budget()}
+                if "error" in result:
+                    result["available_urls"] = [r["url"] for r in task.catalog().values()][:60]
                 task.bundle["transcript"].append({"tool": name, "result": result})
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result, ensure_ascii=False)})
                 task.save()
