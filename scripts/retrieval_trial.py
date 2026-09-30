@@ -23,7 +23,7 @@ def main():
                    "critical_covered": sum(bool(n["evidence_ids"]) for n in critical), "critical_total": len(critical),
                    "quarantined": len(bundle["quarantine"]), "summary": bundle["result"]["summary"],
                    "gaps": bundle["result"].get("gaps", []), "conflicts": bundle["result"].get("conflicts", []),
-                   "last_error": bundle.get("last_error")}
+                   "last_error": bundle.get("last_error"), "last_error_detail": bundle.get("last_error_detail")}
         except Exception as exc:
             row = {"id": ident, "question": question["question"], "status": "failed", "error": str(exc)[:500]}
         rows.append(row)

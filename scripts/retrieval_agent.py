@@ -293,6 +293,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 message = ask_ultra(messages, router_key, tools=TOOLS, forced_tool="plan_evidence" if task.bundle["plan"] is None else None)
             except Exception as exc:
                 task.bundle["last_error"] = type(exc).__name__
+                detail = str(exc)
+                for secret in (tavily_key, router_key):
+                    if secret:
+                        detail = detail.replace(secret, "[REDACTED]")
+                task.bundle["last_error_detail"] = detail[:1200]
                 break
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
