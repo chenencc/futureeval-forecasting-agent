@@ -2,6 +2,11 @@ name: Monitor FutureEval questions
 
 on:
   workflow_dispatch:
+    inputs:
+      snapshot_only:
+        description: 'Verify monitoring and snapshots without model or search calls'
+        type: boolean
+        default: false
   schedule:
     - cron: '7,27,47 * * * *'
 
@@ -16,7 +21,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -72,7 +77,7 @@ jobs:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
-          RUN_READ_ONLY_RESEARCH: '1'
+          RUN_READ_ONLY_RESEARCH: ${{ inputs.snapshot_only && '0' || '1' }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/monitor
       - name: Save state for the next poll
