@@ -2,6 +2,10 @@
 
 独立的 Ultra 研究运行器。Codex 只是操作和维护入口；包内没有 Codex SDK、MCP、宿主技能目录或登录依赖。
 
+## 工具分层
+
+`tools/`：工具接口；`providers/`：渠道与下载；`readers/`：本地解析；`evidence/`：文档与快照；`runtime/`：调度和预算。旧平铺模块仅兼容转发。详见 [工具说明](tools/README.md)。
+
 ## 目录
 
 - `agent.py` / `__main__.py`：统一运行、检查与离线重放入口。
