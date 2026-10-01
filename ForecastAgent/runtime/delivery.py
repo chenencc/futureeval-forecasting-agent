@@ -37,6 +37,8 @@ def project_reply(payload, name, args, text_chars=6000):
         end = data.get('start_char', 0) + len(data['content'])
         data['end_char'] = end
         data['next_start'] = end if end < data.get('total_chars', end) else None
+        if data['next_start'] is not None:
+            data['next_document_args'] = None
         data['delivery'] = {'coordinate_space': data.get('location', {}).get('coordinate_space'),
             'visible_start': data.get('start_char', 0), 'visible_end': end,
             'executed_end': original_end, 'continuation_required': original_end != end,

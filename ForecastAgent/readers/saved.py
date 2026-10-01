@@ -56,8 +56,14 @@ def read_document(pages, args):
     start = integer(args.get("start_char", 0), 0, len(text), "start_char")
     count = integer(args.get("max_chars", 6000), 1, 18000, "max_chars")
     end = min(start + count, len(text))
+    index = args.get('document_index')
+    docs = page.get('documents') or [{'page_content':page['content']}]
+    next_document = ({'url':args['url'],'document_index':index+1,'start_char':0}
+                     if index is not None and end == len(text) and index < len(docs) else None)
     return {"url": args["url"], "content": text[start:end], "start_char": start, "end_char": end,
             "next_start": end if end < len(text) else None, "total_chars": len(text), "location": location,
+            'next_document_args':next_document,
+            'coordinate_instruction':'start_char belongs to this selected document only. At its end use next_document_args, not the same offset in another document. Omit document_index to navigate the whole saved body.',
             "source_sha256": page.get("sha256"), "temporal_status": page.get("temporal_status"),
             "source_truncated": bool(page.get("content_truncated") or page.get("documents_truncated"))}
 

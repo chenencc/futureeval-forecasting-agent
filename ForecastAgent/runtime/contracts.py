@@ -128,7 +128,12 @@ def validate(task, name, args, tools=None):
                 raise ContractError('unknown_document', 'document_index', 'Use a ONE based saved document index or omit the index to read saved content.', list(range(1, min(count, 20)+1)))
             page, text, _ = select(task.bundle['pages'], args['url'], args.get('document_index'))
             if name == 'read_document' and args.get('start_char', 0) >= len(text):
-                raise ContractError('empty_read', 'start_char', 'The selected text is empty or its end was reached. Choose another document or finish with gaps.')
+                index = args.get('document_index')
+                docs = page.get('documents') or [{'page_content':page['content']}]
+                alternatives = [{'url':args['url'],'document_index':index+1,'start_char':0}] if index is not None and index < len(docs) else []
+                alternatives.append({'url':args['url'],'start_char':0})
+                raise ContractError('empty_read', 'start_char',
+                    'Selected document ends at '+str(len(text))+' characters. Offsets are local to the selected document, not the PDF or whole page. Use the returned next-document arguments or navigate the whole saved body.',alternatives)
             if tools is not None and name == 'read_document':
                 from ForecastAgent.runtime.collection_actions import duplicate_read
                 if duplicate_read(task,args):

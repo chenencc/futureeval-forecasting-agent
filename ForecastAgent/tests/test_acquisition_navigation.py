@@ -116,3 +116,15 @@ class AcquisitionNavigationTests(TestCase):
         self.assertIn('# August 2026',passage['content'])
         self.assertIn('Target event',passage['content'])
         self.assertEqual(text[coords['start_char']:coords['end_char']],passage['content'])
+
+    def test_document_end_returns_exact_next_document_arguments(self):
+        with TemporaryDirectory() as root:
+            task=prepared(root)
+            read=task.execute('read_document',{'url':URL,'document_index':1},'')
+            cursor=read['next_document_args']
+            self.assertEqual(cursor,{'url':URL,'document_index':2,'start_char':0})
+            with self.assertRaises(ContractError) as error:
+                task.execute('read_document',{'url':URL,'document_index':1,'start_char':read['total_chars']},'')
+            self.assertEqual(error.exception.details['allowed_values'][0],cursor)
+            next_page=task.execute('read_document',cursor,'')
+            self.assertIn('Second page',next_page['content'])
