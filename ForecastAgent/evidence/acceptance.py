@@ -17,6 +17,10 @@ def acquisition_metrics(bundle):
     cutoff=bundle.get('request',{}).get('as_of_utc')
     cutoff=datetime.fromisoformat(cutoff.replace('Z','+00:00')) if cutoff else None
     verified=bundle.get('historical_body_policy')=='verified_snapshots_only'
+    from ForecastAgent.runtime.temporal_policy import unrestricted
+    if unrestricted(bundle) or bundle.get('mode') == 'live':
+        cutoff = None
+        verified = False
     details=[]
     for url,page in bundle.get('pages',{}).items():
         diagnostics=page.get('body_diagnostics') or body_diagnostics(page.get('content',''))

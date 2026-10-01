@@ -13,6 +13,9 @@ def intelligence_package(bundle):
             sources.setdefault(canonical_url(hit["url"]), hit)
     return {"schema": "intelligence_package_v1", "request": bundle["request"],
             "request_hash": bundle["request_hash"], "mode": bundle["mode"],
+            'collection_temporal_policy':bundle.get('collection_temporal_policy'),
+            'temporal_policy_amendments':bundle.get('temporal_policy_amendments',[]),
+            'result_history':bundle.get('result_history',[]),
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'exa_searches':bundle.get('exa_searches',[]),

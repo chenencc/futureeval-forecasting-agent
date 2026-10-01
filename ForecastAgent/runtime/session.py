@@ -12,7 +12,7 @@ def cache_key(task, name, args):
     if name not in LOCAL:
         return None
     return fingerprint([name, args, task.bundle['request_hash'],
-                        task.bundle.get('historical_body_policy'), task.bundle.get('plan'),
+                        task.bundle.get('historical_body_policy'), task.bundle.get('collection_temporal_policy'), task.bundle.get('plan'),
                         [(u, version_digest(p), p.get('sha256'), p.get('temporal_status'),
                           p.get('archive_timestamp'), p.get('retrieved_at_utc'), fingerprint(p.get('rows')))
                          for u,p in task.bundle['pages'].items()], task.bundle.get('market_snapshots'),

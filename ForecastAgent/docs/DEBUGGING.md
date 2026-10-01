@@ -33,6 +33,32 @@ scheme, host, query and fragment must still match.
 
 ## Historical planning
 
+### Current-information acquisition (current debugging default)
+
+The single-case workflow defaults `current_information` to true. Select an
+existing `question_id`; it will not migrate or run the other four tasks.
+The explicit CLI equivalent is:
+
+```powershell
+python -m ForecastAgent.debug_trial --root snapshots/runtime-collection-five-20261001 --question 43525 --current-information
+```
+
+This records a one-way `collection_temporal_policy=current_information`
+amendment, preserves the original request/hash and dates, and archives a closed
+previous result before reopening that selected task. Search attempts, raw
+captures and all lifetime quotas stay unchanged. Applying the same amendment
+again does not reopen a closed task. Previously date-filtered saved leads and
+captures can be reused without another provider request. Current HTML, PDFs,
+datasets and market snapshots are permitted; search date filters, body date
+masking and mandatory archive eligibility are disabled. Body readability and
+capture integrity checks remain active. Exports explicitly identify current
+information and cannot be treated as clean historical backtests.
+
+New collection requests can set `collection_temporal_policy` to
+`current_information`. Existing tasks retain their policy until explicitly
+amended. Set the workflow input false to retain enforced historical acquisition.
+For a multi-question dispatch with no `question_id`, this input must be false.
+
 The historical cutoff is the simulated present, not the event resolution date.
 Collect prior observations and then-available forward-looking drivers. Explicit
 post-cutoff realized-price/value demands are rejected before freezing a plan.

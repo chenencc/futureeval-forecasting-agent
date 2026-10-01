@@ -11,6 +11,10 @@ on:
         description: 'Optional existing question ID: resume ONLY this debug case, preserve all five ledgers'
         default: ''
         required: false
+      current_information:
+        description: 'Single debug case: explicitly remove cutoff; retain original dates and consumed quotas'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -87,13 +91,22 @@ jobs:
       - name: Collect bounded historical batch
         run: |
           if [ -n "$DEBUG_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION"
+            if [ "$CURRENT_INFORMATION" = "true" ]; then
+              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION" --current-information
+            else
+              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION"
+            fi
           else
+            if [ "$CURRENT_INFORMATION" = "true" ]; then
+              echo 'Select one question_id for current-information debugging; no implicit five-task migration.'
+              exit 1
+            fi
             python -u -m ForecastAgent.historical_batch run --root "$CAMPAIGN_ROOT" --limit "$BATCH_LIMIT"
           fi
         env:
           BATCH_LIMIT: ${{ inputs.limit }}
           DEBUG_QUESTION: ${{ inputs.question_id }}
+          CURRENT_INFORMATION: ${{ inputs.current_information }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}

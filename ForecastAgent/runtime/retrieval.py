@@ -45,6 +45,7 @@ from ForecastAgent.providers.exa_search import search as search_exa, options as 
 from ForecastAgent.runtime.contracts import validate, ContractError
 from ForecastAgent.runtime import progress, session
 from ForecastAgent.runtime import search_policy
+from ForecastAgent.runtime import temporal_policy
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -166,6 +167,10 @@ class RetrievalTask:
                     "warning": "Local capture timestamps rely on the provenance of the supplied bundle; not independently notarized."}
 
         self.bundle.setdefault("pipeline", request.get("pipeline", "legacy" if existing else "collection"))
+        temporal_policy.configure(self.bundle)
+        if temporal_policy.unrestricted(self.bundle):
+            self.cutoff = None
+            self.end_date = None
         if self.bundle["pipeline"] not in {"collection", "legacy"}:
             raise ValueError("Invalid acquisition pipeline")
         self.bundle.setdefault("channel_catalog", channel_catalog())
@@ -211,10 +216,15 @@ class RetrievalTask:
             for hit in search["results"]:
                 if allowed_source(hit["url"]):
                     leads[canonical_url(hit["url"])] = hit
+        if temporal_policy.unrestricted(self.bundle):
+            for entry in self.bundle['quarantine']:
+                hit = entry.get('hit')
+                if hit and allowed_source(hit.get('url', '')):
+                    leads.setdefault(canonical_url(hit['url']), {**hit, 'origin':'previously_date_filtered_search'})
         return leads
 
     def rescue_candidates(self):
-        quarantined = {canonical_url(q.get("url", "")) for q in self.bundle["quarantine"]}
+        quarantined = {canonical_url(q.get("url", "")) for q in self.bundle["quarantine"]} if self.cutoff else set()
         return list(dict.fromkeys(a["url"] for a in self.bundle["fetch_attempts"]
                     if a["status"] == "failed" and a.get('url') and canonical_url(a["url"]) in self.catalog()
                     and canonical_url(a["url"]) not in self.bundle["pages"]
@@ -870,7 +880,7 @@ class RetrievalTask:
             keys = [canonical_url(u) for u in urls if isinstance(u, str)]
             accepted = self.catalog()
             failed = {canonical_url(a["url"]) for a in b["fetch_attempts"] if a["status"] == "failed" and a.get('url')}
-            quarantined = {canonical_url(q.get("url", "")) for q in b["quarantine"]}
+            quarantined = {canonical_url(q.get("url", "")) for q in b["quarantine"]} if self.cutoff else set()
             if len(keys) != len(urls) or len(set(keys)) != len(keys) or any(not u or u not in accepted or u not in failed or u in b["pages"] or u in quarantined for u in keys):
                 raise ValueError("Extract only accepted, free-fetch-failed, uncached, non-quarantined URLs")
             if self.cutoff and any(structured_url(u) for u in urls):
@@ -1118,9 +1128,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         'Call search_exa for the most important unresolved source need. Use only supplied evidence need IDs. '
                         'The query must describe the actual event or data, never a channel ID or tool name. '
                         'Use real bare domains only, or leave include_domains empty. Do not forecast or infer outcomes. '
-                        'The program enforces one existing search allowance and historical cutoff; the search provides leads only.'},
+                        'The program enforces one existing search allowance and the supplied temporal policy; the search provides leads only.'},
                         {'role':'user','content':json.dumps({'task':task.bundle['request'],
                             'needs':task.bundle['plan'],'remaining_budget':task.budget(),
+                            'collection_temporal_policy':task.bundle.get('collection_temporal_policy'),
+                            'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
                             'accepted_existing_urls':list(task.catalog())[:30],
                             'instruction':'Choose a useful missing official, scientific or independent source. Channel IDs are not need IDs.'})}]
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,

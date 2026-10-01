@@ -47,6 +47,8 @@ def temporal_report(bundle):
     for item in bundle.get('quarantine', []):
         add(item.get('page_snapshot') or item.get('hit') or item, 'quarantine')
     return {'schema': 'temporal_provenance_v1', 'as_of_utc': bundle['request'].get('as_of_utc'),
+            'collection_temporal_policy':bundle.get('collection_temporal_policy'),
+            'cutoff_enforced':bool(cutoff and bundle.get('mode') != 'live'),
             'historical_body_policy':bundle.get('historical_body_policy'),
             'question_text_audit': bundle['request'].get('historical_criteria_audit', 'Not audited'),
             'historical_clean': False, 'model_knowledge_leakage_controlled': False,

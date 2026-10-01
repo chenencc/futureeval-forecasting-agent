@@ -10,6 +10,7 @@ import sqlite3
 
 from ForecastAgent.runtime.collection_v2 import eligible, late_dates
 from ForecastAgent.readers.saved import select, version_digest
+from ForecastAgent.runtime.temporal_policy import unrestricted
 
 
 def review(root, artifact):
@@ -20,6 +21,7 @@ def review(root, artifact):
     for path, encoded in rows:
         bundle = json.loads(encoded)
         cutoff = datetime.fromisoformat(bundle['request']['as_of_utc'].replace('Z', '+00:00'))
+        effective_cutoff = None if unrestricted(bundle) or bundle.get('mode') == 'live' else cutoff
         attempts = bundle.get('model_attempts', [])
         transports = []
         for attempt in attempts:
@@ -57,7 +59,8 @@ def review(root, artifact):
             except (KeyError, ValueError, TypeError):
                 raw_verified = False
             pages.append({'url': url, 'chars': len(body), 'documents': len(docs),
-                'eligible_for_model_under_v3': eligible(page, cutoff),
+                'eligible_for_model_under_v3': eligible(page, effective_cutoff),
+                'eligible_under_original_cutoff': eligible(page, cutoff),
                 'temporal_status': page.get('temporal_status'),
                 'capture_method': page.get('capture_method'),
                 'archive_timestamp': page.get('archive_timestamp'),
@@ -86,7 +89,7 @@ def review(root, artifact):
                 page, body, _ = select({item['url']:source}, item['url'], item.get('location', {}).get('document_index'))
                 coordinate_matches = body[item['start_char']:item['end_char']] == item['text']
                 version_matches = version_digest(page) == item.get('source_parsed_sha256')
-                eligible_body = eligible(page, cutoff)
+                eligible_body = eligible(page, effective_cutoff)
             except (ValueError, KeyError, TypeError, StopIteration):
                 coordinate_matches = version_matches = eligible_body = False
             excerpts.append({**item, 'audit_coordinate_matches': coordinate_matches,
@@ -98,6 +101,8 @@ def review(root, artifact):
             } for search in bundle.get('searches', [])]
         tool_errors = [step for step in bundle.get('transcript', []) if step.get('error') or (isinstance(step.get('result'), dict) and step['result'].get('error'))]
         results.append({'question_id': str(bundle['request']['id']), 'request': bundle['request'],
+            'collection_temporal_policy':bundle.get('collection_temporal_policy'),
+            'temporal_policy_amendments':bundle.get('temporal_policy_amendments',[]),
             'frozen_request_hash':bundle['request_hash'],
             'bundle_path': path, 'result': bundle.get('result'), 'acceptance': bundle.get('acceptance'),
             'limits': bundle.get('acquisition_limits'), 'resources': bundle.get('resources'),
