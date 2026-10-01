@@ -33,6 +33,8 @@ def review(root, artifact):
                 record = json.loads(raw)
             response = record.get('response') or {}
             usage = response.get('usage') or {}
+            request=record.get('request') or {}
+            tools=request.get('tools') or []
             transports.append({'id': attempt.get('id'), 'path': relative,'raw_sha256':digest,
                 'record_present': bool(record), 'sha256_verified': hash_matches,
                 'status': record.get('status', attempt.get('status')),
@@ -40,6 +42,11 @@ def review(root, artifact):
                 'http_status': record.get('http_status'), 'usage': usage,
                 'error': record.get('error'), 'duration_seconds': record.get('duration_seconds'),
                 'request_chars': len(json.dumps(record.get('request') or {})),
+                'tool_schema_chars':len(json.dumps(tools)),
+                'tool_count':len(tools),
+                'tool_names':[tool.get('function',{}).get('name') for tool in tools],
+                'tool_choice':request.get('tool_choice'),
+                'message_chars':len(json.dumps(request.get('messages') or [])),
                 'response_preview': record.get('response_body', '')[:250] if record.get('status') != 'received' else None})
         pages = []
         for url, page in bundle.get('pages', {}).items():
@@ -103,6 +110,7 @@ def review(root, artifact):
             'transport_records': transports, 'search_attempts': len(searches), 'searches': searches,
             'search_payload_sha256':[hashlib.sha256(json.dumps(s,sort_keys=True).encode()).hexdigest() for s in bundle.get('searches',[])],
             'exa_search_attempts':len(bundle.get('exa_searches',[])), 'exa_searches':bundle.get('exa_searches',[]),
+            'exa_payload_sha256':[hashlib.sha256(json.dumps(s,sort_keys=True).encode()).hexdigest() for s in bundle.get('exa_searches',[])],
             'exa_reported_cost':sum((s.get('cost_dollars_estimate') or {}).get('total',0) for s in bundle.get('exa_searches',[])),
             'budget_amendments':bundle.get('budget_amendments',[]),
             'page_count': len(pages), 'v3_eligible_page_count': sum(p['eligible_for_model_under_v3'] for p in pages),
@@ -137,6 +145,7 @@ def compare(old, prior, current):
         search_count=previous['search_attempts']
         checks={'model_transport_prefix_unchanged':prefix==prior_prefix,
                 'tavily_search_prefix_unchanged':row['search_payload_sha256'][:search_count]==previous['search_payload_sha256'],
+                'exa_search_prefix_unchanged':row.get('exa_payload_sha256',[])[:previous.get('exa_search_attempts',0)]==previous.get('exa_payload_sha256',[]),
                 'request_hash_unchanged':row['frozen_request_hash']==previous['frozen_request_hash'],
                 'tavily_total_within_frozen_budget':row['search_attempts']<=row['limits']['tavily_basic'],
                 'exa_total_within_frozen_budget':row['exa_search_attempts']<=row['limits'].get('exa_search',0),
@@ -145,7 +154,8 @@ def compare(old, prior, current):
             'interrupted_v3':{k:previous.get(k,0) for k in KEYS},
             'resume_increment':{k:row.get(k,0)-previous.get(k,0) for k in KEYS},
             'cumulative':{k:row.get(k,0) for k in KEYS},'ledger_checks':checks,
-            'completion':row['result'],'acceptance':row['acceptance']})
+            'completion':row['result'],'acceptance':row['acceptance'],
+            'increment_transport_records':row['transport_records'][count:]})
     totals={phase:{k:sum(row[phase][k] for row in comparisons) for k in KEYS}
             for phase in ('old_v2','interrupted_v3','resume_increment','cumulative')}
     return comparisons, totals
