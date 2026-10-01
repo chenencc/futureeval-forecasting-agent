@@ -632,8 +632,9 @@ class RetrievalTask:
             for item in args['items']:
                 pid=item['passage_id']
                 candidate=candidates.get(pid)
-                if not candidate or not item['reason'].strip() or not set(item['need_ids'])<=set(candidate['need_ids']):
-                    outcomes.append({'ok':False,'error':'Choose a pending surfaced passage and its proposed need IDs; explain keep/reject.'})
+                known={n['id'] for n in b.get('plan') or []}
+                if not candidate or not item['reason'].strip() or not set(item['need_ids'])<=known or (item['action']=='keep' and not item['need_ids']):
+                    outcomes.append({'ok':False,'error':'Choose a pending surfaced passage and existing need IDs for keep; reject may use an empty list. Explain keep/reject.'})
                     continue
                 if item['action']=='keep':
                     outcome=self.execute('record_excerpts',{'items':[{'passage_id':pid,'need_ids':item['need_ids']}]},key)['items'][0]

@@ -49,12 +49,16 @@ class CollectionActionsTests(TestCase):
         with TemporaryDirectory() as temp:
             task=setup_task(Path(temp))
             pid=pending_passages(task)[0]['passage_id']
-            result=task.execute('review_passages',{'items':[{'passage_id':pid,'need_ids':['n'],
-                'action':'reject','reason':'This illustrative candidate is not needed'}]},'')
+            args={'items':[{'passage_id':pid,'need_ids':[],
+                'action':'reject','reason':'This illustrative candidate is not needed'}]}
+            validate(task,'review_passages',args,COLLECTION_TOOLS)
+            result=task.execute('review_passages',args,'')
             self.assertTrue(result['items'][0]['ok'])
             self.assertFalse(task.bundle['excerpts'])
             self.assertFalse(pending_passages(task))
             self.assertFalse(task.bundle['passage_dispositions'][pid]['truth_verified'])
+            with self.assertRaises(ContractError):
+                validate(task,'review_passages',{'items':[{**args['items'][0],'action':'keep'}]},COLLECTION_TOOLS)
 
     def test_duplicate_delivered_read_blocked_but_new_version_allowed(self):
         with TemporaryDirectory() as temp:

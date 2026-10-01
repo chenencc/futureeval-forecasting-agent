@@ -106,7 +106,7 @@ TOOLS.extend([
 COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
                     {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]
 COLLECTION_TOOLS.extend([
-    tool('review_passages','Dispose of one to eight surfaced lexical candidates. Keep relevant exact material as an excerpt or reject irrelevant/header/duplicate material with a routing reason. This is acquisition selection, not fact checking.',
+    tool('review_passages','Dispose of one to eight surfaced lexical candidates. Keep relevant exact material with existing nonempty need_ids; reject irrelevant/header/duplicate material with a reason and need_ids=[] if unrelated. This is acquisition selection, not fact checking.',
          {'items':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{
              'passage_id':STRING,'action':{'type':'string','enum':['keep','reject']},'reason':STRING,
              'need_ids':{'type':'array','items':STRING}},'required':['passage_id','action','reason','need_ids'],'additionalProperties':False}}},['items']),
