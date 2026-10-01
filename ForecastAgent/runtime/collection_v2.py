@@ -67,22 +67,22 @@ def visible_pages(pages,cutoff, verified_only=False):
     return result
 
 
-def model_view(value, blocked_urls=()):
+def model_view(value, blocked_urls=(), text_limit=2400):
     """Keep full tool results on disk; bounded projections go to the model."""
     if isinstance(value,dict):
         from ForecastAgent.tavily_research import canonical_url
         hidden={'raw_response','raw_response_base64','links','raw_content'}
         if canonical_url(value.get('url','')) in blocked_urls:
             hidden |= {'title','content','text','context','preview','snippet','description'}
-        result={k:model_view(v,blocked_urls) for k,v in value.items() if k not in hidden}
+        result={k:model_view(v,blocked_urls,text_limit) for k,v in value.items() if k not in hidden}
         for key in ('content','context','text','preview','snippet'):
-            if isinstance(result.get(key),str) and len(result[key])>2400:
-                result[key]=result[key][:2400]
+            if text_limit is not None and isinstance(result.get(key),str) and len(result[key])>text_limit:
+                result[key]=result[key][:text_limit]
                 result['model_view_truncated']=True
                 result['instruction']='Use read_sources for targeted passages; full text is saved locally.'
         return result
     # Do not silently drop needs, tool outcomes or later pagination rows.
-    if isinstance(value,list): return [model_view(x,blocked_urls) for x in value]
+    if isinstance(value,list): return [model_view(x,blocked_urls,text_limit) for x in value]
     return value
 
 

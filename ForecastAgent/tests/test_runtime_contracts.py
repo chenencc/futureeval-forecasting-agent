@@ -201,7 +201,11 @@ class RuntimeContractsTests(TestCase):
             task = prepared(root); task.save()
             result = run_retrieval(LIVE, root, '', '')
             self.assertEqual(result['transcript'][1]['result']['data']['contract_error']['code'],'already_delivered_range')
-            self.assertFalse(result['sessions'][-1]['turns'][1]['advanced'])
+            # Confirmation belongs to the next successful model request, not
+            # tool execution. The rejected duplicate adds no reading range.
+            self.assertEqual(result['sessions'][-1]['turns'][1]['new']['reads'], 1)
+            self.assertTrue(result['sessions'][-1]['turns'][1]['failed'])
+            self.assertEqual(len(result['progress']['reads']), 1)
 
     @patch('ForecastAgent.runtime.retrieval.search_batch')
     @patch('ForecastAgent.runtime.retrieval.ask_ultra')

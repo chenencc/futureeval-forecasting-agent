@@ -17,7 +17,8 @@ def checkpoint(task):
     usable={url for url,page in b['pages'].items() if body_diagnostics(page.get('content',''))['usable_text'] and (not task.verified_only or eligible(page,task.cutoff))}
     covered = {need for e in b['excerpts'] if e['url'] in usable for need in e.get('need_ids', [])}
     covered.update(need for a in b['fetch_attempts'] if a.get('status') == 'completed' and a.get('url') in usable for need in a.get('need_ids', []))
-    missing = [n['id'] for n in b.get('plan') or [] if n['id'] not in covered]
+    from ForecastAgent.runtime.needs import active_needs
+    missing = [n['id'] for n in active_needs(b) if n['id'] not in covered]
     decisions = b.get('channel_decisions', {})
     rescue = task.rescue_candidates() if b['mode'] != 'historical_strict' and not b['extract_attempts'] else []
     todo = []

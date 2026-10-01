@@ -499,6 +499,9 @@ class RetrievalTask:
             end=min(len(page['rows']),offset+limit)
             return {'url':args['url'],'rows':page['rows'][offset:end],'total':len(page['rows']),
                     'next_offset':end if end<len(page['rows']) else None,'warning':page.get('data_warning'),'unit':page.get('unit')}
+        if name=='set_acquisition_need_status':
+            from ForecastAgent.runtime.needs import set_status
+            return set_status(self, args)
         if name=='collect_dataset': return self.collect_dataset(args)
         if name=='collect_archive': return self.collect_archive(args)
         if name=='list_dated_datasets':
@@ -757,7 +760,7 @@ class RetrievalTask:
             unread = sorted(reading_targets(b) - set(b['pages']))
             b['acceptance'] = collection_acceptance(b)
             missing = [n['need_id'] for n in b['acceptance']['acquisition_metrics']['needs']
-                       if n['priority']=='critical' and not n['usable_associated_sources']]
+                       if n['priority']=='critical' and n.get('acquisition_status','active')=='active' and not n['usable_associated_sources']]
             if missing:
                 gaps.append('Critical needs without associated usable sources: '+', '.join(missing))
             b["result"] = {"status": "collected" if b["pages"] or b['market_snapshots'] else "leads_only" if self.catalog() else "empty",
@@ -766,6 +769,7 @@ class RetrievalTask:
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": list(dict.fromkeys(gaps)), "finished_at": utc_now(),
                            'discovery_notes':discovery_notes,
+                           'need_status':copy.deepcopy(b.get('need_status', {})),
                            'exa_requirement':exa_requirement,
                            'acquisition_complete':not bool(gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])}
             b['result']['acquisition_checkpoint'] = checkpoint(self)
@@ -1211,6 +1215,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     model_messages = supplemental_messages(task)
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline)
+                if collection:
+                    from ForecastAgent.runtime.delivery import acknowledge
+                    acknowledge(task, model_messages)
+                    task.save()
                 task.bundle.pop("last_error", None)
                 task.bundle.pop("last_error_detail", None)
             except Exception as exc:
@@ -1261,7 +1269,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     else:
                         result = task.execute(name, args, tavily_key)
                     session.save_local(task, local_key, result)
-                    progress.delivered(task, name, args, result)
+                    if not collection:
+                        progress.delivered(task, name, args, result)
                     stage = {"plan_evidence": "research", "audit_evidence": "audit", "finish_retrieval": "report", "finish_collection": "export"}.get(name)
                     if stage:
                         runtime["stage"] = stage
@@ -1290,7 +1299,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 result = tool_result(name, result, task.budget(), error=result.get("error"))
                 task.bundle["transcript"].append({"tool": name, "result": result})
                 blocked_urls={url for url in task.catalog() if not eligible(task.bundle['pages'].get(url,{}),task.cutoff)} if task.verified_only else set()
-                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result,blocked_urls) if task.optimized else result, ensure_ascii=False)})
+                messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result,blocked_urls,text_limit=None) if task.optimized else result, ensure_ascii=False)})
                 task.save()
                 if task.bundle['result']:
                     break

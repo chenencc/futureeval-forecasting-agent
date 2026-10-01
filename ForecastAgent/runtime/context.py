@@ -25,6 +25,8 @@ def bounded(value, text_limit=700, item_limit=12):
 
 
 def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
+    from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply
+    ensure_delivery_state(task)
     b = task.bundle
     messages = b['messages']
     blocked = {u for u,p in b['pages'].items() if task.verified_only and not eligible(p, task.cutoff)}
@@ -37,6 +39,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     from ForecastAgent.runtime.task_protocol import task_view
     from ForecastAgent.runtime.collection_actions import next_action
     from ForecastAgent.runtime.collection_actions import pending_passages
+    from ForecastAgent.runtime.needs import reconciliation
     state = {'schema':'collection_context_v2',
              'collection_temporal_policy':b.get('collection_temporal_policy'),
              'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
@@ -45,6 +48,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'delivered_ranges':list(b.get('progress',{}).get('reads',{}).values())[-12:],
              'task_protocol':task_view(task),
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
+             'need_status':{ident:{k:row[k] for k in ('status','reason') if k in row} for ident,row in b.get('need_status', {}).items()},
+             'needs_to_reconcile':reconciliation(task),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
              'search_policy':b.get('search_policy', {}),
              'exa_requirement':requirement(task),
@@ -73,27 +78,47 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         if message.get('role') == 'assistant': groups.append([message])
         elif groups and message.get('role') in {'tool', 'user'}: groups[-1].append(message)
     recent = []
-    for group in reversed(groups[-recent_turns:]):
+    pinned = []
+    for number, group in enumerate(reversed(groups[-recent_turns:])):
         copied = copy.deepcopy(group)
         expected = {c['id'] for c in copied[0].get('tool_calls', [])}
         answered = {m.get('tool_call_id') for m in copied if m.get('role') == 'tool'}
         if expected != answered: continue
+        functions = {call['id']: call.get('function', {}) for call in copied[0].get('tool_calls', [])}
+        reader_count = sum(f.get('name') in {'read_document', 'read_dataset_rows'} for f in functions.values())
         for message in copied:
             if message.get('role') == 'tool':
-                try: payload = model_view(json.loads(message['content']), blocked)
+                try: payload = model_view(json.loads(message['content']), blocked, text_limit=None)
                 except (ValueError, TypeError): payload = {'message':message.get('content', '')}
-                message['content'] = encode(bounded(payload))
+                function = functions.get(message.get('tool_call_id'), {})
+                try: args = json.loads(function.get('arguments', '{}'))
+                except (ValueError, TypeError): args = {}
+                if function.get('name') in {'read_document', 'read_dataset_rows'}:
+                    payload = project_reply(payload, function['name'], args, text_chars=max(500, 6000 // max(1, reader_count)))
+                else:
+                    payload = bounded(payload)
+                    if isinstance(payload, dict):
+                        payload['projection_notice'] = 'This is a bounded tool view. Truncated strings and omitted items are not complete source delivery. Use saved-source navigation for exact text.'
+                message['content'] = encode(payload)
             elif message.get('role') == 'user':
                 message['content'] = bounded(message.get('content', ''), 500)
-        if len(encode(copied+recent)) > max_recent_chars: continue
+        if len(encode(copied+recent)) > max_recent_chars:
+            if not pinned:
+                raise ValueError('Newest tool group exceeds the delivery budget; preserve state and reduce the requested batch size.')
+            continue
         recent = copied+recent
-    if len(encode(projected+recent)) <= max_chars:
-        projected.extend(recent)
-    else:
-        # Evict whole turns, then reduce state explicitly; never cut tool protocol pairs.
+        if not pinned:
+            pinned = copied
+    # Reserve the newest complete tool group before compressing task summaries.
+    # Execution is not delivery: dropping this group would strand its source.
+    newest = pinned
+    if len(encode(projected+recent)) > max_chars:
+        recent = newest
+    if len(encode(projected+recent)) > max_chars:
         for text_limit, items in ((1200, 16), (600, 10), (250, 5)):
             projected[1]['content'] = encode(bounded(state, text_limit, items))
-            if len(encode(projected)) <= max_chars: break
+            if len(encode(projected+recent)) <= max_chars: break
+    projected.extend(recent)
     # If immutable instructions alone exceed the ceiling, fail without a model HTTP call.
     if len(encode(projected)) > max_chars:
         raise ValueError('Context ceiling cannot fit loaded instructions; preserve ledger and reduce skill scope.')

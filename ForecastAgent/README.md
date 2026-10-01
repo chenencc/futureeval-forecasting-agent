@@ -105,3 +105,8 @@ projection, date-bounded official data and acquisition metrics. New monitored
 tasks retain three Tavily basic attempts. Polling and collection use separate
 Actions workflows; the local freshness watchdog only dispatches overdue GitHub
 polls and never runs collection locally.
+
+See [Tool delivery protocol](docs/TOOL_DELIVERY.md) for confirmed model-visible
+reading receipts, exact continuation ranges, legacy restore migration, and the
+audited lifecycle of acquisition requirements. The protocol is independent of
+the model and the source channel.

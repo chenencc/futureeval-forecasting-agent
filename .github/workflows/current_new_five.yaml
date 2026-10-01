@@ -8,6 +8,11 @@ on:
         required: false
         default: ''
         type: string
+      resume_reason:
+        description: 'Audited repair reason when reopening the selected closed case; no budget reset'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -85,6 +90,7 @@ jobs:
         if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44414' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
@@ -93,7 +99,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
         run: |
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44414
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44414 --resume-reason "$RESUME_REASON"
           else
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44414
           fi
@@ -101,6 +107,7 @@ jobs:
         if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44247' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
@@ -109,7 +116,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
         run: |
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44247
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44247 --resume-reason "$RESUME_REASON"
           else
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44247
           fi
@@ -117,6 +124,7 @@ jobs:
         if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43992' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
@@ -125,7 +133,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
         run: |
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43992
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43992 --resume-reason "$RESUME_REASON"
           else
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43992
           fi
@@ -133,6 +141,7 @@ jobs:
         if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43479' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
@@ -141,7 +150,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
         run: |
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43479
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43479 --resume-reason "$RESUME_REASON"
           else
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43479
           fi
@@ -149,6 +158,7 @@ jobs:
         if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44798' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
@@ -157,7 +167,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
         run: |
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44798
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44798 --resume-reason "$RESUME_REASON"
           else
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44798
           fi

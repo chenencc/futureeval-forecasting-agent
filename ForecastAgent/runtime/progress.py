@@ -22,6 +22,7 @@ def snapshot(task):
             'markets': set(b.get('market_snapshots', {})),
             'preparation': {fingerprint(v) for v in [b.get('plan'), b.get('channel_plan')] if v}
                            | {'passage_disposition:'+pid for pid in b.get('passage_dispositions',{})}
+                           | {'need_status:'+fingerprint(v) for v in b.get('need_status', {}).values()}
                            | {'skill:'+s for s in b.get('loaded_skills', [])}}
 
 
@@ -29,7 +30,10 @@ def delivered(task, name, args, result):
     """Reading an overlapping range cannot repeatedly buy apparent progress."""
     if result.get('error') or result.get('blocked') or name not in {'read_document', 'read_dataset_rows'}:
         return
-    url = args['url']
+    from ForecastAgent.runtime.delivery import ensure_delivery_state
+    ensure_delivery_state(task)
+    from ForecastAgent.tavily_research import canonical_url
+    url = canonical_url(args['url'])
     page = task.bundle['pages'].get(url)
     if not page:
         from ForecastAgent.tavily_research import canonical_url

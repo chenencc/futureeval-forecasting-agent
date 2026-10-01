@@ -45,6 +45,7 @@ def acquisition_metrics(bundle):
         urls={e['url'] for e in bundle.get('excerpts',[]) if need['id'] in e.get('need_ids',[])}
         urls.update(a.get('url') for a in bundle.get('fetch_attempts',[]) if need['id'] in a.get('need_ids',[]) and a.get('status')=='completed')
         needs.append({'need_id':need['id'],'priority':need.get('priority'),
+                      'acquisition_status':bundle.get('need_status', {}).get(need['id'], {}).get('status', 'active'),
                       'usable_associated_sources':[d['url'] for d in details if d['url'] in urls and d['usable_body']],
                       'excerpt_count':sum(need['id'] in e.get('need_ids',[]) for e in bundle.get('excerpts',[]))})
     selected=set(bundle.get('selected_sources',{}))
@@ -115,7 +116,8 @@ def collection_acceptance(bundle):
         failures.append({'issue': 'Update attempt budget exceeded'})
     failed_reads = [a for a in attempts + updates if a.get('status') in {'failed', 'reserved'}]
     failed_searches = [a for a in searches if a.get('status') in {'failed', 'reserved'}]
-    unassociated = [n['id'] for n in bundle.get('plan') or []
+    from ForecastAgent.runtime.needs import active_needs
+    unassociated = [n['id'] for n in active_needs(bundle)
                     if not any(n['id'] in e.get('need_ids', []) for e in bundle.get('excerpts', []))
                     and not any(n['id'] in a.get('need_ids', []) and a.get('status') == 'completed' for a in attempts)]
     warnings.extend({'issue': 'Acquisition need has no associated material', 'need_id': n} for n in unassociated)
@@ -131,7 +133,7 @@ def collection_acceptance(bundle):
         warnings.append({'issue': 'Discovered sources remain unread', 'count': len(unread)})
     metrics=acquisition_metrics(bundle)
     for need in metrics['needs']:
-        if need['priority']=='critical' and not need['usable_associated_sources']:
+        if need['priority']=='critical' and need.get('acquisition_status','active')=='active' and not need['usable_associated_sources']:
             warnings.append({'issue':'Critical acquisition need lacks associated usable source','need_id':need['need_id']})
     for row in metrics['sources']:
         if row['reading_gaps'] or row['state'] not in {'readable','thin'}:

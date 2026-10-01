@@ -136,3 +136,8 @@ for entry in COLLECTION_TOOLS:
     if entry['function']['name']=='collect_official':
         entry['function']['parameters']['properties'].update(start_date=STRING,end_date=STRING)
         entry['function']['description']+=' Optional paired start_date/end_date filters; BLS dates select observation months, not release dates. Inspect saved row pagination and gaps.'
+
+COLLECTION_TOOLS.append(tool('set_acquisition_need_status',
+    'Explicitly declare an existing acquisition need active or not_applicable after a context change. Preserve the original plan and audited reason. Failed retrieval, missing evidence or an inconvenient gap are not grounds for exclusion. Keep at least one active critical need; no truth or outcome verdict.',
+    {'need_id':STRING, 'status':{'type':'string','enum':['active','not_applicable']},
+     'reason':{'type':'string','maxLength':1500}}, ['need_id','status','reason']))

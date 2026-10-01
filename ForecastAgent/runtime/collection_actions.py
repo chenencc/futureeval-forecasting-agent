@@ -32,8 +32,9 @@ def discovery_read_action(task):
 
 
 def named_primary(task, url):
+    from ForecastAgent.runtime.needs import active_needs
     labels=set(re.findall(r'[a-z0-9]{4,}',(urlsplit(url).hostname or '').lower()))
-    return [n['id'] for n in task.bundle.get('plan') or [] if n['priority']=='critical'
+    return [n['id'] for n in active_needs(task.bundle) if n['priority']=='critical'
         and labels & set(re.findall(r'[a-z0-9]{4,}',n.get('expected_source','').lower()))]
 
 
@@ -79,7 +80,8 @@ def primary_rescue(task):
     if 'tavily_extract_basic' in task.bundle.get('channel_decisions',{}):
         return []
     # Another document on the same host does not supply this failed source.
-    needs=[n for n in task.bundle.get('plan') or [] if n['priority']=='critical']
+    from ForecastAgent.runtime.needs import active_needs
+    needs=[n for n in active_needs(task.bundle) if n['priority']=='critical']
     rows=[]
     for url in task.rescue_candidates():
         host=(urlsplit(url).hostname or '').lower()
@@ -125,6 +127,8 @@ def next_action(task):
 def duplicate_read(task, args):
     """Detect completely delivered ranges in the same version/coordinate space."""
     from ForecastAgent.runtime.progress import fingerprint
+    from ForecastAgent.runtime.delivery import ensure_delivery_state
+    ensure_delivery_state(task)
     url=canonical_url(args['url'])
     page,text,_=select(task.bundle['pages'],url,args.get('document_index'))
     start=args.get('start_char',0)

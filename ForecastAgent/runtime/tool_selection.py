@@ -9,6 +9,9 @@ def active_tools(task, tools, forced=None):
     need_ids=[need['id'] for need in task.bundle.get('plan') or []]
     def bind_ids(value):
         if isinstance(value,dict):
+            single=value.get('properties',{}).get('need_id')
+            if single and need_ids:
+                value['properties']['need_id']={**single,'enum':need_ids}
             prop=value.get('properties',{}).get('need_ids')
             if prop and need_ids:
                 prop['items']={'type':'string','enum':need_ids}
