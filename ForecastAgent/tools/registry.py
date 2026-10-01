@@ -122,8 +122,8 @@ COLLECTION_TOOLS.extend([
           'start_date':STRING,'end_date':STRING,'query':STRING,'cik':STRING,'submission_file':STRING,'forms':{'type':'array','items':STRING,'maxItems':5},
           'need_ids':{'type':'array','items':STRING}},['dataset','need_ids']),
     tool('collect_archive','Obtain an exact URL pre-cutoff Wayback capture. Two separately reserved shared HTTP attempts; redirects or missing captures fail closed. Only source catalog URLs.',{'url':STRING},['url']),
-    tool('read_dataset_rows','Read saved structured rows without network calls; current-vintage warning remains attached. Use pagination for large reference histories.',
-         {'url':STRING,'offset':{'type':'integer','minimum':0},'limit':{'type':'integer','minimum':1,'maximum':100}},['url'])
+    tool('read_dataset_rows','Read saved structured rows without network calls. Use paired start_date/end_date to select the question period BEFORE pagination. offset and next_offset refer to the filtered view, not the full dataset. Current-vintage warnings remain.',
+         {'url':STRING,'start_date':STRING,'end_date':STRING,'need_ids':{'type':'array','items':STRING},'offset':{'type':'integer','minimum':0},'limit':{'type':'integer','minimum':1,'maximum':100}},['url'])
 ])
 for entry in COLLECTION_TOOLS:
     if entry['function']['name']=='search_tavily':
@@ -138,6 +138,6 @@ for entry in COLLECTION_TOOLS:
         entry['function']['description']+=' Optional paired start_date/end_date filters; BLS dates select observation months, not release dates. Inspect saved row pagination and gaps.'
 
 COLLECTION_TOOLS.append(tool('set_acquisition_need_status',
-    'Explicitly declare an existing acquisition need active or not_applicable after a context change. Preserve the original plan and audited reason. Failed retrieval, missing evidence or an inconvenient gap are not grounds for exclusion. Keep at least one active critical need; no truth or outcome verdict.',
-    {'need_id':STRING, 'status':{'type':'string','enum':['active','not_applicable']},
+    'Declare an existing need active, not_applicable, or deferred with an audited reason. Only useful background may be deferred for budget or publication timing. Critical gaps cannot be deferred; failed retrieval cannot establish inapplicability. Preserve the frozen plan; no truth verdict.',
+    {'need_id':STRING, 'status':{'type':'string','enum':['active','not_applicable','deferred']},
      'reason':{'type':'string','maxLength':1500}}, ['need_id','status','reason']))

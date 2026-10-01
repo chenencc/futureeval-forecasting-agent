@@ -17,6 +17,7 @@ def intelligence_package(bundle):
             'temporal_policy_amendments':bundle.get('temporal_policy_amendments',[]),
             'result_history':bundle.get('result_history',[]),
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
+            'dataset_reads':bundle.get('dataset_reads',{}),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'exa_searches':bundle.get('exa_searches',[]),
             'budget_amendments':bundle.get('budget_amendments',[]),

@@ -88,7 +88,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     from ForecastAgent.runtime.task_protocol import task_view
     from ForecastAgent.runtime.collection_actions import next_action
     from ForecastAgent.runtime.collection_actions import pending_passages
-    from ForecastAgent.runtime.needs import reconciliation
+    from ForecastAgent.runtime.needs import reconciliation, inventory
+    from ForecastAgent.readers.datasets import observation_range
     state = {'schema':'collection_context_v2',
              'collection_temporal_policy':b.get('collection_temporal_policy'),
              'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
@@ -100,6 +101,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'need_status':{ident:{k:row[k] for k in ('status','reason') if k in row} for ident,row in b.get('need_status', {}).items()},
              'needs_to_reconcile':reconciliation(task),
+             'acquisition_inventory':inventory(b),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
              'search_policy':b.get('search_policy', {}),
              'exa_requirement':requirement(task),
@@ -110,7 +112,9 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'documents':[{'url':u, 'sha256':p.get('sha256'), 'chars':len(p.get('content', '')),
                            'document_count':len(p.get('documents') or [None]), 'rows':len(p.get('rows', [])),
                            'readable':u not in blocked and body_diagnostics(p.get('content',''))['usable_text'], 'audit_only':u in blocked,
-                           'dataset':p.get('dataset'), 'unit':p.get('unit')} for u,p in b['pages'].items()][:20],
+                           'dataset':p.get('dataset'), 'unit':p.get('unit'), **observation_range(p),
+                           'identity_preview':p.get('content','')[:450],
+                           'navigation':'Filter saved dataset rows by the target date range before reading pages.' if p.get('rows') else 'Inspect document identity and use local passage navigation.'} for u,p in b['pages'].items()][:20],
              'excerpts':[excerpt_view(e)
                          for e in b['excerpts'] if e['url'] not in blocked][-12:],
              'pending_passage_ids':[p['passage_id'] for p in pending_passages(task)],
@@ -131,6 +135,9 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     pinned = []
     for number, group in enumerate(reversed(groups[-recent_turns:])):
         copied = copy.deepcopy(group)
+        # Runtime checkpoints are already represented by the projected state.
+        copied = [m for m in copied if not (m.get('role') == 'user'
+            and '"acquisition_checkpoint"' in (m.get('content') or ''))]
         expected = {c['id'] for c in copied[0].get('tool_calls', [])}
         answered = {m.get('tool_call_id') for m in copied if m.get('role') == 'tool'}
         if expected != answered: continue
@@ -156,6 +163,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
                 message['content'] = encode(payload)
             elif message.get('role') == 'user':
                 message['content'] = bounded(message.get('content', ''), 500)
+            elif message.get('role') == 'assistant' and message.get('content'):
+                message['content'] = bounded(message['content'], 700)
         if not pinned:
             copied = fit_inventory_group(copied, functions, max_recent_chars)
         if len(encode(copied+recent)) > max_recent_chars:
@@ -186,6 +195,18 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         lean['omitted_sections'] = sorted(optional)
         lean['omission_instruction'] = 'These inventories remain on disk. Use list_sources/list_documents and saved-source tools; absence from this context is not absence from the ledger.'
         projected[1]['content'] = encode(bounded(lean,250,5))
+    if len(encode(projected+recent)) > max_chars:
+        # Keep the exact objective and newest source reply before optional prose.
+        minimal = {k:state[k] for k in ('schema','task_protocol','budget','effective_mode',
+            'effective_cutoff_utc','exa_requirement','need_status')}
+        minimal['needs'] = [{'id':n['id'], 'priority':n['priority'],
+            'condition_preview':n['condition'][:180]} for n in b.get('plan') or []]
+        minimal['acquisition_inventory'] = navigation_bound(state['acquisition_inventory'],160,8)
+        action = state.get('next_acquisition_action') or {}
+        minimal['next_action'] = {'tool':action.get('tool'),
+            'passage_ids':[p['passage_id'] for p in action.get('candidates',[]) if 'passage_id' in p]}
+        minimal['projection_notice'] = 'Optional inventories omitted. Saved data and excerpts remain available; omission never proves absence. Navigate saved sources before declaring a gap.'
+        projected[1]['content'] = encode(minimal)
     projected.extend(recent)
     # If immutable instructions alone exceed the ceiling, fail without a model HTTP call.
     if len(encode(projected)) > max_chars:

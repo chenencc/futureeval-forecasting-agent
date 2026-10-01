@@ -135,8 +135,19 @@ def find_passages(pages, args):
             tokens = set(re.findall(r'\w+', text[start:end].casefold()))
             matched = [t for t in terms if t in tokens]
             if matched:
-                ranked.append((len(matched), {'url': url, 'document_index': index, 'content': text[start:end],
-                    'matched_terms': matched, 'excerpt_args': {'url': url, 'document_index': index, 'start_char': start, 'end_char': end},
+                # Include nearby heading/date and paragraph boundaries in the
+                # exact source slice instead of handing out isolated headings.
+                left = text.rfind('\n\n', max(0,start-500), start)
+                left = left+2 if left >= 0 else start
+                headings = list(re.finditer(r'(?m)^#{1,6}\s+[^\n]+',text[max(0,start-1200):start]))
+                if headings:
+                    left = min(left,max(0,start-1200)+headings[-1].start())
+                right = text.find('\n\n',end,min(len(text),end+800))
+                right = right if right >= 0 else end
+                right = min(right,left+4000)
+                ranked.append((len(matched), {'url': url, 'document_index': index, 'content': text[left:right],
+                    'identity_preview':page['content'][:450],
+                    'matched_terms': matched, 'excerpt_args': {'url': url, 'document_index': index, 'start_char': left, 'end_char': right},
                     'source_sha256': page.get('sha256'), 'metadata': doc.get('metadata', {})}))
     ranked.sort(key=lambda row: -row[0])
     return {'query': query, 'passages': [row for _, row in ranked[:limit]], 'matching_windows': len(ranked),

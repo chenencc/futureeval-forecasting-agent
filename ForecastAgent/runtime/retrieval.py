@@ -68,6 +68,11 @@ In historical modes ignore post-cutoff knowledge. Model knowledge and later edit
 
 COLLECTION_SYSTEM = """You are the information acquisition agent in ForecastAgent.
 Plan acquisition needs and an entity/timing card, then collect source material.
+Prioritize critical resolution materials before useful background. A forecast or a later full-season report is not automatically required for a past event window. Keep unavailable scheduled releases as explicit gaps or defer optional background with a reason; never invent them.
+Inspect document identity (title, case number, parties, period) before spending turns reading it. An official host is not proof that its document concerns the requested entity or law.
+For saved numerical data inspect observed_start/observed_end, then read_dataset_rows with paired start_date/end_date for the question period. The first page or first document cannot establish the full dataset range.
+Bank substantive paragraphs with their heading/date context, not isolated date headings, menus or unrelated feature descriptions. Batch passage decisions for critical needs first.
+Before finishing reconcile acquisition_inventory with saved excerpts and datasets. Saved material may be insufficient, but do not describe it as uncaptured. State the precise remaining limitation. Once critical acquisition is addressed, finish or explain one concrete remaining critical read rather than expanding background research.
 Do not fact-check, issue truth verdicts, forecast, trade, or calculate scores.
 Use list_channels to discover implemented capabilities. Use domain skills for source leads and reading methods only.
 Use Tavily BASIC at most THREE attempted searches per task, at most ten new URLs per search.
@@ -494,11 +499,10 @@ class RetrievalTask:
         if name=='read_dataset_rows':
             page=self.bundle['pages'].get(canonical_url(args['url']))
             if not page or not isinstance(page.get('rows'),list): raise ValueError('Select a saved structured dataset URL')
-            offset=saved_reader.integer(args.get('offset',0),0,len(page['rows']),'offset')
-            limit=saved_reader.integer(args.get('limit',50),1,100,'limit')
-            end=min(len(page['rows']),offset+limit)
-            return {'url':args['url'],'rows':page['rows'][offset:end],'total':len(page['rows']),
-                    'next_offset':end if end<len(page['rows']) else None,'warning':page.get('data_warning'),'unit':page.get('unit')}
+            if args.get('need_ids'):
+                self.needs(args)
+            from ForecastAgent.readers.datasets import read_rows
+            return read_rows(page,args)
         if name=='set_acquisition_need_status':
             from ForecastAgent.runtime.needs import set_status
             return set_status(self, args)
@@ -750,7 +754,10 @@ class RetrievalTask:
         if name == "finish_collection":
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
-            gaps = list(args['gaps'])
+            declared_gaps = list(args['gaps'])
+            gaps = []
+            from ForecastAgent.runtime.needs import inventory
+            material_inventory = inventory(b)
             exa_requirement = search_policy.before_finish(self)
             if exa_requirement['required'] and not exa_requirement['attempt_requirement_met']:
                 gaps.append('Required Exa discovery was not completed: '+exa_requirement['reason'])
@@ -768,6 +775,9 @@ class RetrievalTask:
                            "page_count": len(b["pages"]), "excerpt_count": len(b["excerpts"]),
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": list(dict.fromkeys(gaps)), "finished_at": utc_now(),
+                           'agent_declared_gaps':declared_gaps,
+                           'acquisition_inventory':material_inventory,
+                           'gap_scope':'gaps are program-observed missing associations; agent_declared_gaps are unverified agent assessments. Neither establishes event absence.',
                            'discovery_notes':discovery_notes,
                            'need_status':copy.deepcopy(b.get('need_status', {})),
                            'exa_requirement':exa_requirement,
@@ -780,7 +790,7 @@ class RetrievalTask:
                 b['result']['usable_body_count']=len(b['pages'])-len(b['result']['audit_only_urls'])
                 if b['result']['audit_only_urls']:
                     b['result']['gaps'].append('Current bodies are audit-only; verified pre-cutoff captures are missing for '+str(len(b['result']['audit_only_urls']))+' sources.')
-            b['result']['acquisition_complete'] = not bool(b['result']['gaps'] or b['acceptance']['warnings'] or b['acceptance']['failures'])
+            b['result']['acquisition_complete'] = not bool(b['result']['gaps'] or declared_gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])
             self.save()
             return b["result"]
         if name == "list_sources":

@@ -25,3 +25,21 @@ Runtime credentials are `OPENROUTER_API_KEY`, `TAVILY_API_KEY` and `EXA_API_KEY`
 A focused repair can bypass a selected incomplete task's retry delay with an explicit recorded reason. It does not bypass the campaign transport pause, reopen a closed package, replace inputs or reset provider budgets. The same code/reason operation cannot run twice automatically.
 
 An explicit new-case selection accepts up to five unique untouched pending task IDs, in the requested order. It preserves all other task directories and refuses consumed tasks, unknown IDs, duplicates and mixed repair selections. The campaign transport circuit may defer the rest of a selected batch; the manifest retains the selected IDs and each actual execution reservation.
+## Acquisition navigation and exit inventory
+
+Saved dataset reads accept paired `start_date` and `end_date` before pagination.
+Their `total`, `offset`, and `next_offset` describe the filtered view. The original
+source row count, observed range, and exact row document handles remain visible.
+Delivery receipts validate the filtered rows against the durable source; filters
+have distinct reading scopes and do not count unrelated rows as delivered.
+
+The exit includes `acquisition_inventory` with source and excerpt associations.
+`gaps` describes program-observed missing associations or obligations;
+`agent_declared_gaps` preserves unverified model assessments separately. Existing
+material never proves semantic sufficiency. Declared gaps still prevent complete
+acquisition; splitting them is not permission to manufacture a quality pass.
+
+Useful background needs may be explicitly deferred with an audited reason. The
+frozen plan remains unchanged and critical needs cannot use this deferral.
+Optional passage bookkeeping does not force a background loop after core material
+is associated, while rescue of failed named primary sources remains available.

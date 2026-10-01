@@ -14,9 +14,12 @@ def set_status(task, args):
     from ForecastAgent.runtime.task_protocol import task_view
     ident, status, reason = args.get('need_id'), args.get('status'), args.get('reason')
     known = {n['id'] for n in task.bundle.get('plan') or []}
-    if ident not in known or status not in {'active', 'not_applicable'} or not isinstance(reason, str) or len(reason.strip()) < 20:
+    if ident not in known or status not in {'active', 'not_applicable', 'deferred'} or not isinstance(reason, str) or len(reason.strip()) < 20:
         raise ContractError('invalid_need_status', 'arguments',
-            'Use an existing need ID, active/not_applicable and a substantive context-based reason. Failed retrieval or lack of evidence cannot establish inapplicability.')
+            'Use an existing need ID and a substantive reason. Only useful background needs may be deferred; failed retrieval never establishes inapplicability.')
+    need = next(n for n in task.bundle['plan'] if n['id'] == ident)
+    if status == 'deferred' and need['priority'] == 'critical':
+        raise ContractError('critical_deferral', 'status', 'Critical acquisition cannot be deferred to manufacture completion. Preserve its concrete gap.')
     statuses = task.bundle.setdefault('need_status', {})
     proposed = {**statuses, ident: {'status': status}}
     if not any(n['priority'] == 'critical' for n in active_needs({**task.bundle, 'need_status': proposed})):
@@ -43,3 +46,26 @@ def reconciliation(task):
             issues.append({'need_id': need['id'], 'issue': exc.details,
                 'instruction': 'Reconsider this frozen need against the operating clock. If it no longer applies, explicitly set its acquisition status with a reason; do not invent material or silently alter the original plan.'})
     return issues
+
+
+def inventory(bundle):
+    """Describe durable material associations, never semantic sufficiency or truth."""
+    from ForecastAgent.evidence.acceptance import acquisition_metrics
+    from ForecastAgent.readers.datasets import observation_range
+    metrics = acquisition_metrics(bundle)
+    sources = {r['url']:r for r in metrics['sources']}
+    rows = []
+    for need in metrics['needs']:
+        excerpts = [e for e in bundle.get('excerpts',[]) if need['need_id'] in e.get('need_ids',[])]
+        reads = [r for r in bundle.get('dataset_reads',{}).values()
+                 if need['need_id'] in r.get('need_ids',[]) and r['url'] in need['usable_associated_sources']]
+        rows.append({**need, 'excerpt_ids':[e['id'] for e in excerpts],
+            'delivered_dataset_views':reads,
+            'material_state':'excerpt_saved' if excerpts else 'rows_delivered' if reads else 'body_associated' if need['usable_associated_sources'] else 'no_associated_material',
+            'source_handles':[{'url':url,**observation_range(bundle['pages'][url])}
+                for url in need['usable_associated_sources'] if url in sources],
+            'semantic_adequacy_verified':False})
+    return {'schema':'acquisition_inventory_v1', 'needs':rows,
+        'unassociated_saved_datasets':[{'url':url,**observation_range(page)}
+            for url,page in bundle.get('pages',{}).items() if page.get('rows') and not any(url in n['usable_associated_sources'] for n in rows)],
+        'instruction':'These are durable acquisition associations, not truth or semantic adequacy. Do not claim no source was captured for a need with saved bodies/excerpts. Describe the exact missing period, paragraph, identity or authority instead.'}

@@ -49,6 +49,8 @@ def project_reply(payload, name, args, text_chars=6000):
             rows.append(row)
         original_count = len(data['rows'])
         data['rows'] = rows
+        if 'row_locations' in data:
+            data['row_locations'] = data['row_locations'][:len(rows)]
         end = args.get('offset', 0) + len(rows)
         data['next_offset'] = end if end < data.get('total', end) else None
         data['delivery'] = {'visible_row_count': len(rows), 'executed_row_count': original_count,
@@ -178,9 +180,9 @@ def acknowledge(task, messages):
                     raise ValueError('Projected read slice does not match saved source coordinates')
             elif name == 'read_dataset_rows':
                 from ForecastAgent.tavily_research import canonical_url
-                rows = task.bundle['pages'][canonical_url(args['url'])]['rows']
-                start = args.get('offset', 0)
-                if rows[start:start + len(data['rows'])] != data['rows']:
+                from ForecastAgent.readers.datasets import read_rows
+                expected = read_rows(task.bundle['pages'][canonical_url(args['url'])],args)
+                if expected['rows'][:len(data['rows'])] != data['rows']:
                     raise ValueError('Projected dataset rows do not match saved rows')
             delivered(task, name, args, data)
             digest = fingerprint(payload)
@@ -192,7 +194,16 @@ def acknowledge(task, messages):
                 receipts[key]['visible_range'] = {k: data.get(k) for k in ('url', 'start_char', 'end_char', 'next_start', 'location', 'source_sha256')}
             elif name == 'read_dataset_rows':
                 receipts[key]['visible_range'] = {'url': args['url'], 'offset': args.get('offset', 0),
-                    'row_count': len(data['rows']), 'next_offset': data.get('next_offset')}
+                    'row_count': len(data['rows']), 'next_offset': data.get('next_offset'),
+                    'date_filter':data.get('date_filter')}
+                if args.get('need_ids') and data['rows']:
+                    from ForecastAgent.readers.saved import version_digest
+                    read = {'url':args['url'],'need_ids':args['need_ids'],
+                        'source_sha256':task.bundle['pages'][canonical_url(args['url'])].get('sha256'),
+                        'source_parsed_sha256':version_digest(task.bundle['pages'][canonical_url(args['url'])]),
+                        **receipts[key]['visible_range'],'truth_verified':False,
+                        'association_scope':'Agent-selected needs, confirmed exact row delivery; not semantic adequacy.'}
+                    task.bundle.setdefault('dataset_reads',{})[fingerprint(read)] = read
         except (KeyError, TypeError, json.JSONDecodeError):
             # Non-reading tool replies may use strings or legacy envelopes.
             continue

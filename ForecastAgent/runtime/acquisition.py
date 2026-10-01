@@ -12,11 +12,13 @@ def reading_targets(bundle):
 
 def checkpoint(task):
     b = task.bundle
+    from ForecastAgent.runtime.needs import inventory
     from ForecastAgent.runtime.collection_v2 import eligible
     from ForecastAgent.readers.quality import body_diagnostics
     usable={url for url,page in b['pages'].items() if body_diagnostics(page.get('content',''))['usable_text'] and (not task.verified_only or eligible(page,task.cutoff))}
     covered = {need for e in b['excerpts'] if e['url'] in usable for need in e.get('need_ids', [])}
     covered.update(need for a in b['fetch_attempts'] if a.get('status') == 'completed' and a.get('url') in usable for need in a.get('need_ids', []))
+    covered.update(row['need_id'] for row in inventory(b)['needs'] if row['usable_associated_sources'])
     from ForecastAgent.runtime.needs import active_needs
     missing = [n['id'] for n in active_needs(b) if n['id'] not in covered]
     decisions = b.get('channel_decisions', {})
@@ -53,6 +55,7 @@ def checkpoint(task):
     if not b.get('channel_plan'):
         todo.insert(0,{'tool':'plan_channels','reason':'Allocate shared HTTP attempts to important sources, structured data and any two-request archive lookup.'})
     return {'schema': 'acquisition_checkpoint_v1', 'budget_remaining': task.budget(),
+            'acquisition_inventory':inventory(b),
             'needs_without_located_material': missing, 'saved_body_count': len(b['pages']),
             'usable_saved_body_count':len(usable),'audit_only_urls':sorted(set(b['pages'])-usable),
             'association_warning':'Located material does not establish resolution-condition coverage or known future outcomes.',

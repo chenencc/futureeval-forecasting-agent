@@ -57,6 +57,8 @@ def pending_passages(task, limit=8):
     dispositions=b.get('passage_dispositions',{})
     from ForecastAgent.runtime.needs import active_needs
     active_ids={n['id'] for n in active_needs(b)}
+    critical_ids={n['id'] for n in active_needs(b) if n['priority']=='critical'}
+    banked={n for e in b['excerpts'] for n in e.get('need_ids',[])}
     result=[]
     for pid, row in surfaced.items():
         passage=b.get('passages',{}).get(pid)
@@ -74,6 +76,8 @@ def pending_passages(task, limit=8):
         ids=[n for n in row['need_ids'] if n not in covered and n in active_ids]
         if ids and quoted.strip():
             result.append({'passage_id':pid,'url':passage['url'],'need_ids':ids,'text':quoted[:4000]})
+    result.sort(key=lambda row: (-len(set(row['need_ids']) & (critical_ids-banked)),
+                                -len(set(row['need_ids']) & critical_ids)))
     return result[:limit]
 
 
@@ -98,9 +102,14 @@ def primary_rescue(task):
 
 def next_action(task):
     passages=pending_passages(task)
+    from ForecastAgent.runtime.needs import active_needs
+    critical={n['id'] for n in active_needs(task.bundle) if n['priority']=='critical'}
+    banked={n for e in task.bundle['excerpts'] for n in e.get('need_ids',[])}
+    core_associated = bool(critical and critical <= banked)
+    passages=[] if core_associated else [p for p in passages if set(p['need_ids']) & critical]
     if passages:
         return {'tool':'review_passages','candidates':passages,
-            'instruction':'Keep relevant exact material or reject irrelevant/header/duplicate candidates with a reason. Do not reread bodies before disposing of this batch.'}
+            'instruction':'Review this batch for critical needs first. Keep substantive exact material with its date/heading context; reject irrelevant, isolated header or duplicate candidates with a reason. Association is not a relevance verdict. Do not reread bodies before disposing of this batch.'}
     # Status language is a reading lead, not a truth or event-resolution verdict.
     scanned=task.bundle.get('control',{}).get('status_scanned_versions',{})
     status_urls=[u for u,p in task.bundle['pages'].items() if named_primary(task,u)
@@ -117,6 +126,10 @@ def next_action(task):
     if fresh:
         return {'tool':'read_sources','urls':fresh[:4],
             'instruction':'Locate task-specific passages in these newly rescued bodies, then review the surfaced candidates.'}
+    if core_associated:
+        # Primary-source rescue remains available; optional background passage
+        # bookkeeping does not force a new loop once core material is associated.
+        return None
     if not task.cutoff and task.budget()['page_fetch_remaining']>0:
         words=set(re.findall(r'[a-z0-9]{4,}',task.bundle['request']['question'].lower()))-{'openai','before','after','release','released','windows','browser','question','official'}
         attempted={canonical_url(a['url']) for a in task.bundle.get('fetch_attempts',[]) if a.get('url')}

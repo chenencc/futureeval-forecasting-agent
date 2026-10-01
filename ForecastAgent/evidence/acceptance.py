@@ -44,6 +44,9 @@ def acquisition_metrics(bundle):
     for need in bundle.get('plan') or []:
         urls={e['url'] for e in bundle.get('excerpts',[]) if need['id'] in e.get('need_ids',[])}
         urls.update(a.get('url') for a in bundle.get('fetch_attempts',[]) if need['id'] in a.get('need_ids',[]) and a.get('status')=='completed')
+        urls.update(r['url'] for r in bundle.get('dataset_reads',{}).values()
+            if need['id'] in r.get('need_ids',[]) and r.get('row_count',0)>0
+            and r['url'] in bundle['pages'] and version_digest(bundle['pages'][r['url']])==r.get('source_parsed_sha256'))
         needs.append({'need_id':need['id'],'priority':need.get('priority'),
                       'acquisition_status':bundle.get('need_status', {}).get(need['id'], {}).get('status', 'active'),
                       'usable_associated_sources':[d['url'] for d in details if d['url'] in urls and d['usable_body']],
@@ -119,7 +122,8 @@ def collection_acceptance(bundle):
     from ForecastAgent.runtime.needs import active_needs
     unassociated = [n['id'] for n in active_needs(bundle)
                     if not any(n['id'] in e.get('need_ids', []) for e in bundle.get('excerpts', []))
-                    and not any(n['id'] in a.get('need_ids', []) and a.get('status') == 'completed' for a in attempts)]
+                    and not any(n['id'] in a.get('need_ids', []) and a.get('status') == 'completed' for a in attempts)
+                    and not any(n['id']==row['need_id'] and row['usable_associated_sources'] for row in acquisition_metrics(bundle)['needs'])]
     warnings.extend({'issue': 'Acquisition need has no associated material', 'need_id': n} for n in unassociated)
     if failed_reads:
         warnings.append({'issue': 'Failed/interrupted reads remain', 'count': len(failed_reads)})
