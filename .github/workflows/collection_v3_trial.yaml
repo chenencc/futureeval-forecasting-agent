@@ -1,0 +1,114 @@
+name: Five collection v3 acceptance trials
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Questions this run (1-5); resumes the frozen campaign'
+        default: '5'
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: collection-v3-five-20261001
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Locate previous campaign state
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({owner, repo,
+              workflow_id:'collection_v3_trial.yaml', status:'completed', per_page:100});
+            for (const run of data.workflow_runs) {
+              if (run.id === context.runId) continue;
+              const {data: list} = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id:run.id});
+              const state = list.artifacts.find(a => a.name === 'collection-v3-five-20261001-state' && !a.expired);
+              if (state) { core.setOutput('run', run.id); return; }
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {owner, repo, run_id:run.id, per_page:100});
+              const step = jobs.flatMap(j => j.steps || []).find(s => s.name === 'Collect bounded historical batch');
+              if (step && step.conclusion === 'skipped') continue;
+              throw new Error(`Run ${run.id} has no recoverable ledger; refusing budget reset`);
+            }
+            if (data.workflow_runs.length === 100) throw new Error('History scan limit reached without state; refusing budget reset');
+      - name: Restore frozen campaign
+        if: steps.previous.outputs.run != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: collection-v3-five-20261001-state
+          run-id: ${{ steps.previous.outputs.run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/collection-v3-five-20261001
+      - name: Initialize or validate frozen inputs
+        run: python -m ForecastAgent.historical_batch init --root snapshots/collection-v3-five-20261001 --input ForecastAgent/fixtures/historical_v2_five.json --profile collection_v3
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001
+      - name: Record experiment provenance
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path=Path('snapshots/collection-v3-five-20261001/experiment.json')
+          experiment={'campaign_id':'collection-v3-five-20261001','baseline_run_id':36745235245,
+            'input_fixture':'ForecastAgent/fixtures/historical_v2_five.json','profile':'collection_v3',
+            'tavily_basic_limit_per_question':3,'authorized_new_experiment':True,
+            'prior_campaign_budgets_unchanged':True,'forecast_submissions':False,
+            'initial_commit':os.environ['GITHUB_SHA'],
+            'comparison_caveat':'Same questions and cutoffs, but new acquisition policy and budget, dynamic search and stochastic model; not a controlled A/B or clean historical backtest.'}
+          if not path.exists(): path.write_text(json.dumps(experiment,indent=2),encoding='utf-8')
+          PY
+      - name: Collect bounded historical batch
+        run: python -u -m ForecastAgent.historical_batch run --root snapshots/collection-v3-five-20261001 --limit "$BATCH_LIMIT"
+        env:
+          BATCH_LIMIT: ${{ inputs.limit }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001
+      - name: Check all five tasks finished
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          batch=json.loads(Path('snapshots/collection-v3-five-20261001/batch.json').read_text())
+          states={qid:task['status'] for qid,task in batch['tasks'].items()}
+          print(json.dumps(states))
+          if len(states)!=5 or any(state!='complete' for state in states.values()):
+            raise SystemExit('Incomplete tasks preserved; resume this campaign without restarting budgets')
+          PY
+      - name: Export portable archive
+        if: always()
+        run: python -m ForecastAgent.historical_batch archive --root snapshots/collection-v3-five-20261001 --output snapshots/collection-v3-five-20261001.zip
+      - name: Preserve complete campaign state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-v3-five-20261001-state
+          path: snapshots/collection-v3-five-20261001/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve downloadable archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-v3-five-20261001-archive
+          path: snapshots/collection-v3-five-20261001.zip
+          if-no-files-found: error
+          retention-days: 90

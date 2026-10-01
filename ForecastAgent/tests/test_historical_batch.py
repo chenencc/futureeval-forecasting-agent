@@ -21,6 +21,24 @@ def row(ident):
 
 
 class HistoricalBatchTests(TestCase):
+    def test_v3_campaign_freezes_three_searches_and_retains_completed_ledger(self):
+        with TemporaryDirectory() as temp:
+            root=Path(temp)/'state';source=Path(temp)/'input.json'
+            source.write_text(json.dumps([row(1)]))
+            batch=initialize(root,source,'collection_v3')
+            self.assertEqual(batch['limits']['tavily_basic_lifetime'],3)
+            called=[]
+            def runner(request,directory,*_):
+                task=RetrievalTask(directory,request)
+                self.assertTrue(task.optimized)
+                self.assertEqual(task.search_limit,3)
+                called.append(request['acquisition_profile'])
+                task.bundle['result']={'status':'collected'};task.save();return task.bundle
+            run_batch(root,'','',runner=runner)
+            run_batch(root,'','',runner=runner)
+            self.assertEqual(called,['collection_v3'])
+            with self.assertRaises(ValueError):initialize(root,source,'collection_v2')
+
     def test_labels_and_changed_inputs_refused(self):
         with TemporaryDirectory() as temp:
             root = Path(temp) / 'state'

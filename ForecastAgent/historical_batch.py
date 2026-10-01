@@ -31,6 +31,8 @@ def write(path, data):
 
 
 def initialize(root, input_path=DEFAULT_INPUT, profile='collection_v1'):
+    if profile not in {'collection_v1','collection_v2','collection_v3'}:
+        raise ValueError('Unknown acquisition profile')
     root = Path(root)
     rows = json.loads(Path(input_path).read_text(encoding='utf-8'))
     if not isinstance(rows, list) or not rows:
@@ -107,7 +109,8 @@ def run_batch(root, tavily_key, router_key, limit=5, runner=run_retrieval):
                 break
             selected += 1
             request = {**rows[ident], 'mode': batch['mode'], 'pipeline': batch['pipeline']}
-            if batch.get('acquisition_profile')=='collection_v2': request['acquisition_profile']='collection_v2'
+            if batch.get('acquisition_profile') in {'collection_v2','collection_v3'}:
+                request['acquisition_profile']=batch['acquisition_profile']
             # Freeze the empty task before reserving an execution, so a crash
             # cannot ambiguously lose previously consumed search reservations.
             from ForecastAgent.runtime.retrieval import RetrievalTask
@@ -119,6 +122,8 @@ def run_batch(root, tavily_key, router_key, limit=5, runner=run_retrieval):
             entry['attempts'].append(attempt)
             entry['status'] = 'running'
             write(root / 'batch.json', batch)
+            print(json.dumps({'question_id':ident,'stage':'starting','profile':batch.get('acquisition_profile'),
+                              'attempt':len(entry['attempts'])}),flush=True)
             try:
                 bundle = runner(request, directory, tavily_key, router_key)
                 result = bundle.get('result') or {}
@@ -136,6 +141,7 @@ def run_batch(root, tavily_key, router_key, limit=5, runner=run_retrieval):
             if entry['status'] != 'complete':
                 entry['retry_after_utc'] = (now() + timedelta(minutes=min(240, 20 * 2 ** (len(entry['attempts']) - 1)))).isoformat()
             write(root / 'batch.json', batch)
+            print(json.dumps({'question_id':ident,'stage':entry['status'],'collection_status':entry.get('collection_status')}),flush=True)
         write(root / 'batch.json', batch)
         return batch
 
@@ -165,7 +171,7 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT)
     parser.add_argument('--limit', type=int, default=5)
-    parser.add_argument('--profile',choices=['collection_v1','collection_v2'],default='collection_v1')
+    parser.add_argument('--profile',choices=['collection_v1','collection_v2','collection_v3'],default='collection_v1')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.action == 'init':
