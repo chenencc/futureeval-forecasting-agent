@@ -118,6 +118,9 @@ def review(root, artifact):
             'tool_counts': dict(Counter(s.get('tool', 'unknown') for s in bundle.get('transcript', []))),
             'tool_errors': tool_errors, 'plan': bundle.get('plan'),
             'channel_decisions': bundle.get('channel_decisions'),
+            'search_policy':bundle.get('search_policy'), 'session_state':bundle.get('session_state'),
+            'sessions':bundle.get('sessions', []), 'progress':bundle.get('progress', {}),
+            'step_attempts':bundle.get('step_attempts', []),
             'context_projections': bundle.get('context_projections'),
             'failed_captures': bundle.get('failed_captures'),
             'fetch_attempts': bundle.get('fetch_attempts'),
@@ -161,6 +164,31 @@ def compare(old, prior, current):
     return comparisons, totals
 
 
+def compare_fresh(old, prior, current):
+    """Independent totals must not be misrepresented as preserved resume prefixes."""
+    old_by_id = {row['question_id']:row for row in old}
+    prior_by_id = {row['question_id']:row for row in prior}
+    if set(old_by_id) != set(prior_by_id) or set(prior_by_id) != {row['question_id'] for row in current}:
+        raise ValueError('Independent comparison question sets differ')
+    comparisons = []
+    for row in current:
+        previous = prior_by_id[row['question_id']]
+        checks = {'same_frozen_input_as_initial_v3':row['frozen_request_hash']==previous['frozen_request_hash'],
+                  'tavily_total_within_frozen_budget':row['search_attempts']<=row['limits']['tavily_basic'],
+                  'exa_total_within_frozen_budget':row['exa_search_attempts']<=row['limits'].get('exa_search', 0),
+                  'required_exa_attempt_met':(row.get('result') or {}).get('exa_requirement', {}).get('attempt_requirement_met', False),
+                  'all_transport_files_verified':row['transport_records_verified']==row['model_http_attempts'],
+                  'all_model_dispatches_within_cap':all(s.get('attempts_after',0)-s.get('attempts_before',0)<=12 for s in row.get('sessions',[]))}
+        comparisons.append({'question_id':row['question_id'],
+            'old_v2':{k:old_by_id[row['question_id']].get(k,0) for k in KEYS},
+            'initial_v3':{k:previous.get(k,0) for k in KEYS},
+            'fresh_run':{k:row.get(k,0) for k in KEYS}, 'ledger_checks':checks,
+            'completion':row['result'], 'acceptance':row['acceptance']})
+    totals = {phase:{k:sum(row[phase][k] for row in comparisons) for k in KEYS}
+              for phase in ('old_v2','initial_v3','fresh_run')}
+    return comparisons, totals
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('artifact')
@@ -170,13 +198,15 @@ def main():
     parser.add_argument('--prior-run',default='36796437198')
     parser.add_argument('--baseline-artifact',default='11113955416')
     parser.add_argument('--output',type=Path)
+    parser.add_argument('--fresh',action='store_true',help='Compare independent acquisition totals, not resume increments')
     args = parser.parse_args()
     root = Path(args.root)
     baseline = review(root, args.baseline_artifact)
     prior = review(root,args.prior_artifact)
     current = review(root, args.artifact)
-    comparisons,totals=compare(baseline,prior,current)
+    comparisons,totals=(compare_fresh if args.fresh else compare)(baseline,prior,current)
     result = {'created_at_utc': datetime.now(timezone.utc).isoformat(), 'run_id': args.run,
+        'comparison_mode':'independent_fresh' if args.fresh else 'resume_increment',
         'artifact_id': args.artifact, 'baseline_run_id': '36745235245',
         'prior_run_id':args.prior_run,'prior_artifact_id':args.prior_artifact,
         'caveats': ['Resume increments are not a fresh-run estimate: prior captures, remaining budgets and the completed BTC task are reused.',
@@ -185,10 +215,13 @@ def main():
                    'Future date mentions are review leads, not automatic proof of outcome leakage.',
                    'Model knowledge and source criteria revisions prevent a clean historical backtest.'],
         'comparisons': comparisons, 'totals':totals,'current': current, 'prior':prior,'baseline': baseline}
-    output = args.output or root / 'reports' / f'collection-resume-{args.run}.json'
+    if args.fresh:
+        result['caveats'][0]='Independent fresh acquisition; old cumulative repair ledgers are not subtracted or reused. Baseline failures and different caps prevent a controlled A/B.'
+    label = 'fresh' if args.fresh else 'resume'
+    output = args.output or root / 'reports' / f'collection-{label}-{args.run}.json'
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({'report':str(output),'totals':totals,
-        'questions':[{'id':r['question_id'],'increment':r['resume_increment'],'ledger_checks':r['ledger_checks']} for r in comparisons]}, ensure_ascii=True))
+        'questions':[{'id':r['question_id'],'metrics':r.get('fresh_run',r.get('resume_increment')),'ledger_checks':r['ledger_checks']} for r in comparisons]}, ensure_ascii=True))
 
 
 if __name__ == '__main__':

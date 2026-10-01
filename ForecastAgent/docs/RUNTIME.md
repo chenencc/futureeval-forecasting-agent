@@ -104,3 +104,9 @@ paid reservations, resumable outages and lifetime exhaustion. These tests do not
 establish improved live evidence quality or reduced Ultra token consumption.
 Use a later explicitly scoped pilot with unchanged question/cutoff/budgets to
 measure those outcomes from actual transport records.
+
+The maintained audit supports `python -m ForecastAgent.review_campaign ARTIFACT
+--run RUN_ID --fresh` for independent acquisitions. It compares whole experiment
+totals with the initial v3 and v2 baselines rather than subtracting preserved
+prefix costs. Input identity, transport hashes, search caps, mandatory Exa and
+session dispatch caps are reported separately from evidence quality.
