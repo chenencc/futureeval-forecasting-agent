@@ -1,0 +1,33 @@
+name: Free vision frozen table comparison
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install lxml playwright
+      - run: python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: current-new-five-20261001-state
+          run-id: 36827851725
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/vision-source
+      - name: Compare frozen parser text and images with the same free model
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+        run: python -u -m ForecastAgent.vision_comparison --state snapshots/vision-source --output snapshots/vision-comparison
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-vision-frozen-comparison
+          path: snapshots/vision-comparison
+          retention-days: 90
