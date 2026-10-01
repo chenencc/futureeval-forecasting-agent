@@ -35,6 +35,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     system = {'role':'system', 'content':instructions+'\n'+skill_text}
     request = b['request']
     from ForecastAgent.runtime.collection_actions import next_action
+    from ForecastAgent.runtime.collection_actions import pending_passages
     state = {'schema':'collection_context_v2',
              'collection_temporal_policy':b.get('collection_temporal_policy'),
              'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
@@ -56,7 +57,9 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
                            'dataset':p.get('dataset'), 'unit':p.get('unit')} for u,p in b['pages'].items()][:20],
              'excerpts':[{'id':e['id'], 'url':e['url'], 'need_ids':e['need_ids'], 'preview':e['text'][:180]}
                          for e in b['excerpts'] if e['url'] not in blocked][-12:],
-             'passage_ids':list(b.get('passages', {}))[-16:],
+             'pending_passage_ids':[p['passage_id'] for p in pending_passages(task)],
+             'passage_dispositions':[{k:row[k] for k in ('passage_id','action','reason') if k in row}
+                 for row in b.get('passage_dispositions',{}).values()][-16:],
              'loaded_skills':[{'name':s['name'], 'sha256':s['sha256']} for s in loaded],
              'channel_decisions':b.get('channel_decisions', {}),
              'instruction':'Full records remain on disk. Read/list saved sources to retrieve omitted material. Copy exact URLs and need IDs. Omitted or truncated IDs/URLs must be rediscovered before use. Located material is not truth verification.'}

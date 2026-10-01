@@ -612,9 +612,21 @@ class RetrievalTask:
             for url in urls:
                 try:
                     view=self.execute('fetch_page',{'url':url},key)
-                    outcomes.append({'url':url,'ok':not view.get('blocked',False),**{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
+                    outcomes.append({'url':url,'ok':not view.get('blocked',False),
+                        'source_header_preview':view.get('content','')[:1800],
+                        **{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
             result={'reads':outcomes,**locate(self,args)}
+            from ForecastAgent.runtime.collection_actions import named_primary, STATUS_WORDS
+            for url in urls:
+                canonical=canonical_url(url)
+                page=b['pages'].get(canonical)
+                ids=named_primary(self,canonical)
+                if page and ids and (not self.verified_only or eligible(page,self.cutoff)):
+                    if re.search(STATUS_WORDS,page['content'],re.I):
+                        extra=locate(self,{'queries':[{'url':canonical,'query':'deprecated discontinued retired sunset shutdown no longer','need_ids':ids}]})
+                        result['located_material'].extend(extra['located_material'])
+                    b['control'].setdefault('status_scanned_versions',{})[canonical]=saved_reader.version_digest(page)
             attempted={canonical_url(u) for u in urls}
             b['control']['priority_read_urls']=[u for u in b['control'].get('priority_read_urls',[]) if canonical_url(u) not in attempted]
             repaired=set(b['control'].get('repaired_source_urls',[]))

@@ -31,6 +31,35 @@ def setup_task(root):
 
 
 class CollectionActionsTests(TestCase):
+    def test_primary_status_banner_located_even_when_query_only_mentions_windows(self):
+        with TemporaryDirectory() as temp:
+            task=RetrievalTask(Path(temp),REQUEST)
+            task.bundle['plan']=[{'id':'n','priority':'critical','expected_source':'OpenAI blog','query':'Windows availability'}]
+            url='https://openai.com/index/introducing-chatgpt-atlas'
+            body='This post introduced ChatGPT Atlas. Atlas has since been deprecated.\n\n'+TEXT
+            task.bundle['pages'][url]={'url':url,'content':body,'sha256':'official','temporal_status':'live_capture'}
+            self.assertEqual(next_action(task)['urls'],[url])
+            result=task.execute('read_sources',{'urls':[url],'queries':[{'query':'Windows availability','need_ids':['n']}]},'')
+            self.assertIn('deprecated',result['reads'][0]['source_header_preview'])
+            passages=[p for row in result['located_material'] for p in row['passages']]
+            self.assertTrue(any('deprecated' in p['text'] for p in passages))
+            task.bundle['transcript'].append({'tool':'read_sources','result':{'data':result}})
+            self.assertEqual(next_action(task)['tool'],'review_passages')
+            self.assertEqual(task.bundle['control']['status_scanned_versions'][url],
+                __import__('ForecastAgent.readers.saved',fromlist=['version_digest']).version_digest(task.bundle['pages'][url]))
+
+    def test_named_product_release_notes_routed_within_existing_fetch_budget(self):
+        with TemporaryDirectory() as temp:
+            task=RetrievalTask(Path(temp),REQUEST)
+            task.bundle['plan']=[{'id':'n','priority':'critical','expected_source':'OpenAI website'}]
+            url='https://help.openai.com/en/articles/chatgpt-atlas-release-notes'
+            task.bundle['source_leads'][url]={'url':url,'origin':'page_link'}
+            self.assertEqual(next_action(task)['urls'],[url])
+            task.bundle['fetch_attempts']=[{'url':url,'status':'failed'}]
+            self.assertEqual(next_action(task)['tool'],'extract_failed_pages')
+            task.bundle['extract_attempts']=[{'status':'completed','urls':[url]}]
+            self.assertFalse(next_action(task))
+
     def test_candidate_kept_exactly_then_no_more_pending(self):
         with TemporaryDirectory() as temp:
             task=setup_task(Path(temp))

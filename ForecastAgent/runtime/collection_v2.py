@@ -101,6 +101,11 @@ def locate(task,args):
         ranked=[]
         for candidate in rank_passages(pages,query['query'],canonical_url(query['url']) if query.get('url') else None,limit=6):
             page=candidate['page']; part=candidate['text']
+            # Short bare headers are navigation, except explicit lifecycle/status
+            # statements or numeric observations that may be concise evidence.
+            from ForecastAgent.runtime.collection_actions import STATUS_WORDS
+            if len(part.strip())<80 and not re.search(STATUS_WORDS+r'|\d|\b(?:available|supported|exclusive)\b',part,re.I):
+                continue
             if not task.verified_only and late_dates(part,task.cutoff): continue
             coordinates={k:candidate[k] for k in ('url','document_index','start_char','end_char')}
             digest=hashlib.sha256(json.dumps({'coordinates':coordinates,'version':version_digest(page),'raw_sha256':page.get('sha256')},sort_keys=True).encode()).hexdigest()

@@ -26,6 +26,14 @@ discovered hosts named in critical source requirements are routed to the single
 remaining basic Extract rescue, then targeted reading and passage selection.
 The routing heuristic does not certify authority or source reliability.
 
+Named primary-source reads also expose a bounded header preview and locate
+lifecycle terms such as deprecated/discontinued/retired. These are source
+statements to preserve, not program truth verdicts. Bare short headers are not
+passage candidates; concise numeric observations and explicit status statements
+remain eligible. Already discovered product release-note links are prioritized
+within the remaining shared HTTP allowance. Source versions already scanned,
+disposed passage IDs and failed update URLs are retained to prevent repeats.
+
 ```powershell
 python -m ForecastAgent.debug_trial --root snapshots/runtime-collection-five-20261001 --question 43525
 ```
