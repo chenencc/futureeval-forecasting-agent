@@ -20,6 +20,12 @@ None establishes comprehension, factual correctness, or forecast quality.
 - Generic bounded catalog replies explicitly disclose truncation. They do not
   create source-reading coverage. Useful material should be saved as exact quotes
   or excerpts before moving to another source.
+- Visible source slices expose stable passage IDs through `review_passages`.
+  The agent selects relevant needs and keeps or rejects each candidate. The
+  program copies the exact saved text, splitting spans at newline boundaries
+  within the existing 4,000-character excerpt limit. This avoids reconstructing
+  tables or guessing character offsets. Confirmed ranges can re-expose these
+  candidates after restore without HTTP; stale source versions fail closed.
 
 Legacy execution-based reading claims are retained as `legacy_unconfirmed_reads`.
 They cannot block new reading. This migration changes no search/provider budgets,

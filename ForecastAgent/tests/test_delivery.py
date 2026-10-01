@@ -24,6 +24,43 @@ def reply(messages):
 
 
 class DeliveryTests(TestCase):
+    def test_visible_spans_can_be_saved_without_model_rewriting(self):
+        from ForecastAgent.runtime.collection_actions import pending_passages
+        with TemporaryDirectory() as root:
+            task = prepared(root)
+            body = '| Date | Measurement |\n' + ''.join(f'| {i} | α={i} |\n' for i in range(500))
+            task.bundle['pages'][URL]['content'] = body
+            task.bundle['pages'][URL]['documents'] = []
+            args = {'url':URL, 'max_chars':18000}
+            group(task, args, task.execute('read_document', args, ''))
+            view = collection_context(task)
+            acknowledge(task, view)
+            pending = pending_passages(task)
+            self.assertGreater(len(pending), 0)
+            result = task.execute('review_passages', {'items':[{'passage_id':p['passage_id'],
+                'action':'keep', 'reason':'Retain the original measurement rows.', 'need_ids':['n']} for p in pending]}, '')
+            self.assertTrue(all(row['ok'] for row in result['items']))
+            self.assertEqual(''.join(e['text'] for e in task.bundle['excerpts']), reply(view)['content'])
+            self.assertFalse(pending_passages(task))
+
+    def test_restore_can_recover_handles_but_not_changed_source_versions(self):
+        from ForecastAgent.runtime.delivery import recover_read_passages
+        from ForecastAgent.runtime.collection_actions import pending_passages
+        with TemporaryDirectory() as root:
+            task = prepared(root)
+            args = {'url':URL, 'max_chars':100}
+            group(task, args, task.execute('read_document', args, ''))
+            acknowledge(task, collection_context(task))
+            task.bundle['passages'] = {}
+            task.bundle['progress']['delivery_passages'] = {}
+            recover_read_passages(task)
+            self.assertTrue(pending_passages(task))
+            task.bundle['passages'] = {}
+            task.bundle['progress']['delivery_passages'] = {}
+            task.bundle['pages'][URL]['content'] += ' Source changed.'
+            recover_read_passages(task)
+            self.assertFalse(pending_passages(task))
+
     def test_need_lifecycle_preserves_original_and_prevents_empty_scope(self):
         from ForecastAgent.runtime.needs import set_status, reconciliation
         from ForecastAgent.runtime.acquisition import checkpoint

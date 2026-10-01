@@ -56,6 +56,67 @@ def project_reply(payload, name, args, text_chars=6000):
     return value
 
 
+def stage_read_passages(task, data, args):
+    """Expose exact visible spans through the existing passage-review protocol."""
+    from ForecastAgent.runtime.progress import fingerprint
+    from ForecastAgent.runtime.needs import active_needs
+    from ForecastAgent.readers.saved import version_digest
+    from ForecastAgent.tavily_research import canonical_url
+    if not isinstance(data.get('content'), str) or not data['content'].strip():
+        return []
+    url = canonical_url(args['url'])
+    page, text, _ = select(task.bundle['pages'], url, args.get('document_index'))
+    start, end = data['start_char'], data['end_char']
+    if text[start:end] != data['content']:
+        raise ValueError('Cannot stage a passage from an altered source projection')
+    needs = [n['id'] for n in active_needs(task.bundle)]
+    rows = []
+    while start < end:
+        right = min(start + 4000, end)
+        if right < end:
+            boundary = text.rfind('\n', start + 2000, right)
+            if boundary >= 0:
+                right = boundary + 1
+        pid = 'P' + fingerprint([url, version_digest(page), args.get('document_index'), start, right, 'source_read'])
+        task.bundle.setdefault('passages', {})[pid] = {
+            'url': url, 'document_index': args.get('document_index'), 'start_char': start, 'end_char': right,
+            'source_version': version_digest(page), 'source_sha256': page.get('sha256')}
+        task.bundle.setdefault('progress', {}).setdefault('delivery_passages', {})[pid] = {
+            'need_ids': needs, 'origin': 'exact_source_read',
+            'association_warning': 'Available need IDs are choices, not automatic relevance assignments.'}
+        rows.append({'passage_id': pid, 'url': url, 'document_index': args.get('document_index'),
+            'start_char': start, 'end_char': right})
+        start = right
+    return rows
+
+
+def recover_read_passages(task):
+    """Re-expose confirmed reads after a restore without HTTP or text rewriting."""
+    from ForecastAgent.runtime.progress import fingerprint
+    from ForecastAgent.readers.saved import version_digest
+    from ForecastAgent.tavily_research import canonical_url
+    receipts = task.bundle.get('progress', {}).get('delivery_receipts', {})
+    for receipt in list(receipts.values())[-24:]:
+        if receipt.get('tool') != 'read_document' or not receipt.get('visible_range'):
+            continue
+        row = receipt['visible_range']
+        try:
+            url = canonical_url(row['url'])
+            args = {'url': url, 'document_index': (row.get('location') or {}).get('document_index')}
+            page, text, _ = select(task.bundle['pages'], url, args['document_index'])
+            from ForecastAgent.runtime.collection_v2 import eligible
+            from ForecastAgent.readers.quality import body_diagnostics
+            if not body_diagnostics(page.get('content', ''))['usable_text'] or task.verified_only and not eligible(page, task.cutoff):
+                continue
+            scope = fingerprint([url, version_digest(page), 'read_document', args['document_index']])
+            confirmed = any(r['scope'] == scope and r['start'] <= row['start_char'] and r['end'] >= row['end_char']
+                            for r in task.bundle['progress'].get('reads', {}).values())
+            if page.get('sha256') == row.get('source_sha256') and confirmed:
+                stage_read_passages(task, {**row, 'content':text[row['start_char']:row['end_char']]}, args)
+        except (KeyError, ValueError, TypeError):
+            continue
+
+
 def acknowledge(task, messages):
     """Commit receipts only after a model response to these exact messages."""
     from ForecastAgent.runtime.progress import delivered, fingerprint

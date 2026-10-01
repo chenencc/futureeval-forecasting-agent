@@ -42,6 +42,8 @@ def pending_passages(task, limit=8):
     """Expose only surfaced, version-valid candidates, never auto-accept relevance."""
     b=task.bundle
     surfaced={}
+    for pid, row in b.get('progress', {}).get('delivery_passages', {}).items():
+        surfaced[pid] = {'need_ids': list(row.get('need_ids', []))}
     for step in b.get('transcript', []):
         if step.get('tool') != 'read_sources':
             continue
@@ -53,6 +55,8 @@ def pending_passages(task, limit=8):
                     saved=surfaced.setdefault(pid,{'need_ids':[]})
                     saved['need_ids']=sorted(set(saved['need_ids']+row.get('need_ids',[])))
     dispositions=b.get('passage_dispositions',{})
+    from ForecastAgent.runtime.needs import active_needs
+    active_ids={n['id'] for n in active_needs(b)}
     result=[]
     for pid, row in surfaced.items():
         passage=b.get('passages',{}).get(pid)
@@ -67,7 +71,7 @@ def pending_passages(task, limit=8):
         quoted=text[passage['start_char']:passage['end_char']]
         covered={need for e in b['excerpts'] if e['url']==passage['url'] and e['text']==quoted
             and e.get('source_parsed_sha256')==passage['source_version'] for need in e.get('need_ids',[])}
-        ids=[n for n in row['need_ids'] if n not in covered]
+        ids=[n for n in row['need_ids'] if n not in covered and n in active_ids]
         if ids and quoted.strip():
             result.append({'passage_id':pid,'url':passage['url'],'need_ids':ids,'text':quoted[:4000]})
     return result[:limit]

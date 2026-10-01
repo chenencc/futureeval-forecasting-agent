@@ -25,8 +25,9 @@ def bounded(value, text_limit=700, item_limit=12):
 
 
 def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
-    from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply
+    from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply, stage_read_passages, recover_read_passages
     ensure_delivery_state(task)
+    recover_read_passages(task)
     b = task.bundle
     messages = b['messages']
     blocked = {u for u,p in b['pages'].items() if task.verified_only and not eligible(p, task.cutoff)}
@@ -95,6 +96,10 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
                 except (ValueError, TypeError): args = {}
                 if function.get('name') in {'read_document', 'read_dataset_rows'}:
                     payload = project_reply(payload, function['name'], args, text_chars=max(500, 6000 // max(1, reader_count)))
+                    data = payload.get('data', payload) if isinstance(payload, dict) else {}
+                    if function['name'] == 'read_document' and isinstance(data, dict) and data.get('content'):
+                        data['passages_to_review'] = stage_read_passages(task, data, args)
+                        data['bank_instruction'] = 'Use review_passages to keep relevant exact span IDs or reject them with a reason. The program copies saved text and coordinates; do not retype long tables or invent line breaks.'
                 else:
                     payload = bounded(payload)
                     if isinstance(payload, dict):

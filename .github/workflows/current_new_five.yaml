@@ -56,6 +56,7 @@ jobs:
             }
             if (data.workflow_runs.length === 100) throw new Error('State history exhausted; refusing budget reset');
       - name: Restore this experiment's frozen ledgers
+        id: restore
         if: steps.previous.outputs.run != ''
         uses: actions/download-artifact@v4
         with:
@@ -64,6 +65,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/current-new-five-20261001
       - name: Validate single-case restore
+        id: selection
         if: inputs.question_id != ''
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
@@ -87,7 +89,7 @@ jobs:
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
       - name: Collect new case 44414
-        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44414' && steps.previous.outputs.run != '')) && (success() || failure()) }}
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44414' && steps.restore.outcome == 'success' && steps.selection.outcome == 'success')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
           RESUME_REASON: ${{ inputs.resume_reason }}
@@ -104,7 +106,7 @@ jobs:
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44414
           fi
       - name: Collect new case 44247
-        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44247' && steps.previous.outputs.run != '')) && (success() || failure()) }}
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44247' && steps.restore.outcome == 'success' && steps.selection.outcome == 'success')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
           RESUME_REASON: ${{ inputs.resume_reason }}
@@ -121,7 +123,7 @@ jobs:
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44247
           fi
       - name: Collect new case 43992
-        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43992' && steps.previous.outputs.run != '')) && (success() || failure()) }}
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43992' && steps.restore.outcome == 'success' && steps.selection.outcome == 'success')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
           RESUME_REASON: ${{ inputs.resume_reason }}
@@ -138,7 +140,7 @@ jobs:
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43992
           fi
       - name: Collect new case 43479
-        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43479' && steps.previous.outputs.run != '')) && (success() || failure()) }}
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43479' && steps.restore.outcome == 'success' && steps.selection.outcome == 'success')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
           RESUME_REASON: ${{ inputs.resume_reason }}
@@ -155,7 +157,7 @@ jobs:
             python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43479
           fi
       - name: Collect new case 44798
-        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44798' && steps.previous.outputs.run != '')) && (success() || failure()) }}
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44798' && steps.restore.outcome == 'success' && steps.selection.outcome == 'success')) && (success() || failure()) }}
         env:
           SELECTED_QUESTION: ${{ inputs.question_id }}
           RESUME_REASON: ${{ inputs.resume_reason }}
