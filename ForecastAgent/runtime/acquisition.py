@@ -12,14 +12,23 @@ def reading_targets(bundle):
 
 def checkpoint(task):
     b = task.bundle
-    covered = {need for e in b['excerpts'] for need in e.get('need_ids', [])}
-    covered.update(need for a in b['fetch_attempts'] if a.get('status') == 'completed' for need in a.get('need_ids', []))
+    from ForecastAgent.runtime.collection_v2 import eligible
+    usable={url for url,page in b['pages'].items() if not task.verified_only or eligible(page,task.cutoff)}
+    covered = {need for e in b['excerpts'] if e['url'] in usable for need in e.get('need_ids', [])}
+    covered.update(need for a in b['fetch_attempts'] if a.get('status') == 'completed' and a.get('url') in usable for need in a.get('need_ids', []))
     missing = [n['id'] for n in b.get('plan') or [] if n['id'] not in covered]
     decisions = b.get('channel_decisions', {})
     rescue = task.rescue_candidates() if b['mode'] != 'historical_strict' and not b['extract_attempts'] else []
     todo = []
-    if b['pages'] and missing:
+    if usable and missing:
         todo.append({'tool': 'search_saved_text', 'reason': 'Find passages addressing needs without excerpts; use excerpt_args or record_quote.'})
+    if task.verified_only and set(b['pages'])-usable:
+        if task.budget()['page_fetch_remaining']>=2:
+            todo.append({'tool':'collect_archive','reason':'Audit-only pages cannot be read. Choose one important accepted URL not previously attempted; an archive costs two HTTP requests and may be unavailable.'})
+        else:
+            todo.append({'tool':'finish_collection','reason':'Audit-only historical pages have no usable body and fewer than two archive requests remain. Record the missing snapshot as a gap.'})
+    if missing and task.budget().get('exa_search_remaining',0)>0:
+        todo.append({'tool':'search_exa','reason':'One authorized supplemental discovery attempt remains; use it only for a critical gap or independent source. It does not permit reading current historical bodies.'})
     if rescue and 'tavily_extract_basic' not in decisions:
         todo.append({'tool': 'extract_failed_pages', 'reason': 'Important failed pages may be rescued in one basic batch; choose relevant URLs or record a deferral.'})
     if b['mode'] == 'live' and not b['market_snapshots'] and 'polymarket_gamma' not in decisions:
@@ -37,6 +46,7 @@ def checkpoint(task):
         todo.insert(0,{'tool':'plan_channels','reason':'Allocate shared HTTP attempts to important sources, structured data and any two-request archive lookup.'})
     return {'schema': 'acquisition_checkpoint_v1', 'budget_remaining': task.budget(),
             'needs_without_located_material': missing, 'saved_body_count': len(b['pages']),
+            'usable_saved_body_count':len(usable),'audit_only_urls':sorted(set(b['pages'])-usable),
             'association_warning':'Located material does not establish resolution-condition coverage or known future outcomes.',
             'excerpt_count': len(b['excerpts']), 'extract_eligible_urls': rescue[:5],
             'selected_unread_count': len(unread), 'selected_unread_urls': unread[:12],

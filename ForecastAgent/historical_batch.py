@@ -146,6 +146,54 @@ def run_batch(root, tavily_key, router_key, limit=5, runner=run_retrieval):
         return batch
 
 
+def enable_exa(root, authorization_id, reason):
+    """Apply an explicit, auditable one-attempt supplement without restarting ledgers."""
+    if not authorization_id or not reason:
+        raise ValueError('Explicit authorization ID and reason required')
+    root=Path(root)
+    with task_lock(root):
+        batch=json.loads((root/'batch.json').read_text(encoding='utf-8'))
+        validate(root,batch)
+        baseline={}
+        for ident in batch['tasks']:
+            path=root/'tasks'/ident/'bundle.json'
+            if not path.exists():
+                raise ValueError('Every prior task ledger must exist before a supplement')
+            b=json.loads(path.read_text(encoding='utf-8'))
+            baseline[ident]={'model_http_attempts':len(b.get('model_attempts',[])),
+                'known_tokens':sum((a.get('usage') or {}).get('total_tokens',0) for a in b.get('model_attempts',[])),
+                'tavily_basic_attempts':len(b['searches']),'exa_search_attempts':len(b.get('exa_searches',[])),
+                'request_hash':b['request_hash'],'result':b.get('result')}
+        baseline_path=root/'repair_resume_baseline.json'
+        if not baseline_path.exists():
+            write(baseline_path,{'source_run':os.environ.get('FORECAST_COMPLETED_RESTORE_RUNS'),
+                'authorized_at_utc':now().isoformat(),'authorization_id':authorization_id,
+                'reason':reason,'tasks':baseline,'comparison':'Resume increments are not a fresh-run A/B comparison.'})
+        from ForecastAgent.tools.channels import channel_catalog
+        granted=[]
+        for ident in batch['tasks']:
+            directory=root/'tasks'/ident
+            with task_lock(directory):
+                path=directory/'bundle.json'
+                b=json.loads(path.read_text(encoding='utf-8'))
+                if b.get('result') and not b['result'].get('incomplete'):
+                    continue
+                limits=b.setdefault('acquisition_limits',{})
+                if limits.get('exa_search',0)==1:
+                    continue
+                if b.get('exa_searches'):
+                    raise ValueError('Exa attempt already consumed without a matching allowance')
+                limits['exa_search']=1
+                b.setdefault('exa_searches',[])
+                b.setdefault('budget_amendments',[]).append({'provider':'exa','from':0,'to':1,
+                    'authorization_id':authorization_id,'reason':reason,'at_utc':now().isoformat(),
+                    'prior_counters':baseline[ident],'tavily_budget_reset':False,'model_budget_reset':False})
+                b['channel_catalog']=channel_catalog()
+                write(path,b)
+                granted.append(ident)
+        return {'enabled_tasks':granted,'baseline_path':str(baseline_path)}
+
+
 def archive(root, destination):
     root, destination = Path(root).resolve(), Path(destination).resolve()
     if destination == root or root in destination.parents:
@@ -167,12 +215,14 @@ def archive(root, destination):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['init', 'run', 'status', 'archive'])
+    parser.add_argument('action', choices=['init', 'run', 'status', 'archive','enable-exa'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT)
     parser.add_argument('--limit', type=int, default=5)
     parser.add_argument('--profile',choices=['collection_v1','collection_v2','collection_v3'],default='collection_v1')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--authorization-id')
+    parser.add_argument('--reason')
     args = parser.parse_args()
     if args.action == 'init':
         batch = initialize(args.root, args.input,args.profile)
@@ -180,6 +230,9 @@ def main():
         if not os.environ.get('TAVILY_API_KEY') or not os.environ.get('OPENROUTER_API_KEY'):
             raise ValueError('Both provider keys are required')
         batch = run_batch(args.root, os.environ['TAVILY_API_KEY'], os.environ['OPENROUTER_API_KEY'], args.limit)
+    elif args.action == 'enable-exa':
+        print(json.dumps(enable_exa(args.root,args.authorization_id,args.reason)))
+        return
     elif args.action == 'archive':
         if not args.output:
             parser.error('--output is required for archive')

@@ -23,6 +23,8 @@ from ForecastAgent.ultra_research_agent import ask_ultra, fetch_public_page, utc
 MAX_SEARCHES = 3
 MAX_FETCHES = 8
 MAX_TURNS = 24
+COLLECTION_MAX_TURNS = 12
+COLLECTION_HTTP_PER_DISPATCH = 12
 MAX_EXTRACT_BATCHES = 1
 
 from ForecastAgent.tools.registry import TOOLS, COLLECTION_TOOLS
@@ -198,7 +200,9 @@ class RetrievalTask:
                     self.bundle["source_leads"].setdefault(canonical_url(url), {"url": url, "origin": "question_"+field, "published_date": None})
 
     def catalog(self):
-        leads = dict(self.bundle["source_leads"])
+        leads = {u:r for u,r in self.bundle['source_leads'].items()
+                 if not (self.verified_only and r.get('origin')=='page_link'
+                         and not eligible(self.bundle['pages'].get(canonical_url(r.get('parent_url','')),{}),self.cutoff))}
         for search in self.bundle["searches"] + self.bundle['exa_searches']:
             for hit in search["results"]:
                 if allowed_source(hit["url"]):
@@ -507,7 +511,7 @@ class RetrievalTask:
             b["plan"] = needs
             b["entity_card"] = args.get("entity_card", {"status": "Legacy input: identity and timing card absent"})
             return {"plan": needs}
-        if b["plan"] is None:
+        if b["plan"] is None and name != 'finish_collection':
             raise ValueError("Freeze an evidence plan first")
         if name == 'collect_official':
             return self.collect_official(args)
@@ -547,7 +551,8 @@ class RetrievalTask:
             for row in rows:
                 self.needs(row)
                 if row.get('channel') not in known or type(row.get('expected_http_attempts')) is not int or not 0<=row['expected_http_attempts']<=8 or not row.get('reason'):
-                    raise ValueError('Use catalog channels, needs, bounded HTTP estimates and a reason')
+                    raise ValueError('channel must be a catalog ID, not a tool name: '+', '.join(sorted(known))+
+                                     '; each row requires need_ids, expected_http_attempts (0-8), and reason')
             b['channel_plan']=rows
             self.save()
             return checkpoint(self)
@@ -582,6 +587,9 @@ class RetrievalTask:
                     outcomes.append({'url':url,'ok':not view.get('blocked',False),**{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
             result={'reads':outcomes,**locate(self,args)}
+            if not any(row.get('ok') for row in outcomes) and not any(row['passages'] for row in result['located_material']):
+                result.update(error='No eligible readable material located. Do not repeat this read; obtain a pre-cutoff archive, collect a supported dataset, discover another source, or finish with gaps.',
+                              no_progress=True)
             self.save()
             return result
         if name == 'record_excerpts':
@@ -601,8 +609,18 @@ class RetrievalTask:
                 except Exception as exc: outcomes.append({'ok':False,'error':str(exc)[:180]})
             return {'items':outcomes}
         if name in {"list_documents", "read_document", "search_saved_text", "find_passages"}:
+            target = canonical_url(args.get('url',''))
+            if name != 'list_documents' and self.verified_only and target in b['pages'] and not eligible(b['pages'][target],self.cutoff):
+                return {'url':target,'content':'','blocked':True,'ok':False,'status':'blocked',
+                        'error':'Current body is audit-only. It cannot be read or excerpted; use a pre-cutoff archive or finish with a gap.',
+                        'next_start':None,'no_progress':True}
             pages=visible_pages(b['pages'],self.cutoff,self.verified_only) if self.optimized else b['pages']
-            return getattr(saved_reader, name)(pages, args)
+            response = getattr(saved_reader, name)(pages, args)
+            if name=='list_documents':
+                for row in response['documents']:
+                    row['audit_only'] = self.verified_only and not eligible(b['pages'][row['url']],self.cutoff)
+                    row['readable'] = not row['audit_only']
+            return response
         if name == "record_excerpt":
             self.needs(args)
             page, text, location = saved_reader.select(b["pages"], args["url"], args.get("document_index"))
@@ -629,15 +647,21 @@ class RetrievalTask:
         if name == "finish_collection":
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
-            if self.optimized and self.cutoff and not any(s.get('search_role')=='recent' for s in b['searches']):
-                raise ValueError('Use at least one cutoff-bounded recent search before closing this historical pilot')
+            gaps = list(args['gaps'])
+            if self.optimized and self.cutoff and not any(s.get('search_role')=='recent' and s.get('status')=='completed' for s in b['searches'] + b['exa_searches']):
+                gaps.append('No successful cutoff-bounded recent search was captured; acquisition is incomplete.')
             unread = sorted(reading_targets(b) - set(b['pages']))
             b['acceptance'] = collection_acceptance(b)
+            missing = [n['need_id'] for n in b['acceptance']['acquisition_metrics']['needs']
+                       if n['priority']=='critical' and not n['usable_associated_sources']]
+            if missing:
+                gaps.append('Critical needs without associated usable sources: '+', '.join(missing))
             b["result"] = {"status": "collected" if b["pages"] or b['market_snapshots'] else "leads_only" if self.catalog() else "empty",
                            "output_type": "intelligence_package", "truth_verified": False,
                            "page_count": len(b["pages"]), "excerpt_count": len(b["excerpts"]),
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
-                           "unread_urls": unread, "gaps": args["gaps"], "finished_at": utc_now()}
+                           "unread_urls": unread, "gaps": list(dict.fromkeys(gaps)), "finished_at": utc_now(),
+                           'acquisition_complete':not bool(gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])}
             b['result']['acquisition_checkpoint'] = checkpoint(self)
             b['result']['historical_body_policy']=b.get('historical_body_policy')
             b['result']['historical_clean']=False
@@ -952,10 +976,17 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 result.setdefault("gaps", []).append("Historical article bodies were fetched today; pre-cutoff availability is unverified")
                 task.save()
             return task.bundle
+        resuming = bool(task.bundle.get('result',{}).get('incomplete')) if task.bundle.get('result') else False
         task.bundle["result"] = None
+        if resuming:
+            # Closing/error latches belong to a dispatch. Physical attempt ledgers never reset.
+            task.bundle['control'].update(consecutive_errors=0,forced_close=False,no_progress_turns=0)
+        task.bundle['control']['dispatch_message_start'] = len(task.bundle['messages'])
         deadline = time.monotonic() + MAX_RUN_SECONDS
         secrets = (tavily_key, router_key, os.environ.get('EXA_API_KEY',''))
-        observer = model_observer(task, secrets)
+        dispatch_start = len(task.bundle.get('model_attempts',[]))
+        collection = task.bundle['pipeline']=='collection'
+        observer = model_observer(task, secrets, dispatch_limit=COLLECTION_HTTP_PER_DISPATCH if collection else None)
         freeze_skills(task.bundle)
         task.bundle.setdefault("agent_runtime", {"name": "ForecastAgent", "version": 1, "stage": "analysis", "events": []})
         runtime = task.bundle["agent_runtime"]
@@ -968,6 +999,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if entry['function']['name']=='search_tavily':
                     entry['function']['description']=f'Basic search within this task frozen {task.search_limit}-attempt ceiling. Additional searches above three only for recent dynamics or missing official sources.'
                     entry['function']['parameters']['required'].append('search_role')
+            for entry in available_tools:
+                if entry['function']['name']=='plan_channels':
+                    entry['function']['parameters']['properties']['channels']['items']['properties']['channel']['enum'] = [c['id'] for c in task.bundle['channel_catalog']['channels']]
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
         if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
@@ -979,11 +1013,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         system += f'\nProgram budget for THIS task: {task.search_limit} total basic search attempts, shared 8 initial HTTP attempts, one Extract batch. Frozen ledgers never restart. Use plan_channels early to reserve important structured/official/archive work; archive needs two HTTP attempts. Read saved passages and row pages in batches. Model context contains program state and recent complete turns; older raw records remain on disk. Current captures use a short shared live cache; capture time remains the original time. Diagnostics and associated sources are acquisition indicators, not truth scores.'
         system=system.replace('at most FIVE attempted searches',f'at most {task.search_limit} attempted searches').replace('at most THREE attempted searches',f'at most {task.search_limit} attempted searches')
         system += f'\nOptional Exa discovery budget: {task.exa_limit} lifetime attempt. Tavily is the primary search provider. Use search_exa only for an important missing official/scientific source or independent crosscheck, not automatically. Exa only discovers metadata; read selected pages using existing free tools. Exa never increases Tavily quota, historical body permissions or HTTP budgets. Unknown historical publication dates are quarantined. Credit estimates are not account balances.'
+        system += '\nBlocked/audit-only bodies have NO readable content. A saved body is not necessarily usable. Never repeatedly read such a body at different offsets. Use an archive if remaining HTTP budget permits, a supported dated dataset, or another source; otherwise finish with gaps. Recent discovery is desirable but missing it never prevents closing. plan_channels uses exact catalog IDs, not tool names. Read rows with limit 1-100. Dataset end_date must be before the cutoff UTC day; NOAA OISST histories start in 1981, not 1850. Avoid spending model turns on mandatory checkboxes or repeatedly listing unchanged catalogs.'
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
             'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
-            'collection_only': collection, 'max_model_turns_per_run': MAX_TURNS,
+            'collection_only': collection, 'max_model_turns_per_run': COLLECTION_MAX_TURNS if collection else MAX_TURNS,
+            'model_http_per_dispatch':COLLECTION_HTTP_PER_DISPATCH if collection else None,
             'model_http_lifetime_limit': 72, 'run_dispatch_seconds': MAX_RUN_SECONDS})
         messages = task.bundle["messages"]
         if messages and messages[0].get("role") == "system":
@@ -999,9 +1035,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if call["id"] not in answered:
                     messages.append({"role": "tool", "tool_call_id": call["id"], "content": "Interrupted before tool reply; inspect durable bundle; search reservations remain consumed."})
         seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
-        for turn in range(MAX_TURNS):
+        turn_limit = COLLECTION_MAX_TURNS if collection else MAX_TURNS
+        for turn in range(turn_limit):
             control = task.bundle["control"]
-            if turn >= MAX_TURNS-2 or control["consecutive_errors"] >= (4 if collection else 3):
+            if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
+                    (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)):
                 control["forced_close"] = True
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
             forced = None
@@ -1052,7 +1090,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
                         raise ValueError("Closing phase: audit saved facts or finish with gaps")
                     signature = (name, json.dumps(args, sort_keys=True))
-                    if signature in seen_calls and name in {"search_tavily", "search_exa", "fetch_page", "fetch_pages", "extract_failed_pages"}:
+                    if signature in seen_calls and name in {"search_tavily", "search_exa", "fetch_page", "fetch_pages", "extract_failed_pages",'read_document','read_sources','read_dataset_rows','list_documents','plan_channels','collect_archive'}:
                         raise ValueError("Repeated identical tool request blocked; use list_sources or existing evidence")
                     seen_calls.add(signature)
                     control["seen_calls"] = [list(item) for item in sorted(seen_calls)]
@@ -1073,6 +1111,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         if secret:
                             detail = detail.replace(secret, "[REDACTED]")
                     result = {"error": detail[:500]}
+                if name in {'list_channels','list_sources','list_official_datasets','list_dated_datasets','collection_checkpoint','collection_acceptance'}:
+                    result['no_progress'] = True
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
                 step.update(status='failed' if failed else 'completed',
                             duration_seconds=time.monotonic() - step_started, finished_at_utc=utc_now())
@@ -1088,10 +1128,19 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 blocked_urls={url for url in task.catalog() if not eligible(task.bundle['pages'].get(url,{}),task.cutoff)} if task.verified_only else set()
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result,blocked_urls) if task.optimized else result, ensure_ascii=False)})
                 task.save()
+            if collection:
+                recent_results = task.bundle['transcript'][-len(message.get('tool_calls') or []):] if message.get('tool_calls') else []
+                stalled = not recent_results or all(not row['result'].get('ok') or row['result'].get('data',{}).get('no_progress') for row in recent_results)
+                control['no_progress_turns'] = control.get('no_progress_turns',0)+1 if stalled else 0
             if task.bundle["result"]:
                 break
         if not task.bundle["result"]:
-            task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
+            if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
+                task.execute('finish_collection', {'gaps':['Program ended collection at the dispatch limit; unresolved acquisition work remains.']}, tavily_key)
+                task.bundle['result']['termination_reason']='program_dispatch_limit'
+                task.bundle.setdefault('agent_runtime',{}).setdefault('events',[]).append({'stage':'export','owner':'program','at':utc_now()})
+            else:
+                task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
                 "coverage": task.coverage(), "gaps": ["Collection interrupted" if collection else "Retrieval did not complete its final audit"], "conflicts": [], "incomplete": True}
         runtime["stage"] = "incomplete" if task.bundle["result"].get("incomplete") else "complete"
         runtime["events"].append({"stage": runtime["stage"], "at": utc_now(), "status": task.bundle["result"]["status"]})

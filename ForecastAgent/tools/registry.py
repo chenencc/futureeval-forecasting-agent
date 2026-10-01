@@ -122,7 +122,7 @@ COLLECTION_TOOLS.extend([
 for entry in COLLECTION_TOOLS:
     if entry['function']['name']=='search_tavily':
         entry['function']['parameters']['properties']['search_role']={'type':'string','enum':['primary','crosscheck','gap','recent','official_gap']}
-COLLECTION_TOOLS.append(tool('plan_channels','Plan source channels and HTTP estimates before acquisition. Program caps remain frozen; keep critical data/archive attempts available. No network.',
+COLLECTION_TOOLS.append(tool('plan_channels','Use catalog channel IDs, NOT tool names: dated_observations for collect_dataset, historical_archive for collect_archive, public_http for reading, tavily_basic for primary discovery, exa_search for supplemental discovery. Each row needs channel, need_ids, expected_http_attempts (0-8), reason. Estimates do not reserve calls. No network.',
     {'channels':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{
         'channel':STRING,'need_ids':{'type':'array','items':STRING},'expected_http_attempts':{'type':'integer','minimum':0,'maximum':8},
         'reason':STRING},'required':['channel','need_ids','expected_http_attempts','reason'],'additionalProperties':False}}},['channels']))

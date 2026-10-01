@@ -156,7 +156,7 @@ class CollectionTests(TestCase):
                            call('finish_collection', {'gaps': ['Unavailable sources']}, 'f')]
         with TemporaryDirectory() as directory:
             result = run_retrieval(REQUEST, directory, '', '')
-            self.assertIsNone(ask.call_args.kwargs['forced_tool'])
+            self.assertEqual(ask.call_args.kwargs['forced_tool'],'finish_collection')
             self.assertFalse(result['result'].get('incomplete', False))
             self.assertEqual(result['result']['status'], 'leads_only')
 

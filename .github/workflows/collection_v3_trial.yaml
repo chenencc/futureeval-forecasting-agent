@@ -7,6 +7,10 @@ on:
         description: 'Questions this run (1-5); resumes the frozen campaign'
         default: '5'
         required: true
+      enable_exa:
+        description: 'Apply the authorized one-attempt Exa supplement to unfinished tasks; never reset budgets'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -72,6 +76,12 @@ jobs:
             'comparison_caveat':'Same questions and cutoffs, but new acquisition policy and budget, dynamic search and stochastic model; not a controlled A/B or clean historical backtest.'}
           if not path.exists(): path.write_text(json.dumps(experiment,indent=2),encoding='utf-8')
           PY
+      - name: Apply authorized Exa supplement
+        if: inputs.enable_exa
+        run: python -m ForecastAgent.historical_batch enable-exa --root snapshots/collection-v3-five-20261001 --authorization-id user-20261001-five-repair --reason "User authorized Exa supplementation and repair of the existing five-question campaign"
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001
       - name: Collect bounded historical batch
         run: python -u -m ForecastAgent.historical_batch run --root snapshots/collection-v3-five-20261001 --limit "$BATCH_LIMIT"
         env:
@@ -79,6 +89,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001
       - name: Check all five tasks finished

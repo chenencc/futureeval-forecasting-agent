@@ -7,10 +7,13 @@ MAX_MODEL_ATTEMPTS = 72
 MAX_RUN_SECONDS = 900
 
 
-def model_observer(task, secrets=()):
+def model_observer(task, secrets=(), dispatch_limit=None):
+    starting_attempts = len(task.bundle.get('model_attempts',[]))
     def observe(event, record, token=None):
         attempts = task.bundle.setdefault('model_attempts', [])
         if event == 'reserve':
+            if dispatch_limit is not None and len(attempts)-starting_attempts >= dispatch_limit:
+                raise RuntimeError('Physical model HTTP dispatch budget exhausted')
             if len(attempts) >= MAX_MODEL_ATTEMPTS:
                 raise RuntimeError('Lifetime model attempt budget exhausted (72)')
             token = len(attempts)

@@ -16,6 +16,7 @@ def intelligence_package(bundle):
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'exa_searches':bundle.get('exa_searches',[]),
+            'budget_amendments':bundle.get('budget_amendments',[]),
             'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
             'execution_versions': bundle.get('execution_versions', []),
             'acquisition_limits': bundle.get('acquisition_limits', {'tavily_basic':3}),
