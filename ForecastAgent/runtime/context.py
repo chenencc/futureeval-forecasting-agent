@@ -123,6 +123,14 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'loaded_skills':[{'name':s['name'], 'sha256':s['sha256']} for s in loaded],
              'channel_decisions':b.get('channel_decisions', {}),
              'instruction':'Full records remain on disk. Read/list saved sources to retrieve omitted material. Excerpt previews are not full excerpts: do not report source material missing merely because it is absent from a preview. Read the saved coordinates when completeness matters. Copy exact URLs and need IDs. Omitted or truncated IDs/URLs must be rediscovered before use. Located material is not truth verification.'}
+    if getattr(task,'raw_recall',False):
+        from ForecastAgent.runtime.acquisition import checkpoint
+        state['acquisition_inventory']=checkpoint(task)
+        for key in ('needs_to_reconcile','delivered_ranges','working_memory_ranges','excerpts','pending_passage_ids','passage_dispositions'):
+            state.pop(key,None)
+        for document in state['documents']:
+            document['navigation']='Raw capture retained. Interpretation and excerpt selection are deferred.'
+        state['instruction']='Preserved originals and rows are the deliverable. Use capture forms, identifiers and observed periods to select missing sources. Do not require comprehension, excerpts or page-by-page reading. Full recall and truth remain unverified.'
     state = model_view(state, blocked)
     projected = [system, {'role':'user', 'content':encode(state)}]
     # Keep complete assistant/tool groups only. Interrupted replies are closed by the runtime.

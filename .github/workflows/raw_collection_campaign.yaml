@@ -1,0 +1,101 @@
+name: Raw intelligence collection campaign
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Questions this dispatch (1-5); default one for validation'
+        required: true
+        default: '1'
+        type: string
+      question:
+        description: 'Optional existing task ID for a focused repair'
+        default: ''
+        type: string
+      questions:
+        description: 'Optional comma-separated IDs of new pending tasks (up to five)'
+        default: ''
+        type: string
+      resume_reason:
+        description: 'Concrete repair reason; preserves all consumed budgets'
+        default: ''
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: raw-collection-100-v1
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    env:
+      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      CAMPAIGN_ROOT: snapshots/raw-collection-100-v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Locate the latest preserved campaign state
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const {data}=await github.rest.actions.listWorkflowRuns({owner,repo,workflow_id:'raw_collection_campaign.yaml',status:'completed',per_page:100});
+            for(const run of data.workflow_runs){
+              const {data:list}=await github.rest.actions.listWorkflowRunArtifacts({owner,repo,run_id:run.id});
+              if(list.artifacts.some(a=>a.name==='raw-collection-100-v1-state'&&!a.expired)){
+                core.setOutput('run',run.id);return;
+              }
+              const jobs=await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
+              if(jobs.flatMap(j=>j.steps||[]).some(s=>s.name==='Run a bounded acquisition dispatch'&&s.conclusion!=='skipped'))
+                throw new Error('Prior dispatch has no recoverable ledger; refusing a budget reset');
+            }
+            if(data.workflow_runs.length===100)throw new Error('History scan exhausted; refusing a budget reset');
+      - uses: actions/download-artifact@v4
+        if: steps.previous.outputs.run != ''
+        with:
+          name: raw-collection-100-v1-state
+          run-id: ${{ steps.previous.outputs.run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/raw-collection-100-v1
+      - name: Initialize or validate the frozen queue
+        run: python -m ForecastAgent.collection_campaign prepare --root "$CAMPAIGN_ROOT" --fixture ForecastAgent/fixtures/raw_collection_2026_100.json --count 100 --raw-recall
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/raw-collection-100-v1
+      - name: Run a bounded acquisition dispatch
+        run: |
+          if [ -n "$SELECTED_QUESTION" ] && [ -n "$SELECTED_QUESTIONS" ]; then
+            echo "Choose either new-case selection or a focused repair"
+            exit 1
+          fi
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit 1 --question "$SELECTED_QUESTION" --resume-reason "$RESUME_REASON"
+          elif [ -n "$SELECTED_QUESTIONS" ]; then
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT" --questions "$SELECTED_QUESTIONS"
+          else
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
+          fi
+        env:
+          DISPATCH_LIMIT: ${{ inputs.limit }}
+          SELECTED_QUESTION: ${{ inputs.question }}
+          SELECTED_QUESTIONS: ${{ inputs.questions }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/raw-collection-100-v1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raw-collection-100-v1-state
+          path: snapshots/raw-collection-100-v1
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90

@@ -23,12 +23,36 @@ def discovery_read_action(task):
             leads[canonical_url(hit['url'])] = hit.get('title', '')
     leads.update({u: '' for u, row in b.get('source_leads', {}).items() if row.get('origin', '').startswith('question_')})
     terms = set(re.findall(r'[a-z0-9]{4,}', b['request']['question'].lower())) - {'will', 'before', 'after', '2026'}
+    from ForecastAgent.evidence.acquisition_quality import discovery_score
     ranked = sorted((u for u in leads if u not in attempted and u not in b['pages']),
-        key=lambda u: (-10 * bool(named_primary(task, u)) - len(terms & set(re.findall(r'[a-z0-9]{4,}', (u + ' ' + leads[u]).lower()))), u))
+        key=lambda u: (-discovery_score(b['request'],u,leads[u],named_primary(task,u)) if getattr(task,'raw_recall',False)
+                      else -10 * bool(named_primary(task, u)) - len(terms & set(re.findall(r'[a-z0-9]{4,}', (u + ' ' + leads[u]).lower()))), u))
     if not ranked:
         return None
     return {'tool': 'read_sources', 'urls': ranked[:4 if getattr(task,'raw_recall',False) else 2],
-        'instruction': 'Read a relevant exact discovered source before another search. Batch free fetch, permitted primary rescue and paragraph location in this action. Use concrete queries for critical needs; this route is not a relevance verdict.'}
+        'instruction': ('Capture this discovered batch as raw material. Identifier ranking is a routing hint, not a relevance verdict; no paragraph selection is required.'
+            if getattr(task,'raw_recall',False) else
+            'Read a relevant exact discovered source before another search. Batch free fetch, permitted primary rescue and paragraph location in this action. Use concrete queries for critical needs; this route is not a relevance verdict.')}
+
+
+def raw_stop_reason(task):
+    """Close mechanically without another model call; never assert full recall."""
+    if not getattr(task,'raw_recall',False) or task.bundle.get('plan') is None:
+        return None
+    from ForecastAgent.runtime.search_policy import requirement
+    obligation=requirement(task)
+    if obligation.get('required') and not obligation.get('attempt_requirement_met'):
+        return None
+    budget=task.budget()
+    if primary_rescue(task):
+        return None
+    if task.bundle['control'].get('no_progress_turns',0)>=2:
+        return 'raw_no_progress_limit'
+    if budget['page_fetch_remaining']<=0:
+        return 'raw_source_budget_exhausted'
+    if budget['tavily_basic_remaining']<=0 and budget['exa_search_remaining']<=0 and not discovery_read_action(task):
+        return 'raw_discovery_frontier_exhausted'
+    return None
 
 
 def named_primary(task, url):
@@ -102,6 +126,10 @@ def primary_rescue(task):
 
 def next_action(task):
     if getattr(task,'raw_recall',False):
+        rescue=primary_rescue(task)
+        if rescue:
+            return {'tool':'extract_failed_pages','candidates':rescue,
+                'instruction':'Rescue the failed named source once within the existing Extract budget; preserve vendor provenance and failures.'}
         return discovery_read_action(task)
     passages=pending_passages(task)
     from ForecastAgent.runtime.needs import active_needs

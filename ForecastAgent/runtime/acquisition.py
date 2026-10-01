@@ -12,6 +12,20 @@ def reading_targets(bundle):
 
 def checkpoint(task):
     b = task.bundle
+    if getattr(task,'raw_recall',False):
+        from ForecastAgent.evidence.raw_capture import capture_report
+        from ForecastAgent.runtime.search_policy import requirement
+        from ForecastAgent.runtime.collection_actions import raw_stop_reason, discovery_read_action
+        report=capture_report(b)
+        action=discovery_read_action(task)
+        return {'schema':'raw_acquisition_checkpoint_v1','budget_remaining':task.budget(),
+            'exa_requirement':requirement(task),'program_stop_reason':raw_stop_reason(task),
+            'saved_body_count':report['capture_count'],'usable_saved_body_count':report['readable_body_count'],
+            'possible_index_shell_count':report['possible_index_shell_count'],
+            'parse_gap_urls':report['parse_gap_urls'],'unmatched_candidate_urls':report['unmatched_candidate_urls'],
+            'sources':[{k:r[k] for k in ('url','page_form','identity','observed_start','observed_end','source_row_count')} for r in report['sources']],
+            'suggested_next_steps':[action] if action else [],
+            'limits':'Raw acquisition only. No missing excerpts or interpretation obligations. Match and form diagnostics do not verify truth or full recall.'}
     from ForecastAgent.runtime.needs import inventory
     from ForecastAgent.runtime.collection_v2 import eligible
     from ForecastAgent.readers.quality import body_diagnostics

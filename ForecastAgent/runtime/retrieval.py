@@ -1195,6 +1195,16 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
             turn_failed = False
+            if collection and task.raw_recall:
+                from ForecastAgent.runtime.collection_actions import raw_stop_reason
+                reason=raw_stop_reason(task)
+                if reason:
+                    termination_reason=reason
+                    control['raw_stop_decision']={'reason':reason,'budget_remaining':task.budget(),
+                        'at_utc':utc_now(),'full_recall_verified':False}
+                    control['forced_close']=True
+                    task.save()
+                    break
             if collection and (len(task.bundle.get('model_attempts', [])) >= 72 or
                     len(task.bundle.get('model_attempts', []))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
@@ -1206,6 +1216,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
                                       'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
+            if collection and task.raw_recall and control['forced_close']:
+                # Program finalization below exports saved evidence without asking
+                # a model to repeat a closing summary or spend an exhausted tool.
+                break
             forced = None
             if task.bundle["plan"] is None:
                 forced = "plan_evidence"

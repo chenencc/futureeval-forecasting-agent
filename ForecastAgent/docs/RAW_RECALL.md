@@ -18,6 +18,21 @@ backlog. Extract vendor text is distinguished from original HTML/PDF/API bytes.
 Failed parsing preserves available original responses for later processing;
 blank or blocked text is not counted as a readable body.
 
+Acquisition identity diagnostics extract explicit bill numbers, case numbers,
+series symbols and quoted entities. Discovery ranking prefers observed anchors
+over a host-only match. Missing anchors label an unmatched candidate, not a false
+source: originals remain saved. A short index with no dated entries or tables is
+flagged as a possible index shell and a parsing gap; short announcements remain
+permitted. These heuristics do not establish semantic completeness or authority.
+
+Raw checkpoints expose capture forms, literal identities and dataset ranges,
+without requiring excerpts or interpretation. After the required Exa obligation
+and eligible primary rescue, the program stops on exhausted acquisition budgets
+or two consecutive turns without acquisition progress. Dispatch-limit closure
+also exports directly rather than spending a model call on a closing summary.
+Stop reasons and remaining quotas are saved, with full recall explicitly
+unverified. Failed-capture raw hashes are checked as well as successful captures.
+
 Raw acceptance does not establish source relevance, authority, exhaustive recall,
 event truth or forecast correctness. Unfetched discovery hits remain a backlog.
 Agent comments and interpretation diagnostics stay separate from mechanical

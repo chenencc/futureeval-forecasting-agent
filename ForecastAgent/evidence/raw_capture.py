@@ -24,6 +24,8 @@ def capture_report(bundle):
         if text_hash and hashlib.sha256(body.encode()).hexdigest()!=text_hash:
             failures.append({'url':url,'issue':'Parsed text hash mismatch'})
         diagnostic=body_diagnostics(body)
+        from ForecastAgent.evidence.acquisition_quality import identity, page_form
+        form=page_form(url,page)
         suggested_needs=set()
         for search in bundle.get('searches',[])+bundle.get('exa_searches',[]):
             if any(canonical_url(hit.get('url',''))==canonical_url(url) for hit in search.get('results',[])):
@@ -38,6 +40,8 @@ def capture_report(bundle):
             'vendor_extracted_text':page.get('capture_method')=='tavily_basic_extract',
             'parsed_chars':len(body),'readable_text':diagnostic['usable_text'],
             'parse_state':diagnostic['state'],
+            'page_form':form,
+            'identity':identity(bundle.get('request',{}),url,body),
             'parse_truncated':bool(page.get('content_truncated') or page.get('documents_truncated')),
             'parsed_document_count':len(page.get('documents',[])),
             **observation_range(page),'candidate_need_ids':sorted(suggested_needs),
@@ -61,14 +65,17 @@ def capture_report(bundle):
         failed_snapshots.append({'url':item['url'],'raw_bytes':len(raw),'raw_sha256':page.get('sha256'),
             'raw_hash_verified':verified,'reason':item.get('reason'),'parse_failure':page.get('parse_failure'),
             'usable_body':False})
+        if not verified: failures.append({'url':item['url'],'issue':'Failed capture raw response missing or hash mismatch'})
     return {'schema':'raw_capture_report_v1','raw_integrity_passed':bool(rows) and not failures,
         'capture_count':len(rows),'original_response_count':sum(not r['vendor_extracted_text'] for r in rows),
         'vendor_text_count':sum(r['vendor_extracted_text'] for r in rows),
         'readable_body_count':sum(r['readable_text'] for r in rows),
+        'possible_index_shell_count':sum(r['page_form']['state']=='possible_index_shell' for r in rows),
+        'unmatched_candidate_urls':[r['url'] for r in rows if r['identity']['state']=='unmatched_candidate'],
         'total_raw_bytes':sum(r['raw_bytes'] for r in rows),
         'total_parsed_chars':sum(r['parsed_chars'] for r in rows),
         'distinct_host_count':len({r['host'] for r in rows}),
-        'parse_gap_urls':[r['url'] for r in rows if not r['readable_text'] or r['parse_truncated']],
+        'parse_gap_urls':[r['url'] for r in rows if not r['readable_text'] or r['parse_truncated'] or r['page_form']['state']=='possible_index_shell'],
         'discovered_url_count':len(discovered),'unfetched_discovery_urls':sorted(discovered-captured),
         'selected_uncaptured_urls':sorted(set(bundle.get('selected_sources',{}))-captured),
         'failed_source_attempts':failed,'integrity_failures':failures,'sources':rows,
