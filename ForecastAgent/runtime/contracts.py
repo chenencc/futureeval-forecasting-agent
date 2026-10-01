@@ -127,6 +127,11 @@ def validate(task, name, args, tools=None):
             page, text, _ = select(task.bundle['pages'], args['url'], args.get('document_index'))
             if name == 'read_document' and args.get('start_char', 0) >= len(text):
                 raise ContractError('empty_read', 'start_char', 'The selected text is empty or its end was reached. Choose another document or finish with gaps.')
+            if tools is not None and name == 'read_document':
+                from ForecastAgent.runtime.collection_actions import duplicate_read
+                if duplicate_read(task,args):
+                    raise ContractError('already_delivered_range','start_char',
+                        'This complete range was already delivered. Review pending passages, locate different material, read an unseen continuation or rescue a failed primary source. Do not repeat this read.')
             if name == 'read_dataset_rows' and args.get('offset', 0) >= len(page.get('rows', [])):
                 raise ContractError('empty_read', 'offset', 'No unread rows at this offset. Choose another dataset or finish with gaps.')
     if tools is not None and name in {'search_tavily', 'search_exa'}:

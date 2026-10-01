@@ -34,10 +34,13 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     skill_text = '\n'.join('Loaded skill '+s['name']+' ('+s['sha256']+'):\n'+s['content'] for s in loaded)
     system = {'role':'system', 'content':instructions+'\n'+skill_text}
     request = b['request']
+    from ForecastAgent.runtime.collection_actions import next_action
     state = {'schema':'collection_context_v2',
              'collection_temporal_policy':b.get('collection_temporal_policy'),
              'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
              'effective_mode':b['mode'],
+             'next_acquisition_action':next_action(task),
+             'delivered_ranges':list(b.get('progress',{}).get('reads',{}).values())[-12:],
              'task':{k:request[k] for k in ('question', 'title', 'resolution_criteria', 'fine_print', 'background', 'as_of_utc', 'mode') if k in request},
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),

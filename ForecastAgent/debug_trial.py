@@ -3,6 +3,8 @@ import argparse
 import hashlib
 import json
 import os
+from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ForecastAgent.runtime.retrieval import run_retrieval
@@ -10,7 +12,7 @@ from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.runtime.temporal_policy import amend_current
 
 
-def run_one(root, question_id, tavily_key, router_key, current_information=False):
+def run_one(root, question_id, tavily_key, router_key, current_information=False, resume_reason=''):
     root=Path(root)
     question_id=str(question_id)
     if not question_id.isdecimal():
@@ -24,7 +26,26 @@ def run_one(root, question_id, tavily_key, router_key, current_information=False
             raise ValueError('Restore all existing campaign ledgers before debugging one case')
         before={qid:hashlib.sha256(p.read_bytes()).hexdigest() for qid,p in paths.items()}
         selected=json.loads(paths[question_id].read_text(encoding='utf-8'))
-        if current_information and amend_current(selected, 'Operator requested current-information acquisition without a historical cutoff'):
+        changed=current_information and amend_current(selected, 'Operator requested current-information acquisition without a historical cutoff')
+        if resume_reason:
+            if not resume_reason.strip():
+                raise ValueError('Use a concrete operator resume reason')
+            key=hashlib.sha256((os.environ.get('GITHUB_SHA','local')+'\n'+resume_reason).encode()).hexdigest()
+            if any(r['operation_key']==key for r in selected.get('debug_resumptions',[])):
+                raise ValueError('This explicit debug resumption already ran; no automatic repeat')
+            result=selected.get('result')
+            if result:
+                selected.setdefault('result_history',[]).append({'at_utc':datetime.now(timezone.utc).isoformat(),
+                    'reason':resume_reason,'collection_temporal_policy':selected.get('collection_temporal_policy'),
+                    'result':deepcopy(result)})
+            selected.setdefault('debug_resumptions',[]).append({'operation_key':key,'reason':resume_reason,
+                'code_commit':os.environ.get('GITHUB_SHA'),'at_utc':datetime.now(timezone.utc).isoformat(),
+                'limits':deepcopy(selected['acquisition_limits']),
+                'model_attempts_before':len(selected.get('model_attempts',[]))})
+            selected['result']=None
+            selected['control'].update(forced_close=False,consecutive_errors=0,no_progress_turns=0)
+            changed=True
+        if changed:
             temporary=paths[question_id].with_suffix('.tmp')
             temporary.write_text(json.dumps(selected,ensure_ascii=False,indent=2),encoding='utf-8')
             temporary.replace(paths[question_id])
@@ -46,6 +67,7 @@ def run_one(root, question_id, tavily_key, router_key, current_information=False
             summary={'question_id':question_id, 'resume_not_fresh':True,
                 'collection_temporal_policy':output.get('collection_temporal_policy'),
                 'temporal_policy_amendments':output.get('temporal_policy_amendments',[]),
+                'debug_resumptions':output.get('debug_resumptions',[]),
                 'model_http_increment':len(output.get('model_attempts',[]))-len(baseline['model_attempts']),
                 'tavily_increment':len(output['searches'])-len(baseline['searches']),
                 'exa_increment':len(output['exa_searches'])-len(baseline['exa_searches']),
@@ -66,10 +88,11 @@ def main():
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--question',required=True)
     parser.add_argument('--current-information',action='store_true',help='Explicitly relax this task cutoff, retain quotas and archive the previous result')
+    parser.add_argument('--resume-reason',default='',help='Explicitly reopen one selected task after a named repair; no new quota, once per code/reason')
     args=parser.parse_args()
     if not os.environ.get('TAVILY_API_KEY') or not os.environ.get('OPENROUTER_API_KEY'):
         raise ValueError('Configure provider credentials before reserving any task work')
-    print(json.dumps(run_one(args.root,args.question,os.environ['TAVILY_API_KEY'],os.environ['OPENROUTER_API_KEY'],args.current_information)))
+    print(json.dumps(run_one(args.root,args.question,os.environ['TAVILY_API_KEY'],os.environ['OPENROUTER_API_KEY'],args.current_information,args.resume_reason)))
 
 
 if __name__=='__main__':

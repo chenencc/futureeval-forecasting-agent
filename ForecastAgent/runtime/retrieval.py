@@ -256,8 +256,9 @@ class RetrievalTask:
         if self.optimized:
             _,blocked=masked(page['content'],self.cutoff)
             view['temporal_isolation']={'blocked_dated_lines':0 if self.verified_only else len(blocked),
+                'cutoff_enforced':bool(self.cutoff),
                 'strict_snapshot':page.get('temporal_status') in {'local_pre_cutoff_capture','archive_pre_cutoff_capture'},
-                'warning':page.get('data_warning','Historical body provenance is required; question text and model knowledge remain unaudited.')}
+                'warning':page.get('data_warning',temporal_policy.WARNING if not self.cutoff else 'Historical body provenance is required; question text and model knowledge remain unaudited.')}
             if len(page['content'])<1200: view['body_warning']='Thin capture; may be a headline or paywall preview.'
         return view
 
@@ -614,6 +615,8 @@ class RetrievalTask:
                     outcomes.append({'url':url,'ok':not view.get('blocked',False),**{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
             result={'reads':outcomes,**locate(self,args)}
+            attempted={canonical_url(u) for u in urls}
+            b['control']['priority_read_urls']=[u for u in b['control'].get('priority_read_urls',[]) if canonical_url(u) not in attempted]
             repaired=set(b['control'].get('repaired_source_urls',[]))
             if any(p['url'] in repaired for row in result['located_material'] for p in row['passages']):
                 b['control']['repair_read_done']=True
@@ -622,6 +625,29 @@ class RetrievalTask:
                               no_progress=True)
             self.save()
             return result
+        if name == 'review_passages':
+            from ForecastAgent.runtime.collection_actions import pending_passages
+            candidates={p['passage_id']:p for p in pending_passages(self)}
+            outcomes=[]
+            for item in args['items']:
+                pid=item['passage_id']
+                candidate=candidates.get(pid)
+                if not candidate or not item['reason'].strip() or not set(item['need_ids'])<=set(candidate['need_ids']):
+                    outcomes.append({'ok':False,'error':'Choose a pending surfaced passage and its proposed need IDs; explain keep/reject.'})
+                    continue
+                if item['action']=='keep':
+                    outcome=self.execute('record_excerpts',{'items':[{'passage_id':pid,'need_ids':item['need_ids']}]},key)['items'][0]
+                    if not outcome['ok']:
+                        outcomes.append(outcome)
+                        continue
+                elif item['action']!='reject':
+                    outcomes.append({'ok':False,'error':'Use keep or reject'})
+                    continue
+                b.setdefault('passage_dispositions',{})[pid]={**item,'at_utc':utc_now(),
+                    'source_version':b['passages'][pid]['source_version'],'truth_verified':False}
+                outcomes.append({'ok':True,'passage_id':pid,'action':item['action']})
+            self.save()
+            return {'items':outcomes,'scope':'Acquisition selection only; no truth verdict.'}
         if name == 'record_excerpts':
             items=args.get('items')
             if not isinstance(items,list) or not 1<=len(items)<=8: raise ValueError('Save one to eight excerpts')
@@ -909,6 +935,7 @@ class RetrievalTask:
                     rescued.append(self.page_view(page))
                 attempt["status"] = "completed"
                 attempt["accepted_urls"] = [p["url"] for p in rescued]
+                b['control']['priority_read_urls']=list(dict.fromkeys(b['control'].get('priority_read_urls',[])+attempt['accepted_urls']))
             except Exception as exc:
                 attempt.update(status="failed", error=type(exc).__name__)
                 raise RuntimeError("Extract rescue failed; batch budget consumed") from exc
@@ -1108,6 +1135,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 forced='read_sources'
             elif collection and control.get('repair_read_done') and not control.get('repair_banked') and task.bundle.get('passages'):
                 forced='record_excerpts'
+            elif collection and task.optimized:
+                from ForecastAgent.runtime.collection_actions import next_action
+                action=next_action(task)
+                if action:
+                    forced=action['tool']
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),

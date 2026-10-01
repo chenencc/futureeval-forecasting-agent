@@ -21,6 +21,7 @@ def snapshot(task):
             'reads': set(b.get('progress', {}).get('reads', {})),
             'markets': set(b.get('market_snapshots', {})),
             'preparation': {fingerprint(v) for v in [b.get('plan'), b.get('channel_plan')] if v}
+                           | {'passage_disposition:'+pid for pid in b.get('passage_dispositions',{})}
                            | {'skill:'+s for s in b.get('loaded_skills', [])}}
 
 

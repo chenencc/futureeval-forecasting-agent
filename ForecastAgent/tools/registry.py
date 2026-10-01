@@ -106,6 +106,10 @@ TOOLS.extend([
 COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
                     {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]
 COLLECTION_TOOLS.extend([
+    tool('review_passages','Dispose of one to eight surfaced lexical candidates. Keep relevant exact material as an excerpt or reject irrelevant/header/duplicate material with a routing reason. This is acquisition selection, not fact checking.',
+         {'items':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{
+             'passage_id':STRING,'action':{'type':'string','enum':['keep','reject']},'reason':STRING,
+             'need_ids':{'type':'array','items':STRING}},'required':['passage_id','action','reason','need_ids'],'additionalProperties':False}}},['items']),
     tool('read_sources','Batch up to four accepted source reads and locate complete paragraphs for up to eight acquisition queries. Free fetch budgets still apply per URL. No semantic verdict.',
          {'urls':{'type':'array','items':STRING,'maxItems':4},'queries':{'type':'array','maxItems':8,'minItems':1,'items':{'type':'object','properties':{'query':STRING,'url':STRING,'need_ids':{'type':'array','items':STRING}},'required':['query','need_ids']}}},['urls','queries']),
     tool('record_excerpts','Bank one to eight passages by exact passage_id from read_sources and need_ids. Do not enter character offsets. IDs are checked against saved source versions.',

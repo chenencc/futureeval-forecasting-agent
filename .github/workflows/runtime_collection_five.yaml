@@ -15,6 +15,10 @@ on:
         description: 'Single debug case: explicitly remove cutoff; retain original dates and consumed quotas'
         type: boolean
         default: true
+      resume_reason:
+        description: 'Explicit reason to reopen the selected closed case after repair; retains all consumed quotas'
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -92,9 +96,9 @@ jobs:
         run: |
           if [ -n "$DEBUG_QUESTION" ]; then
             if [ "$CURRENT_INFORMATION" = "true" ]; then
-              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION" --current-information
+              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION" --current-information --resume-reason "$RESUME_REASON"
             else
-              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION"
+              python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION" --resume-reason "$RESUME_REASON"
             fi
           else
             if [ "$CURRENT_INFORMATION" = "true" ]; then
@@ -107,6 +111,7 @@ jobs:
           BATCH_LIMIT: ${{ inputs.limit }}
           DEBUG_QUESTION: ${{ inputs.question_id }}
           CURRENT_INFORMATION: ${{ inputs.current_information }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}

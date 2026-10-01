@@ -12,6 +12,20 @@ model transport prefix unchanged. `debug_before.json` and
 No additional search allowance is granted. One dispatch still permits at most
 12 physical Ultra HTTP attempts; the task lifetime remains 72.
 
+After a named repair, use the workflow `resume_reason` input (or CLI
+`--resume-reason`) to reopen only the selected closed case. The operator reason,
+commit and original result are retained. A given commit/reason can execute once;
+it does not reset search, Extract, fetch or model allowances.
+
+Located lexical candidates are presented through `review_passages`: Ultra keeps
+relevant exact text or rejects irrelevant/header/duplicate candidates with a
+reason before more reading. Both choices are recorded as acquisition decisions,
+never truth verification. Delivered ranges are excluded from repeated model
+reads, with new source versions and unseen continuations still allowed. Failed
+discovered hosts named in critical source requirements are routed to the single
+remaining basic Extract rescue, then targeted reading and passage selection.
+The routing heuristic does not certify authority or source reliability.
+
 ```powershell
 python -m ForecastAgent.debug_trial --root snapshots/runtime-collection-five-20261001 --question 43525
 ```

@@ -190,14 +190,14 @@ class RuntimeContractsTests(TestCase):
             self.assertEqual(result['result']['termination_reason'], 'stalled')
 
     @patch('ForecastAgent.runtime.retrieval.ask_ultra')
-    def test_duplicate_successful_read_is_replayed_without_claiming_progress(self, model):
+    def test_duplicate_successful_read_is_blocked_without_claiming_progress(self, model):
         model.side_effect = [call('read_document', {'url':URL, 'max_chars':100}, 'one'),
             call('read_document', {'url':URL, 'max_chars':100}, 'two'),
             call('finish_collection', {'gaps':['Missing further source']}, 'end')]
         with TemporaryDirectory() as root:
             task = prepared(root); task.save()
             result = run_retrieval(LIVE, root, '', '')
-            self.assertTrue(result['transcript'][1]['result']['data']['cached_local_reply'])
+            self.assertEqual(result['transcript'][1]['result']['data']['contract_error']['code'],'already_delivered_range')
             self.assertFalse(result['sessions'][-1]['turns'][1]['advanced'])
 
     @patch('ForecastAgent.runtime.retrieval.search_batch')

@@ -46,13 +46,19 @@ def active_tools(task, tools, forced=None):
     if not task.cutoff or budget['page_fetch_remaining']<2:
         excluded.add('collect_archive')
     readable={u:p for u,p in b['pages'].items() if not task.verified_only or eligible(p,task.cutoff)}
+    from ForecastAgent.runtime.collection_actions import duplicate_read
+    unread={u:p for u,p in readable.items() if not duplicate_read(task,{'url':u,'max_chars':len(p['content'])})
+        or any(len(doc['page_content'].strip())>=80 and not duplicate_read(task,{'url':u,'document_index':i,'max_chars':len(doc['page_content'])})
+               for i,doc in enumerate(p.get('documents') or [{'page_content':p['content']}],1))}
+    if not unread:
+        excluded.add('read_document')
     # Saved-document tools cannot select quarantined bodies. Binding only need
     # IDs left every audit-only URL looking selectable to the model.
     for entry in tools:
         if entry['function']['name'] in {'read_document','record_quote','read_dataset_rows','list_documents','search_saved_text','find_passages'}:
             prop=entry['function']['parameters'].get('properties',{}).get('url')
             if prop and readable:
-                entry['function']['parameters']['properties']['url']={**prop,'enum':list(readable),
+                entry['function']['parameters']['properties']['url']={**prop,'enum':list(unread if entry['function']['name']=='read_document' else readable),
                     'description':'Choose a readable saved source key only. Audit-only current bodies and archive replay URLs cannot be read.'}
     if not readable:
         excluded.update({'list_documents','read_document','record_quote','record_excerpts','read_dataset_rows'})
@@ -60,6 +66,9 @@ def active_tools(task, tools, forced=None):
         excluded.add('read_dataset_rows')
     if not b.get('passages'):
         excluded.add('record_excerpts')
+    from ForecastAgent.runtime.collection_actions import pending_passages
+    if not pending_passages(task):
+        excluded.add('review_passages')
     if budget['page_fetch_remaining']<=0:
         excluded.update({'collect_dataset','collect_official','collect_polymarket'})
     return [tool for tool in tools if tool['function']['name'] not in excluded]
