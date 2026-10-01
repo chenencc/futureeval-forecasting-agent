@@ -128,22 +128,26 @@ def next_action(task):
     return discovery_read_action(task)
 
 
-def duplicate_read(task, args):
-    """Detect completely delivered ranges in the same version/coordinate space."""
+def duplicate_read(task, args, projected_only=True):
+    """Reject only a projected slice still visible in current model memory."""
     from ForecastAgent.runtime.progress import fingerprint
     from ForecastAgent.runtime.delivery import ensure_delivery_state
     ensure_delivery_state(task)
     url=canonical_url(args['url'])
     page,text,_=select(task.bundle['pages'],url,args.get('document_index'))
     start=args.get('start_char',0)
-    end=min(len(text),start+args.get('max_chars',6000))
+    count=args.get('max_chars',6000)
+    end=min(len(text),start+(min(count,6000) if projected_only else count))
     indices={args.get('document_index')}
     docs=page.get('documents') or [{'page_content':page['content']}]
     if text==page['content']:
         indices.add(None)
         indices.update(i for i,d in enumerate(docs,1) if d['page_content']==text)
     scopes={fingerprint([url,version_digest(page),'read_document',index]) for index in indices}
-    intervals=sorted((r['start'],r['end']) for r in task.bundle.get('progress',{}).get('reads',{}).values() if r['scope'] in scopes)
+    visible=getattr(task,'_projected_visible_reads',None)
+    if visible is None:
+        visible=task.bundle.get('progress',{}).get('visible_reads',{})
+    intervals=sorted((r['start'],r['end']) for r in visible.values() if r['scope'] in scopes)
     cursor=start
     for left,right in intervals:
         if left>cursor:

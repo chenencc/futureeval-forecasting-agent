@@ -24,6 +24,23 @@ def reply(messages):
 
 
 class DeliveryTests(TestCase):
+    def test_evicted_source_can_refresh_without_claiming_new_progress(self):
+        from ForecastAgent.runtime.progress import snapshot, delta
+        with TemporaryDirectory() as root:
+            task = prepared(root)
+            args = {'url':URL, 'max_chars':100}
+            group(task, args, task.execute('read_document', args, ''))
+            view = collection_context(task); acknowledge(task, view)
+            self.assertTrue(duplicate_read(task, args))
+            before = snapshot(task)
+            acknowledge(task, [{'role':'system','content':'A later request with no source slices'}])
+            self.assertFalse(duplicate_read(task, args))
+            self.assertFalse(delta(before, snapshot(task))['advanced'])
+            group(task, args, task.execute('read_document', args, ''))
+            acknowledge(task, collection_context(task))
+            self.assertFalse(delta(before, snapshot(task))['advanced'])
+            self.assertTrue(duplicate_read(task, args))
+
     def test_visible_spans_can_be_saved_without_model_rewriting(self):
         from ForecastAgent.runtime.collection_actions import pending_passages
         with TemporaryDirectory() as root:
@@ -116,9 +133,9 @@ class DeliveryTests(TestCase):
             args = {'url':URL, 'max_chars':100}
             group(task, args, task.execute('read_document', args, ''))
             view = collection_context(task)
-            self.assertFalse(duplicate_read(task, args))
             # A provider exception never calls acknowledge.
             self.assertFalse(task.bundle['progress']['reads'])
+            self.assertFalse(task.bundle['progress']['visible_reads'])
             acknowledge(task, view)
             self.assertTrue(duplicate_read(task, args))
             self.assertFalse(next(iter(task.bundle['progress']['delivery_receipts'].values()))['comprehension_verified'])

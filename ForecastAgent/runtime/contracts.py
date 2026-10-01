@@ -133,7 +133,7 @@ def validate(task, name, args, tools=None):
                 from ForecastAgent.runtime.collection_actions import duplicate_read
                 if duplicate_read(task,args):
                     raise ContractError('already_delivered_range','start_char',
-                        'This complete range was already delivered. Review pending passages, locate different material, read an unseen continuation or rescue a failed primary source. Do not repeat this read.')
+                        'This projected slice is still visible in current model memory. Review its passage IDs or use the returned continuation. Previously evicted material can be refreshed from cache; repeated visible reads do not add progress.')
             if name == 'read_dataset_rows' and args.get('offset', 0) >= len(page.get('rows', [])):
                 raise ContractError('empty_read', 'offset', 'No unread rows at this offset. Choose another dataset or finish with gaps.')
     if tools is not None and name in {'search_tavily', 'search_exa'}:

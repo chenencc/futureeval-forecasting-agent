@@ -25,7 +25,7 @@ def bounded(value, text_limit=700, item_limit=12):
 
 
 def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
-    from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply, stage_read_passages, recover_read_passages
+    from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply, stage_read_passages, recover_read_passages, projected_visibility
     ensure_delivery_state(task)
     recover_read_passages(task)
     b = task.bundle
@@ -47,6 +47,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'effective_mode':b['mode'],
              'next_acquisition_action':next_action(task),
              'delivered_ranges':list(b.get('progress',{}).get('reads',{}).values())[-12:],
+             'working_memory_ranges':list(b.get('progress',{}).get('visible_reads',{}).values())[-12:],
              'task_protocol':task_view(task),
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'need_status':{ident:{k:row[k] for k in ('status','reason') if k in row} for ident,row in b.get('need_status', {}).items()},
@@ -117,16 +118,29 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     # Reserve the newest complete tool group before compressing task summaries.
     # Execution is not delivery: dropping this group would strand its source.
     newest = pinned
+    state['working_memory_ranges'] = list(projected_visibility(task, recent).values())
+    projected[1]['content'] = encode(state)
     if len(encode(projected+recent)) > max_chars:
         recent = newest
+        state['working_memory_ranges'] = list(projected_visibility(task, recent).values())
+        projected[1]['content'] = encode(state)
     if len(encode(projected+recent)) > max_chars:
         for text_limit, items in ((1200, 16), (600, 10), (250, 5)):
             projected[1]['content'] = encode(bounded(state, text_limit, items))
             if len(encode(projected+recent)) <= max_chars: break
+    if len(encode(projected+recent)) > max_chars:
+        # Durable catalogs and evidence inventories are navigable tool data.
+        # Evict their summaries before evicting the just-requested source text.
+        optional = {'sources','documents','excerpts','passage_dispositions','entity_card','progress'}
+        lean = {k:v for k,v in state.items() if k not in optional}
+        lean['omitted_sections'] = sorted(optional)
+        lean['omission_instruction'] = 'These inventories remain on disk. Use list_sources/list_documents and saved-source tools; absence from this context is not absence from the ledger.'
+        projected[1]['content'] = encode(bounded(lean,250,5))
     projected.extend(recent)
     # If immutable instructions alone exceed the ceiling, fail without a model HTTP call.
     if len(encode(projected)) > max_chars:
         raise ValueError('Context ceiling cannot fit loaded instructions; preserve ledger and reduce skill scope.')
+    task._projected_visible_reads = projected_visibility(task, projected)
     b.setdefault('context_projections', []).append({'original_chars':len(encode(messages)),
         'projected_chars':len(encode(projected)), 'max_chars':max_chars,
         'retained_recent_messages':max(0, len(projected)-2), 'loaded_skills':[s['name'] for s in loaded],

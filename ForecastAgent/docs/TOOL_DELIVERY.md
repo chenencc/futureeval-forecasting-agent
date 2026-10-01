@@ -17,6 +17,10 @@ None establishes comprehension, factual correctness, or forecast quality.
 - Only after a successful model response are the exact projected slices recorded
   as delivered. Failed provider requests leave reads unconfirmed and available.
   Receipt hashes and model attempt indices support inspection of actual inputs.
+- Cumulative delivery coverage and current working-memory visibility are separate
+  ledgers. Only a slice still visible in the current request is blocked as a
+  duplicate read. Evicted material can be refreshed from its local source cache,
+  but does not create new acquisition progress or extend a provider budget.
 - Generic bounded catalog replies explicitly disclose truncation. They do not
   create source-reading coverage. Useful material should be saved as exact quotes
   or excerpts before moving to another source.

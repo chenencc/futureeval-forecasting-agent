@@ -58,8 +58,8 @@ def active_tools(task, tools, forced=None):
     from ForecastAgent.readers.quality import body_diagnostics
     readable={u:p for u,p in b['pages'].items() if body_diagnostics(p.get('content',''))['usable_text'] and (not task.verified_only or eligible(p,task.cutoff))}
     from ForecastAgent.runtime.collection_actions import duplicate_read
-    unread={u:p for u,p in readable.items() if not duplicate_read(task,{'url':u,'max_chars':len(p['content'])})
-        or any(len(doc['page_content'].strip())>=80 and not duplicate_read(task,{'url':u,'document_index':i,'max_chars':len(doc['page_content'])})
+    unread={u:p for u,p in readable.items() if not duplicate_read(task,{'url':u,'max_chars':len(p['content'])},projected_only=False)
+        or any(len(doc['page_content'].strip())>=80 and not duplicate_read(task,{'url':u,'document_index':i,'max_chars':len(doc['page_content'])},projected_only=False)
                for i,doc in enumerate(p.get('documents') or [{'page_content':p['content']}],1))}
     if not unread:
         excluded.add('read_document')
@@ -70,7 +70,12 @@ def active_tools(task, tools, forced=None):
             prop=entry['function']['parameters'].get('properties',{}).get('url')
             if prop and readable:
                 entry['function']['parameters']['properties']['url']={**prop,'enum':list(unread if entry['function']['name']=='read_document' else readable),
-                    'description':'Choose a readable saved source key only. Audit-only current bodies and archive replay URLs cannot be read.'}
+                    'description':'Choose a readable saved source key only. Previously read but evicted material may be refreshed from cache; ranges still visible cannot be repeated. Audit-only bodies and archive replay URLs cannot be read.'}
+            if entry['function']['name']=='read_document' and readable:
+                prop=entry['function']['parameters']['properties'].get('document_index')
+                if prop:
+                    count=max(len(p.get('documents') or [None]) for p in readable.values())
+                    entry['function']['parameters']['properties']['document_index']={**prop,'enum':list(range(1,count+1))}
     if not readable:
         excluded.update({'list_documents','read_document','record_quote','record_excerpts','read_dataset_rows'})
     elif not any(p.get('rows') for p in readable.values()):

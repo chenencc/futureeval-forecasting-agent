@@ -48,6 +48,8 @@ def delivered(task, name, args, result):
     if end <= start:
         return
     scope = fingerprint([url, version_digest(page), name, args.get('document_index')])
+    visible = task.bundle['progress'].setdefault('visible_reads', {})
+    visible[fingerprint([scope, start, end])] = {'scope':scope, 'start':start, 'end':end, 'url':url}
     reads = task.bundle.setdefault('progress', {}).setdefault('reads', {})
     old = [v for v in reads.values() if v['scope'] == scope]
     # Merge intervals so shifted requests wholly inside delivered text are neutral.

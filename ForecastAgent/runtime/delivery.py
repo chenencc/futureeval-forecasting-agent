@@ -11,6 +11,7 @@ from ForecastAgent.readers.saved import select
 
 def ensure_delivery_state(task):
     progress = task.bundle.setdefault('progress', {})
+    progress.setdefault('visible_reads', {})
     if progress.get('delivery_schema') == 2:
         return
     # Earlier engines marked execution as delivery. Keep those claims for audit,
@@ -117,6 +118,33 @@ def recover_read_passages(task):
             continue
 
 
+def projected_visibility(task, messages):
+    """Derive ephemeral tool availability from the exact proposed request."""
+    from ForecastAgent.runtime.progress import fingerprint
+    from ForecastAgent.readers.saved import version_digest
+    from ForecastAgent.tavily_research import canonical_url
+    calls = {c['id']: c.get('function', {}) for m in messages
+             if m.get('role') == 'assistant' for c in m.get('tool_calls', [])}
+    ranges = {}
+    for message in messages:
+        call = calls.get(message.get('tool_call_id'))
+        if message.get('role') != 'tool' or not call or call.get('name') != 'read_document':
+            continue
+        try:
+            args = json.loads(call['arguments']); payload = json.loads(message['content'])
+            data = payload.get('data', payload)
+            url = canonical_url(args['url'])
+            page, text, _ = select(task.bundle['pages'], url, args.get('document_index'))
+            start, end = data['start_char'], data['end_char']
+            if text[start:end] != data.get('content') or end <= start:
+                continue
+            scope = fingerprint([url, version_digest(page), 'read_document', args.get('document_index')])
+            ranges[fingerprint([scope, start, end])] = {'scope':scope, 'url':url, 'start':start, 'end':end}
+        except (KeyError, ValueError, TypeError, AttributeError):
+            continue
+    return ranges
+
+
 def acknowledge(task, messages):
     """Commit receipts only after a model response to these exact messages."""
     from ForecastAgent.runtime.progress import delivered, fingerprint
@@ -125,6 +153,10 @@ def acknowledge(task, messages):
              if message.get('role') == 'assistant' for call in message.get('tool_calls', [])}
     attempt = len(task.bundle.get('model_attempts', []))
     receipts = task.bundle['progress'].setdefault('delivery_receipts', {})
+    # Working memory is request-local; durable reading coverage is cumulative.
+    # An evicted source remains accessible from cache without buying progress.
+    task.bundle['progress']['visible_reads'] = {}
+    task._projected_visible_reads = None
     for message in messages:
         call = calls.get(message.get('tool_call_id'))
         if message.get('role') != 'tool' or not call:
