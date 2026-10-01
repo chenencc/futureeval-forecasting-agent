@@ -15,6 +15,9 @@ from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.runtime.retrieval import RetrievalTask
 from ForecastAgent.runtime.parser_repair import repair_compressed_pages
 from ForecastAgent.runtime.contracts import ContractError
+from ForecastAgent.runtime.contracts import validate
+from ForecastAgent.runtime.tool_selection import active_tools
+from ForecastAgent.tools.registry import COLLECTION_TOOLS
 from ForecastAgent.runtime.context import collection_context
 from ForecastAgent.runtime import progress
 from ForecastAgent.providers.archive import archive_lookup
@@ -35,6 +38,23 @@ def compressed_page():
 
 
 class SevereCollectionRepairs(TestCase):
+    def test_audit_only_document_urls_are_not_selectable_or_readable(self):
+        with TemporaryDirectory() as temp:
+            task=RetrievalTask(Path(temp),REQUEST)
+            saved=compressed_page();task.bundle['pages'][URL]=saved;repair_compressed_pages(task)
+            blocked=URL+'/current'
+            task.bundle['pages'][blocked]={**task.bundle['pages'][URL], 'url':blocked,'temporal_status':'current_capture_possible_later_edits'}
+            task.bundle['plan']=[{'id':'n','priority':'critical'}]
+            tools=active_tools(task,COLLECTION_TOOLS)
+            reader=next(t for t in tools if t['function']['name']=='read_document')
+            self.assertEqual(reader['function']['parameters']['properties']['url']['enum'],[URL])
+            before=task.budget()
+            with self.assertRaises(ContractError) as error:
+                validate(task,'read_document',{'url':blocked},tools)
+            self.assertEqual(error.exception.details['code'],'invalid_choice')
+            self.assertTrue(task.execute('read_document',{'url':blocked},'')['blocked'])
+            self.assertEqual(before,task.budget())
+            self.assertIn('coming soon',task.execute('read_document',{'url':URL},'')['content'])
     def test_single_case_resume_protects_other_tasks_and_consumed_prefix(self):
         import json
         with TemporaryDirectory() as temp:

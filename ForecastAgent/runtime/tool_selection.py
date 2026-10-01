@@ -46,6 +46,14 @@ def active_tools(task, tools, forced=None):
     if not task.cutoff or budget['page_fetch_remaining']<2:
         excluded.add('collect_archive')
     readable={u:p for u,p in b['pages'].items() if not task.verified_only or eligible(p,task.cutoff)}
+    # Saved-document tools cannot select quarantined bodies. Binding only need
+    # IDs left every audit-only URL looking selectable to the model.
+    for entry in tools:
+        if entry['function']['name'] in {'read_document','record_quote','read_dataset_rows','list_documents','search_saved_text','find_passages'}:
+            prop=entry['function']['parameters'].get('properties',{}).get('url')
+            if prop and readable:
+                entry['function']['parameters']['properties']['url']={**prop,'enum':list(readable),
+                    'description':'Choose a readable saved source key only. Audit-only current bodies and archive replay URLs cannot be read.'}
     if not readable:
         excluded.update({'list_documents','read_document','record_quote','record_excerpts','read_dataset_rows'})
     elif not any(p.get('rows') for p in readable.values()):

@@ -115,6 +115,11 @@ def validate(task, name, args, tools=None):
                 raise ContractError('unknown_source', 'url', 'Copy an exact saved/discovered URL; archive replay URLs are not source keys.', list(available))
         if args.get('url') and name in SAVED and name != 'list_documents':
             target = task.bundle['pages'][canonical_url(args['url'])]
+            from ForecastAgent.runtime.collection_v2 import eligible
+            if tools is not None and task.verified_only and not eligible(target,task.cutoff):
+                raise ContractError('unreadable_historical_source', 'url',
+                    'This saved body is audit-only or corrupt. Read an eligible original source key; obtain a pre-cutoff archive only when two HTTP attempts remain, otherwise finish with the missing snapshot gap.',
+                    [u for u,p in task.bundle['pages'].items() if eligible(p,task.cutoff)])
             count = len(target.get('documents') or [None])
             index = args.get('document_index')
             if index is not None and (type(index) is not int or not 1 <= index <= count):
