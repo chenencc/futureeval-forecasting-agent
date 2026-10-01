@@ -7,6 +7,10 @@ on:
         description: 'Questions this dispatch (1-5); restore this experiment on retries'
         default: '5'
         required: true
+      question_id:
+        description: 'Optional existing question ID: resume ONLY this debug case, preserve all five ledgers'
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -81,9 +85,15 @@ jobs:
             path.write_text(json.dumps(experiment,indent=2),encoding='utf-8')
           PY
       - name: Collect bounded historical batch
-        run: python -u -m ForecastAgent.historical_batch run --root "$CAMPAIGN_ROOT" --limit "$BATCH_LIMIT"
+        run: |
+          if [ -n "$DEBUG_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question "$DEBUG_QUESTION"
+          else
+            python -u -m ForecastAgent.historical_batch run --root "$CAMPAIGN_ROOT" --limit "$BATCH_LIMIT"
+          fi
         env:
           BATCH_LIMIT: ${{ inputs.limit }}
+          DEBUG_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}

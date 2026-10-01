@@ -2,7 +2,13 @@
 import base64
 import json
 from datetime import datetime,timezone,timedelta
-from urllib.parse import urlencode
+from urllib.parse import urlencode,urlsplit
+
+
+def same_source(requested, original):
+ """CDX may preserve a single directory slash; host/query identity stays exact."""
+ a,b=urlsplit(requested),urlsplit(original)
+ return (a.scheme,a.netloc,a.query,a.fragment)==(b.scheme,b.netloc,b.query,b.fragment) and (a.path==b.path or a.path+'/'==b.path or b.path+'/'==a.path)
 
 
 def archive_lookup(url,cutoff,fetch):
@@ -14,14 +20,14 @@ def archive_lookup(url,cutoff,fetch):
  if not isinstance(rows,list) or len(rows)!=2 or rows[0]!=['timestamp','original'] or len(rows[1])!=2:
   raise ValueError('No unambiguous pre-cutoff archive capture found')
  stamp,original=rows[1]
- if original!=url: raise ValueError('Archive URL differs from requested exact URL')
+ if not same_source(url,original): raise ValueError('Archive URL differs from requested exact URL')
  captured=datetime.strptime(stamp,'%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
  if captured>=cutoff: raise ValueError('Archive index returned a later capture')
  replay='https://web.archive.org/web/'+stamp+'id_/'+original
  page=fetch(replay)
  if page.get('final_url')!=replay: raise ValueError('Archive replay redirected; timestamp provenance cannot be established')
  page.update(url=url,temporal_status='archive_pre_cutoff_capture',archive_timestamp=captured.isoformat(),
-   archive_provenance={'index_url':endpoint,'index_sha256':index['sha256'],'replay_url':replay,
+   archive_provenance={'index_url':endpoint,'index_sha256':index['sha256'],'replay_url':replay,'original_url':original,
       'limitation':'Archive operator timestamp; not independently notarized. Historical question and model knowledge remain unaudited.'},
    capture_method='wayback_replay',links=[])
  return page

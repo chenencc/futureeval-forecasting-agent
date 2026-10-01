@@ -96,6 +96,9 @@ See [adapter and incremental collection details](docs/ACQUISITION_CHANNELS.md). 
 These are design references, not copied modules or a claim of tournament performance. Browser rendering, OCR, SEC/BEA-specific adapters and automatic update scheduling remain future work. The acquisition checkpoint guides tool selection without forcing unnecessary paid calls. Autonomous use of the new guidance still requires a fresh-question Ultra trial; cached completed tasks are never reopened to renew budgets.
 # Latest collection runtime
 
+See [single-case debugging](docs/DEBUGGING.md) for resuming one existing task,
+offline compressed-body repair and immutable provider-budget checks.
+
 See [Collection v3](docs/COLLECTION_V3.md) for free main-text/table extraction,
 bounded local OCR, exact passage navigation, shared live caching, context
 projection, date-bounded official data and acquisition metrics. New monitored

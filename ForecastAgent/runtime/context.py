@@ -2,6 +2,7 @@
 import copy
 import json
 from ForecastAgent.runtime.collection_v2 import eligible, model_view
+from ForecastAgent.runtime.search_policy import requirement
 
 MAX_CONTEXT_CHARS = 28000
 
@@ -38,6 +39,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
              'search_policy':b.get('search_policy', {}),
+             'exa_requirement':requirement(task),
+             'repaired_source_urls':b.get('control',{}).get('repaired_source_urls', []),
              'progress':b.get('sessions', [{}])[-1].get('turns', [])[-2:] if b.get('sessions') else [],
              'sources':[{'url':u, 'saved':u in b['pages'], 'readable':u in b['pages'] and u not in blocked,
                          'audit_only':u in blocked} for u in task.catalog()][:20],

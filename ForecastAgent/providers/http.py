@@ -36,7 +36,7 @@ def download(url, *, public_check, opener_factory, max_page_bytes=1_500_000, use
         if content_type == 'application/octet-stream' and not raw.lstrip().startswith(b'%PDF-'):
             raise ValueError('Unsupported binary body; only PDF magic is recognized')
         charset = response.headers.get_content_charset() or "utf-8"
-        retained_headers={key:value for key in ('ETag','Last-Modified','Date','Cache-Control')
+        retained_headers={key:value for key in ('ETag','Last-Modified','Date','Cache-Control','Content-Encoding')
                           if isinstance(value:=response.headers.get(key),str)}
     return {"url": url, "final_url": final_url, "content_type": content_type, "charset": charset, "raw": raw,
             'response_headers':retained_headers}

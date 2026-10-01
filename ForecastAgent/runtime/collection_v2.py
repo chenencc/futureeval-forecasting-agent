@@ -10,6 +10,9 @@ DATE = re.compile(r'\b(?:\d{4}-\d{2}-\d{2}|(?:'+'|'.join(MONTHS)+r')\s+\d{1,2},?
 
 def eligible(page, cutoff):
     """Current HTML dates never establish the historical body version."""
+    from ForecastAgent.readers.quality import body_diagnostics
+    if page.get('content') and not body_diagnostics(page['content'])['usable_text']:
+        return False
     if not cutoff:
         return True
     if page.get('temporal_status') == 'date_bounded_current_data':

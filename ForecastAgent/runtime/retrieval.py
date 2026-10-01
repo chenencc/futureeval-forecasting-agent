@@ -222,6 +222,11 @@ class RetrievalTask:
                     and canonical_url(a["url"]) not in quarantined))
 
     def page_view(self, page, start=0):
+        from ForecastAgent.readers.quality import body_diagnostics
+        diagnostic = body_diagnostics(page['content'])
+        if not diagnostic['usable_text']:
+            return {'url':page.get('url',''), 'content':'', 'blocked':True,
+                    'body_diagnostics':diagnostic, 'warning':'Unreadable body; do not count this capture as readable material.'}
         text = masked(page['content'],self.cutoff)[0] if self.optimized else page["content"]
         if self.verified_only and eligible(page,self.cutoff): text=page['content']
         if self.verified_only and not eligible(page,self.cutoff):
@@ -235,6 +240,9 @@ class RetrievalTask:
         if 'page_date_metadata' in view:
             view['page_date_metadata']={k:v for k,v in view['page_date_metadata'].items() if k!='tables'}
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
+        view['read_url'] = page.get('url', '')
+        if page.get('capture_method') == 'wayback_replay':
+            view['reading_instruction'] = 'Use read_url for read_sources/read_document; final_url is capture provenance only.'
         if self.optimized:
             _,blocked=masked(page['content'],self.cutoff)
             view['temporal_isolation']={'blocked_dated_lines':0 if self.verified_only else len(blocked),
@@ -515,6 +523,8 @@ class RetrievalTask:
             card = args.get("entity_card")
             if card is not None and (not isinstance(card, dict) or not all(isinstance(card.get(k), str) and card[k].strip() for k in ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"])):
                 raise ValueError("Complete the subject, identity, form and timing card")
+            from ForecastAgent.runtime.contracts import validate_plan_cutoff
+            validate_plan_cutoff(self, needs)
             b["plan"] = needs
             b["entity_card"] = args.get("entity_card", {"status": "Legacy input: identity and timing card absent"})
             return {"plan": needs}
@@ -594,6 +604,9 @@ class RetrievalTask:
                     outcomes.append({'url':url,'ok':not view.get('blocked',False),**{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
             result={'reads':outcomes,**locate(self,args)}
+            repaired=set(b['control'].get('repaired_source_urls',[]))
+            if any(p['url'] in repaired for row in result['located_material'] for p in row['passages']):
+                b['control']['repair_read_done']=True
             if not any(row.get('ok') for row in outcomes) and not any(row['passages'] for row in result['located_material']):
                 result.update(error='No eligible readable material located. Do not repeat this read; obtain a pre-cutoff archive, collect a supported dataset, discover another source, or finish with gaps.',
                               no_progress=True)
@@ -614,6 +627,8 @@ class RetrievalTask:
                         item={k:passage[k] for k in ('url','document_index','start_char','end_char')} | {'need_ids':item['need_ids']}
                     outcomes.append({'ok':True,**self.execute('record_excerpt',item,key)})
                 except Exception as exc: outcomes.append({'ok':False,'error':str(exc)[:180]})
+            if any(row.get('ok') for row in outcomes) and b['control'].get('repair_read_done'):
+                b['control']['repair_banked']=True
             return {'items':outcomes}
         if name in {"list_documents", "read_document", "search_saved_text", "find_passages"}:
             target = canonical_url(args.get('url',''))
@@ -981,6 +996,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
     directory.mkdir(parents=True, exist_ok=True)
     with task_lock(directory):
         task = RetrievalTask(directory, request)
+        from ForecastAgent.runtime.parser_repair import repair_compressed_pages
+        repair_compressed_pages(task)
         if task.bundle["result"] and not task.bundle["result"].get("incomplete"):
             # Re-audit restored results produced before the historical quality gate.
             result = task.bundle["result"]
@@ -1077,6 +1094,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             elif collection and search_policy.ready(task) and (task.bundle['searches'] or turn >= 3):
                 # Prefer a primary Tavily attempt first; never leave the obligation to closure.
                 forced='search_exa'
+            elif collection and control.get('repaired_source_urls') and not control.get('repair_read_done'):
+                forced='read_sources'
+            elif collection and control.get('repair_read_done') and not control.get('repair_banked') and task.bundle.get('passages'):
+                forced='record_excerpts'
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),

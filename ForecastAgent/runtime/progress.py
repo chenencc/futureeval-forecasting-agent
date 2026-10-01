@@ -3,6 +3,7 @@ import hashlib
 import json
 from ForecastAgent.runtime.collection_v2 import eligible
 from ForecastAgent.readers.saved import version_digest
+from ForecastAgent.readers.quality import body_diagnostics
 
 
 def fingerprint(value):
@@ -11,7 +12,7 @@ def fingerprint(value):
 
 def snapshot(task):
     b = task.bundle
-    usable = {u:p for u,p in b['pages'].items() if p.get('content') and
+    usable = {u:p for u,p in b['pages'].items() if p.get('content') and body_diagnostics(p['content'])['usable_text'] and
               (not task.verified_only or eligible(p, task.cutoff))}
     return {'leads': set(task.catalog()),
             'bodies': {(u, version_digest(p)) for u,p in usable.items()},

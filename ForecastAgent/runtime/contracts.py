@@ -1,5 +1,6 @@
 """Validate model tool calls before any resource reservation or network request."""
 import re
+from datetime import datetime
 from urllib.parse import urlsplit
 
 from ForecastAgent.tavily_research import canonical_url
@@ -12,6 +13,29 @@ class ContractError(ValueError):
         self.details = {'code': code, 'field': field, 'instruction': instruction}
         if allowed is not None:
             self.details['allowed_values'] = allowed[:20]
+
+
+def validate_plan_cutoff(task, needs):
+    """Reject explicit post-cutoff observed-data demands before a plan is frozen."""
+    if not task.cutoff or not task.optimized:
+        return
+    from ForecastAgent.runtime.collection_v2 import late_dates
+    for need in needs:
+        text = need.get('condition', '')
+        if not re.search(r'price data|price reached|daily .*values|measured values|observed (?:prices|results)', text, re.I):
+            continue
+        if re.search(r'forecast|projected|expected|scenario|prediction', text, re.I):
+            continue
+        for stamp in late_dates(text, task.cutoff):
+            for pattern in ('%Y-%m-%d','%B %d, %Y','%B %d %Y','%d %B %Y'):
+                try:
+                    day = datetime.strptime(stamp, pattern).date()
+                except ValueError:
+                    continue
+                if day > task.cutoff.date():
+                    raise ContractError('future_observation_need', 'needs',
+                        'As-of '+task.cutoff.isoformat()+' is the simulated present. Plan pre-cutoff observations/history and available forward-looking drivers, not realized future prices/results: '+need.get('id',''))
+                break
 
 
 def check_schema(value, schema, path='arguments', required=True):

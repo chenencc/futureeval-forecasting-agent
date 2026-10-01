@@ -8,10 +8,13 @@ from ForecastAgent.readers.pdf import parse_pdf
 from ForecastAgent.readers.structured import parse_csv, parse_json
 from ForecastAgent.readers.feed import parse_feed
 from ForecastAgent.readers.quality import body_diagnostics
+from ForecastAgent.readers.encoding import decode_response
 
 
 def load_response(response, *, retrieved_at, max_chars=150_000):
-    raw = response["raw"]; source = response["final_url"]; kind = response["content_type"]
+    original = response['raw']
+    raw, encoding = decode_response(original, response.get('response_headers'))
+    source = response["final_url"]; kind = response["content_type"]
     metadata = {}; links = []; feed_truncated = False
     if raw.lstrip().startswith(b'%PDF-'):
         kind = 'application/pdf'
@@ -48,14 +51,16 @@ def load_response(response, *, retrieved_at, max_chars=150_000):
         text_part = normalized[:remaining]; remaining -= len(text_part)
         saved.append(Document(text_part, {**document.metadata, "truncated": len(text_part) < len(normalized)}).as_dict())
     return {"url": response["url"], "final_url": source, "retrieved_at_utc": retrieved_at,
-            "content_type": kind, "sha256": hashlib.sha256(raw).hexdigest(),
+            "content_type": kind, "sha256": hashlib.sha256(original).hexdigest(),
             'declared_content_type': response['content_type'],
-            "raw_response_base64": base64.b64encode(raw).decode("ascii"),
+            "raw_response_base64": base64.b64encode(original).decode("ascii"),
+            'decoded_sha256':hashlib.sha256(raw).hexdigest(), 'decoded_bytes':len(raw),
+            'content_encoding':encoding, 'charset':response.get('charset', 'utf-8'),
             "page_date_metadata": metadata, "content": content,
             "content_truncated": len(text) > max_chars, "links": links,
             "capture_method": "pdf_text" if kind == "application/pdf" else "direct_http",
             "documents": saved, "document_count": len(documents),
-            "parser_version": 'document_reader_v3',
+            "parser_version": 'document_reader_v4',
             'body_diagnostics': body_diagnostics(content, kind=kind, metadata=metadata, documents=saved),
             'response_headers': response.get('response_headers', {}),
             "documents_truncated": feed_truncated or metadata.get('tables_truncated',False) or len(saved) < len(documents) or any(d["metadata"]["truncated"] for d in saved)}
