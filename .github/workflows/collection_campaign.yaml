@@ -7,6 +7,14 @@ on:
         required: true
         default: '1'
         type: string
+      question:
+        description: 'Optional existing task ID for a focused repair'
+        default: ''
+        type: string
+      resume_reason:
+        description: 'Concrete repair reason; preserves all consumed budgets'
+        default: ''
+        type: string
 permissions:
   contents: read
   actions: read
@@ -56,9 +64,16 @@ jobs:
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-collection-100-v1
       - name: Run a bounded acquisition dispatch
-        run: python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit 1 --question "$SELECTED_QUESTION" --resume-reason "$RESUME_REASON"
+          else
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
+          fi
         env:
           DISPATCH_LIMIT: ${{ inputs.limit }}
+          SELECTED_QUESTION: ${{ inputs.question }}
+          RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}

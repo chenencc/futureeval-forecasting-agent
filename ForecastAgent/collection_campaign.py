@@ -133,7 +133,7 @@ def unavailable(directory, attempts):
     return failures >= 2
 
 
-def run_batch(root, limit=1, runner=run_retrieval):
+def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reason=''):
     if type(limit) is not int or not 1 <= limit <= 5:
         raise ValueError('Each dispatch may process one to five questions')
     if not all(os.environ.get(k) for k in ('OPENROUTER_API_KEY', 'TAVILY_API_KEY', 'EXA_API_KEY')):
@@ -147,7 +147,20 @@ def run_batch(root, limit=1, runner=run_retrieval):
         if pause and pause > now():
             return report(campaign)
         # New work first: repeated failures must not starve the rest of the queue.
-        candidates = sorted(campaign['tasks'], key=lambda ident: len(campaign['tasks'][ident]['attempts']))
+        if question_id is not None:
+            question_id = str(question_id)
+            if question_id not in campaign['tasks'] or not campaign['tasks'][question_id]['attempts'] or len(resume_reason.strip()) < 20:
+                raise ValueError('Focused repair requires an existing consumed task and a substantive resume reason')
+            operation = digest([question_id, os.environ.get('GITHUB_SHA', 'local'), resume_reason])
+            if any(e['operation'] == operation for e in campaign.get('repair_resumptions', [])):
+                raise ValueError('This focused repair already ran; refusing automatic repetition')
+            campaign.setdefault('repair_resumptions', []).append({'operation': operation,
+                'question_id': question_id, 'reason': resume_reason, 'at_utc': now().isoformat(),
+                'prior_resources': dict(campaign['tasks'][question_id]['resources']), 'budget_reset': False})
+            write(root / 'campaign.json', campaign)
+            candidates = [question_id]
+        else:
+            candidates = sorted(campaign['tasks'], key=lambda ident: len(campaign['tasks'][ident]['attempts']))
         selected = 0
         for ident in candidates:
             entry = campaign['tasks'][ident]
@@ -157,7 +170,7 @@ def run_batch(root, limit=1, runner=run_retrieval):
                 entry['status'] = 'needs_attention'
                 continue
             retry = parse_time(entry.get('retry_after_utc'))
-            if retry and retry > now():
+            if retry and retry > now() and question_id is None:
                 continue
             total = report(campaign)['resources']['model_http']
             if total + MODEL_HTTP_PER_DISPATCH > campaign['limits']['model_http_campaign']:
@@ -215,13 +228,15 @@ def main():
     parser.add_argument('--fixture', type=Path)
     parser.add_argument('--count', type=int, default=100)
     parser.add_argument('--limit', type=int, default=1)
+    parser.add_argument('--question')
+    parser.add_argument('--resume-reason', default='')
     args = parser.parse_args()
     if args.action == 'prepare':
         if not args.fixture:
             parser.error('--fixture is required')
         result = report(prepare(args.root, args.fixture, args.count))
     elif args.action == 'run':
-        result = run_batch(args.root, args.limit)
+        result = run_batch(args.root, args.limit, question_id=args.question, resume_reason=args.resume_reason)
     else:
         with task_lock(args.root):
             result = report(reconcile(args.root, read(args.root / 'campaign.json')))

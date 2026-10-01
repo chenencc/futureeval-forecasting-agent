@@ -1228,7 +1228,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if secret:
                         detail = detail.replace(secret, "[REDACTED]")
                 task.bundle["last_error_detail"] = detail[:1200]
-                termination_reason = ('model_dispatch_budget' if 'dispatch budget exhausted' in detail else
+                termination_reason = ('context_projection_failure' if ('tool group exceeds the delivery budget' in detail or 'Context ceiling' in detail) else
+                                      'model_dispatch_budget' if 'dispatch budget exhausted' in detail else
                                       'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
                                       'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')
                 break

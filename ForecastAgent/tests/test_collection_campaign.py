@@ -28,7 +28,8 @@ class CampaignTests(unittest.TestCase):
         bundle = read(path)
         bundle.setdefault('model_attempts', []).append({'status': 'received', 'usage': {'total_tokens': 100}})
         bundle['searches'].append({'status': 'completed'})
-        bundle['exa_searches'].append({'status': 'completed'})
+        if not bundle['exa_searches']:
+            bundle['exa_searches'].append({'status': 'completed'})
         bundle['result'] = {'incomplete': False, 'acquisition_complete': True}
         bundle['acceptance'] = {'status': 'accepted'}
         write(path, bundle)
@@ -124,6 +125,33 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(view['location']['document_index'], 2)
         self.assertEqual(view['end_char'], 910)
         self.assertEqual(len(view['preview']), 800)
+
+    def test_large_inventory_group_fits_without_shortening_reading_text(self):
+        from ForecastAgent.runtime.context import fit_inventory_group, encode
+        reading = {'data': {'content': 'a' * 4000}}
+        inventory = {'data': {'located_material': [{'url': 'https://example.org/' + 'x' * 300,
+            'passage_id': str(i), 'text': 'b' * 2000} for i in range(8)]}}
+        group = [{'role': 'assistant', 'content': None},
+                 {'role': 'tool', 'tool_call_id': 'r', 'content': json.dumps(reading)},
+                 {'role': 'tool', 'tool_call_id': 'i', 'content': json.dumps(inventory)}]
+        fit_inventory_group(group, {'r': {'name': 'read_document'}, 'i': {'name': 'read_sources'}}, 12000)
+        self.assertLessEqual(len(encode(group)), 12000)
+        self.assertEqual(json.loads(group[1]['content'])['data']['content'], 'a' * 4000)
+        item = json.loads(group[2]['content'])['data']['located_material'][0]
+        self.assertEqual(item['url'], 'https://example.org/' + 'x' * 300)
+
+    def test_focused_repair_preserves_consumed_searches(self):
+        prepare(self.root, self.fixture, 2)
+        def partial(request, directory, *keys):
+            bundle = self.runner(request, directory, *keys)
+            bundle['result'] = {'incomplete': True}
+            write(directory / 'bundle.json', bundle)
+        run_batch(self.root, 1, partial)
+        result = run_batch(self.root, 1, self.runner, question_id='1',
+                           resume_reason='Validate inventory projection after a generic delivery repair')
+        self.assertEqual(result['states'], {'acquired': 1, 'pending': 1})
+        self.assertEqual(result['resources']['tavily_basic'], 2)
+        self.assertFalse(read(self.root / 'campaign.json')['repair_resumptions'][0]['budget_reset'])
 
 
 if __name__ == '__main__':

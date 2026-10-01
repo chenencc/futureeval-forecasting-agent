@@ -35,6 +35,43 @@ def excerpt_view(excerpt):
             'instruction': 'Preview only. Use read_document at the saved document index and coordinates for complete source text. Preview omission cannot establish missing evidence; saved coverage is not factual verification.'}
 
 
+def navigation_bound(value, text_limit, item_limit, key=''):
+    """Compress inventories while retaining exact navigational identifiers."""
+    if isinstance(value, str):
+        if key in {'url', 'source', 'passage_id', 'need_id', 'id', 'source_sha256', 'source_parsed_sha256'}:
+            return value
+        return bounded(value, text_limit, item_limit)
+    if isinstance(value, list):
+        result = [navigation_bound(v, text_limit, item_limit, key) for v in value[:item_limit]]
+        if len(value) > item_limit:
+            result.append({'omitted_items': len(value) - item_limit})
+        return result
+    if isinstance(value, dict):
+        return {k: navigation_bound(v, text_limit, item_limit, k) for k, v in value.items()}
+    return value
+
+
+def fit_inventory_group(group, functions, maximum):
+    """Fit summaries before rejecting a group; never shorten reading payloads here."""
+    for text_limit, items in ((300, 8), (180, 4), (100, 2)):
+        if len(encode(group)) <= maximum:
+            break
+        for message in group:
+            if message.get('role') != 'tool':
+                continue
+            name = functions.get(message.get('tool_call_id'), {}).get('name')
+            if name in {'read_document', 'read_dataset_rows'}:
+                continue
+            try:
+                payload = json.loads(message['content'])
+            except (ValueError, TypeError):
+                continue
+            payload = navigation_bound(payload, text_limit, items)
+            payload['projection_notice'] = 'Inventory preview shortened to fit delivery. Original reply and source bodies remain saved. Use navigation tools; omitted text is not missing source material or full source delivery.'
+            message['content'] = encode(payload)
+    return group
+
+
 def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
     from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply, stage_read_passages, recover_read_passages, projected_visibility
     ensure_delivery_state(task)
@@ -119,6 +156,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
                 message['content'] = encode(payload)
             elif message.get('role') == 'user':
                 message['content'] = bounded(message.get('content', ''), 500)
+        if not pinned:
+            copied = fit_inventory_group(copied, functions, max_recent_chars)
         if len(encode(copied+recent)) > max_recent_chars:
             if not pinned:
                 raise ValueError('Newest tool group exceeds the delivery budget; preserve state and reduce the requested batch size.')
