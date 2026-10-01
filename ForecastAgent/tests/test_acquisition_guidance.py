@@ -9,6 +9,9 @@ from ForecastAgent.evidence.acceptance import collection_acceptance
 from ForecastAgent.readers.loader import load_response
 from ForecastAgent.tests.test_collection import REQUEST, PLAN, URL, page, call
 
+# Local quote/navigation scenarios do not exercise provider obligations.
+REQUEST = {**REQUEST, 'exa_search_policy':'optional'}
+
 
 class AcquisitionGuidanceTests(TestCase):
     def task(self, directory):

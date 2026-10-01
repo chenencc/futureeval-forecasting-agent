@@ -94,6 +94,11 @@ def collection_acceptance(bundle):
             warnings.append({'market': market.get('id'), 'issue': 'Missing raw market response'})
     searches = bundle.get('searches', [])
     exa = bundle.get('exa_searches', [])
+    required_exa = bundle.get('search_policy', {}).get('exa') == 'required'
+    exa_attempt_met = any(attempt.get('status') in {'completed', 'failed'} for attempt in exa)
+    if required_exa and not exa_attempt_met:
+        failures.append({'issue':'Required Exa provider attempt is missing or its outcome is unknown',
+                         'provider':'exa', 'reserved_attempts':len(exa)})
     if len(exa) > bundle.get('acquisition_limits',{}).get('exa_search',0):
         failures.append({'issue':'Exa attempt budget exceeded'})
     if any(a.get('status') in {'failed','reserved'} for a in exa):
@@ -132,6 +137,7 @@ def collection_acceptance(bundle):
             'raw_versions_checked': raw_checked, 'page_count': len(pages), 'market_snapshot_count': len(bundle.get('market_snapshots', {})),
             'excerpt_count': len(bundle.get('excerpts', [])), 'failures': failures, 'warnings': warnings,
             'acquisition_metrics':metrics,
+            'required_searches':{'exa':{'required':required_exa, 'attempt_requirement_met':exa_attempt_met}},
             'source_count': len(source_urls), 'unread_source_count': len(unread), 'unread_urls': unread[:120],
             'captured_unselected_link_count': sum(row.get('origin') == 'page_link' and url not in bundle.get('selected_sources', {})
                                                  for url, row in bundle.get('source_leads', {}).items()),

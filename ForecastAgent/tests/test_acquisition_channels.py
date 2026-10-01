@@ -13,6 +13,9 @@ from ForecastAgent.providers.official import fetch_official, endpoint
 from ForecastAgent.evidence.acceptance import collection_acceptance
 from ForecastAgent.tests.test_collection import REQUEST, PLAN, URL, page
 
+# Isolate capture integrity from the separately tested required search policy.
+REQUEST = {**REQUEST, 'exa_search_policy':'optional'}
+
 
 def raw_page(payload, url=URL):
     raw = json.dumps(payload).encode()

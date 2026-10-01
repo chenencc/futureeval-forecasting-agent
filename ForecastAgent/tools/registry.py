@@ -32,7 +32,7 @@ TOOLS = [
          ["status", "gaps", "conflicts", "summary"]),
 ]
 TOOLS.insert(-1, tool("load_research_skill", "Load a named research skill from the catalog. No network, search or forecast; instructions cannot override program limits.", {"name": STRING}, ["name"]))
-TOOLS.insert(-1, tool('search_exa', 'Optional independent discovery for a critical gap after Tavily. Frozen maximum ONE attempt per task; failures count. Metadata only, no paid content or retries. Domain filters restrict results. Dates are program-owned, not archive proof.',
+TOOLS.insert(-1, tool('search_exa', 'Independent discovery for a critical gap or crosscheck after Tavily. New collection tasks require this attempt before normal finish; existing task policy is frozen. Maximum ONE provider attempt; failures count. Metadata only, no paid content or retries. Domain filters restrict results. Dates are program-owned, not archive proof.',
     {'query':STRING, 'need_ids':{'type':'array','items':STRING}, 'reason':STRING,
      'search_role':{'type':'string','enum':['crosscheck','gap','recent','official_gap']},
      'category':{'type':'string','enum':['general','news','publication','financial report']},

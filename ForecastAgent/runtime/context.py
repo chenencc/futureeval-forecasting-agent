@@ -37,6 +37,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'task':{k:request[k] for k in ('question', 'title', 'resolution_criteria', 'fine_print', 'background', 'as_of_utc', 'mode') if k in request},
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
+             'search_policy':b.get('search_policy', {}),
              'progress':b.get('sessions', [{}])[-1].get('turns', [])[-2:] if b.get('sessions') else [],
              'sources':[{'url':u, 'saved':u in b['pages'], 'readable':u in b['pages'] and u not in blocked,
                          'audit_only':u in blocked} for u in task.catalog()][:20],

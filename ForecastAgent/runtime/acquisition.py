@@ -29,6 +29,12 @@ def checkpoint(task):
             todo.append({'tool':'finish_collection','reason':'Audit-only historical pages have no usable body and fewer than two archive requests remain. Record the missing snapshot as a gap.'})
     if missing and task.budget().get('exa_search_remaining',0)>0:
         todo.append({'tool':'search_exa','reason':'One authorized supplemental discovery attempt remains; use it only for a critical gap or independent source. It does not permit reading current historical bodies.'})
+    from ForecastAgent.runtime.search_policy import requirement
+    exa = requirement(task)
+    if exa['required'] and exa['status'] == 'pending':
+        todo = [item for item in todo if item['tool'] != 'search_exa']
+        todo.insert(0, {'tool':'search_exa', 'required':True,
+                       'reason':'One task-grounded independent discovery attempt is required before normal finish; provider failures consume the attempt. No extra quota.'})
     if rescue and 'tavily_extract_basic' not in decisions:
         todo.append({'tool': 'extract_failed_pages', 'reason': 'Important failed pages may be rescued in one basic batch; choose relevant URLs or record a deferral.'})
     if b['mode'] == 'live' and not b['market_snapshots'] and 'polymarket_gamma' not in decisions:
@@ -49,6 +55,7 @@ def checkpoint(task):
             'usable_saved_body_count':len(usable),'audit_only_urls':sorted(set(b['pages'])-usable),
             'association_warning':'Located material does not establish resolution-condition coverage or known future outcomes.',
             'excerpt_count': len(b['excerpts']), 'extract_eligible_urls': rescue[:5],
+            'exa_requirement':exa,
             'selected_unread_count': len(unread), 'selected_unread_urls': unread[:12],
             'captured_link_count': sum(row.get('origin') == 'page_link' for row in b['source_leads'].values()),
             'channel_decisions': decisions, 'suggested_next_steps': todo,

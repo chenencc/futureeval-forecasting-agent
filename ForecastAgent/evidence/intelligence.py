@@ -20,6 +20,7 @@ def intelligence_package(bundle):
             'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
             'execution_versions': bundle.get('execution_versions', []),
             'acquisition_limits': bundle.get('acquisition_limits', {'tavily_basic':3}),
+            'search_policy':bundle.get('search_policy', {}),
             'historical_body_policy':bundle.get('historical_body_policy'),
             'passages':bundle.get('passages',{}),
             'data_raw_responses':bundle.get('data_raw_responses',[]),

@@ -1,6 +1,7 @@
 """Expose collection capabilities only when their prerequisites and budgets permit."""
 from copy import deepcopy
 from ForecastAgent.runtime.collection_v2 import eligible
+from ForecastAgent.runtime.search_policy import ready
 
 
 def active_tools(task, tools, forced=None):
@@ -28,6 +29,8 @@ def active_tools(task, tools, forced=None):
     b=task.bundle
     budget=task.budget()
     excluded=set()
+    if ready(task) and not b['control'].get('forced_close'):
+        excluded.add('finish_collection')
     if b['plan'] is not None:
         excluded.add('plan_evidence')
     if b.get('channel_plan'):

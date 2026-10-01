@@ -22,6 +22,13 @@ independent per-item failures; child calls still validate before HTTP.
 Channel and skill enums use independent schema objects. Shared string definitions
 cannot accidentally impose a channel enum on a query, quote or entity field.
 
+New collection tasks require one Exa provider attempt before normal finish.
+Preflight rejections do not satisfy it; provider failures do consume the attempt.
+The obligation never overrides forced closure or physical resource caps. Its
+completion is reported independently from useful discovery and capture adequacy.
+Existing optional policies and frozen allowances remain unchanged. See
+[Exa discovery](EXA.md) for unavailable credentials and interrupted reservations.
+
 ## 2. Context management
 
 `collection_context_v2` projects program state, source/document metadata, excerpt

@@ -28,7 +28,7 @@ python -m ForecastAgent refresh --task-dir snapshots/retrieval/question-123 --ur
 python -m unittest discover -s ForecastAgent/tests
 ```
 
-Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY` and `TAVILY_API_KEY`; optional `EXA_API_KEY` enables bounded supplemental discovery for new tasks. See [Exa integration](docs/EXA.md). Catalog, inspection, replay, export and local reading require no credentials. The model remains `nvidia/nemotron-3-ultra-550b-a55b:free`.
+Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY`, `TAVILY_API_KEY` and `EXA_API_KEY`. New collection tasks require one bounded Exa discovery attempt before normal completion; an unavailable key is an explicit acquisition gap. Existing ledgers retain their frozen policies and budgets. See [Exa integration](docs/EXA.md). Catalog, inspection, replay, export and local reading require no credentials. The model remains `nvidia/nemotron-3-ultra-550b-a55b:free`.
 
 ## Tools and output
 

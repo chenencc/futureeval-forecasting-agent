@@ -44,6 +44,7 @@ from ForecastAgent.providers.cache import cached_page, save_cached_page
 from ForecastAgent.providers.exa_search import search as search_exa, options as exa_options
 from ForecastAgent.runtime.contracts import validate, ContractError
 from ForecastAgent.runtime import progress, session
+from ForecastAgent.runtime import search_policy
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -176,6 +177,7 @@ class RetrievalTask:
         if type(self.exa_limit) is not int or self.exa_limit not in {0,1}:
             raise ValueError('Exa budget must be frozen at zero or one')
         self.bundle.setdefault('exa_searches', [])
+        search_policy.freeze(self.bundle, request, existing)
         self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
         upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
         self.bundle.setdefault('historical_body_policy', request.get('historical_body_policy','verified_snapshots_only' if self.optimized else 'date_filtered_exploratory'))
@@ -653,6 +655,9 @@ class RetrievalTask:
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
             gaps = list(args['gaps'])
+            exa_requirement = search_policy.before_finish(self)
+            if exa_requirement['required'] and not exa_requirement['attempt_requirement_met']:
+                gaps.append('Required Exa discovery was not completed: '+exa_requirement['reason'])
             discovery_notes = []
             if self.optimized and self.cutoff and not any(s.get('search_role')=='recent' and s.get('status')=='completed' for s in b['searches'] + b['exa_searches']):
                 discovery_notes.append('No successful cutoff-bounded recent search was captured; assess whether saved series or snapshots already cover timing needs.')
@@ -668,6 +673,7 @@ class RetrievalTask:
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": list(dict.fromkeys(gaps)), "finished_at": utc_now(),
                            'discovery_notes':discovery_notes,
+                           'exa_requirement':exa_requirement,
                            'acquisition_complete':not bool(gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])}
             b['result']['acquisition_checkpoint'] = checkpoint(self)
             b['result']['historical_body_policy']=b.get('historical_body_policy')
@@ -1053,6 +1059,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if collection and (len(task.bundle.get('model_attempts', [])) >= 72 or
                     len(task.bundle.get('model_attempts', []))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
+                control['forced_close'] = True
                 break
             if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
                     (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)):
@@ -1066,6 +1073,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             elif control["forced_close"]:
                 forced = "finish_collection" if collection else "audit_evidence" if pending_audit and turn < MAX_TURNS-1 else "finish_retrieval"
             elif collection and control.get('exa_supplement_required') and task.budget().get('exa_search_remaining',0)>0 and os.environ.get('EXA_API_KEY'):
+                forced='search_exa'
+            elif collection and search_policy.ready(task) and (task.bundle['searches'] or turn >= 3):
+                # Prefer a primary Tavily attempt first; never leave the obligation to closure.
                 forced='search_exa'
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
@@ -1187,6 +1197,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 break
         if not task.bundle["result"]:
             if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
+                task.bundle['control']['forced_close'] = True
                 task.execute('finish_collection', {'gaps':['Program ended collection: '+str(termination_reason or 'program_dispatch_limit')+'; unresolved acquisition work remains.']}, tavily_key)
                 termination_reason = termination_reason or 'program_dispatch_limit'
                 task.bundle.setdefault('agent_runtime',{}).setdefault('events',[]).append({'stage':'export','owner':'program','at':utc_now()})
