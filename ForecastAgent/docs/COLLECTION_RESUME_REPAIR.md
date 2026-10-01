@@ -52,3 +52,10 @@ spent HTTP budget and one already completed task. Neither lower incremental
 cost nor successful export proves that the 135-question batch is ready.
 Current-vintage datasets and missing historical snapshots retain their temporal
 limitations. No forecast, outcome verdict, trading or scoring is added.
+
+After local artifact synchronization, `python -m ForecastAgent.review_campaign
+ARTIFACT_ID --run RUN_ID` verifies raw model transport hashes and original
+question/search prefixes, then saves an English structured report in the local
+`reports` directory. It separates known token usage from attempts without usage
+and compares usable bodies and exact saved excerpt coordinates. Metadata-only
+discovery and current-vintage rows retain their acquisition limitations.
