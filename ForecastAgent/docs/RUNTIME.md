@@ -1,6 +1,6 @@
 # Acquisition runtime contracts
 
-Ultra remains the planning and acquisition model. Codex is an operator and code
+The acquisition model is configured independently from the task protocol. Codex is an operator and code
 maintenance interface, not a runtime dependency. This runtime borrows execution
 patterns from coding agents without importing a coding SDK or TradingAgents.
 
@@ -101,7 +101,7 @@ Offline tests cover wrong parameters with zero HTTP spend, protocol-safe context
 bounds, loaded skills surviving compaction, historical body isolation, overlapping
 reads, cached reply/version integrity, mixed success/error stalls, interrupted
 paid reservations, resumable outages and lifetime exhaustion. These tests do not
-establish improved live evidence quality or reduced Ultra token consumption.
+establish improved live evidence quality or reduced model token consumption.
 Use a later explicitly scoped pilot with unchanged question/cutoff/budgets to
 measure those outcomes from actual transport records.
 
@@ -110,3 +110,8 @@ The maintained audit supports `python -m ForecastAgent.review_campaign ARTIFACT
 totals with the initial v3 and v2 baselines rather than subtracting preserved
 prefix costs. Input identity, transport hashes, search caps, mandatory Exa and
 session dispatch caps are reported separately from evidence quality.
+
+See [model-independent acquisition](MODEL_INDEPENDENT_ACQUISITION.md) for the
+shared operating clock, batch reading frontier, parameter preflight and separate
+12-decision / 4-failure / 16-HTTP dispatch limits. Existing lifetime ledgers remain
+unchanged.

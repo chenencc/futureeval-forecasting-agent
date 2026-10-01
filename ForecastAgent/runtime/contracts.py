@@ -137,6 +137,12 @@ def validate(task, name, args, tools=None):
             if name == 'read_dataset_rows' and args.get('offset', 0) >= len(page.get('rows', [])):
                 raise ContractError('empty_read', 'offset', 'No unread rows at this offset. Choose another dataset or finish with gaps.')
     if tools is not None and name in {'search_tavily', 'search_exa'}:
+        if task.optimized:
+            from ForecastAgent.runtime.collection_actions import discovery_read_action
+            from ForecastAgent.runtime.search_policy import ready
+            if discovery_read_action(task) and not (name == 'search_exa' and ready(task)):
+                raise ContractError('pending_source_read', 'tool',
+                    'Read a relevant exact discovered source before another search. No provider attempt was consumed.', ['read_sources'])
         # A conservative grounding check is acquisition guidance, not relevance verification.
         query = args.get('query', '')
         corpus = ' '.join(str(task.bundle['request'].get(k, '')) for k in ('question', 'title', 'resolution_criteria'))

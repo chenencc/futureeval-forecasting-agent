@@ -8,6 +8,29 @@ from ForecastAgent.runtime.collection_v2 import eligible
 STATUS_WORDS = r'\b(?:deprecated|discontinued|retired|sunset|shutdown|no longer)\b'
 
 
+def discovery_read_action(task):
+    """Require one real reading batch per discovery advance, before more search."""
+    b = task.bundle
+    if task.cutoff:
+        return None  # Historical replay requires its archive/vintage routing.
+    count = len(b.get('searches', [])) + len(b.get('exa_searches', []))
+    if not count or b.get('control', {}).get('read_after_discovery', 0) >= count or task.budget()['page_fetch_remaining'] <= 0:
+        return None
+    attempted = {canonical_url(a['url']) for a in b.get('fetch_attempts', []) if a.get('url')}
+    leads = {}
+    for search in b.get('searches', []) + b.get('exa_searches', []):
+        for hit in search.get('results', []):
+            leads[canonical_url(hit['url'])] = hit.get('title', '')
+    leads.update({u: '' for u, row in b.get('source_leads', {}).items() if row.get('origin', '').startswith('question_')})
+    terms = set(re.findall(r'[a-z0-9]{4,}', b['request']['question'].lower())) - {'will', 'before', 'after', '2026'}
+    ranked = sorted((u for u in leads if u not in attempted and u not in b['pages']),
+        key=lambda u: (-10 * bool(named_primary(task, u)) - len(terms & set(re.findall(r'[a-z0-9]{4,}', (u + ' ' + leads[u]).lower()))), u))
+    if not ranked:
+        return None
+    return {'tool': 'read_sources', 'urls': ranked[:2],
+        'instruction': 'Read a relevant exact discovered source before another search. Batch free fetch, permitted primary rescue and paragraph location in this action. Use concrete queries for critical needs; this route is not a relevance verdict.'}
+
+
 def named_primary(task, url):
     labels=set(re.findall(r'[a-z0-9]{4,}',(urlsplit(url).hostname or '').lower()))
     return [n['id'] for n in task.bundle.get('plan') or [] if n['priority']=='critical'
@@ -55,16 +78,11 @@ def primary_rescue(task):
         return []
     if 'tavily_extract_basic' in task.bundle.get('channel_decisions',{}):
         return []
-    # A secondary excerpt mentioning a need does not supply its named primary
-    # source. Count readable captures of that discovered host separately.
-    from ForecastAgent.readers.quality import body_diagnostics
+    # Another document on the same host does not supply this failed source.
     needs=[n for n in task.bundle.get('plan') or [] if n['priority']=='critical']
     rows=[]
     for url in task.rescue_candidates():
         host=(urlsplit(url).hostname or '').lower()
-        if any((urlsplit(u).hostname or '').lower()==host and body_diagnostics(p.get('content',''))['usable_text']
-               and (not task.verified_only or eligible(p,task.cutoff)) for u,p in task.bundle['pages'].items()):
-            continue
         labels=set(re.findall(r'[a-z0-9]{4,}',(urlsplit(url).hostname or '').lower()))
         matches=[n['id'] for n in needs if labels & set(re.findall(r'[a-z0-9]{4,}',n.get('expected_source','').lower()))]
         if matches:
@@ -101,7 +119,7 @@ def next_action(task):
             if url not in task.bundle['pages'] and url not in attempted and named_primary(task,url) and re.search(r'release[-_]notes|version[-_]history',path) and any(w in path for w in words):
                 return {'tool':'read_sources','urls':[url],
                     'instruction':'Follow this already-discovered named primary product update page for current platform/status material, within the existing HTTP allowance. Never infer event absence from a failed read.'}
-    return None
+    return discovery_read_action(task)
 
 
 def duplicate_read(task, args):

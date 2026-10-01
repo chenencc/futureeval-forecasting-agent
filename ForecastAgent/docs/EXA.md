@@ -4,7 +4,7 @@ Tavily remains the primary search provider. `search_exa` adds one independent
 discovery attempt for an important official/scientific source or crosscheck.
 This attempt is required by default for new collection tasks; existing ledgers
 retain their frozen policy. See the required discovery policy below.
-The model stays Ultra. No framework, additional SDK or Codex dependency is needed.
+The default model is unchanged; FORECAST_MODEL selects a compatible backend. No framework, additional SDK or Codex dependency is needed.
 
 ## Credentials and frozen budgets
 
@@ -40,7 +40,7 @@ balance or invoice. Free credit eligibility and account billing limits are manag
 in the Exa dashboard; the runtime does not claim to enforce the account-wide cap.
 
 `Verify Exa discovery` makes one metadata search and at most one free page read.
-It calls neither Ultra nor Tavily and submits no forecasts. Its durable artifact
+It calls neither the acquisition model nor Tavily and submits no forecasts. Its durable artifact
 is restored on later verification runs, preventing repeated test charges.
 The verification checks real authentication, search results, deduplication,
 free reading, snapshots and local artifact import. Unit tests cover temporal
@@ -51,7 +51,7 @@ References: [Search API](https://exa.ai/docs/reference/search),
 
 ## Required discovery policy
 
-New collection tasks freeze `search_policy.exa = required` by default. Ultra must
+New collection tasks freeze `search_policy.exa = required` by default. The acquisition agent must
 make one task-grounded Exa metadata discovery attempt before normal completion,
 preferably after the first Tavily attempt for independent source discovery. The
 runtime forces Exa early if necessary and hides normal finish while the obligation
@@ -71,3 +71,8 @@ Existing ledgers retain their prior optional/authorized supplement behavior. An
 explicit `exa_search_policy: optional` can be frozen at creation for ablation
 experiments; resumed tasks cannot change policy by changing their input. Adding a
 key later never implicitly grants an allowance to a zero-budget ledger.
+
+See [model-independent acquisition](MODEL_INDEPENDENT_ACQUISITION.md) for the
+shared operating clock, batch reading frontier, parameter preflight and separate
+12-decision / 4-failure / 16-HTTP dispatch limits. Existing lifetime ledgers remain
+unchanged.

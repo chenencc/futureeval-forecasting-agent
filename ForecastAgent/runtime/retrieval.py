@@ -1,4 +1,4 @@
-"""Durable Ultra-led retrieval. No probabilities, submissions, or trading."""
+"""Durable model-independent retrieval. No probabilities, submissions, or trading."""
 from __future__ import annotations
 
 import argparse
@@ -18,13 +18,14 @@ from ForecastAgent.tavily_research import canonical_url, search_batch, search_op
 from ForecastAgent.tavily_extract import extract_basic
 from ForecastAgent.skill_loader import freeze_skills, catalog as skill_catalog, load_skill
 from ForecastAgent.retrieval_sources import allowed_source, source_urls, fetch_structured, quoted_dates, structured_url
-from ForecastAgent.ultra_research_agent import ask_ultra, fetch_public_page, utc_now, canonical_evidence_chain
+from ForecastAgent.ultra_research_agent import fetch_public_page, utc_now, canonical_evidence_chain
+from ForecastAgent.providers.model import ask_model as ask_ultra, configured_model
 
 MAX_SEARCHES = 3
 MAX_FETCHES = 8
 MAX_TURNS = 24
 COLLECTION_MAX_TURNS = 12
-COLLECTION_HTTP_PER_DISPATCH = 12
+from ForecastAgent.runtime.limits import MODEL_HTTP_PER_DISPATCH as COLLECTION_HTTP_PER_DISPATCH, MODEL_FAILURES_PER_DISPATCH
 MAX_EXTRACT_BATCHES = 1
 
 from ForecastAgent.tools.registry import TOOLS, COLLECTION_TOOLS
@@ -37,7 +38,6 @@ from ForecastAgent.polymarket_match import search_candidates as search_markets
 from ForecastAgent.runtime.budget import reserve, reserve_update, update_day, MAX_UPDATE_HTTP_TOTAL, MAX_UPDATE_HTTP_DAILY
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.runtime.acquisition import checkpoint, reading_targets, recovery_hint
-from ForecastAgent.providers.ultra import MODEL
 from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
 from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate, eligible
 from ForecastAgent.providers.cache import cached_page, save_cached_page
@@ -47,7 +47,7 @@ from ForecastAgent.runtime import progress, session
 from ForecastAgent.runtime import search_policy
 from ForecastAgent.runtime import temporal_policy
 
-SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
+SYSTEM = """You are the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
 Use Tavily basic at most three times, at most ten new URLs per search. Do not spend all calls automatically.
 Choose each search topic: general for official documents/definitions/base rates; news for breaking events; finance for companies/economic/financial evidence. Explain choices in reason.
@@ -66,7 +66,7 @@ Stop if evidence is adequate or no high-value search remains. Explain failures a
 In historical modes ignore post-cutoff knowledge. Model knowledge and later edits can still leak outcomes; do not claim this is a clean backtest.
 """
 
-COLLECTION_SYSTEM = """You are Ultra, the information acquisition agent in ForecastAgent.
+COLLECTION_SYSTEM = """You are the information acquisition agent in ForecastAgent.
 Plan acquisition needs and an entity/timing card, then collect source material.
 Do not fact-check, issue truth verdicts, forecast, trade, or calculate scores.
 Use list_channels to discover implemented capabilities. Use domain skills for source leads and reading methods only.
@@ -536,6 +536,8 @@ class RetrievalTask:
                 raise ValueError("Complete the subject, identity, form and timing card")
             from ForecastAgent.runtime.contracts import validate_plan_cutoff
             validate_plan_cutoff(self, needs)
+            from ForecastAgent.runtime.task_protocol import validate_current_plan
+            validate_current_plan(self, needs)
             b["plan"] = needs
             b["entity_card"] = args.get("entity_card", {"status": "Legacy input: identity and timing card absent"})
             return {"plan": needs}
@@ -602,6 +604,9 @@ class RetrievalTask:
                 b['selected_sources'][k] = {'need_ids': args['need_ids'], 'reason': args['reason'][:1000]}
             self.save()
             return {'selected_sources': b['selected_sources']}
+        if name == 'parameterize_source':
+            from ForecastAgent.providers.source_parameters import parameterize
+            return parameterize(self, args)
         if name == 'record_quote':
             pages=visible_pages(b['pages'],self.cutoff,self.verified_only) if self.optimized else b['pages']
             return self.execute('record_excerpt', saved_reader.quote_coordinates(pages, args), key)
@@ -609,6 +614,7 @@ class RetrievalTask:
             urls=args.get('urls',[])
             if not isinstance(urls,list) or len(urls)>4: raise ValueError('Read at most four URLs')
             outcomes=[]
+            fetches_before = len(b['fetch_attempts'])
             for url in urls:
                 try:
                     view=self.execute('fetch_page',{'url':url},key)
@@ -616,7 +622,27 @@ class RetrievalTask:
                         'source_header_preview':view.get('content','')[:1800],
                         **{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
                 except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
-            result={'reads':outcomes,**locate(self,args)}
+            from ForecastAgent.runtime.collection_actions import primary_rescue
+            selected_keys = {canonical_url(u) for u in urls}
+            rescue = [r for r in primary_rescue(self) if canonical_url(r['url']) in selected_keys]
+            rescue_result = None
+            if args.get('rescue_failed', True) and rescue:
+                try:
+                    rescue_result = self.execute('extract_failed_pages', {
+                        'urls': [r['url'] for r in rescue],
+                        'need_ids': sorted({n for r in rescue for n in r['need_ids']}),
+                        'reason': 'Batch acquisition rescue of failed named critical sources selected for this reading action'}, key)
+                except Exception as exc:
+                    rescue_result = {'error': type(exc).__name__, 'attempt_preserved': True}
+                for row in outcomes:
+                    if canonical_url(row['url']) in {canonical_url(r['url']) for r in rescue}:
+                        page = b['pages'].get(canonical_url(row['url']))
+                        if page:
+                            row.update(self.page_view(page))
+                            row['ok'] = not row.get('blocked', False)
+            result={'reads':outcomes, 'rescue':rescue_result, **locate(self,args)}
+            if len(b['fetch_attempts']) > fetches_before or any(r.get('ok') for r in outcomes):
+                b['control']['read_after_discovery'] = len(b['searches']) + len(b['exa_searches'])
             from ForecastAgent.runtime.collection_actions import named_primary, STATUS_WORDS
             for url in urls:
                 canonical=canonical_url(url)
@@ -695,6 +721,9 @@ class RetrievalTask:
         if name == "record_excerpt":
             self.needs(args)
             page, text, location = saved_reader.select(b["pages"], args["url"], args.get("document_index"))
+            from ForecastAgent.readers.quality import body_diagnostics
+            if not body_diagnostics(page.get('content', ''))['usable_text']:
+                raise ValueError('Unreadable source bodies cannot be banked as excerpts')
             if self.verified_only and not eligible(page,self.cutoff):
                 raise ValueError('No verified historical body version; current capture cannot be excerpted')
             start = saved_reader.integer(args.get("start_char"), 0, len(text), "start_char")
@@ -854,8 +883,11 @@ class RetrievalTask:
             if canonical in b["pages"]:
                 page = b["pages"][canonical]
             else:
+                if any(canonical_url(a.get('url', '')) == canonical and a.get('status') in {'failed', 'reserved'} for a in b['fetch_attempts']):
+                    raise ValueError('This source was already attempted unsuccessfully. Use its existing Extract allowance or another source; do not repeat free fetch.')
                 shared=cached_page(canonical) if not self.cutoff and not structured_url(url) else None
-                if shared:
+                from ForecastAgent.readers.quality import body_diagnostics
+                if shared and body_diagnostics(shared.get('content',''))['usable_text']:
                     b.setdefault('cache_events',[]).append({'url':canonical,'at':utc_now(),'provenance':shared['cache_provenance']})
                     self.store_page(url,shared);self.save()
                     return {**self.page_view(shared,args.get('start_char',0)),'cached':True,'cross_task_cache':True}
@@ -868,6 +900,9 @@ class RetrievalTask:
                 try:
                     page = fetch_structured(url, self.cutoff, fetch_public_page) or fetch_public_page(url)
                     text = page["content"]
+                    fresh_diagnostics = body_diagnostics(text, documents=page.get('documents', []))
+                    fresh_diagnostics['table_count'] = (page.get('body_diagnostics') or {}).get('table_count', fresh_diagnostics['table_count'])
+                    page['body_diagnostics'] = fresh_diagnostics
                     if not page.get('body_diagnostics',{}).get('usable_text',True) or len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
                         b.setdefault('failed_captures',[]).append({'url':url,'page':page,'reason':'Unreadable or blocked body'})
                         raise ValueError("Empty page or access interstitial")
@@ -880,7 +915,7 @@ class RetrievalTask:
                     if self.cutoff and any(dt and dt >= self.cutoff for dt in [modified, declared_publication]):
                         b["quarantine"].append({"url": url, "page_snapshot": page, "reason": "Page metadata identifies publication/update after cutoff"})
                         raise ValueError("Page publication/update metadata is after cutoff")
-                    page["independence_note"] = "Original-source grouping is assessed by Ultra, not automatically verified"
+                    page["independence_note"] = "Original-source grouping is assessed by the model, not automatically verified"
                     self.store_page(url, page)
                     if not self.cutoff and not structured_url(url): save_cached_page(canonical,page)
                     for link in page.get("links", []):
@@ -997,7 +1032,7 @@ class RetrievalTask:
                     raise ValueError("Explain each entity, support-scope and timing verdict")
             for review in reviews:
                 evidence = next(e for e in b["evidence"] if e["id"] == review["evidence_id"])
-                evidence["audit"] = {**review, "accepted": all(review[k] for k in ["entity_matches", "quote_supports_claim", "time_valid"]), "auditor": "Ultra_self_review_not_independent_truth_check"}
+                evidence["audit"] = {**review, "accepted": all(review[k] for k in ["entity_matches", "quote_supports_claim", "time_valid"]), "auditor": "model_self_review_not_independent_truth_check"}
             return {"evidence": b["evidence"], "coverage": self.coverage()}
         if name == "finish_retrieval":
             status = args.get("status")
@@ -1067,7 +1102,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         secrets = (tavily_key, router_key, os.environ.get('EXA_API_KEY',''))
         dispatch_start = len(task.bundle.get('model_attempts',[]))
         collection = task.bundle['pipeline']=='collection'
-        observer = model_observer(task, secrets, dispatch_limit=COLLECTION_HTTP_PER_DISPATCH if collection else None)
+        observer = model_observer(task, secrets, dispatch_limit=COLLECTION_HTTP_PER_DISPATCH if collection else None,
+                                  failure_limit=MODEL_FAILURES_PER_DISPATCH if collection else None)
         current_session = session.begin(task, utc_now())
         task.bundle['session_state'] = 'running'
         termination_reason = None
@@ -1090,6 +1126,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
         if collection:
+            task.bundle['control']['operating_clock_utc'] = utc_now()
+            current_session['http_attempt_limit'] = COLLECTION_HTTP_PER_DISPATCH
+            current_session['decision_limit'] = COLLECTION_MAX_TURNS
+            current_session['transport_failure_limit'] = MODEL_FAILURES_PER_DISPATCH
             from ForecastAgent.runtime.guidance import collection_system
             system = collection_system(task, catalog)
             for entry in available_tools:
@@ -1098,7 +1138,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         else:
             system = SYSTEM + '\nSkill catalog: '+json.dumps(catalog)
         versions = task.bundle.setdefault('execution_versions', [])
-        versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
+        versions.append({'started_at_utc': utc_now(), 'model': configured_model(), 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
             'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
             'collection_only': collection, 'max_model_turns_per_run': COLLECTION_MAX_TURNS if collection else MAX_TURNS,
@@ -1167,19 +1207,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 model_messages = collection_context(task) if collection else messages
                 turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
                 if forced=='search_exa':
-                    # A focused supplement does not need channel catalogs or old failures.
-                    model_messages=[{'role':'system','content':
-                        'You are Ultra selecting one supplemental Exa discovery query for ForecastAgent. '
-                        'Call search_exa for the most important unresolved source need. Use only supplied evidence need IDs. '
-                        'The query must describe the actual event or data, never a channel ID or tool name. '
-                        'Use real bare domains only, or leave include_domains empty. Do not forecast or infer outcomes. '
-                        'The program enforces one existing search allowance and the supplied temporal policy; the search provides leads only.'},
-                        {'role':'user','content':json.dumps({'task':task.bundle['request'],
-                            'needs':task.bundle['plan'],'remaining_budget':task.budget(),
-                            'collection_temporal_policy':task.bundle.get('collection_temporal_policy'),
-                            'effective_cutoff_utc':task.cutoff.isoformat() if task.cutoff else None,
-                            'accepted_existing_urls':list(task.catalog())[:30],
-                            'instruction':'Choose a useful missing official, scientific or independent source. Channel IDs are not need IDs.'})}]
+                    from ForecastAgent.runtime.task_protocol import supplemental_messages
+                    model_messages = supplemental_messages(task)
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline)
                 task.bundle.pop("last_error", None)
@@ -1195,6 +1224,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                                       'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
                                       'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')
                 break
+            current_session['model_decisions'] = current_session.get('model_decisions', 0) + 1
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
             if not calls:
@@ -1282,6 +1312,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             else:
                 task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
                 "coverage": task.coverage(), "gaps": ["Collection interrupted" if collection else "Retrieval did not complete its final audit"], "conflicts": [], "incomplete": True}
+        if collection:
+            task.bundle['result']['exa_requirement'] = search_policy.requirement(task)
+            task.bundle['result']['acquisition_checkpoint'] = checkpoint(task)
+            task.bundle['result']['acquisition_complete'] = bool(task.bundle['result'].get('acquisition_complete', False))
         session.finalize(task, current_session, termination_reason or 'agent_finished', utc_now())
         runtime['session_state'] = task.bundle['session_state']
         runtime["stage"] = "incomplete" if task.bundle["result"].get("incomplete") else "complete"

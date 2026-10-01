@@ -13,7 +13,8 @@ def reading_targets(bundle):
 def checkpoint(task):
     b = task.bundle
     from ForecastAgent.runtime.collection_v2 import eligible
-    usable={url for url,page in b['pages'].items() if not task.verified_only or eligible(page,task.cutoff)}
+    from ForecastAgent.readers.quality import body_diagnostics
+    usable={url for url,page in b['pages'].items() if body_diagnostics(page.get('content',''))['usable_text'] and (not task.verified_only or eligible(page,task.cutoff))}
     covered = {need for e in b['excerpts'] if e['url'] in usable for need in e.get('need_ids', [])}
     covered.update(need for a in b['fetch_attempts'] if a.get('status') == 'completed' and a.get('url') in usable for need in a.get('need_ids', []))
     missing = [n['id'] for n in b.get('plan') or [] if n['id'] not in covered]

@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      FORECAST_MODEL: ${{ vars.FORECAST_MODEL }}
       CAMPAIGN_ROOT: snapshots/current-new-five-20261001
     steps:
       - uses: actions/checkout@v4
@@ -132,8 +133,8 @@ jobs:
             rows.append(row)
             if not result: violations.append(qid+': missing package')
             if row['tavily_attempts']>3 or row['exa_attempts']>1: violations.append(qid+': search cap exceeded')
-            if not (result.get('exa_requirement') or {}).get('attempt_requirement_met'): violations.append(qid+': required Exa unmet')
-            if any(s.get('attempts_after',0)-s.get('attempts_before',0)>12 for s in b.get('sessions',[])): violations.append(qid+': model dispatch cap exceeded')
+            if not any(a.get('status') in {'completed','failed'} for a in b.get('exa_searches',[])): violations.append(qid+': required Exa unmet')
+            if any(s.get('attempts_after',0)-s.get('attempts_before',0)>s.get('http_attempt_limit',12) for s in b.get('sessions',[])): violations.append(qid+': model dispatch cap exceeded')
           summary={'schema':'five_dispatch_summary_v1','tasks':rows,'violations':violations,
                    'quality_pass':all(row.get('acquisition_complete') for row in rows) and len(rows)==5,
                    'scope':'Package/resource gate only; raw evidence requires a separate quality audit.'}

@@ -158,8 +158,11 @@ class RuntimeContractsTests(TestCase):
     def test_dispatch_budget_stops_and_remains_resumable_without_resetting_attempts(self, model):
         def reserve_dispatch(messages, key, **kwargs):
             observer = kwargs['observer']
-            for i in range(12):
-                observer('reserve', {'started_at_utc':'2026-10-01T00:00:00Z', 'retry_index':i, 'status':'reserved'})
+            from ForecastAgent.runtime.limits import MODEL_HTTP_PER_DISPATCH
+            for i in range(MODEL_HTTP_PER_DISPATCH):
+                record = {'started_at_utc':'2026-10-01T00:00:00Z', 'retry_index':i, 'status':'reserved'}
+                token = observer('reserve', record)
+                observer('complete', {**record, 'status':'received'}, token)
             return call('list_sources', {}, 'list')
         model.side_effect = reserve_dispatch
         with TemporaryDirectory() as root:
@@ -169,10 +172,10 @@ class RuntimeContractsTests(TestCase):
             self.assertEqual(result['session_state'], 'budget_exhausted')
             self.assertTrue(result['result']['resumable'])
             self.assertTrue(result['result']['incomplete'])
-            self.assertEqual(len(result['model_attempts']), 13)
+            self.assertEqual(len(result['model_attempts']), 17)
             model.side_effect = [call('finish_collection', {'gaps':['Insufficient sources']}, 'end')]
             restored = run_retrieval(LIVE, root, '', '')
-            self.assertEqual(len(restored['model_attempts']), 13)
+            self.assertEqual(len(restored['model_attempts']), 17)
             self.assertEqual(restored['session_state'], 'completed_with_gaps')
 
     @patch('ForecastAgent.runtime.retrieval.ask_ultra')

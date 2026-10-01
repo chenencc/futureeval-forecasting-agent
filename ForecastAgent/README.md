@@ -1,6 +1,6 @@
 # ForecastAgent
 
-An independent Ultra-led information acquisition agent. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
+An information acquisition agent with a model-independent execution protocol. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
 
 The [runtime contracts](docs/RUNTIME.md) define preflight tool validation, bounded
 model context with persistent loaded skills, durable progress measurements and
@@ -9,7 +9,7 @@ existing task quotas or submits forecasts.
 
 ## Acquisition pipeline
 
-New tasks default to `collection`. Ultra plans information needs, chooses tools, reads sources and stores exact excerpts. Completion exports `intelligence.json` without a fact-check, probability, verdict or fused score. Saved pages alone are valid output. Search snippets remain discovery leads.
+New tasks default to `collection`. The acquisition agent plans information needs, chooses tools, reads sources and stores exact excerpts. Completion exports `intelligence.json` without a fact-check, probability, verdict or fused score. Saved pages alone are valid output. Search snippets remain discovery leads.
 
 Existing ledgers without a pipeline field retain `legacy` behavior and budgets. A request may explicitly specify `"pipeline": "legacy"` for old regression experiments. Completed tasks return their saved results; upgrades do not restart searches. Existing and interrupted ledgers can be exported without a model or network call.
 
@@ -28,7 +28,7 @@ python -m ForecastAgent refresh --task-dir snapshots/retrieval/question-123 --ur
 python -m unittest discover -s ForecastAgent/tests
 ```
 
-Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY`, `TAVILY_API_KEY` and `EXA_API_KEY`. New collection tasks require one bounded Exa discovery attempt before normal completion; an unavailable key is an explicit acquisition gap. Existing ledgers retain their frozen policies and budgets. See [Exa integration](docs/EXA.md). Catalog, inspection, replay, export and local reading require no credentials. The model remains `nvidia/nemotron-3-ultra-550b-a55b:free`.
+Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY`, `TAVILY_API_KEY` and `EXA_API_KEY`. New collection tasks require one bounded Exa discovery attempt before normal completion; an unavailable key is an explicit acquisition gap. Existing ledgers retain their frozen policies and budgets. See [Exa integration](docs/EXA.md). Catalog, inspection, replay, export and local reading require no credentials. The default model remains `nvidia/nemotron-3-ultra-550b-a55b:free`; set `FORECAST_MODEL` to select a compatible OpenRouter backend. See [model-independent acquisition](docs/MODEL_INDEPENDENT_ACQUISITION.md) for generic prompts, effective clocks, reading gates and separate transport budgets.
 
 ## Tools and output
 
@@ -51,7 +51,7 @@ SQLite index. Its Windows schedule does not acquire evidence or submit forecasts
 - `refresh_sources`: update saved live sources in the same ledger, preserve old versions, and report new/changed/unchanged content.
 - `record_quote`: copy an exact passage; the program locates it and preserves its source version. No guessed coordinates.
 - `find_passages`: lexical navigation of saved text with reusable excerpt coordinates; no search API calls.
-- `collection_checkpoint`: bounded acquisition gaps and next-tool suggestions; Ultra chooses the next tool or explicitly defers a channel.
+- `collection_checkpoint`: bounded acquisition gaps and next-tool suggestions; The acquisition agent chooses the next tool or explicitly defers a channel.
 - `select_sources`: maintain a reading list without treating every outbound navigation link as required reading.
 - Free RSS/Atom reading preserves publisher dates, entry metadata, links and original bytes. PDF magic-byte detection handles mislabeled PDF responses.
 - `collection_acceptance`: check capture integrity, exact excerpt coordinates, resource limits and acquisition gaps, without judging truth.
@@ -90,10 +90,10 @@ See [adapter and incremental collection details](docs/ACQUISITION_CHANNELS.md). 
 
 ## Acquisition design references
 
-- [nostreambot architecture](https://github.com/No-Stream/nostreambot-metaculus-bot/blob/main/docs/architecture.md): separate designated resolution-source reading, market snapshots and bounded gap-filling; retain failures and raw artifacts. ForecastAgent adapts these acquisition ideas with Ultra and the existing three-search limit.
+- [nostreambot architecture](https://github.com/No-Stream/nostreambot-metaculus-bot/blob/main/docs/architecture.md): separate designated resolution-source reading, market snapshots and bounded gap-filling; retain failures and raw artifacts. ForecastAgent adapts these acquisition ideas with the acquisition agent and the existing three-search limit.
 - [TradingAgents changelog](https://github.com/TauricResearch/TradingAgents/blob/main/CHANGELOG.md): explicit vendor availability, bounded tool rounds, source settings and point-in-time disclosure. ForecastAgent uses explicit channel decisions and capture provenance; provider failures never establish event absence.
 
-These are design references, not copied modules or a claim of tournament performance. Browser rendering, OCR, SEC/BEA-specific adapters and automatic update scheduling remain future work. The acquisition checkpoint guides tool selection without forcing unnecessary paid calls. Autonomous use of the new guidance still requires a fresh-question Ultra trial; cached completed tasks are never reopened to renew budgets.
+These are design references, not copied modules or a claim of tournament performance. Browser rendering, OCR, SEC/BEA-specific adapters and automatic update scheduling remain future work. The acquisition checkpoint guides tool selection without forcing unnecessary paid calls. Autonomous use of the new guidance still requires a scoped live acquisition trial; cached completed tasks are never reopened to renew budgets.
 # Latest collection runtime
 
 See [single-case debugging](docs/DEBUGGING.md) for resuming one existing task,

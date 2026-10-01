@@ -25,6 +25,8 @@ def options(query, category='general', include_domains=None):
         raise ValueError('Unsupported Exa category')
     domains = search_options(query, include_domains=include_domains,
                              include_domains_mode='restrict' if include_domains else 'prefer')['include_domains']
+    if category == 'publication' and domains:
+        raise ValueError('Exa publication does not support arbitrary domain filters. Use category=general with include_domains, or publication without domain filters; no HTTP attempt sent.')
     return {'category': category, 'include_domains': domains, 'type': 'auto', 'numResults': 10}
 
 

@@ -12,7 +12,16 @@ def body_diagnostics(content, *, kind='', metadata=None, documents=()):
                           bool(re.search(r'captcha|bot test|programmatic access|IP access',text,re.I)))
     js_shell = len(text) < 300 and bool(re.search(r'enable javascript|javascript is required', text, re.I))
     login = len(text) < 600 and bool(re.search(r'sign in to (?:read|continue)|subscribe to (?:read|continue)', text, re.I))
-    state = 'corrupt_text' if corrupt else 'access_interstitial' if blocked else 'javascript_shell' if js_shell else 'login_preview' if login else 'thin' if len(text) < 200 else 'readable'
+    # Strip standard US government identity chrome before judging body substance.
+    government_shell = False
+    if 'official website of the United States government' in text:
+        residue = text
+        for pattern in (r'An official website of the United States government', r"Here['’]s how you know",
+            r'Official websites use \.gov', r'A \.gov website belongs to an official government organization in the United States\.',
+            r'Secure \.gov websites use HTTPS', r'A lock \(.*?Share sensitive information only on official, secure websites\.'):
+            residue = re.sub(pattern, '', residue, flags=re.I | re.S)
+        government_shell = len(residue.strip()) < 80
+    state = 'corrupt_text' if corrupt else 'access_interstitial' if blocked else 'government_banner_only' if government_shell else 'javascript_shell' if js_shell else 'login_preview' if login else 'thin' if len(text) < 200 else 'readable'
     return {'schema': 'body_diagnostics_v1', 'state': state, 'chars': len(text),
             'paragraph_count': sum(bool(s.strip()) for s in text.splitlines()),
             'table_count': (metadata or {}).get('html_table_count', sum(d.get('metadata', {}).get('table_count', 0) for d in documents)),

@@ -14,6 +14,8 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    env:
+      FORECAST_MODEL: ${{ vars.FORECAST_MODEL }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4

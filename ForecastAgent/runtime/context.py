@@ -3,6 +3,7 @@ import copy
 import json
 from ForecastAgent.runtime.collection_v2 import eligible, model_view
 from ForecastAgent.runtime.search_policy import requirement
+from ForecastAgent.readers.quality import body_diagnostics
 
 MAX_CONTEXT_CHARS = 28000
 
@@ -33,7 +34,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     # Frozen skill instructions survive omitted tool replies. Catalog-only skills are not injected.
     skill_text = '\n'.join('Loaded skill '+s['name']+' ('+s['sha256']+'):\n'+s['content'] for s in loaded)
     system = {'role':'system', 'content':instructions+'\n'+skill_text}
-    request = b['request']
+    from ForecastAgent.runtime.task_protocol import task_view
     from ForecastAgent.runtime.collection_actions import next_action
     from ForecastAgent.runtime.collection_actions import pending_passages
     state = {'schema':'collection_context_v2',
@@ -42,20 +43,20 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
              'effective_mode':b['mode'],
              'next_acquisition_action':next_action(task),
              'delivered_ranges':list(b.get('progress',{}).get('reads',{}).values())[-12:],
-             'task':{k:request[k] for k in ('question', 'title', 'resolution_criteria', 'fine_print', 'background', 'as_of_utc', 'mode') if k in request},
+             'task_protocol':task_view(task),
              'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
              'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
              'search_policy':b.get('search_policy', {}),
              'exa_requirement':requirement(task),
              'repaired_source_urls':b.get('control',{}).get('repaired_source_urls', []),
              'progress':b.get('sessions', [{}])[-1].get('turns', [])[-2:] if b.get('sessions') else [],
-             'sources':[{'url':u, 'saved':u in b['pages'], 'readable':u in b['pages'] and u not in blocked,
+             'sources':[{'url':u, 'saved':u in b['pages'], 'readable':u in b['pages'] and u not in blocked and body_diagnostics(b['pages'][u].get('content',''))['usable_text'],
                          'audit_only':u in blocked} for u in task.catalog()][:20],
              'documents':[{'url':u, 'sha256':p.get('sha256'), 'chars':len(p.get('content', '')),
                            'document_count':len(p.get('documents') or [None]), 'rows':len(p.get('rows', [])),
-                           'readable':u not in blocked, 'audit_only':u in blocked,
+                           'readable':u not in blocked and body_diagnostics(p.get('content',''))['usable_text'], 'audit_only':u in blocked,
                            'dataset':p.get('dataset'), 'unit':p.get('unit')} for u,p in b['pages'].items()][:20],
-             'excerpts':[{'id':e['id'], 'url':e['url'], 'need_ids':e['need_ids'], 'preview':e['text'][:180]}
+             'excerpts':[{'id':e['id'], 'url':e['url'], 'need_ids':e['need_ids'], 'preview':e['text'][:800]}
                          for e in b['excerpts'] if e['url'] not in blocked][-12:],
              'pending_passage_ids':[p['passage_id'] for p in pending_passages(task)],
              'passage_dispositions':[{k:row[k] for k in ('passage_id','action','reason') if k in row}

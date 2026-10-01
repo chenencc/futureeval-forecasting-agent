@@ -10,6 +10,7 @@ import os
 import re
 import socket
 import time
+from ForecastAgent.providers.model import configured_model, DEFAULT_MODEL
 from datetime import datetime, timezone
 from io import BytesIO
 from html.parser import HTMLParser
@@ -20,7 +21,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 from ForecastAgent.tavily_research import canonical_url, search_batch
 
 
-MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+MODEL = DEFAULT_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_SEARCHES = 3
 MAX_FETCHES = 5
@@ -89,7 +90,7 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
     request = Request(
         OPENROUTER_URL,
         data=json.dumps({
-            "model": MODEL,
+            "model": configured_model(),
             "messages": messages,
             "tools": TOOLS if tools is None else tools,
             "tool_choice": {"type": "function", "function": {"name": forced_tool or "search_tavily"}} if first_turn or forced_tool else "auto",
@@ -100,7 +101,7 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://github.com/chenencc/futureeval-forecasting-agent",
-            "X-Title": "FutureEval read-only Ultra research",
+            "X-Title": "ForecastAgent information acquisition",
         },
         method="POST",
     )
@@ -218,7 +219,7 @@ TOOLS = [
 SYSTEM_PROMPT = """You are an evidence-led forecasting research agent. This is READ ONLY: never submit a prediction or trade.
 You may choose Tavily basic searches (at most 3), public page fetches (at most 5), and find_in_page.
 Start with a targeted search. Open the most consequential sources before deciding whether another search is needed.
-Ultra owns the research plan and final judgment. Label searches historical, current, or gap.
+The research agent owns the research plan and final judgment. Label searches historical, current, or gap.
 Prefer researching the historical/reference-class base rate first, then current conditions; reserve a search
 for a consequential unresolved fact when useful. These are purposes, not a requirement to use all three searches.
 After reading historical evidence, call record_base_rate before deciding the final probability. Match its time
@@ -433,7 +434,7 @@ def run_research(question: str, criteria: str, fine_print: str, tavily_key: str,
         "completed_at_utc": utc_now(),
         "mode": "read_only_ultra_agent",
         "submitted_to_metaculus": False,
-        "model": MODEL,
+        "model": __import__("ForecastAgent.providers.model", fromlist=["configured_model"]).configured_model(),
         "pipeline_version": "outside_inside_v1",
         "question": question,
         "resolution_criteria": criteria,

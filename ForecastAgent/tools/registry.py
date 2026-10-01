@@ -1,4 +1,4 @@
-"""Structured tool schemas exposed to Ultra; credentials and budgets are not model arguments."""
+"""Structured tool schemas exposed to the model; credentials and budgets are not model arguments."""
 def tool(name, description, properties, required):
     return {"type": "function", "function": {"name": name, "description": description,
         "parameters": {"type": "object", "properties": properties, "required": required, "additionalProperties": False}}}
@@ -35,7 +35,7 @@ TOOLS.insert(-1, tool("load_research_skill", "Load a named research skill from t
 TOOLS.insert(-1, tool('search_exa', 'Independent discovery for a critical gap or crosscheck after Tavily. New collection tasks require this attempt before normal finish; existing task policy is frozen. Maximum ONE provider attempt; failures count. Metadata only, no paid content or retries. Domain filters restrict results. Dates are program-owned, not archive proof.',
     {'query':STRING, 'need_ids':{'type':'array','items':STRING}, 'reason':STRING,
      'search_role':{'type':'string','enum':['crosscheck','gap','recent','official_gap']},
-     'category':{'type':'string','enum':['general','news','publication','financial report']},
+     'category':{'type':'string','enum':['general','news','publication','financial report'],'description':'Use general for scientific/government domains. Publication cannot be combined with arbitrary include_domains in this adapter.'},
      'include_domains':{'type':'array','items':STRING,'maxItems':10}},
     ['query','need_ids','reason','search_role','category','include_domains']))
 PLAN_SCHEMA = TOOLS[0]["function"]["parameters"]
@@ -106,12 +106,14 @@ TOOLS.extend([
 COLLECTION_TOOLS = [t for t in TOOLS if t["function"]["name"] not in
                     {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}]
 COLLECTION_TOOLS.extend([
+    tool('parameterize_source','Register a year/month variant of an exact discovered Iowa State Mesonet hist.phtml URL. Preserve station and network; no HTTP and no arbitrary URL construction. Read the returned exact URL afterward.',
+         {'url':STRING,'year':{'type':'integer','minimum':1900,'maximum':2100},'month':{'type':'integer','minimum':1,'maximum':12}},['url','year','month']),
     tool('review_passages','Dispose of one to eight surfaced lexical candidates. Keep relevant exact material with existing nonempty need_ids; reject irrelevant/header/duplicate material with a reason and need_ids=[] if unrelated. This is acquisition selection, not fact checking.',
          {'items':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{
              'passage_id':STRING,'action':{'type':'string','enum':['keep','reject']},'reason':STRING,
              'need_ids':{'type':'array','items':STRING}},'required':['passage_id','action','reason','need_ids'],'additionalProperties':False}}},['items']),
     tool('read_sources','Batch up to four accepted source reads and locate complete paragraphs for up to eight acquisition queries. Free fetch budgets still apply per URL. No semantic verdict.',
-         {'urls':{'type':'array','items':STRING,'maxItems':4},'queries':{'type':'array','maxItems':8,'minItems':1,'items':{'type':'object','properties':{'query':STRING,'url':STRING,'need_ids':{'type':'array','items':STRING}},'required':['query','need_ids']}}},['urls','queries']),
+         {'urls':{'type':'array','items':STRING,'maxItems':4},'rescue_failed':{'type':'boolean','description':'Default true: rescue selected failed named critical sources once within the existing basic Extract allowance.'},'queries':{'type':'array','maxItems':8,'minItems':1,'items':{'type':'object','properties':{'query':STRING,'url':STRING,'need_ids':{'type':'array','items':STRING}},'required':['query','need_ids']}}},['urls','queries']),
     tool('record_excerpts','Bank one to eight passages by exact passage_id from read_sources and need_ids. Do not enter character offsets. IDs are checked against saved source versions.',
          {'items':{'type':'array','minItems':1,'maxItems':8,'items':{'type':'object','properties':{'passage_id':STRING,'need_ids':{'type':'array','items':STRING}},'required':['passage_id','need_ids'],'additionalProperties':False}}},['items']),
     tool('list_dated_datasets','List supported date-bounded data adapters, units and temporal limitations. No network.',{},[]),

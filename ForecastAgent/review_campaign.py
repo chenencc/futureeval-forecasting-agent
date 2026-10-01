@@ -183,7 +183,7 @@ def compare_fresh(old, prior, current):
                   'exa_total_within_frozen_budget':row['exa_search_attempts']<=row['limits'].get('exa_search', 0),
                   'required_exa_attempt_met':(row.get('result') or {}).get('exa_requirement', {}).get('attempt_requirement_met', False),
                   'all_transport_files_verified':row['transport_records_verified']==row['model_http_attempts'],
-                  'all_model_dispatches_within_cap':all(s.get('attempts_after',0)-s.get('attempts_before',0)<=12 for s in row.get('sessions',[]))}
+                  'all_model_dispatches_within_cap':all(s.get('attempts_after',0)-s.get('attempts_before',0)<=s.get('http_attempt_limit',12) for s in row.get('sessions',[]))}
         comparisons.append({'question_id':row['question_id'],
             'old_v2':{k:old_by_id[row['question_id']].get(k,0) for k in KEYS},
             'initial_v3':{k:previous.get(k,0) for k in KEYS},
