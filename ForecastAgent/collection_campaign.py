@@ -133,7 +133,7 @@ def unavailable(directory, attempts):
     return failures >= 2
 
 
-def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reason=''):
+def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reason='', question_ids=None):
     if type(limit) is not int or not 1 <= limit <= 5:
         raise ValueError('Each dispatch may process one to five questions')
     if not all(os.environ.get(k) for k in ('OPENROUTER_API_KEY', 'TAVILY_API_KEY', 'EXA_API_KEY')):
@@ -143,11 +143,24 @@ def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reas
         campaign = reconcile(root, read(root / 'campaign.json'))
         if campaign['model'] != configured_model():
             raise ValueError('Frozen campaign model differs from the configured backend')
+        if question_ids is not None:
+            question_ids = [str(ident) for ident in question_ids]
+            if question_id is not None or not question_ids or len(question_ids) > limit or len(set(question_ids)) != len(question_ids):
+                raise ValueError('Select unique new question IDs within the dispatch limit, without a repair selection')
+            for ident in question_ids:
+                if ident not in campaign['tasks'] or campaign['tasks'][ident]['attempts'] or campaign['tasks'][ident]['status'] != 'pending':
+                    raise ValueError('New-case selection requires untouched pending task state: ' + ident)
         pause = parse_time(campaign.get('pause_until_utc'))
         if pause and pause > now():
             return report(campaign)
         # New work first: repeated failures must not starve the rest of the queue.
-        if question_id is not None:
+        if question_ids is not None:
+            candidates = question_ids
+            campaign.setdefault('dispatch_selections', []).append({'question_ids': question_ids,
+                'at_utc': now().isoformat(), 'code_commit': os.environ.get('GITHUB_SHA'),
+                'selection_policy': 'Explicit unstarted queue tasks; no replacement inputs or provider budget reset.'})
+            write(root / 'campaign.json', campaign)
+        elif question_id is not None:
             question_id = str(question_id)
             if question_id not in campaign['tasks'] or not campaign['tasks'][question_id]['attempts'] or len(resume_reason.strip()) < 20:
                 raise ValueError('Focused repair requires an existing consumed task and a substantive resume reason')
@@ -229,6 +242,7 @@ def main():
     parser.add_argument('--count', type=int, default=100)
     parser.add_argument('--limit', type=int, default=1)
     parser.add_argument('--question')
+    parser.add_argument('--questions', help='Comma-separated IDs of untouched pending tasks')
     parser.add_argument('--resume-reason', default='')
     args = parser.parse_args()
     if args.action == 'prepare':
@@ -236,7 +250,8 @@ def main():
             parser.error('--fixture is required')
         result = report(prepare(args.root, args.fixture, args.count))
     elif args.action == 'run':
-        result = run_batch(args.root, args.limit, question_id=args.question, resume_reason=args.resume_reason)
+        selection = args.questions.split(',') if args.questions is not None else None
+        result = run_batch(args.root, args.limit, question_id=args.question, resume_reason=args.resume_reason, question_ids=selection)
     else:
         with task_lock(args.root):
             result = report(reconcile(args.root, read(args.root / 'campaign.json')))

@@ -11,6 +11,10 @@ on:
         description: 'Optional existing task ID for a focused repair'
         default: ''
         type: string
+      questions:
+        description: 'Optional comma-separated IDs of new pending tasks (up to five)'
+        default: ''
+        type: string
       resume_reason:
         description: 'Concrete repair reason; preserves all consumed budgets'
         default: ''
@@ -65,14 +69,21 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-collection-100-v1
       - name: Run a bounded acquisition dispatch
         run: |
+          if [ -n "$SELECTED_QUESTION" ] && [ -n "$SELECTED_QUESTIONS" ]; then
+            echo "Choose either new-case selection or a focused repair"
+            exit 1
+          fi
           if [ -n "$SELECTED_QUESTION" ]; then
             python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit 1 --question "$SELECTED_QUESTION" --resume-reason "$RESUME_REASON"
+          elif [ -n "$SELECTED_QUESTIONS" ]; then
+            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT" --questions "$SELECTED_QUESTIONS"
           else
             python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
           fi
         env:
           DISPATCH_LIMIT: ${{ inputs.limit }}
           SELECTED_QUESTION: ${{ inputs.question }}
+          SELECTED_QUESTIONS: ${{ inputs.questions }}
           RESUME_REASON: ${{ inputs.resume_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}

@@ -153,6 +153,31 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(result['resources']['tavily_basic'], 2)
         self.assertFalse(read(self.root / 'campaign.json')['repair_resumptions'][0]['budget_reset'])
 
+    def test_explicit_five_case_selection_preserves_other_queue_tasks(self):
+        prepare(self.root, self.fixture)
+        chosen = ['9', '2', '70', '30', '88']
+        visited = []
+        def runner(request, directory, *keys):
+            visited.append(str(request['id']))
+            return self.runner(request, directory, *keys)
+        result = run_batch(self.root, 5, runner, question_ids=chosen)
+        self.assertEqual(visited, chosen)
+        self.assertEqual(result['states'], {'pending': 95, 'acquired': 5})
+        campaign = read(self.root / 'campaign.json')
+        self.assertFalse(campaign['tasks']['1']['attempts'])
+        self.assertEqual(campaign['dispatch_selections'][0]['question_ids'], chosen)
+        self.assertFalse((self.root / 'tasks/1').exists())
+
+    def test_new_selection_rejects_consumed_or_duplicate_tasks(self):
+        prepare(self.root, self.fixture, 3)
+        run_batch(self.root, 1, self.runner, question_ids=['1'])
+        with self.assertRaisesRegex(ValueError, 'untouched pending'):
+            run_batch(self.root, 1, self.runner, question_ids=['1'])
+        with self.assertRaisesRegex(ValueError, 'unique'):
+            run_batch(self.root, 2, self.runner, question_ids=['2', '2'])
+        with self.assertRaisesRegex(ValueError, 'dispatch limit'):
+            run_batch(self.root, 1, self.runner, question_ids=['2', '3'])
+
 
 if __name__ == '__main__':
     unittest.main()

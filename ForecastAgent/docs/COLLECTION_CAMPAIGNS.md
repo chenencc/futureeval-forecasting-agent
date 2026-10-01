@@ -16,9 +16,12 @@ New tasks have priority over retries. Two provider 429/5xx errors in a task disp
 python -m ForecastAgent.collection_campaign prepare --root snapshots/example --fixture ForecastAgent/fixtures/historical_2026_135.json --count 100
 python -m ForecastAgent.collection_campaign run --root snapshots/example --limit 1
 python -m ForecastAgent.collection_campaign status --root snapshots/example
+python -m ForecastAgent.collection_campaign run --root snapshots/example --limit 5 --questions 44986,40938,43525,43703,41091
 python -m ForecastAgent.collection_campaign run --root snapshots/example --question 44925 --resume-reason "Validate repaired inventory delivery on the preserved task"
 ```
 
 Runtime credentials are `OPENROUTER_API_KEY`, `TAVILY_API_KEY` and `EXA_API_KEY`. The configured model is frozen for the campaign. State files include the queue manifest, original inputs, per-task bundles, raw source bodies, model request/response files, and a dispatch status report. A successfully uploaded artifact does not imply complete intelligence coverage or forecast accuracy.
 
 A focused repair can bypass a selected incomplete task's retry delay with an explicit recorded reason. It does not bypass the campaign transport pause, reopen a closed package, replace inputs or reset provider budgets. The same code/reason operation cannot run twice automatically.
+
+An explicit new-case selection accepts up to five unique untouched pending task IDs, in the requested order. It preserves all other task directories and refuses consumed tasks, unknown IDs, duplicates and mixed repair selections. The campaign transport circuit may defer the rest of a selected batch; the manifest retains the selected IDs and each actual execution reservation.
