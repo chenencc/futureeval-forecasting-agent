@@ -20,7 +20,7 @@ def body_diagnostics(content, *, kind='', metadata=None, documents=()):
     blocked = bool(re.search(r'just a moment|verify you are human|enable javascript and cookies|access denied|your request has been flagged as potentially automated', text, re.I))
     blocked = blocked or (bool(re.fullmatch(r'request access|access denied|security verification',title,re.I)) and
                           bool(re.search(r'captcha|bot test|programmatic access|IP access',text,re.I)))
-    js_shell = len(text) < 300 and bool(re.search(r'enable javascript|javascript is required', text, re.I))
+    js_shell = len(text) < 300 and bool(re.search(r'enable javascript|javascript\s+(?:is required|must be enabled|needs to be enabled)', text, re.I))
     login = len(text) < 600 and bool(re.search(r'sign in to (?:read|continue)|subscribe to (?:read|continue)', text, re.I))
     # Strip standard US government identity chrome before judging body substance.
     government_shell = False

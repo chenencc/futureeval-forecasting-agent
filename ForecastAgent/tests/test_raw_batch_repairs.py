@@ -12,6 +12,12 @@ from ForecastAgent.tests.test_runtime_contracts import prepared, LIVE
 
 
 class RepairTests(unittest.TestCase):
+    def test_short_javascript_required_notice_is_not_readable_body(self):
+        text = 'JavaScript must be enabled on your browser, otherwise content or functionality may be limited or unavailable.'
+        self.assertEqual(body_diagnostics(text)['state'], 'javascript_shell')
+        self.assertFalse(body_diagnostics(text)['usable_text'])
+        self.assertTrue(body_diagnostics(text+'\n'+('An actual substantive article paragraph discussing internet availability. '*10))['usable_text'])
+
     def test_event_period_prioritizes_august_without_rejecting_september(self):
         request = {'question': 'Will the leaders call in August 2026?'}
         self.assertEqual(target_period(request)['end_exclusive'], '2026-09-01')
