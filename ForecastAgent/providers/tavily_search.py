@@ -39,6 +39,10 @@ def search_options(query, *, topic="general", include_domains=None, include_doma
     query = " ".join(query.split())[:350]
     if not query or topic not in {"general", "news", "finance"}:
         raise ValueError("Valid query and general/news/finance topic required")
+    from ForecastAgent.tools.channels import CHANNELS
+    internal_ids={value.casefold() for channel in CHANNELS for value in [channel['id'],*channel['tools']]}
+    if query.casefold() in internal_ids:
+        raise ValueError('Search query must describe the question entity/event/data, not an internal channel ID or tool name; no HTTP request sent')
     if include_domains_mode not in {"prefer", "restrict"} or type(exact_match) is not bool:
         raise ValueError("Invalid domain mode or exact_match boolean")
     if exact_match and not re.search(r'"[^"\n]+"', query):

@@ -94,3 +94,20 @@ The authorized supplement uses a focused Ultra context containing the frozen
 question, evidence needs, accepted URLs and remaining budget, without unrelated
 channel catalogs or failed prior turns. This is one subtask in the same runtime,
 not a new provider, task budget or forecast stage.
+
+Run `36801811402` successfully executed the four Exa allowances, with a
+reported provider estimate of USD 0.028. It added 38 Ultra HTTP attempts and
+392,361 reported tokens, plus one Tavily attempt. However, raw queries were
+`exa_search` or `dated_observations`, so the returned metadata was unrelated
+to the frozen events. Executed search counts are not evidence of useful
+discovery. The shared Tavily/Exa option validation now rejects exact internal
+channel IDs and tool names before HTTP reservation. No further five-question
+dispatch is triggered, and no spent Exa allowance is renewed.
+
+The latest state preserves all 200 physical Ultra attempts and 2,634,312
+known tokens from the original v3 campaign and three repair dispatches. It
+has eight Tavily attempts, four Exa attempts, seventeen saved bodies, four
+v3-eligible bodies and four excerpts. Eligibility includes exploratory
+current-vintage observations and is not proof of a clean backtest. The
+135-question expansion remains unvalidated. Query grounding and efficient
+use of readable archives require further runtime work.
