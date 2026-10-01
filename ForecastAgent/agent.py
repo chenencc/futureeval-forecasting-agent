@@ -27,9 +27,13 @@ def inspect_task(directory):
     evidence = bundle.get("evidence", [])
     return {"task_directory": str(Path(directory)), "request": bundle["request"],
             "stage": bundle.get("agent_runtime", {}).get("stage", "legacy"),
+            'session_state':bundle.get('session_state'), 'sessions':bundle.get('sessions', []),
+            'progress':bundle.get('progress', {}),
             "runtime": bundle.get("agent_runtime"), "loaded_skills": bundle.get("loaded_skills", []),
             "skill_versions": {k: v["sha256"] for k, v in bundle.get("skill_bank", {}).items()},
             "resources": {"tavily_basic_attempts": len(bundle.get("searches", [])),
+                          'exa_search_attempts':len(bundle.get('exa_searches', [])),
+                          'model_http_attempts':len(bundle.get('model_attempts', [])),
                           "page_fetch_attempts": len(bundle.get("fetch_attempts", [])),
                           "update_http_attempts": len(bundle.get("update_attempts", [])),
                           "basic_extract_batches": len(bundle.get("extract_attempts", []))},

@@ -91,7 +91,7 @@ class ToolSelectionTests(TestCase):
     @patch('ForecastAgent.runtime.retrieval.search_exa',side_effect=ExaError(402,'Out of credits'))
     @patch('ForecastAgent.runtime.retrieval.ask_ultra')
     def test_failed_supplement_is_spent_and_does_not_block_closing(self, model, provider):
-        args={'query':'agency official release','need_ids':['n'],'reason':'Missing official source','search_role':'official_gap'}
+        args={'query':'agency official release','need_ids':['n'],'reason':'Missing official source','search_role':'official_gap','category':'general','include_domains':[]}
         model.side_effect=[call('search_exa',args,'exa'),call('finish_collection',{'gaps':['Provider unavailable']},'end')]
         with TemporaryDirectory() as directory:
             task=RetrievalTask(Path(directory),REQUEST);task.bundle['plan']=deepcopy(PLAN)

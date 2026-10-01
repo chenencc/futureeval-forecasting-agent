@@ -47,7 +47,7 @@ class ResumeRepairTests(TestCase):
             task.bundle['pages']['https://example.org/source']=deepcopy(PAGE)
             result=task.execute('finish_collection',{'gaps':[]},'')
             self.assertFalse(result['acquisition_complete'])
-            self.assertTrue(any('recent search' in g for g in result['gaps']))
+            self.assertTrue(any('recent search' in g for g in result['discovery_notes']))
             self.assertTrue(any('Critical needs' in g for g in result['gaps']))
             self.assertFalse(result.get('incomplete',False))
             self.assertTrue((Path(directory)/'intelligence.json').exists())

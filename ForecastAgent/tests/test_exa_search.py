@@ -124,7 +124,8 @@ class ExaTests(TestCase):
     def test_ultra_has_optional_tool_and_redacts_exa_key_in_errors(self, model):
         def call(name,args,identifier):
             return {'tool_calls':[{'id':identifier,'type':'function','function':{'name':name,'arguments':json.dumps(args)}}]}
-        model.side_effect=[call('plan_evidence',{'needs':[{'id':'n','condition':'Release','priority':'critical','expected_source':'Agency','query':'Agency'}]},'plan'),
+        model.side_effect=[call('plan_evidence',{'needs':[{'id':'n','condition':'Release','priority':'critical','expected_source':'Agency','query':'Agency'}],
+            'entity_card':{'subject':'Agency','identity_checks':'Named issuer','required_form':'Release','announcement_window':'Before deadline','effective_vs_announcement':'Announcement date'}},'plan'),
             RuntimeError('test-only-key failed')]
         with TemporaryDirectory() as directory:
             bundle=run_retrieval(REQUEST,directory,'','')

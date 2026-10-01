@@ -27,6 +27,8 @@ def intelligence_package(bundle):
             'cache_events':bundle.get('cache_events',[]),'failed_captures':bundle.get('failed_captures',[]),
             'model_attempts': bundle.get('model_attempts', []),
             'step_attempts': bundle.get('step_attempts', []),
+            'sessions':bundle.get('sessions', []), 'session_state':bundle.get('session_state'),
+            'progress':bundle.get('progress', {}),
             'messages': bundle.get('messages', []), 'transcript': bundle.get('transcript', []),
             'temporal_provenance': temporal_report(bundle),
             "pages": bundle.get("pages", {}), "excerpts": bundle.get("excerpts", []),

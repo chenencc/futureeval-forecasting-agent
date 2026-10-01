@@ -2,6 +2,11 @@
 
 An independent Ultra-led information acquisition agent. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
 
+The [runtime contracts](docs/RUNTIME.md) define preflight tool validation, bounded
+model context with persistent loaded skills, durable progress measurements and
+explicit session recovery/termination states. None of these mechanisms resets
+existing task quotas or submits forecasts.
+
 ## Acquisition pipeline
 
 New tasks default to `collection`. Ultra plans information needs, chooses tools, reads sources and stores exact excerpts. Completion exports `intelligence.json` without a fact-check, probability, verdict or fused score. Saved pages alone are valid output. Search snippets remain discovery leads.

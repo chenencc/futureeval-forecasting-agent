@@ -42,6 +42,8 @@ from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
 from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate, eligible
 from ForecastAgent.providers.cache import cached_page, save_cached_page
 from ForecastAgent.providers.exa_search import search as search_exa, options as exa_options
+from ForecastAgent.runtime.contracts import validate, ContractError
+from ForecastAgent.runtime import progress, session
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -451,14 +453,17 @@ class RetrievalTask:
     def needs(self, args):
         known = {n["id"] for n in (self.bundle["plan"] or [])}
         selected = args.get("need_ids", [])
-        if not selected or not set(selected).issubset(known):
-            raise ValueError("Reference existing evidence need IDs: " + ', '.join(sorted(known)))
+        if not isinstance(selected, list) or not selected or any(not isinstance(n, str) or n not in known for n in selected):
+            raise ContractError('unknown_need_id', 'need_ids', 'Reference existing evidence need IDs: '+', '.join(sorted(known)), sorted(known))
 
     def coverage(self):
         return [{**n, "evidence_ids": [e["id"] for e in self.bundle["evidence"] if n["id"] in e["need_ids"] and e.get("audit", {}).get("accepted") is not False]}
                 for n in self.bundle["plan"] or []]
 
     def execute(self, name, args, key):
+        if name not in {'fetch_pages', 'read_sources', 'record_excerpts', 'record_evidence_batch'}:
+            # Batch tools preserve independent per-item failures; each child validates before HTTP.
+            validate(self, name, args)
         if not isinstance(args, dict):
             raise ValueError('Tool arguments must be an object')
         if self.bundle['result'] and name in {'collect_dataset','collect_archive'}:
@@ -648,8 +653,9 @@ class RetrievalTask:
             if not isinstance(args.get("gaps"), list) or any(not isinstance(g, str) for g in args["gaps"]):
                 raise ValueError("Collection gaps must be strings")
             gaps = list(args['gaps'])
+            discovery_notes = []
             if self.optimized and self.cutoff and not any(s.get('search_role')=='recent' and s.get('status')=='completed' for s in b['searches'] + b['exa_searches']):
-                gaps.append('No successful cutoff-bounded recent search was captured; acquisition is incomplete.')
+                discovery_notes.append('No successful cutoff-bounded recent search was captured; assess whether saved series or snapshots already cover timing needs.')
             unread = sorted(reading_targets(b) - set(b['pages']))
             b['acceptance'] = collection_acceptance(b)
             missing = [n['need_id'] for n in b['acceptance']['acquisition_metrics']['needs']
@@ -661,6 +667,7 @@ class RetrievalTask:
                            "page_count": len(b["pages"]), "excerpt_count": len(b["excerpts"]),
                            "market_snapshot_count": len(b['market_snapshots']), "acceptance": b['acceptance']['status'],
                            "unread_urls": unread, "gaps": list(dict.fromkeys(gaps)), "finished_at": utc_now(),
+                           'discovery_notes':discovery_notes,
                            'acquisition_complete':not bool(gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])}
             b['result']['acquisition_checkpoint'] = checkpoint(self)
             b['result']['historical_body_policy']=b.get('historical_body_policy')
@@ -670,6 +677,7 @@ class RetrievalTask:
                 b['result']['usable_body_count']=len(b['pages'])-len(b['result']['audit_only_urls'])
                 if b['result']['audit_only_urls']:
                     b['result']['gaps'].append('Current bodies are audit-only; verified pre-cutoff captures are missing for '+str(len(b['result']['audit_only_urls']))+' sources.')
+            b['result']['acquisition_complete'] = not bool(b['result']['gaps'] or b['acceptance']['warnings'] or b['acceptance']['failures'])
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -987,11 +995,14 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         dispatch_start = len(task.bundle.get('model_attempts',[]))
         collection = task.bundle['pipeline']=='collection'
         observer = model_observer(task, secrets, dispatch_limit=COLLECTION_HTTP_PER_DISPATCH if collection else None)
+        current_session = session.begin(task, utc_now())
+        task.bundle['session_state'] = 'running'
+        termination_reason = None
         freeze_skills(task.bundle)
         task.bundle.setdefault("agent_runtime", {"name": "ForecastAgent", "version": 1, "stage": "analysis", "events": []})
         runtime = task.bundle["agent_runtime"]
         collection = task.bundle["pipeline"] == "collection"
-        available_tools = COLLECTION_TOOLS if collection else TOOLS
+        available_tools = copy.deepcopy(COLLECTION_TOOLS if collection else TOOLS)
         if task.optimized:
             available_tools=copy.deepcopy([t for t in COLLECTION_TOOLS if t['function']['name'] not in
                 {'fetch_page','fetch_pages','record_excerpt','find_passages','search_saved_text','collection_checkpoint','collection_acceptance','select_sources','refresh_sources'}])
@@ -1001,19 +1012,18 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     entry['function']['parameters']['required'].append('search_role')
             for entry in available_tools:
                 if entry['function']['name']=='plan_channels':
-                    entry['function']['parameters']['properties']['channels']['items']['properties']['channel']['enum'] = [c['id'] for c in task.bundle['channel_catalog']['channels']]
+                    entry['function']['parameters']['properties']['channels']['items']['properties']['channel'] = {'type':'string', 'enum':[c['id'] for c in task.bundle['channel_catalog']['channels']]}
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
         if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
-        system = (COLLECTION_SYSTEM if collection else SYSTEM) + "\nSkills guide source acquisition only in collection mode; the program owns limits. Skill catalog: " + json.dumps(catalog)
-        if task.optimized:
-            system=system.replace('at most THREE attempted searches','at most FIVE attempted searches')
-            system=system.replace('fetch_page/fetch_pages','read_sources').replace('search_saved_text','read_sources').replace('find_passages','read_sources').replace('record_excerpt','record_excerpts')
-            system += '\nV2: Default to three basic searches; calls four/five only with recent or official_gap roles. Save passage_id and need_ids with record_excerpts; never calculate offsets. Aim for 8-12 turns without skipping critical work. Begin historical research with a recent search, not a last-minute checkbox. Use general for scientific data and official records, finance only for financial topics. Distinguish cutoff from event deadline: observations after cutoff are unavailable future outcomes, not collection gaps. Historical bodies require pre-cutoff local or archive captures by default; current pages are audit-only. collect_archive uses two of the eight shared HTTP attempts and may fail. Dated datasets are exploratory current vintages with explicit revision caveats, never clean historical snapshots. For BTC use exchange candles, for North Atlantic SST use daily series, for SEC use issuer discovery then exact CIK/form/date queries; an empty lookup never proves absence. Current HTML publication dates do not establish its historical version. Full tool responses remain on disk. No forecasting, event verdicts or outcome inference.'
-        system += f'\nProgram budget for THIS task: {task.search_limit} total basic search attempts, shared 8 initial HTTP attempts, one Extract batch. Frozen ledgers never restart. Use plan_channels early to reserve important structured/official/archive work; archive needs two HTTP attempts. Read saved passages and row pages in batches. Model context contains program state and recent complete turns; older raw records remain on disk. Current captures use a short shared live cache; capture time remains the original time. Diagnostics and associated sources are acquisition indicators, not truth scores.'
-        system=system.replace('at most FIVE attempted searches',f'at most {task.search_limit} attempted searches').replace('at most THREE attempted searches',f'at most {task.search_limit} attempted searches')
-        system += f'\nOptional Exa discovery budget: {task.exa_limit} lifetime attempt. Tavily is the primary search provider. Use search_exa only for an important missing official/scientific source or independent crosscheck. An explicitly authorized Exa supplement may require one search; choose its query, need IDs and filters to address the largest unresolved acquisition gap. Exa only discovers metadata; read selected pages using existing free tools. Exa never increases Tavily quota, historical body permissions or HTTP budgets. Unknown historical publication dates are quarantined. Credit estimates are not account balances.'
-        system += '\nBlocked/audit-only bodies have NO readable content. A saved body is not necessarily usable. Never repeatedly read such a body at different offsets. Use an archive if remaining HTTP budget permits, a supported dated dataset, or another source; otherwise finish with gaps. Recent discovery is desirable but missing it never prevents closing. plan_channels uses exact catalog IDs, not tool names. Read rows with limit 1-100. Dataset end_date must be before the cutoff UTC day; NOAA OISST histories start in 1981, not 1850. Avoid spending model turns on mandatory checkboxes or repeatedly listing unchanged catalogs.'
+        if collection:
+            from ForecastAgent.runtime.guidance import collection_system
+            system = collection_system(task, catalog)
+            for entry in available_tools:
+                if entry['function']['name'] == 'search_tavily':
+                    entry['function']['description'] = f'Primary basic discovery, at most {task.search_limit} lifetime attempts. Use concrete task entities/events, not internal IDs. Failures count.'
+        else:
+            system = SYSTEM + '\nSkill catalog: '+json.dumps(catalog)
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
@@ -1038,9 +1048,17 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         turn_limit = COLLECTION_MAX_TURNS if collection else MAX_TURNS
         for turn in range(turn_limit):
             control = task.bundle["control"]
+            before_turn = progress.snapshot(task)
+            turn_failed = False
+            if collection and (len(task.bundle.get('model_attempts', [])) >= 72 or
+                    len(task.bundle.get('model_attempts', []))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
+                termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
+                break
             if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
                     (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)):
                 control["forced_close"] = True
+                termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
+                                      'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
             forced = None
             if task.bundle["plan"] is None:
@@ -1085,11 +1103,14 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if secret:
                         detail = detail.replace(secret, "[REDACTED]")
                 task.bundle["last_error_detail"] = detail[:1200]
+                termination_reason = ('model_dispatch_budget' if 'dispatch budget exhausted' in detail else
+                                      'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
+                                      'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')
                 break
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
             if not calls:
-                control["consecutive_errors"] += 1
+                turn_failed = True
                 messages.append({"role": "user", "content": "Use the retrieval tools. Finish explicitly with gaps if evidence is inadequate."})
             for call in calls:
                 name = (call.get("function") or {}).get("name")
@@ -1101,22 +1122,28 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if time.monotonic() >= deadline:
                         raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
-                    if name not in {t["function"]["name"] for t in available_tools}:
-                        raise ValueError("Tool is unavailable in this pipeline")
+                    validate(task, name, args, turn_tools)
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
                         raise ValueError("Closing phase: audit saved facts or finish with gaps")
                     signature = (name, json.dumps(args, sort_keys=True))
-                    if signature in seen_calls and name in {"search_tavily", "search_exa", "fetch_page", "fetch_pages", "extract_failed_pages",'read_document','read_sources','read_dataset_rows','list_documents','plan_channels','collect_archive'}:
-                        raise ValueError("Repeated identical tool request blocked; use list_sources or existing evidence")
+                    if signature in seen_calls and name in {"search_tavily", "search_exa", "fetch_page", "fetch_pages", "extract_failed_pages",'collect_archive'}:
+                        raise ContractError('duplicate_attempt', 'arguments', 'This acquisition request was already attempted. Read saved material, choose another accepted source or finish with gaps.')
+                    local_key = session.cache_key(task, name, args)
+                    cached_reply = session.replay_local(task, local_key)
+                    step['operation_key'] = local_key or progress.fingerprint(signature)
                     seen_calls.add(signature)
                     control["seen_calls"] = [list(item) for item in sorted(seen_calls)]
                     task.save()
-                    if name == "load_research_skill":
+                    if cached_reply is not None:
+                        result = cached_reply
+                    elif name == "load_research_skill":
                         if collection and args["name"] == "evidence-review":
                             raise ValueError("Evidence review is outside collection mode")
                         result = load_skill(task.bundle, args["name"])
                     else:
                         result = task.execute(name, args, tavily_key)
+                    session.save_local(task, local_key, result)
+                    progress.delivered(task, name, args, result)
                     stage = {"plan_evidence": "research", "audit_evidence": "audit", "finish_retrieval": "report", "finish_collection": "export"}.get(name)
                     if stage:
                         runtime["stage"] = stage
@@ -1127,37 +1154,47 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         if secret:
                             detail = detail.replace(secret, "[REDACTED]")
                     result = {"error": detail[:500]}
+                    if isinstance(exc, ContractError):
+                        result['contract_error'] = exc.details
                 if name in {'list_channels','list_sources','list_official_datasets','list_dated_datasets','collection_checkpoint','collection_acceptance'}:
                     result['no_progress'] = True
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
                 step.update(status='failed' if failed else 'completed',
                             duration_seconds=time.monotonic() - step_started, finished_at_utc=utc_now())
-                control["consecutive_errors"] = control["consecutive_errors"]+1 if failed else 0
-                if control["consecutive_errors"] >= (4 if collection else 3):
-                    control["forced_close"] = True
+                turn_failed = turn_failed or failed
                 if "error" in result:
                     if collection:
-                        result['recovery_hint'] = recovery_hint(name)
-                    result["available_urls"] = [r["url"] for r in task.catalog().values()][:60]
+                        result['recovery_hint'] = {'instruction':'Use the program state, exact need IDs and available tools. Correct invalid arguments before searching again; otherwise finish with gaps.',
+                                                   'available_tools':[t['function']['name'] for t in turn_tools]}
+                        hint = recovery_hint(name)
+                        if hint['tool'] in result['recovery_hint']['available_tools']:
+                            result['recovery_hint'].update(hint)
                 result = tool_result(name, result, task.budget(), error=result.get("error"))
                 task.bundle["transcript"].append({"tool": name, "result": result})
                 blocked_urls={url for url in task.catalog() if not eligible(task.bundle['pages'].get(url,{}),task.cutoff)} if task.verified_only else set()
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(model_view(result,blocked_urls) if task.optimized else result, ensure_ascii=False)})
                 task.save()
+                if task.bundle['result']:
+                    break
+            control['consecutive_errors'] = control['consecutive_errors']+1 if turn_failed else 0
             if collection:
-                recent_results = task.bundle['transcript'][-len(message.get('tool_calls') or []):] if message.get('tool_calls') else []
-                stalled = not recent_results or all(not row['result'].get('ok') or row['result'].get('data',{}).get('no_progress') for row in recent_results)
+                turn_progress = progress.delta(before_turn, progress.snapshot(task))
+                current_session['turns'].append({'turn':turn+1, 'failed':turn_failed, **turn_progress})
+                stalled = not turn_progress['advanced']
                 control['no_progress_turns'] = control.get('no_progress_turns',0)+1 if stalled else 0
+            task.save()
             if task.bundle["result"]:
                 break
         if not task.bundle["result"]:
             if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
-                task.execute('finish_collection', {'gaps':['Program ended collection at the dispatch limit; unresolved acquisition work remains.']}, tavily_key)
-                task.bundle['result']['termination_reason']='program_dispatch_limit'
+                task.execute('finish_collection', {'gaps':['Program ended collection: '+str(termination_reason or 'program_dispatch_limit')+'; unresolved acquisition work remains.']}, tavily_key)
+                termination_reason = termination_reason or 'program_dispatch_limit'
                 task.bundle.setdefault('agent_runtime',{}).setdefault('events',[]).append({'stage':'export','owner':'program','at':utc_now()})
             else:
                 task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
                 "coverage": task.coverage(), "gaps": ["Collection interrupted" if collection else "Retrieval did not complete its final audit"], "conflicts": [], "incomplete": True}
+        session.finalize(task, current_session, termination_reason or 'agent_finished', utc_now())
+        runtime['session_state'] = task.bundle['session_state']
         runtime["stage"] = "incomplete" if task.bundle["result"].get("incomplete") else "complete"
         runtime["events"].append({"stage": runtime["stage"], "at": utc_now(), "status": task.bundle["result"]["status"]})
         task.bundle["resources"] = {"tavily_basic_attempts": len(task.bundle["searches"]), "page_fetch_attempts": len(task.bundle["fetch_attempts"]),

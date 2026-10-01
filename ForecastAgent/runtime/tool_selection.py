@@ -18,6 +18,11 @@ def active_tools(task, tools, forced=None):
             for child in value:
                 bind_ids(child)
     bind_ids(tools)
+    for entry in tools:
+        if entry['function']['name'] == 'load_research_skill':
+            names = [name for name in task.bundle.get('skill_bank', {}) if name != 'evidence-review']
+            if names:
+                entry['function']['parameters']['properties']['name'] = {'type':'string', 'enum':names}
     if forced:
         return [tool for tool in tools if tool['function']['name']==forced]
     b=task.bundle

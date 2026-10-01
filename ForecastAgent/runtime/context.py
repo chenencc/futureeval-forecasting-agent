@@ -1,52 +1,90 @@
-"""Deterministic model context projection; original conversation stays on disk."""
-import json
+"""Bounded deterministic context; full conversations and bodies remain on disk."""
 import copy
+import json
 from ForecastAgent.runtime.collection_v2 import eligible, model_view
 
+MAX_CONTEXT_CHARS = 28000
 
-def collection_context(task, recent_turns=2, max_recent_chars=12000):
+
+def encode(value):
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+
+
+def bounded(value, text_limit=700, item_limit=12):
+    if isinstance(value, str):
+        return value if len(value) <= text_limit else value[:text_limit]+' [truncated; read durable source]'
+    if isinstance(value, list):
+        result = [bounded(v, text_limit, item_limit) for v in value[:item_limit]]
+        if len(value) > item_limit: result.append({'omitted_items':len(value)-item_limit})
+        return result
+    if isinstance(value, dict):
+        return {k:bounded(v, text_limit, item_limit) for k,v in list(value.items())[:40]}
+    return value
+
+
+def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
     b = task.bundle
     messages = b['messages']
-    starts = [i for i,m in enumerate(messages) if m.get('role') == 'assistant']
-    start = starts[-recent_turns] if len(starts) >= recent_turns else starts[0] if starts else len(messages)
-    start = max(start,b.get('control',{}).get('dispatch_message_start',0))
-    # Move the boundary past whole turns only, preserving assistant/tool pairs.
-    while len(json.dumps(messages[start:], ensure_ascii=False)) > max_recent_chars and start in starts and starts.index(start) < len(starts)-1:
-        start = starts[starts.index(start)+1]
-    blocked = {u for u,p in b['pages'].items() if task.verified_only and not eligible(p,task.cutoff)}
-    state = {'schema':'collection_context_v1','request':b['request'],'plan':b['plan'],
-             'entity_card':b.get('entity_card'),'channel_plan':b.get('channel_plan',[]),'budget':task.budget(),
-             'sources':[{'url':u,'saved':u in b['pages'],'readable':u in b['pages'] and u not in blocked,'audit_only':u in blocked} for u in task.catalog()][:30],
-             'documents':[{'url':u,'sha256':p.get('sha256'),'chars':len(p.get('content','')),
-                           'diagnostics':p.get('body_diagnostics'),'unit':p.get('unit'),
-                           'dataset':p.get('dataset'),'pagination':p.get('pagination'),
-                           'readable':u not in blocked,'audit_only':u in blocked} for u,p in b['pages'].items()],
-             'excerpts':[{'id':e['id'],'url':e['url'],'need_ids':e['need_ids'],'text':e['text'][:300]}
-                         for e in b['excerpts'] if e['url'] not in blocked],
-             'passage_ids':list(b.get('passages',{}))[-40:], 'channel_decisions':b.get('channel_decisions',{}),
-             'market_snapshot_ids':list(b.get('market_snapshots',{})),
-             'instruction':'Read saved documents/rows for full text. Older turns omitted from this model view remain in the durable transcript. Association does not prove correctness.'}
-    projected = [messages[0], {'role':'user','content':json.dumps(model_view(state,blocked),ensure_ascii=False)}]
-    recent=copy.deepcopy(messages[start:])
-    def trim(value,limit):
-        if isinstance(value,dict):
-            result={k:trim(v,limit) for k,v in value.items()}
-            if any(isinstance(v,str) and k in {'content','text','context','preview','snippet'} and len(v)>limit for k,v in value.items()):
-                result['context_text_truncated']=True
-            for k,v in value.items():
-                if k in {'content','text','context','preview','snippet'} and isinstance(v,str): result[k]=v[:limit]
-            return result
-        if isinstance(value,list): return [trim(v,limit) for v in value]
-        return value
-    for limit in (1200,600,300):
-        if len(json.dumps(recent,ensure_ascii=False))<=max_recent_chars: break
-        for message in recent:
-            if message.get('role')=='tool':
-                try: message['content']=json.dumps(trim(json.loads(message['content']),limit),ensure_ascii=False)
-                except (ValueError,TypeError): pass
-    projected.extend(recent)
-    # A checkpoint may have been appended after the most recent assistant turn.
-    b.setdefault('context_projections',[]).append({'original_chars':len(json.dumps(messages,ensure_ascii=False)),
-        'projected_chars':len(json.dumps(projected,ensure_ascii=False)), 'omitted_messages':start-1,
-        'policy':'program_state_plus_complete_recent_turns_v2'})
+    blocked = {u for u,p in b['pages'].items() if task.verified_only and not eligible(p, task.cutoff)}
+    loaded = [b['skill_bank'][name] for name in b.get('loaded_skills', [])
+              if name in b.get('skill_bank', {}) and name != 'evidence-review']
+    instructions = messages[0].get('content', '') if messages and messages[0].get('role') == 'system' else 'Collect source material only.'
+    # Frozen skill instructions survive omitted tool replies. Catalog-only skills are not injected.
+    skill_text = '\n'.join('Loaded skill '+s['name']+' ('+s['sha256']+'):\n'+s['content'] for s in loaded)
+    system = {'role':'system', 'content':instructions+'\n'+skill_text}
+    request = b['request']
+    state = {'schema':'collection_context_v2',
+             'task':{k:request[k] for k in ('question', 'title', 'resolution_criteria', 'fine_print', 'background', 'as_of_utc', 'mode') if k in request},
+             'plan':b['plan'], 'entity_card':b.get('entity_card'), 'budget':task.budget(),
+             'channel_plan':b.get('channel_plan', []), 'session_state':b.get('session_state', 'running'),
+             'progress':b.get('sessions', [{}])[-1].get('turns', [])[-2:] if b.get('sessions') else [],
+             'sources':[{'url':u, 'saved':u in b['pages'], 'readable':u in b['pages'] and u not in blocked,
+                         'audit_only':u in blocked} for u in task.catalog()][:20],
+             'documents':[{'url':u, 'sha256':p.get('sha256'), 'chars':len(p.get('content', '')),
+                           'document_count':len(p.get('documents') or [None]), 'rows':len(p.get('rows', [])),
+                           'readable':u not in blocked, 'audit_only':u in blocked,
+                           'dataset':p.get('dataset'), 'unit':p.get('unit')} for u,p in b['pages'].items()][:20],
+             'excerpts':[{'id':e['id'], 'url':e['url'], 'need_ids':e['need_ids'], 'preview':e['text'][:180]}
+                         for e in b['excerpts'] if e['url'] not in blocked][-12:],
+             'passage_ids':list(b.get('passages', {}))[-16:],
+             'loaded_skills':[{'name':s['name'], 'sha256':s['sha256']} for s in loaded],
+             'channel_decisions':b.get('channel_decisions', {}),
+             'instruction':'Full records remain on disk. Read/list saved sources to retrieve omitted material. Copy exact URLs and need IDs. Omitted or truncated IDs/URLs must be rediscovered before use. Located material is not truth verification.'}
+    state = model_view(state, blocked)
+    projected = [system, {'role':'user', 'content':encode(state)}]
+    # Keep complete assistant/tool groups only. Interrupted replies are closed by the runtime.
+    start = b.get('control', {}).get('dispatch_message_start', 0)
+    groups = []
+    for message in messages[start:]:
+        if message.get('role') == 'assistant': groups.append([message])
+        elif groups and message.get('role') in {'tool', 'user'}: groups[-1].append(message)
+    recent = []
+    for group in reversed(groups[-recent_turns:]):
+        copied = copy.deepcopy(group)
+        expected = {c['id'] for c in copied[0].get('tool_calls', [])}
+        answered = {m.get('tool_call_id') for m in copied if m.get('role') == 'tool'}
+        if expected != answered: continue
+        for message in copied:
+            if message.get('role') == 'tool':
+                try: payload = model_view(json.loads(message['content']), blocked)
+                except (ValueError, TypeError): payload = {'message':message.get('content', '')}
+                message['content'] = encode(bounded(payload))
+            elif message.get('role') == 'user':
+                message['content'] = bounded(message.get('content', ''), 500)
+        if len(encode(copied+recent)) > max_recent_chars: continue
+        recent = copied+recent
+    if len(encode(projected+recent)) <= max_chars:
+        projected.extend(recent)
+    else:
+        # Evict whole turns, then reduce state explicitly; never cut tool protocol pairs.
+        for text_limit, items in ((1200, 16), (600, 10), (250, 5)):
+            projected[1]['content'] = encode(bounded(state, text_limit, items))
+            if len(encode(projected)) <= max_chars: break
+    # If immutable instructions alone exceed the ceiling, fail without a model HTTP call.
+    if len(encode(projected)) > max_chars:
+        raise ValueError('Context ceiling cannot fit loaded instructions; preserve ledger and reduce skill scope.')
+    b.setdefault('context_projections', []).append({'original_chars':len(encode(messages)),
+        'projected_chars':len(encode(projected)), 'max_chars':max_chars,
+        'retained_recent_messages':max(0, len(projected)-2), 'loaded_skills':[s['name'] for s in loaded],
+        'policy':'bounded_state_complete_tool_groups_frozen_loaded_skills_v3'})
     return projected
