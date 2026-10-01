@@ -17,15 +17,16 @@ def discovery_read_action(task):
     if not count or b.get('control', {}).get('read_after_discovery', 0) >= count or task.budget()['page_fetch_remaining'] <= 0:
         return None
     attempted = {canonical_url(a['url']) for a in b.get('fetch_attempts', []) if a.get('url')}
-    leads = {}
+    leads = {}; dates = {}
     for search in b.get('searches', []) + b.get('exa_searches', []):
         for hit in search.get('results', []):
             leads[canonical_url(hit['url'])] = hit.get('title', '')
+            dates[canonical_url(hit['url'])] = hit.get('published_date')
     leads.update({u: '' for u, row in b.get('source_leads', {}).items() if row.get('origin', '').startswith('question_')})
     terms = set(re.findall(r'[a-z0-9]{4,}', b['request']['question'].lower())) - {'will', 'before', 'after', '2026'}
     from ForecastAgent.evidence.acquisition_quality import discovery_score
     ranked = sorted((u for u in leads if u not in attempted and u not in b['pages']),
-        key=lambda u: (-discovery_score(b['request'],u,leads[u],named_primary(task,u)) if getattr(task,'raw_recall',False)
+        key=lambda u: (-discovery_score(b['request'],u,leads[u],named_primary(task,u),dates.get(u)) if getattr(task,'raw_recall',False)
                       else -10 * bool(named_primary(task, u)) - len(terms & set(re.findall(r'[a-z0-9]{4,}', (u + ' ' + leads[u]).lower()))), u))
     if not ranked:
         return None

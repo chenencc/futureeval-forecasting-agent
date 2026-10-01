@@ -1,0 +1,28 @@
+name: Forecast provider health probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: forecast-provider-health
+  cancel-in-progress: false
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Make one minimal Ultra tool-call request
+        run: python -m ForecastAgent.provider_health --output snapshots/provider-health/report.json
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: forecast-provider-health
+          path: snapshots/provider-health
+          if-no-files-found: error
+          retention-days: 30

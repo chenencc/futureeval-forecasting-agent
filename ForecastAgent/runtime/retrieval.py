@@ -900,6 +900,9 @@ class RetrievalTask:
             url = args.get("url", "")
             canonical = canonical_url(url)
             hits = [self.catalog()[canonical]] if canonical in self.catalog() else []
+            # Preserve opaque routing queries while retaining legacy ledger keys.
+            if hits:
+                url = hits[0]['url']
             if not hits and canonical not in b["pages"]:
                 raise ValueError("Fetch only URLs from this task's accepted searches, question links or captured page links; use source_catalog")
             if canonical in b["pages"]:
@@ -986,7 +989,9 @@ class RetrievalTask:
                        "depth": "basic", "at": utc_now(), "status": "reserved"}
             reserve(b, "extract_attempts", attempt, MAX_EXTRACT_BATCHES, self.save)
             try:
-                data = extract_basic(urls, key)
+                transport_urls = [accepted[k]['url'] for k in keys]
+                attempt['transport_urls'] = transport_urls
+                data = extract_basic(transport_urls, key)
                 attempt["raw_response"] = data
                 attempt["usage"] = data.get("usage")
                 rescued = []
@@ -1002,6 +1007,12 @@ class RetrievalTask:
                             "capture_method": "tavily_basic_extract", "raw_payload_kind": "vendor_extracted_markdown_not_original_http_body",
                             "temporal_status": "current_capture_possible_later_edits" if self.cutoff else "live_capture",
                             "date_metadata_warning": "Extract does not prove historical availability or last-update time"}
+                    from ForecastAgent.readers.quality import body_diagnostics
+                    page['body_diagnostics'] = body_diagnostics(content)
+                    if not page['body_diagnostics']['usable_text']:
+                        b.setdefault('failed_captures', []).append({'url':item['url'], 'page':page,
+                            'reason':'Extract returned '+page['body_diagnostics']['state']})
+                        continue
                     self.store_page(item['url'], page)
                     rescued.append(self.page_view(page))
                 attempt["status"] = "completed"

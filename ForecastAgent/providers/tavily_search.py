@@ -22,7 +22,7 @@ def followup_query_from_response(response: str, question_text: str) -> str:
 
 
 def canonical_url(url: str) -> str:
-    """Ignore fragments and common tracking parameters when comparing sources."""
+    """Legacy comparison key only; never use its rewritten query for HTTP fetches."""
     parts = urlsplit(url)
     if parts.scheme not in {"http", "https"} or not parts.netloc:
         return ""

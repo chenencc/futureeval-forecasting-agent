@@ -17,8 +17,10 @@ def checkpoint(task):
         from ForecastAgent.runtime.search_policy import requirement
         from ForecastAgent.runtime.collection_actions import raw_stop_reason, discovery_read_action
         report=capture_report(b)
+        from ForecastAgent.evidence.acquisition_quality import target_period
         action=discovery_read_action(task)
         return {'schema':'raw_acquisition_checkpoint_v1','budget_remaining':task.budget(),
+            'target_event_period':target_period(b['request']),
             'exa_requirement':requirement(task),'program_stop_reason':raw_stop_reason(task),
             'saved_body_count':report['capture_count'],'usable_saved_body_count':report['readable_body_count'],
             'possible_index_shell_count':report['possible_index_shell_count'],

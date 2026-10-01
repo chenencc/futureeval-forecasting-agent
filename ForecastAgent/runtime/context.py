@@ -130,7 +130,7 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
             state.pop(key,None)
         for document in state['documents']:
             document['navigation']='Raw capture retained. Interpretation and excerpt selection are deferred.'
-        state['instruction']='Preserved originals and rows are the deliverable. Use capture forms, identifiers and observed periods to select missing sources. Do not require comprehension, excerpts or page-by-page reading. Full recall and truth remain unverified.'
+        state['instruction']='Preserved originals and rows are the deliverable. Prioritize the target event period in search queries and source selection; latest news can concern a different event. Keep older and later context separately, with no publication cutoff or event adjudication. Copy catalog URLs exactly; comparison keys are not transport URLs. Navigation shells are parse gaps even when long. Do not require comprehension, excerpts or page-by-page reading. Full recall and truth remain unverified.'
     state = model_view(state, blocked)
     projected = [system, {'role':'user', 'content':encode(state)}]
     # Keep complete assistant/tool groups only. Interrupted replies are closed by the runtime.
