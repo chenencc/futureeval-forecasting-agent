@@ -15,7 +15,8 @@ def collection_system(task, skills):
         if unrestricted(task.bundle) else
         'Blocked/audit-only historical bodies have no readable content. Publication filters do not establish historical versions. Archives require two shared HTTP attempts; current datasets remain exploratory vintages with unit/revision caveats. Dataset end_date must precede the cutoff UTC day. Model memory and question revisions remain leakage risks. Never claim a clean backtest.')
     from pathlib import Path
-    template = (Path(__file__).parents[1] / 'prompts' / 'collection.md').read_text(encoding='utf-8')
+    filename = 'raw_recall.md' if getattr(task,'raw_recall',False) else 'collection.md'
+    template = (Path(__file__).parents[1] / 'prompts' / filename).read_text(encoding='utf-8')
     return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({'tavily_basic_lifetime':task.search_limit,
         'exa_lifetime':task.exa_limit, 'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional'), 'initial_shared_http':8, 'extract_batches':1,
         'model_decisions_per_dispatch':12, 'transport_failures_per_dispatch':4, 'model_http_per_dispatch':16, 'model_http_lifetime':72})+'\nAvailable skill catalog: '+json.dumps(skills)

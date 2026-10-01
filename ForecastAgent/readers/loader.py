@@ -11,7 +11,25 @@ from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.readers.encoding import decode_response
 
 
-def load_response(response, *, retrieved_at, max_chars=150_000):
+def load_response(response, *, retrieved_at, max_chars=150_000, preserve_raw_on_failure=False):
+    try:
+        return parse_response(response,retrieved_at=retrieved_at,max_chars=max_chars)
+    except (ValueError,ImportError,RuntimeError) as exc:
+        if not preserve_raw_on_failure:
+            raise
+        original=response['raw']
+        return {'url':response['url'],'final_url':response['final_url'],
+            'retrieved_at_utc':retrieved_at,'content_type':response['content_type'],
+            'sha256':hashlib.sha256(original).hexdigest(),
+            'raw_response_base64':base64.b64encode(original).decode('ascii'),
+            'content':'','documents':[],'links':[],'content_truncated':False,
+            'documents_truncated':False,'capture_method':'direct_http_parse_failed',
+            'parse_failure':{'type':type(exc).__name__,'message':str(exc)[:300]},
+            'response_headers':response.get('response_headers',{}),
+            'body_diagnostics':body_diagnostics('')}
+
+
+def parse_response(response, *, retrieved_at, max_chars=150_000):
     original = response['raw']
     raw, encoding = decode_response(original, response.get('response_headers'))
     source = response["final_url"]; kind = response["content_type"]

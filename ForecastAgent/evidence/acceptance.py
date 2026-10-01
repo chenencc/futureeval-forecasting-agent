@@ -143,7 +143,26 @@ def collection_acceptance(bundle):
         if row['reading_gaps'] or row['state'] not in {'readable','thin'}:
             warnings.append({'issue':'Source has extraction gaps','url':row['url'],'state':row['state']})
     status = 'failed' if failures else 'accepted_with_gaps' if warnings else 'accepted'
+    from ForecastAgent.evidence.raw_capture import focused, capture_report
+    raw_report = capture_report(bundle) if focused(bundle) else None
+    interpretation_diagnostics=[]
+    if raw_report is not None:
+        # Keep all diagnostic warnings, but only mechanical failures gate raw
+        # capture acceptance. Comprehension and candidate backlog are separate.
+        failures += raw_report['integrity_failures']
+        interpretation_issues={'Acquisition need has no associated material',
+            'Critical acquisition need lacks associated usable source','Discovered sources remain unread'}
+        interpretation_diagnostics=[w for w in warnings if w['issue'] in interpretation_issues]
+        warnings=[w for w in warnings if w['issue'] not in interpretation_issues]
+        if not raw_report['capture_count']:
+            warnings.append({'issue':'No saved raw source material'})
+        blocking = (not raw_report['capture_count'] or raw_report['parse_gap_urls']
+                    or raw_report['selected_uncaptured_urls'])
+        status = 'failed' if failures else 'accepted_with_gaps' if blocking else 'accepted'
     return {'schema': 'collection_acceptance_v1', 'status': status, 'truth_verified': False,
+            'acceptance_focus':'raw_capture' if raw_report is not None else 'associated_material',
+            'raw_capture_report':raw_report,
+            'interpretation_diagnostics':interpretation_diagnostics,
             'raw_versions_checked': raw_checked, 'page_count': len(pages), 'market_snapshot_count': len(bundle.get('market_snapshots', {})),
             'excerpt_count': len(bundle.get('excerpts', [])), 'failures': failures, 'warnings': warnings,
             'acquisition_metrics':metrics,

@@ -70,7 +70,7 @@ class SafeRedirects(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_page=None) -> dict:
+def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_page=None, preserve_raw_on_failure=False) -> dict:
     # Preserve the legacy injection seam for existing tests and integrations.
     from ForecastAgent.providers.http import download
     from ForecastAgent.readers.loader import load_response
@@ -83,7 +83,8 @@ def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_pa
         page=copy.deepcopy(previous_page)
         page['http_revalidation']={'status':304,'checked_at_utc':utc_now(),'original_capture_unchanged':True}
         return page
-    return load_response(response, retrieved_at=utc_now(), max_chars=MAX_SAVED_CHARS)
+    return load_response(response, retrieved_at=utc_now(), max_chars=MAX_SAVED_CHARS,
+                         preserve_raw_on_failure=preserve_raw_on_failure)
 
 
 def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None) -> dict:

@@ -27,7 +27,7 @@ def discovery_read_action(task):
         key=lambda u: (-10 * bool(named_primary(task, u)) - len(terms & set(re.findall(r'[a-z0-9]{4,}', (u + ' ' + leads[u]).lower()))), u))
     if not ranked:
         return None
-    return {'tool': 'read_sources', 'urls': ranked[:2],
+    return {'tool': 'read_sources', 'urls': ranked[:4 if getattr(task,'raw_recall',False) else 2],
         'instruction': 'Read a relevant exact discovered source before another search. Batch free fetch, permitted primary rescue and paragraph location in this action. Use concrete queries for critical needs; this route is not a relevance verdict.'}
 
 
@@ -101,6 +101,8 @@ def primary_rescue(task):
 
 
 def next_action(task):
+    if getattr(task,'raw_recall',False):
+        return discovery_read_action(task)
     passages=pending_passages(task)
     from ForecastAgent.runtime.needs import active_needs
     critical={n['id'] for n in active_needs(task.bundle) if n['priority']=='critical'}

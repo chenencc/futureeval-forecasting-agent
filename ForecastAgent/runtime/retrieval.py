@@ -189,6 +189,9 @@ class RetrievalTask:
         self.bundle.setdefault('exa_searches', [])
         search_policy.freeze(self.bundle, request, existing)
         self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
+        self.raw_recall = request.get('acquisition_focus') == 'raw_recall'
+        if self.raw_recall and (mode != 'live' or request.get('pipeline','collection') != 'collection'):
+            raise ValueError('Raw recall focus requires current-information collection mode')
         upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
         self.bundle.setdefault('historical_body_policy', request.get('historical_body_policy','verified_snapshots_only' if self.optimized else 'date_filtered_exploratory'))
         if self.bundle['historical_body_policy'] not in {'verified_snapshots_only','date_filtered_exploratory'}:
@@ -647,7 +650,7 @@ class RetrievalTask:
                         if page:
                             row.update(self.page_view(page))
                             row['ok'] = not row.get('blocked', False)
-            result={'reads':outcomes, 'rescue':rescue_result, **locate(self,args)}
+            result={'reads':outcomes, 'rescue':rescue_result, **({'located_material':[]} if self.raw_recall else locate(self,args))}
             if len(b['fetch_attempts']) > fetches_before or any(r.get('ok') for r in outcomes):
                 b['control']['read_after_discovery'] = len(b['searches']) + len(b['exa_searches'])
             from ForecastAgent.runtime.collection_actions import named_primary, STATUS_WORDS
@@ -655,7 +658,7 @@ class RetrievalTask:
                 canonical=canonical_url(url)
                 page=b['pages'].get(canonical)
                 ids=named_primary(self,canonical)
-                if page and ids and (not self.verified_only or eligible(page,self.cutoff)):
+                if not self.raw_recall and page and ids and (not self.verified_only or eligible(page,self.cutoff)):
                     if re.search(STATUS_WORDS,page['content'],re.I):
                         extra=locate(self,{'queries':[{'url':canonical,'query':'deprecated discontinued retired sunset shutdown no longer','need_ids':ids}]})
                         result['located_material'].extend(extra['located_material'])
@@ -791,6 +794,11 @@ class RetrievalTask:
                 if b['result']['audit_only_urls']:
                     b['result']['gaps'].append('Current bodies are audit-only; verified pre-cutoff captures are missing for '+str(len(b['result']['audit_only_urls']))+' sources.')
             b['result']['acquisition_complete'] = not bool(b['result']['gaps'] or declared_gaps or b['acceptance']['warnings'] or b['acceptance']['failures'])
+            if self.raw_recall:
+                b['result']['raw_capture_report'] = b['acceptance']['raw_capture_report']
+                b['result']['acquisition_complete'] = (b['acceptance']['status']=='accepted')
+                b['result']['completion_scope'] = 'Raw capture and execution integrity only; recall adequacy and interpretation remain unverified.'
+                b['result']['gaps'] = [f['issue'] for f in b['acceptance']['failures']]
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -912,7 +920,8 @@ class RetrievalTask:
                 attempt = {"url": url, "status": "reserved", "at": utc_now()}
                 reserve(b, "fetch_attempts", attempt, MAX_FETCHES, self.save)
                 try:
-                    page = fetch_structured(url, self.cutoff, fetch_public_page) or fetch_public_page(url)
+                    fetcher = (lambda source: fetch_public_page(source,preserve_raw_on_failure=True)) if self.raw_recall else fetch_public_page
+                    page = fetch_structured(url, self.cutoff, fetcher) or fetcher(url)
                     text = page["content"]
                     fresh_diagnostics = body_diagnostics(text, documents=page.get('documents', []))
                     fresh_diagnostics['table_count'] = (page.get('body_diagnostics') or {}).get('table_count', fresh_diagnostics['table_count'])
@@ -1137,6 +1146,15 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if entry['function']['name']=='plan_channels':
                     entry['function']['parameters']['properties']['channels']['items']['properties']['channel'] = {'type':'string', 'enum':[c['id'] for c in task.bundle['channel_catalog']['channels']]}
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
+        if task.raw_recall:
+            optional_reading={'review_passages','record_excerpts','record_quote','read_document',
+                'read_dataset_rows','list_documents','set_acquisition_need_status'}
+            available_tools=[t for t in available_tools if t['function']['name'] not in optional_reading]
+            for entry in available_tools:
+                if entry['function']['name']=='read_sources':
+                    entry['function']['description']='Capture up to four exact discovered sources with free fetch and optional failed-primary rescue. Preserve original responses, parsed bodies, tables, links and metadata. No paragraph selection or fact interpretation required.'
+                    entry['function']['parameters']['required']=['urls']
+                    entry['function']['parameters']['properties']['queries']['minItems']=0
         if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
         if collection:

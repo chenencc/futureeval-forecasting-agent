@@ -7,6 +7,7 @@ from ForecastAgent.evidence.temporal import temporal_report
 
 
 def intelligence_package(bundle):
+    from ForecastAgent.evidence.raw_capture import capture_report
     sources = dict(bundle.get("source_leads", {}))
     for search in bundle.get("searches", []) + bundle.get('exa_searches', []):
         for hit in search.get("results", []):
@@ -17,6 +18,7 @@ def intelligence_package(bundle):
             'temporal_policy_amendments':bundle.get('temporal_policy_amendments',[]),
             'result_history':bundle.get('result_history',[]),
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
+            'raw_capture_report':capture_report(bundle),
             'dataset_reads':bundle.get('dataset_reads',{}),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
             'exa_searches':bundle.get('exa_searches',[]),

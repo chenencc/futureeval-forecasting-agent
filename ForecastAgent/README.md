@@ -2,6 +2,8 @@
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
 
+For original-response acquisition with interpretation deferred to later analysis, see [raw recall](docs/RAW_RECALL.md). Fresh-budget comparison experiments require explicit authorization and preserve earlier ledgers.
+
 An information acquisition agent with a model-independent execution protocol. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
 
 The [runtime contracts](docs/RUNTIME.md) define preflight tool validation, bounded
