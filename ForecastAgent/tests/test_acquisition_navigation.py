@@ -66,6 +66,24 @@ class AcquisitionNavigationTests(TestCase):
             self.assertLessEqual(len(encode(projected)),28000)
             self.assertEqual(reply(projected)['content'],result['content'])
 
+    def test_accumulated_associations_do_not_displace_source_read(self):
+        with TemporaryDirectory() as root:
+            task=prepared(root)
+            original=task.bundle['plan'][0]
+            task.bundle['plan']=[{**original,'id':'need_'+str(i),'condition':'Precise source condition '+str(i)} for i in range(6)]
+            page=task.bundle['pages'][URL]
+            body='A substantive legal paragraph. '*150
+            page['content']=body;page['documents']=[]
+            task.execute('record_excerpt',{'url':URL,'start_char':0,'end_char':100,
+                'need_ids':[n['id'] for n in task.bundle['plan']]},'')
+            args={'url':URL,'max_chars':4000}
+            result=task.execute('read_document',args,'')
+            group(task,args,result)
+            task.bundle['messages'][0]['content']='Immutable acquisition instructions. '*280
+            projected=collection_context(task)
+            self.assertLessEqual(len(encode(projected)),28000)
+            self.assertEqual(reply(projected)['content'],result['content'])
+
     def test_agent_absence_claim_separated_from_saved_inventory(self):
         with TemporaryDirectory() as root:
             task=prepared(root)

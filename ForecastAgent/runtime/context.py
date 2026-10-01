@@ -201,7 +201,13 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
             'effective_cutoff_utc','exa_requirement','need_status')}
         minimal['needs'] = [{'id':n['id'], 'priority':n['priority'],
             'condition_preview':n['condition'][:180]} for n in b.get('plan') or []]
-        minimal['acquisition_inventory'] = navigation_bound(state['acquisition_inventory'],160,8)
+        minimal['acquisition_inventory'] = {
+            'needs':[{'need_id':n['need_id'],'material_state':n['material_state'],
+                      'excerpt_ids':n['excerpt_ids'][:4],
+                      'associated_source_count':len(n['usable_associated_sources']),
+                      'acquisition_status':n['acquisition_status']}
+                     for n in state['acquisition_inventory']['needs']],
+            'projection_notice':'Compact inventory; full source handles, excerpts and row ranges remain saved. Counts establish associations only, never adequacy or absence.'}
         action = state.get('next_acquisition_action') or {}
         minimal['next_action'] = {'tool':action.get('tool'),
             'passage_ids':[p['passage_id'] for p in action.get('candidates',[]) if 'passage_id' in p]}
