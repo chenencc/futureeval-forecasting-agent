@@ -1,10 +1,18 @@
 # Model-independent acquisition protocol
 
 The acquisition policy is independent of a model brand. The default backend is
-still `nvidia/nemotron-3-ultra-550b-a55b:free`; no model migration is performed.
+`nvidia/nemotron-3-super-120b-a12b:free`.
 Set `FORECAST_MODEL` to another OpenRouter model that supports the required
 function-call protocol. This changes the backend, not the prompts, tools,
 search allowances, source records or immutable question input.
+
+Existing campaigns retain their frozen backend until an explicit `switch-model`
+operation records the old/new models, reason, commit and consumed resources.
+The raw campaign workflow accepts `model_change_reason` for this operation and
+records provider resumption when a prior backend pause exists. Every task,
+search quota and historical transport remains intact; model switching does not
+provide fresh search allowances. Verify the target backend with the independent
+single-request health workflow before resuming collection.
 
 The core entry point is `providers/model.py:ask_model`. The older
 `providers/ultra.py` HTTP implementation and `ask_ultra` import seams remain

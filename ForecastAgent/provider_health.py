@@ -8,11 +8,12 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free'
+from ForecastAgent.providers.model import configured_model
 
 
 def probe(api_key, *, opener=urlopen):
-    payload = {'model': MODEL, 'max_tokens': 256, 'temperature': 0,
+    model = configured_model()
+    payload = {'model': model, 'max_tokens': 256, 'temperature': 0,
         'messages': [{'role': 'user', 'content': 'Report service health using report_health with ready=true. No research.'}],
         'tools': [{'type': 'function', 'function': {'name': 'report_health',
             'description': 'Acknowledge this minimal tool-call health probe.',
@@ -20,7 +21,7 @@ def probe(api_key, *, opener=urlopen):
                            'required': ['ready'], 'additionalProperties': False}}}],
         'tool_choice': {'type': 'function', 'function': {'name': 'report_health'}}}
     report = {'schema': 'provider_health_v1', 'checked_at_utc': datetime.now(timezone.utc).isoformat(),
-        'model': MODEL, 'physical_attempts': 0, 'healthy': False, 'request': payload,
+        'model': model, 'physical_attempts': 0, 'healthy': False, 'request': payload,
         'search_calls': 0, 'task_budgets_changed': False, 'http_status': None,
         'limit': 'One successful probe does not establish sustained provider availability.'}
     if not api_key:

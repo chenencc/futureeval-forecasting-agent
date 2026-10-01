@@ -19,6 +19,10 @@ on:
         description: 'Concrete repair reason; preserves all consumed budgets'
         default: ''
         type: string
+      model_change_reason:
+        description: 'Explicit backend migration reason; preserves task budgets and records provider recovery'
+        default: ''
+        type: string
 permissions:
   contents: read
   actions: read
@@ -30,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 95
     env:
-      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
       CAMPAIGN_ROOT: snapshots/raw-collection-100-v1
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +73,18 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/raw-collection-100-v1
       - name: Run a bounded acquisition dispatch
         run: |
+          if [ -n "$MODEL_CHANGE_REASON" ]; then
+            python -m ForecastAgent.collection_campaign switch-model --root "$CAMPAIGN_ROOT" --resume-reason "$MODEL_CHANGE_REASON"
+            python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from ForecastAgent.collection_campaign import resume_provider
+          root = Path(os.environ['CAMPAIGN_ROOT'])
+          campaign = json.loads((root/'campaign.json').read_text())
+          if campaign.get('pause_until_utc') or campaign.get('requires_provider_review'):
+              resume_provider(root, os.environ['MODEL_CHANGE_REASON'])
+          PY
+          fi
           if [ -n "$SELECTED_QUESTION" ] && [ -n "$SELECTED_QUESTIONS" ]; then
             echo "Choose either new-case selection or a focused repair"
             exit 1
@@ -85,6 +101,7 @@ jobs:
           SELECTED_QUESTION: ${{ inputs.question }}
           SELECTED_QUESTIONS: ${{ inputs.questions }}
           RESUME_REASON: ${{ inputs.resume_reason }}
+          MODEL_CHANGE_REASON: ${{ inputs.model_change_reason }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}

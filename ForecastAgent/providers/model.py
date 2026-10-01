@@ -1,7 +1,7 @@
 """Model-independent acquisition interface with a configurable OpenRouter backend."""
 import os
 
-DEFAULT_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free'
+DEFAULT_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free'
 
 
 def configured_model():

@@ -19,7 +19,7 @@ query paths, repeated parameters and publisher encoding. A previously altered
 snapshot cannot reconstruct an unknown original URL; do not invent a repair.
 
 The manually dispatched `Forecast provider health probe` workflow makes one
-physical Ultra request with a 256-token output cap and one acknowledgement
+physical configured-model request with a 256-token output cap and one acknowledgement
 tool. It has no search credentials, no task state, no forecasting tools and no
 retry loop. Its artifact reports both HTTP status and any embedded provider
 error. Only an actual valid tool acknowledgement counts as healthy. A single

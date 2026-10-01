@@ -319,6 +319,31 @@ def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reas
         return result
 
 
+def switch_model(root, reason):
+    """Explicit backend migration; retain task inputs, bodies and every quota."""
+    if len(reason.strip()) < 20:
+        raise ValueError('Document the authorized model migration before switching')
+    target = configured_model()
+    if '/' not in target or any(char.isspace() for char in target):
+        raise ValueError('A valid configured OpenRouter model identifier is required')
+    root = Path(root)
+    with task_lock(root):
+        campaign = read(root/'campaign.json')
+        if any(entry['status'] == 'running' for entry in campaign['tasks'].values()):
+            raise ValueError('Cannot switch a campaign with running tasks; reconcile first')
+        previous = campaign['model']
+        if previous != target:
+            campaign.setdefault('initial_model', previous)
+            campaign.setdefault('model_migrations', []).append({'at_utc': now().isoformat(),
+                'from_model': previous, 'to_model': target, 'reason': reason,
+                'code_commit': os.environ.get('GITHUB_SHA'),
+                'prior_resources': report(campaign)['resources'], 'budget_reset': False})
+            campaign['model'] = target
+            write(root/'campaign.json', campaign)
+        output = report(campaign); write(root/'status.json', output)
+        return output
+
+
 def resume_provider(root,reason):
     """Explicit operator recovery; retain every task execution and provider quota."""
     if len(reason.strip())<20:
@@ -342,7 +367,7 @@ def resume_provider(root,reason):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['prepare', 'run', 'status','resume-provider'])
+    parser.add_argument('action', choices=['prepare', 'run', 'status','resume-provider','switch-model'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--fixture', type=Path)
     parser.add_argument('--count', type=int, default=100)
@@ -361,6 +386,8 @@ def main():
         result = run_batch(args.root, args.limit, question_id=args.question, resume_reason=args.resume_reason, question_ids=selection)
     elif args.action=='resume-provider':
         result=resume_provider(args.root,args.resume_reason)
+    elif args.action=='switch-model':
+        result=switch_model(args.root,args.resume_reason)
     else:
         with task_lock(args.root):
             result = report(reconcile(args.root, read(args.root / 'campaign.json')))
