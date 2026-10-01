@@ -194,6 +194,46 @@ def enable_exa(root, authorization_id, reason):
         return {'enabled_tasks':granted,'baseline_path':str(baseline_path)}
 
 
+def resume_exa(root, authorization_id, reason):
+    """Use the already granted, unspent supplement after a gap export."""
+    if not authorization_id or not reason:
+        raise ValueError('Explicit authorization ID and reason required')
+    root=Path(root)
+    resumed=[]
+    with task_lock(root):
+        batch=json.loads((root/'batch.json').read_text(encoding='utf-8'))
+        validate(root,batch)
+        for ident,entry in batch['tasks'].items():
+            directory=root/'tasks'/ident
+            with task_lock(directory):
+                path=directory/'bundle.json'
+                b=json.loads(path.read_text(encoding='utf-8'))
+                authorized=any(a.get('authorization_id')==authorization_id and a.get('provider')=='exa' for a in b.get('budget_amendments',[]))
+                if not authorized or b.get('exa_searches') or b.get('acquisition_limits',{}).get('exa_search')!=1:
+                    continue
+                if b.get('control',{}).get('exa_supplement_required') and (b.get('result') or {}).get('incomplete'):
+                    continue
+                result=b.get('result')
+                if result and result.get('acquisition_complete'):
+                    continue
+                if result and not result.get('incomplete'):
+                    b.setdefault('result_history',[]).append(deepcopy_result(result))
+                    b['result']={**result,'incomplete':True,'resume_reason':'authorized_exa_supplement'}
+                b.setdefault('control',{})['exa_supplement_required']=True
+                b.setdefault('supplement_requests',[]).append({'authorization_id':authorization_id,'reason':reason,
+                    'at_utc':now().isoformat(),'model_attempts_before':len(b.get('model_attempts',[])),
+                    'tavily_attempts_before':len(b['searches']),'new_exa_allowance':False})
+                write(path,b)
+                entry['status']='pending'
+                resumed.append(ident)
+        write(root/'batch.json',batch)
+    return {'resumed_tasks':resumed,'new_allowance':False}
+
+
+def deepcopy_result(result):
+    return json.loads(json.dumps(result))
+
+
 def archive(root, destination):
     root, destination = Path(root).resolve(), Path(destination).resolve()
     if destination == root or root in destination.parents:
@@ -215,7 +255,7 @@ def archive(root, destination):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['init', 'run', 'status', 'archive','enable-exa'])
+    parser.add_argument('action', choices=['init', 'run', 'status', 'archive','enable-exa','resume-exa'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT)
     parser.add_argument('--limit', type=int, default=5)
@@ -232,6 +272,9 @@ def main():
         batch = run_batch(args.root, os.environ['TAVILY_API_KEY'], os.environ['OPENROUTER_API_KEY'], args.limit)
     elif args.action == 'enable-exa':
         print(json.dumps(enable_exa(args.root,args.authorization_id,args.reason)))
+        return
+    elif args.action == 'resume-exa':
+        print(json.dumps(resume_exa(args.root,args.authorization_id,args.reason)))
         return
     elif args.action == 'archive':
         if not args.output:

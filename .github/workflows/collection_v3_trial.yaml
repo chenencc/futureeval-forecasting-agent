@@ -11,6 +11,10 @@ on:
         description: 'Apply the authorized one-attempt Exa supplement to unfinished tasks; never reset budgets'
         type: boolean
         default: false
+      resume_exa:
+        description: 'Use already granted, unspent Exa supplements after gap exports'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -79,6 +83,12 @@ jobs:
       - name: Apply authorized Exa supplement
         if: inputs.enable_exa
         run: python -m ForecastAgent.historical_batch enable-exa --root snapshots/collection-v3-five-20261001 --authorization-id user-20261001-five-repair --reason "User authorized Exa supplementation and repair of the existing five-question campaign"
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001
+      - name: Resume authorized Exa supplements
+        if: inputs.resume_exa
+        run: python -m ForecastAgent.historical_batch resume-exa --root snapshots/collection-v3-five-20261001 --authorization-id user-20261001-five-repair --reason "Use the existing Exa allowance for the authorized five-question repair and consumption comparison"
         env:
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/collection-v3-five-20261001

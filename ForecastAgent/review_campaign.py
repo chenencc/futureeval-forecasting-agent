@@ -157,7 +157,9 @@ def main():
     parser.add_argument('--run', required=True)
     parser.add_argument('--root', default='E:/metaculus_data')
     parser.add_argument('--prior-artifact',default='11134805972')
+    parser.add_argument('--prior-run',default='36796437198')
     parser.add_argument('--baseline-artifact',default='11113955416')
+    parser.add_argument('--output',type=Path)
     args = parser.parse_args()
     root = Path(args.root)
     baseline = review(root, args.baseline_artifact)
@@ -166,14 +168,14 @@ def main():
     comparisons,totals=compare(baseline,prior,current)
     result = {'created_at_utc': datetime.now(timezone.utc).isoformat(), 'run_id': args.run,
         'artifact_id': args.artifact, 'baseline_run_id': '36745235245',
-        'prior_run_id':'36796437198','prior_artifact_id':args.prior_artifact,
+        'prior_run_id':args.prior_run,'prior_artifact_id':args.prior_artifact,
         'caveats': ['Resume increments are not a fresh-run estimate: prior captures, remaining budgets and the completed BTC task are reused.',
                    'Exploratory comparison, not controlled A/B: policy and search budgets differ; search and model outputs change.',
                    'Date-bounded current-vintage observations are not proof of historical data availability.',
                    'Future date mentions are review leads, not automatic proof of outcome leakage.',
                    'Model knowledge and source criteria revisions prevent a clean historical backtest.'],
         'comparisons': comparisons, 'totals':totals,'current': current, 'prior':prior,'baseline': baseline}
-    output = root / 'reports' / f'collection-resume-{args.run}.json'
+    output = args.output or root / 'reports' / f'collection-resume-{args.run}.json'
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({'report':str(output),'totals':totals,
         'questions':[{'id':r['question_id'],'increment':r['resume_increment'],'ledger_checks':r['ledger_checks']} for r in comparisons]}, ensure_ascii=True))

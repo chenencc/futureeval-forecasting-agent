@@ -1012,7 +1012,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             system += '\nV2: Default to three basic searches; calls four/five only with recent or official_gap roles. Save passage_id and need_ids with record_excerpts; never calculate offsets. Aim for 8-12 turns without skipping critical work. Begin historical research with a recent search, not a last-minute checkbox. Use general for scientific data and official records, finance only for financial topics. Distinguish cutoff from event deadline: observations after cutoff are unavailable future outcomes, not collection gaps. Historical bodies require pre-cutoff local or archive captures by default; current pages are audit-only. collect_archive uses two of the eight shared HTTP attempts and may fail. Dated datasets are exploratory current vintages with explicit revision caveats, never clean historical snapshots. For BTC use exchange candles, for North Atlantic SST use daily series, for SEC use issuer discovery then exact CIK/form/date queries; an empty lookup never proves absence. Current HTML publication dates do not establish its historical version. Full tool responses remain on disk. No forecasting, event verdicts or outcome inference.'
         system += f'\nProgram budget for THIS task: {task.search_limit} total basic search attempts, shared 8 initial HTTP attempts, one Extract batch. Frozen ledgers never restart. Use plan_channels early to reserve important structured/official/archive work; archive needs two HTTP attempts. Read saved passages and row pages in batches. Model context contains program state and recent complete turns; older raw records remain on disk. Current captures use a short shared live cache; capture time remains the original time. Diagnostics and associated sources are acquisition indicators, not truth scores.'
         system=system.replace('at most FIVE attempted searches',f'at most {task.search_limit} attempted searches').replace('at most THREE attempted searches',f'at most {task.search_limit} attempted searches')
-        system += f'\nOptional Exa discovery budget: {task.exa_limit} lifetime attempt. Tavily is the primary search provider. Use search_exa only for an important missing official/scientific source or independent crosscheck, not automatically. Exa only discovers metadata; read selected pages using existing free tools. Exa never increases Tavily quota, historical body permissions or HTTP budgets. Unknown historical publication dates are quarantined. Credit estimates are not account balances.'
+        system += f'\nOptional Exa discovery budget: {task.exa_limit} lifetime attempt. Tavily is the primary search provider. Use search_exa only for an important missing official/scientific source or independent crosscheck. An explicitly authorized Exa supplement may require one search; choose its query, need IDs and filters to address the largest unresolved acquisition gap. Exa only discovers metadata; read selected pages using existing free tools. Exa never increases Tavily quota, historical body permissions or HTTP budgets. Unknown historical publication dates are quarantined. Credit estimates are not account balances.'
         system += '\nBlocked/audit-only bodies have NO readable content. A saved body is not necessarily usable. Never repeatedly read such a body at different offsets. Use an archive if remaining HTTP budget permits, a supported dated dataset, or another source; otherwise finish with gaps. Recent discovery is desirable but missing it never prevents closing. plan_channels uses exact catalog IDs, not tool names. Read rows with limit 1-100. Dataset end_date must be before the cutoff UTC day; NOAA OISST histories start in 1981, not 1850. Avoid spending model turns on mandatory checkboxes or repeatedly listing unchanged catalogs.'
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
@@ -1047,6 +1047,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 forced = "plan_evidence"
             elif control["forced_close"]:
                 forced = "finish_collection" if collection else "audit_evidence" if pending_audit and turn < MAX_TURNS-1 else "finish_retrieval"
+            elif collection and control.get('exa_supplement_required') and task.budget().get('exa_search_remaining',0)>0 and os.environ.get('EXA_API_KEY'):
+                forced='search_exa'
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),
@@ -1057,8 +1059,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
                 from ForecastAgent.runtime.context import collection_context
+                from ForecastAgent.runtime.tool_selection import active_tools
                 model_messages = collection_context(task) if collection else messages
-                message = ask_ultra(model_messages, router_key, tools=available_tools, forced_tool=forced,
+                turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
+                message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline)
                 task.bundle.pop("last_error", None)
                 task.bundle.pop("last_error_detail", None)

@@ -59,3 +59,28 @@ question/search prefixes, then saves an English structured report in the local
 `reports` directory. It separates known token usage from attempts without usage
 and compares usable bodies and exact saved excerpt coordinates. Metadata-only
 discovery and current-vintage rows retain their acquisition limitations.
+
+## Dynamic capability exposure and completion of the Exa trial
+
+The first repair dispatch (`36799858331`) exported all packages with gaps, but
+did not use the granted Exa allowance. Its 30 new Ultra HTTP attempts reported
+491,666 tokens. Repeated full tool schemas contributed 27,564 characters per
+request; reduced recent conversation alone did not resolve that overhead.
+
+Collection now exposes only the forced tool during planning and closing.
+Ordinary turns omit exhausted searches, unavailable historical/current tools
+and readers whose required material is absent. Raw HTTP records preserve the
+exact tools sent on each request, permitting measured comparisons.
+
+`historical_batch resume-exa` reopens only insufficient gap exports with the
+matching prior authorization and an unspent one-attempt Exa allowance. It keeps
+the previous export in `result_history` and records `supplement_requests`.
+It does not grant another search or reset any budget. An already pending
+supplement is unchanged by a repeated request. Ultra chooses the missing-source
+query; the runtime requires that one authorized discovery attempt. Closing
+retains priority over supplementation, including after errors or exhausted
+dispatch limits. Failed/reserved provider attempts remain spent.
+
+Use `review_campaign --prior-artifact ... --prior-run ... --output ...` to
+measure this second dispatch against the first repair separately from total
+costs since the interrupted v3 pilot.
