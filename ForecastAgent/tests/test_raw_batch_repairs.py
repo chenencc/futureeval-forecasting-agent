@@ -12,6 +12,28 @@ from ForecastAgent.tests.test_runtime_contracts import prepared, LIVE
 
 
 class RepairTests(unittest.TestCase):
+    def test_compact_raw_context_uses_capture_schema_and_preserves_source_urls(self):
+        from copy import deepcopy
+        from ForecastAgent.runtime.context import collection_context, encode
+        url = 'https://official.org/document?dtl/123/Statement'
+        with TemporaryDirectory() as root:
+            task = prepared(root, {**LIVE, 'acquisition_focus': 'raw_recall'})
+            task.bundle['messages'] = [{'role':'system', 'content':'Collect original material only.'}]
+            before = deepcopy(task.bundle.get('model_attempts', [])); budget = task.budget()
+            inventory = {'schema':'raw_acquisition_checkpoint_v1', 'saved_body_count':1,
+                         'budget_remaining':budget, 'limits':'A long optional inventory. '*3000}
+            with patch('ForecastAgent.runtime.acquisition.checkpoint', return_value=inventory), \
+                 patch('ForecastAgent.runtime.collection_actions.next_action', return_value={'tool':'read_sources','urls':[url]}), \
+                 patch('ForecastAgent.runtime.context.bounded', side_effect=lambda value,*args,**kwargs:value):
+                context = collection_context(task)
+            state = json.loads(context[1]['content'])
+            self.assertEqual(state['acquisition_inventory']['schema'], 'raw_acquisition_checkpoint_v1')
+            self.assertNotIn('needs', state['acquisition_inventory'])
+            self.assertEqual(state['next_action']['urls'], [url])
+            self.assertLessEqual(len(encode(context)), 28000)
+            self.assertEqual(task.budget(), budget)
+            self.assertEqual(task.bundle.get('model_attempts', []), before)
+
     def test_short_javascript_required_notice_is_not_readable_body(self):
         text = 'JavaScript must be enabled on your browser, otherwise content or functionality may be limited or unavailable.'
         self.assertEqual(body_diagnostics(text)['state'], 'javascript_shell')

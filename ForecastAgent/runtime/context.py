@@ -209,16 +209,26 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
             'effective_cutoff_utc','exa_requirement','need_status')}
         minimal['needs'] = [{'id':n['id'], 'priority':n['priority'],
             'condition_preview':n['condition'][:180]} for n in b.get('plan') or []]
-        minimal['acquisition_inventory'] = {
-            'needs':[{'need_id':n['need_id'],'material_state':n['material_state'],
-                      'excerpt_ids':n['excerpt_ids'][:4],
-                      'associated_source_count':len(n['usable_associated_sources']),
-                      'acquisition_status':n['acquisition_status']}
-                     for n in state['acquisition_inventory']['needs']],
-            'projection_notice':'Compact inventory; full source handles, excerpts and row ranges remain saved. Counts establish associations only, never adequacy or absence.'}
+        inventory = state['acquisition_inventory']
+        if getattr(task, 'raw_recall', False):
+            minimal['acquisition_inventory'] = {key: inventory[key] for key in
+                ('schema', 'budget_remaining', 'exa_requirement', 'program_stop_reason',
+                 'target_event_period', 'saved_body_count', 'usable_saved_body_count',
+                 'possible_index_shell_count') if key in inventory}
+            minimal['acquisition_inventory']['projection_notice'] = 'Compact raw capture inventory. Parse gaps and source handles remain in collection_checkpoint and list_sources. No excerpt or interpretation obligation.'
+        else:
+            minimal['acquisition_inventory'] = {
+                'needs':[{'need_id':n['need_id'],'material_state':n['material_state'],
+                          'excerpt_ids':n['excerpt_ids'][:4],
+                          'associated_source_count':len(n['usable_associated_sources']),
+                          'acquisition_status':n['acquisition_status']}
+                         for n in inventory['needs']],
+                'projection_notice':'Compact inventory; full source handles, excerpts and row ranges remain saved. Counts establish associations only, never adequacy or absence.'}
         action = state.get('next_acquisition_action') or {}
         minimal['next_action'] = {'tool':action.get('tool'),
             'passage_ids':[p['passage_id'] for p in action.get('candidates',[]) if 'passage_id' in p]}
+        if getattr(task, 'raw_recall', False):
+            minimal['next_action']['urls'] = action.get('urls', [])
         minimal['projection_notice'] = 'Optional inventories omitted. Saved data and excerpts remain available; omission never proves absence. Navigate saved sources before declaring a gap.'
         projected[1]['content'] = encode(minimal)
     projected.extend(recent)
