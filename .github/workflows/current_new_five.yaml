@@ -2,6 +2,12 @@ name: Current information new five pilot
 
 on:
   workflow_dispatch:
+    inputs:
+      question_id:
+        description: 'Resume one existing case; leave empty to collect all five'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -39,8 +45,8 @@ jobs:
                 core.setOutput('run', run.id); return;
               }
               const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
-              const step = jobs.flatMap(j=>j.steps||[]).find(s=>s.name.startsWith('Collect new case '));
-              if (!step || step.conclusion === 'skipped') continue;
+              const started = jobs.flatMap(j=>j.steps||[]).some(s=>s.name.startsWith('Collect new case ') && s.conclusion !== 'skipped');
+              if (!started) continue;
               throw new Error(`Run ${run.id} started collection without recoverable state; refusing budget reset`);
             }
             if (data.workflow_runs.length === 100) throw new Error('State history exhausted; refusing budget reset');
@@ -52,7 +58,21 @@ jobs:
           run-id: ${{ steps.previous.outputs.run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/current-new-five-20261001
+      - name: Validate single-case restore
+        if: inputs.question_id != ''
+        env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
+          RESTORED_RUN: ${{ steps.previous.outputs.run }}
+        run: |
+          python - <<'PY'
+          import os
+          if os.environ['SELECTED_QUESTION'] not in {'44414','44247','43992','43479','44798'}:
+            raise SystemExit('Unknown case; refusing collection')
+          if not os.environ['RESTORED_RUN']:
+            raise SystemExit('Single-case validation requires existing ledgers; refusing budget reset')
+          PY
       - name: Prepare frozen new cases and current-information policy
+        if: inputs.question_id == ''
         run: python -m ForecastAgent.current_pilot prepare --root "$CAMPAIGN_ROOT" --fixture ForecastAgent/fixtures/current_new_five_20261001.json
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
@@ -62,55 +82,85 @@ jobs:
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
       - name: Collect new case 44414
-        if: ${{ !cancelled() && (success() || failure()) }}
-        run: python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44414
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44414' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44414
+          else
+            python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44414
+          fi
       - name: Collect new case 44247
-        if: ${{ !cancelled() && (success() || failure()) }}
-        run: python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44247
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44247' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44247
+          else
+            python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44247
+          fi
       - name: Collect new case 43992
-        if: ${{ !cancelled() && (success() || failure()) }}
-        run: python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43992
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43992' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43992
+          else
+            python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43992
+          fi
       - name: Collect new case 43479
-        if: ${{ !cancelled() && (success() || failure()) }}
-        run: python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43479
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '43479' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 43479
+          else
+            python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 43479
+          fi
       - name: Collect new case 44798
-        if: ${{ !cancelled() && (success() || failure()) }}
-        run: python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44798
+        if: ${{ !cancelled() && (inputs.question_id == '' || (inputs.question_id == '44798' && steps.previous.outputs.run != '')) && (success() || failure()) }}
         env:
+          SELECTED_QUESTION: ${{ inputs.question_id }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/current-new-five-20261001
+        run: |
+          if [ -n "$SELECTED_QUESTION" ]; then
+            python -u -m ForecastAgent.debug_trial --root "$CAMPAIGN_ROOT" --question 44798
+          else
+            python -u -m ForecastAgent.current_pilot run --root "$CAMPAIGN_ROOT" --question 44798
+          fi
       - name: Check packages and required search attempts
         if: always()
         run: |
