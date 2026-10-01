@@ -84,3 +84,13 @@ dispatch limits. Failed/reserved provider attempts remain spent.
 Use `review_campaign --prior-artifact ... --prior-run ... --output ...` to
 measure this second dispatch against the first repair separately from total
 costs since the interrupted v3 pilot.
+
+Run `36801202353` exposed a parameter-grounding failure: sixteen new Ultra
+attempts reported 127,736 tokens, but generated channel IDs as `need_ids`, so
+validation rejected all Exa calls before HTTP reservation. It added no search
+or body. Full request/response evidence is retained. Dynamic schemas now bind
+existing need IDs as an enum, and validation feedback supplies those exact IDs.
+The authorized supplement uses a focused Ultra context containing the frozen
+question, evidence needs, accepted URLs and remaining budget, without unrelated
+channel catalogs or failed prior turns. This is one subtask in the same runtime,
+not a new provider, task budget or forecast stage.

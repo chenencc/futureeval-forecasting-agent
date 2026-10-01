@@ -33,6 +33,14 @@ class ToolSelectionTests(TestCase):
             self.assertEqual([t['function']['name'] for t in forced],['finish_collection'])
             self.assertLess(len(json.dumps(forced)),len(json.dumps(COLLECTION_TOOLS))/10)
 
+    def test_need_identifiers_are_bound_without_mutating_registry(self):
+        with TemporaryDirectory() as directory:
+            task=RetrievalTask(Path(directory),REQUEST);task.bundle['plan']=deepcopy(PLAN)
+            original=deepcopy(COLLECTION_TOOLS)
+            tool=active_tools(task,COLLECTION_TOOLS,'search_exa')[0]
+            self.assertEqual(tool['function']['parameters']['properties']['need_ids']['items']['enum'],['n'])
+            self.assertEqual(COLLECTION_TOOLS,original)
+
     def test_resume_exa_is_idempotent_and_never_grants_another_allowance(self):
         with TemporaryDirectory() as directory, patch.dict(os.environ,{'EXA_API_KEY':''}):
             root=Path(directory)/'campaign';fixture=Path(directory)/'input.json'
@@ -71,6 +79,9 @@ class ToolSelectionTests(TestCase):
             result=run_retrieval(REQUEST,directory,'','')
             self.assertEqual(model.call_args_list[0].kwargs['forced_tool'],'search_exa')
             self.assertEqual([t['function']['name'] for t in model.call_args_list[0].kwargs['tools']],['search_exa'])
+            first_context=model.call_args_list[0].args[0]
+            self.assertIn('needs',json.loads(first_context[1]['content']))
+            self.assertNotIn('channel_catalog',json.loads(first_context[1]['content']))
             self.assertNotIn('search_exa',[t['function']['name'] for t in model.call_args_list[1].kwargs['tools']])
             self.assertEqual(provider.call_count,1)
             self.assertEqual(len(result['exa_searches']),1)

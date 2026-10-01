@@ -452,7 +452,7 @@ class RetrievalTask:
         known = {n["id"] for n in (self.bundle["plan"] or [])}
         selected = args.get("need_ids", [])
         if not selected or not set(selected).issubset(known):
-            raise ValueError("Reference existing evidence need IDs")
+            raise ValueError("Reference existing evidence need IDs: " + ', '.join(sorted(known)))
 
     def coverage(self):
         return [{**n, "evidence_ids": [e["id"] for e in self.bundle["evidence"] if n["id"] in e["need_ids"] and e.get("audit", {}).get("accepted") is not False]}
@@ -1062,6 +1062,18 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 from ForecastAgent.runtime.tool_selection import active_tools
                 model_messages = collection_context(task) if collection else messages
                 turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
+                if forced=='search_exa':
+                    # A focused supplement does not need channel catalogs or old failures.
+                    model_messages=[{'role':'system','content':
+                        'You are Ultra selecting one supplemental Exa discovery query for ForecastAgent. '
+                        'Call search_exa for the most important unresolved source need. Use only supplied evidence need IDs. '
+                        'The query must describe the actual event or data, never a channel ID or tool name. '
+                        'Use real bare domains only, or leave include_domains empty. Do not forecast or infer outcomes. '
+                        'The program enforces one existing search allowance and historical cutoff; the search provides leads only.'},
+                        {'role':'user','content':json.dumps({'task':task.bundle['request'],
+                            'needs':task.bundle['plan'],'remaining_budget':task.budget(),
+                            'accepted_existing_urls':list(task.catalog())[:30],
+                            'instruction':'Choose a useful missing official, scientific or independent source. Channel IDs are not need IDs.'})}]
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline)
                 task.bundle.pop("last_error", None)

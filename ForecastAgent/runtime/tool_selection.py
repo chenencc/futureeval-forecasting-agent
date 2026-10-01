@@ -1,8 +1,23 @@
 """Expose collection capabilities only when their prerequisites and budgets permit."""
+from copy import deepcopy
 from ForecastAgent.runtime.collection_v2 import eligible
 
 
 def active_tools(task, tools, forced=None):
+    tools=deepcopy(tools)
+    need_ids=[need['id'] for need in task.bundle.get('plan') or []]
+    def bind_ids(value):
+        if isinstance(value,dict):
+            prop=value.get('properties',{}).get('need_ids')
+            if prop and need_ids:
+                prop['items']={'type':'string','enum':need_ids}
+                prop['description']='Existing evidence-plan IDs only; channel IDs and tool names are invalid.'
+            for child in value.values():
+                bind_ids(child)
+        elif isinstance(value,list):
+            for child in value:
+                bind_ids(child)
+    bind_ids(tools)
     if forced:
         return [tool for tool in tools if tool['function']['name']==forced]
     b=task.bundle
