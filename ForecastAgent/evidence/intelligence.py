@@ -8,13 +8,14 @@ from ForecastAgent.evidence.temporal import temporal_report
 
 def intelligence_package(bundle):
     sources = dict(bundle.get("source_leads", {}))
-    for search in bundle.get("searches", []):
+    for search in bundle.get("searches", []) + bundle.get('exa_searches', []):
         for hit in search.get("results", []):
             sources.setdefault(canonical_url(hit["url"]), hit)
     return {"schema": "intelligence_package_v1", "request": bundle["request"],
             "request_hash": bundle["request_hash"], "mode": bundle["mode"],
             "collection_result": bundle.get("result"), "plan": bundle.get("plan"),
             "sources": list(sources.values()), "searches": bundle.get("searches", []),
+            'exa_searches':bundle.get('exa_searches',[]),
             'selected_sources': bundle.get('selected_sources', {}), 'channel_decisions': bundle.get('channel_decisions', {}),
             'execution_versions': bundle.get('execution_versions', []),
             'acquisition_limits': bundle.get('acquisition_limits', {'tavily_basic':3}),
@@ -37,6 +38,7 @@ def intelligence_package(bundle):
             "limitations": ["Quotes are located in saved text, not independently fact-checked.",
                             bundle.get("temporal_warning", "Historical availability must be established separately.")],
             "resources": {"tavily_basic_attempts": len(bundle.get("searches", [])),
+                          'exa_search_attempts':len(bundle.get('exa_searches',[])),
                           'model_http_attempts': len(bundle.get('model_attempts', [])),
                           "free_fetch_attempts": len(bundle.get("fetch_attempts", [])),
                           'update_http_attempts': len(bundle.get('update_attempts', [])),

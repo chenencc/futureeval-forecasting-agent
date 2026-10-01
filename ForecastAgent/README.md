@@ -23,7 +23,7 @@ python -m ForecastAgent refresh --task-dir snapshots/retrieval/question-123 --ur
 python -m unittest discover -s ForecastAgent/tests
 ```
 
-Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY` and `TAVILY_API_KEY`. Catalog, inspection, replay, export and local reading require no credentials. The model remains `nvidia/nemotron-3-ultra-550b-a55b:free`.
+Input requires `question` and `resolution_criteria`. Live collection uses `"mode": "live"`; historical modes additionally require `as_of_utc`. Runtime credentials are `OPENROUTER_API_KEY` and `TAVILY_API_KEY`; optional `EXA_API_KEY` enables bounded supplemental discovery for new tasks. See [Exa integration](docs/EXA.md). Catalog, inspection, replay, export and local reading require no credentials. The model remains `nvidia/nemotron-3-ultra-550b-a55b:free`.
 
 ## Tools and output
 
@@ -33,6 +33,7 @@ SQLite index. Its Windows schedule does not acquire evidence or submit forecasts
 
 - `list_channels`: supported channels, formats, credential names and limits.
 - `search_tavily`: general, news or finance discovery with optional official-domain and exact-entity targeting.
+- `search_exa`: optional independent metadata discovery, one frozen attempt per new enabled task.
 - `fetch_page` / `fetch_pages`: free reading, including automatic Yahoo/ALFRED adapters for recognized discovered URLs.
 - `extract_failed_pages`: basic Extract rescue for eligible failed free reads.
 - `list_documents`: paginated document/page/row inventory.

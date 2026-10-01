@@ -1,6 +1,12 @@
 """Repository-owned capability catalog; availability is not a reliability score."""
 
 CHANNELS = [
+    {'id':'exa_search','kind':'discovery','tools':['search_exa'],'formats':['search_results'],
+     'cost':'Exa account credits; response estimate saved, not a billing balance',
+     'credentials':['EXA_API_KEY (Actions secret EXA_API)'],
+     'limits':'Optional one metadata-only auto search per new task; failures count, no retries. Existing ledgers remain disabled.',
+     'temporal_support':'Publication bounds only, not archived body versions. Historical unknown dates are quarantined.',
+     'availability':'implemented'},
     {'id':'dated_observations','kind':'structured_data','tools':['list_dated_datasets','collect_dataset'],
      'formats':['json_rows'],'cost':'No paid search call','credentials':['SEC_USER_AGENT for SEC'],
      'limits':'Each physical HTTP attempt shares the existing eight-fetch ledger.',

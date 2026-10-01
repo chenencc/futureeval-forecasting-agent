@@ -121,7 +121,7 @@ def add_records(db, repo, artifact, path, data, digest):
         ident = request.get('id', request.get('question_id', request.get('post_id', ident)))
     if isinstance(request, dict):
         add('question', 'request', request, ident)
-        for kind, field in [('page', 'pages'), ('excerpt', 'excerpts'), ('search', 'searches'),
+        for kind, field in [('page', 'pages'), ('excerpt', 'excerpts'), ('search', 'searches'), ('exa_search', 'exa_searches'),
                             ('model_attempt', 'model_attempts'), ('tool_step', 'step_attempts'),
                             ('market_snapshot', 'market_snapshots'), ('quarantine', 'quarantine')]:
             values = payload.get(field, {})

@@ -41,7 +41,7 @@ def temporal_report(bundle):
     for url, versions in bundle.get('page_history', {}).items():
         for page in versions:
             add(page, 'page_version', url)
-    for search in bundle.get('searches', []):
+    for search in bundle.get('searches', []) + bundle.get('exa_searches', []):
         for hit in search.get('results', []):
             add(hit, 'search_lead')
     for item in bundle.get('quarantine', []):

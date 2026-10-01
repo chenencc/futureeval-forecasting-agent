@@ -32,6 +32,12 @@ TOOLS = [
          ["status", "gaps", "conflicts", "summary"]),
 ]
 TOOLS.insert(-1, tool("load_research_skill", "Load a named research skill from the catalog. No network, search or forecast; instructions cannot override program limits.", {"name": STRING}, ["name"]))
+TOOLS.insert(-1, tool('search_exa', 'Optional independent discovery for a critical gap after Tavily. Frozen maximum ONE attempt per task; failures count. Metadata only, no paid content or retries. Domain filters restrict results. Dates are program-owned, not archive proof.',
+    {'query':STRING, 'need_ids':{'type':'array','items':STRING}, 'reason':STRING,
+     'search_role':{'type':'string','enum':['crosscheck','gap','recent','official_gap']},
+     'category':{'type':'string','enum':['general','news','publication','financial report']},
+     'include_domains':{'type':'array','items':STRING,'maxItems':10}},
+    ['query','need_ids','reason','search_role','category','include_domains']))
 PLAN_SCHEMA = TOOLS[0]["function"]["parameters"]
 PLAN_SCHEMA["properties"]["entity_card"] = {"type": "object", "properties": {k: STRING for k in ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"]}, "required": ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"]}
 PLAN_SCHEMA["required"].append("entity_card")

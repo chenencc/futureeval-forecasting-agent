@@ -67,6 +67,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           FORECAST_SHARED_CACHE_ROOT: snapshots/collection-worker/cache
           SOURCE_MONITOR_RUN: ${{ github.event.workflow_run.id }}

@@ -5,7 +5,7 @@ from ForecastAgent.tavily_research import canonical_url
 def reading_targets(bundle):
     """Question links, search hits and explicitly selected links are reading leads."""
     targets = {url for url, row in bundle.get('source_leads', {}).items() if row.get('origin') != 'page_link'}
-    targets.update(canonical_url(hit['url']) for search in bundle.get('searches', []) for hit in search.get('results', []))
+    targets.update(canonical_url(hit['url']) for search in bundle.get('searches', []) + bundle.get('exa_searches', []) for hit in search.get('results', []))
     targets.update(bundle.get('selected_sources', {}))
     return targets
 
@@ -52,6 +52,6 @@ def recovery_hint(name):
         return {'tool': 'search_saved_text', 'instruction': 'Copy returned excerpt_args and add need_ids, or copy a unique exact passage into record_quote. Never guess coordinates; maximum excerpt length is 4000.'}
     if name in {'fetch_page', 'fetch_pages'}:
         return {'tool': 'list_sources', 'instruction': 'Choose an exact accepted URL. Do not invent or repeatedly fetch the same failed URL. Inspect collection_checkpoint for basic Extract rescue.'}
-    if name == 'search_tavily':
+    if name in {'search_tavily','search_exa'}:
         return {'tool': 'collection_checkpoint', 'instruction': 'Failures consume search quota. Inspect saved material and remaining budget before another search.'}
     return {'tool': 'collection_checkpoint', 'instruction': 'Inspect saved progress and choose another available tool within existing budgets.'}

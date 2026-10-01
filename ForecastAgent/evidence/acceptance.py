@@ -56,7 +56,7 @@ def collection_acceptance(bundle):
     failures = []; warnings = []; raw_checked = 0
     pages = bundle.get('pages', {})
     source_urls = set(bundle.get('source_leads', {}))
-    source_urls.update(canonical_url(hit['url']) for search in bundle.get('searches', []) for hit in search.get('results', []))
+    source_urls.update(canonical_url(hit['url']) for search in bundle.get('searches', []) + bundle.get('exa_searches', []) for hit in search.get('results', []))
     unread = sorted(reading_targets(bundle) - set(pages))
     versions = bundle.get('page_history', {})
     for url, snapshots in [(u, [p]) for u, p in pages.items()] + [(u, ps) for u, ps in versions.items()]:
@@ -93,6 +93,11 @@ def collection_acceptance(bundle):
         else:
             warnings.append({'market': market.get('id'), 'issue': 'Missing raw market response'})
     searches = bundle.get('searches', [])
+    exa = bundle.get('exa_searches', [])
+    if len(exa) > bundle.get('acquisition_limits',{}).get('exa_search',0):
+        failures.append({'issue':'Exa attempt budget exceeded'})
+    if any(a.get('status') in {'failed','reserved'} for a in exa):
+        warnings.append({'issue':'Failed/interrupted Exa discovery remains'})
     attempts = bundle.get('fetch_attempts', [])
     updates = bundle.get('update_attempts', [])
     if len(searches) > bundle.get('acquisition_limits',{}).get('tavily_basic',3) or len(attempts) > 8 or len(bundle.get('extract_attempts', [])) > 1:
@@ -130,5 +135,5 @@ def collection_acceptance(bundle):
             'source_count': len(source_urls), 'unread_source_count': len(unread), 'unread_urls': unread[:120],
             'captured_unselected_link_count': sum(row.get('origin') == 'page_link' and url not in bundle.get('selected_sources', {})
                                                  for url, row in bundle.get('source_leads', {}).items()),
-            'resources': {'tavily_basic_attempts': len(searches), 'free_http_attempts': len(attempts), 'update_http_attempts': len(updates)},
+            'resources': {'tavily_basic_attempts': len(searches), 'exa_search_attempts':len(exa), 'free_http_attempts': len(attempts), 'update_http_attempts': len(updates)},
             'scope': 'Capture integrity and acquisition gaps only; not factual correctness or exhaustive coverage.'}

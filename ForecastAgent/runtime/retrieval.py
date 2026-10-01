@@ -39,6 +39,7 @@ from ForecastAgent.providers.ultra import MODEL
 from ForecastAgent.runtime.telemetry import model_observer, MAX_RUN_SECONDS
 from ForecastAgent.runtime.collection_v2 import late_dates, masked, visible_pages, model_view, locate, eligible
 from ForecastAgent.providers.cache import cached_page, save_cached_page
+from ForecastAgent.providers.exa_search import search as search_exa, options as exa_options
 
 SYSTEM = """You are Ultra, the research planner and evidence extractor. This is RETRIEVAL ONLY: no probabilities, forecasts or trades.
 First freeze an evidence plan covering all resolution requirements, timing, boundary definitions, designated authorities, current status, and useful historical comparisons.
@@ -166,6 +167,11 @@ class RetrievalTask:
         self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else
             5 if request.get('acquisition_profile') == 'collection_v2' else 3})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
+        self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else int(bool(os.environ.get('EXA_API_KEY'))))
+        self.exa_limit = self.bundle['acquisition_limits']['exa_search']
+        if type(self.exa_limit) is not int or self.exa_limit not in {0,1}:
+            raise ValueError('Exa budget must be frozen at zero or one')
+        self.bundle.setdefault('exa_searches', [])
         self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
         upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
         self.bundle.setdefault('historical_body_policy', request.get('historical_body_policy','verified_snapshots_only' if self.optimized else 'date_filtered_exploratory'))
@@ -193,7 +199,7 @@ class RetrievalTask:
 
     def catalog(self):
         leads = dict(self.bundle["source_leads"])
-        for search in self.bundle["searches"]:
+        for search in self.bundle["searches"] + self.bundle['exa_searches']:
             for hit in search["results"]:
                 if allowed_source(hit["url"]):
                     leads[canonical_url(hit["url"])] = hit
@@ -239,6 +245,7 @@ class RetrievalTask:
 
     def budget(self):
         return {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
+                'exa_search_remaining': self.exa_limit - len(self.bundle['exa_searches']),
                 "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
                 'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
                 'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
@@ -653,6 +660,50 @@ class RetrievalTask:
                     'next_offset': offset + limit if offset + limit < len(rows) else None,
                     'catalog_truncated': offset + limit < len(rows), "saved_evidence": b["evidence"],
                     "extract_eligible": self.rescue_candidates(), "coverage": self.coverage()}
+        if name == 'search_exa':
+            self.needs(args)
+            if not isinstance(args.get('reason'), str) or not args['reason'].strip():
+                raise ValueError('Explain the critical gap or independent crosscheck')
+            if args.get('search_role') not in {'crosscheck','gap','recent','official_gap'}:
+                raise ValueError('Exa requires a supported supplemental search role')
+            selected = exa_options(args.get('query'), args.get('category','general'), args.get('include_domains'))
+            exa_key = os.environ.get('EXA_API_KEY','')
+            if not exa_key:
+                raise ValueError('Exa is unavailable: EXA_API_KEY is not configured')
+            start = self.cutoff - timedelta(days=60) if self.cutoff and args['search_role']=='recent' else None
+            attempt = {'query':args['query'],'need_ids':args['need_ids'],'reason':args['reason'],
+                'search_role':args['search_role'],'search_options':selected,'attempted_at':utc_now(),
+                'cutoff_utc':self.cutoff.isoformat() if self.cutoff else None,
+                'start_utc':start.isoformat() if start else None,'status':'reserved','results':[]}
+            reserve(b, 'exa_searches', attempt, self.exa_limit, self.save)
+            try:
+                data = search_exa(args['query'], exa_key, category=selected['category'],
+                    include_domains=selected['include_domains'], cutoff=self.cutoff, start=start,
+                    exclude_urls=tuple(self.catalog()))
+                # Preserve provider payloads but never expose current text as historical evidence.
+                attempt.update(raw_response=data['raw_response'],request_payload=data['request_payload'],
+                    request_id=data.get('request_id'),cost_dollars_estimate=data.get('cost_dollars_estimate'))
+                for hit in data['results']:
+                    published = parse_time(hit.get('published_date'))
+                    if not allowed_source(hit['url']):
+                        continue
+                    if self.cutoff and (not published or published >= self.cutoff):
+                        b['quarantine'].append({'hit':hit,'provider':'exa','reason':'Unknown or post-cutoff publication date'})
+                    else:
+                        attempt['results'].append(hit)
+                attempt['status'] = 'completed'
+            except Exception as exc:
+                attempt.update(status='failed',error=type(exc).__name__,
+                    http_status=getattr(exc,'http_status',None),response_body=getattr(exc,'response_body',None))
+                raise RuntimeError('Exa search failed; frozen attempt consumed') from exc
+            finally:
+                self.save()
+            hits = attempt['results']
+            if self.verified_only:
+                hits = [{k:hit[k] for k in ('url','published_date','provider')} for hit in hits]
+            return {'results':hits,'request_id':attempt.get('request_id'),
+                    'cost_dollars_estimate':attempt.get('cost_dollars_estimate'),
+                    'warning':'Discovery metadata only; publication bounds do not prove historical body availability.'}
         if name == "search_tavily":
             self.needs(args)
             if not args.get("reason") or not args.get("query"):
@@ -667,7 +718,7 @@ class RetrievalTask:
             if self.optimized:
                 attempt['search_role']=args.get('search_role','gap')
             reserve(b, "searches", attempt, self.search_limit, self.save)
-            seen = tuple(r["url"] for s in b["searches"] for r in s["results"])
+            seen = tuple(r["url"] for s in b["searches"] + b['exa_searches'] for r in s["results"])
             try:
                 extra={}
                 if self.optimized and self.cutoff and args.get('search_role')=='recent':
@@ -903,7 +954,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             return task.bundle
         task.bundle["result"] = None
         deadline = time.monotonic() + MAX_RUN_SECONDS
-        observer = model_observer(task, (tavily_key, router_key))
+        secrets = (tavily_key, router_key, os.environ.get('EXA_API_KEY',''))
+        observer = model_observer(task, secrets)
         freeze_skills(task.bundle)
         task.bundle.setdefault("agent_runtime", {"name": "ForecastAgent", "version": 1, "stage": "analysis", "events": []})
         runtime = task.bundle["agent_runtime"]
@@ -917,6 +969,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     entry['function']['description']=f'Basic search within this task frozen {task.search_limit}-attempt ceiling. Additional searches above three only for recent dynamics or missing official sources.'
                     entry['function']['parameters']['required'].append('search_role')
         catalog = [s for s in skill_catalog(task.bundle) if not collection or s["name"] != "evidence-review"]
+        if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
+            available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
         system = (COLLECTION_SYSTEM if collection else SYSTEM) + "\nSkills guide source acquisition only in collection mode; the program owns limits. Skill catalog: " + json.dumps(catalog)
         if task.optimized:
             system=system.replace('at most THREE attempted searches','at most FIVE attempted searches')
@@ -924,6 +978,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             system += '\nV2: Default to three basic searches; calls four/five only with recent or official_gap roles. Save passage_id and need_ids with record_excerpts; never calculate offsets. Aim for 8-12 turns without skipping critical work. Begin historical research with a recent search, not a last-minute checkbox. Use general for scientific data and official records, finance only for financial topics. Distinguish cutoff from event deadline: observations after cutoff are unavailable future outcomes, not collection gaps. Historical bodies require pre-cutoff local or archive captures by default; current pages are audit-only. collect_archive uses two of the eight shared HTTP attempts and may fail. Dated datasets are exploratory current vintages with explicit revision caveats, never clean historical snapshots. For BTC use exchange candles, for North Atlantic SST use daily series, for SEC use issuer discovery then exact CIK/form/date queries; an empty lookup never proves absence. Current HTML publication dates do not establish its historical version. Full tool responses remain on disk. No forecasting, event verdicts or outcome inference.'
         system += f'\nProgram budget for THIS task: {task.search_limit} total basic search attempts, shared 8 initial HTTP attempts, one Extract batch. Frozen ledgers never restart. Use plan_channels early to reserve important structured/official/archive work; archive needs two HTTP attempts. Read saved passages and row pages in batches. Model context contains program state and recent complete turns; older raw records remain on disk. Current captures use a short shared live cache; capture time remains the original time. Diagnostics and associated sources are acquisition indicators, not truth scores.'
         system=system.replace('at most FIVE attempted searches',f'at most {task.search_limit} attempted searches').replace('at most THREE attempted searches',f'at most {task.search_limit} attempted searches')
+        system += f'\nOptional Exa discovery budget: {task.exa_limit} lifetime attempt. Tavily is the primary search provider. Use search_exa only for an important missing official/scientific source or independent crosscheck, not automatically. Exa only discovers metadata; read selected pages using existing free tools. Exa never increases Tavily quota, historical body permissions or HTTP budgets. Unknown historical publication dates are quarantined. Credit estimates are not account balances.'
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': MODEL, 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
@@ -972,7 +1027,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             except Exception as exc:
                 task.bundle["last_error"] = type(exc).__name__
                 detail = str(exc)
-                for secret in (tavily_key, router_key):
+                for secret in secrets:
                     if secret:
                         detail = detail.replace(secret, "[REDACTED]")
                 task.bundle["last_error_detail"] = detail[:1200]
@@ -997,7 +1052,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
                         raise ValueError("Closing phase: audit saved facts or finish with gaps")
                     signature = (name, json.dumps(args, sort_keys=True))
-                    if signature in seen_calls and name in {"search_tavily", "fetch_page", "fetch_pages", "extract_failed_pages"}:
+                    if signature in seen_calls and name in {"search_tavily", "search_exa", "fetch_page", "fetch_pages", "extract_failed_pages"}:
                         raise ValueError("Repeated identical tool request blocked; use list_sources or existing evidence")
                     seen_calls.add(signature)
                     control["seen_calls"] = [list(item) for item in sorted(seen_calls)]
@@ -1014,7 +1069,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         runtime["events"].append({"stage": stage, "at": utc_now(), "tool": name})
                 except Exception as exc:
                     detail = str(exc)
-                    for secret in (tavily_key, router_key):
+                    for secret in secrets:
                         if secret:
                             detail = detail.replace(secret, "[REDACTED]")
                     result = {"error": detail[:500]}
@@ -1041,6 +1096,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         runtime["stage"] = "incomplete" if task.bundle["result"].get("incomplete") else "complete"
         runtime["events"].append({"stage": runtime["stage"], "at": utc_now(), "status": task.bundle["result"]["status"]})
         task.bundle["resources"] = {"tavily_basic_attempts": len(task.bundle["searches"]), "page_fetch_attempts": len(task.bundle["fetch_attempts"]),
+                                    'exa_search_attempts':len(task.bundle['exa_searches']),
                                     'model_http_attempts': len(task.bundle.get('model_attempts', [])),
                                     "basic_extract_batches": len(task.bundle["extract_attempts"]),
                                     "basic_extract_reserved_urls": sum(len(a["urls"]) for a in task.bundle["extract_attempts"])}
