@@ -1,0 +1,38 @@
+name: Free vision backend comparison replay
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Explicit free image-input model; no paid fallback'
+        required: true
+        default: google/gemma-4-31b-it:free
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: free-vision-frozen-comparison
+          run-id: 36831329615
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/vision-frozen-requests
+      - name: Replay identical saved messages with thinking disabled
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          VISION_MODEL: ${{ inputs.model }}
+        run: python -u -m ForecastAgent.vision_replay --source snapshots/vision-frozen-requests --output snapshots/vision-replay --model "$VISION_MODEL"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-vision-backend-replay
+          path: snapshots/vision-replay
+          retention-days: 90
