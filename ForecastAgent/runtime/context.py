@@ -24,6 +24,17 @@ def bounded(value, text_limit=700, item_limit=12):
     return value
 
 
+def excerpt_view(excerpt):
+    """Expose navigation and explicit preview completeness without inventing coverage."""
+    text = excerpt['text']
+    return {'id': excerpt['id'], 'url': excerpt['url'], 'need_ids': excerpt['need_ids'],
+            'preview': text[:800], 'preview_is_truncated': len(text) > 800,
+            'full_chars': len(text), 'location': excerpt.get('location', {}),
+            'start_char': excerpt.get('start_char'), 'end_char': excerpt.get('end_char'),
+            'source_sha256': excerpt.get('source_sha256'),
+            'instruction': 'Preview only. Use read_document at the saved document index and coordinates for complete source text. Preview omission cannot establish missing evidence; saved coverage is not factual verification.'}
+
+
 def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=MAX_CONTEXT_CHARS):
     from ForecastAgent.runtime.delivery import ensure_delivery_state, project_reply, stage_read_passages, recover_read_passages, projected_visibility
     ensure_delivery_state(task)
@@ -63,14 +74,14 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
                            'document_count':len(p.get('documents') or [None]), 'rows':len(p.get('rows', [])),
                            'readable':u not in blocked and body_diagnostics(p.get('content',''))['usable_text'], 'audit_only':u in blocked,
                            'dataset':p.get('dataset'), 'unit':p.get('unit')} for u,p in b['pages'].items()][:20],
-             'excerpts':[{'id':e['id'], 'url':e['url'], 'need_ids':e['need_ids'], 'preview':e['text'][:800]}
+             'excerpts':[excerpt_view(e)
                          for e in b['excerpts'] if e['url'] not in blocked][-12:],
              'pending_passage_ids':[p['passage_id'] for p in pending_passages(task)],
              'passage_dispositions':[{k:row[k] for k in ('passage_id','action','reason') if k in row}
                  for row in b.get('passage_dispositions',{}).values()][-16:],
              'loaded_skills':[{'name':s['name'], 'sha256':s['sha256']} for s in loaded],
              'channel_decisions':b.get('channel_decisions', {}),
-             'instruction':'Full records remain on disk. Read/list saved sources to retrieve omitted material. Copy exact URLs and need IDs. Omitted or truncated IDs/URLs must be rediscovered before use. Located material is not truth verification.'}
+             'instruction':'Full records remain on disk. Read/list saved sources to retrieve omitted material. Excerpt previews are not full excerpts: do not report source material missing merely because it is absent from a preview. Read the saved coordinates when completeness matters. Copy exact URLs and need IDs. Omitted or truncated IDs/URLs must be rediscovered before use. Located material is not truth verification.'}
     state = model_view(state, blocked)
     projected = [system, {'role':'user', 'content':encode(state)}]
     # Keep complete assistant/tool groups only. Interrupted replies are closed by the runtime.
