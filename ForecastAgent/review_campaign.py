@@ -20,7 +20,8 @@ def review(root, artifact):
     results = []
     for path, encoded in rows:
         bundle = json.loads(encoded)
-        cutoff = datetime.fromisoformat(bundle['request']['as_of_utc'].replace('Z', '+00:00'))
+        original_cutoff = bundle['request'].get('as_of_utc')
+        cutoff = datetime.fromisoformat(original_cutoff.replace('Z', '+00:00')) if original_cutoff else None
         effective_cutoff = None if unrestricted(bundle) or bundle.get('mode') == 'live' else cutoff
         attempts = bundle.get('model_attempts', [])
         transports = []
@@ -60,7 +61,7 @@ def review(root, artifact):
                 raw_verified = False
             pages.append({'url': url, 'chars': len(body), 'documents': len(docs),
                 'eligible_for_model_under_v3': eligible(page, effective_cutoff),
-                'eligible_under_original_cutoff': eligible(page, cutoff),
+                'eligible_under_original_cutoff': eligible(page, cutoff) if cutoff else None,
                 'temporal_status': page.get('temporal_status'),
                 'capture_method': page.get('capture_method'),
                 'archive_timestamp': page.get('archive_timestamp'),
