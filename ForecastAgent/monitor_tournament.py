@@ -49,7 +49,7 @@ def get_json(url: str, token: str) -> dict:
 
 
 def _initial_url(open_only: bool) -> str:
-    params = {"tournaments": TOURNAMENT, "limit": 100, "include_description": "true"}
+    params = {"tournaments": TOURNAMENT, "limit": 100, "include_descriptions": "true", "with_cp": "false"}
     if open_only:
         params["statuses"] = "open"
     return API_ROOT + "?" + urlencode(params)
@@ -224,7 +224,7 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
             print(f"NEW {row['question_id']} [{row['status']}] {row['title']}", flush=True)
     if not open_complete:
         raise RuntimeError("Open-question scan exceeded page limit; snapshot is incomplete")
-    if archive_error:
+    if archive_error and os.environ.get("OFFICIAL_OPEN_SCAN_PRIORITY") != "1":
         raise RuntimeError(f"Archive scan incomplete: {archive_error}")
     if any(row["status"] == "failed" for row in research_results):
         raise RuntimeError("One or more read-only research snapshots failed; see index.json")

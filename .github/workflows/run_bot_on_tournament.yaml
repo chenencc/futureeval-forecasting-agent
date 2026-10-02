@@ -1,4 +1,4 @@
-name: Monitor FutureEval questions
+name: FutureEval official question monitor
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: '7,27,47 * * * *'
+    - cron: '3,13,23,33,43,53 * * * *'
 
 permissions:
   contents: read
@@ -74,7 +74,8 @@ jobs:
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
           RUN_READ_ONLY_RESEARCH: '0'
-          QUEUE_READ_ONLY_RESEARCH: ${{ inputs.snapshot_only && '0' || '1' }}
+          QUEUE_READ_ONLY_RESEARCH: '0'
+          OFFICIAL_OPEN_SCAN_PRIORITY: '1'
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/monitor
       - name: Save state for the next poll
