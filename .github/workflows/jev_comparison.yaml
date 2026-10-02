@@ -1,0 +1,52 @@
+name: Jev frozen v8 twenty-question comparison
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: jev-frozen-v8-comparison
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: referenced-analysis-v8
+          run-id: 36967346524
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/jev-input/36967346524
+      - uses: actions/download-artifact@v4
+        with:
+          name: referenced-analysis-v8
+          run-id: 36967353320
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/jev-input/36967353320
+      - uses: actions/download-artifact@v4
+        with:
+          name: referenced-analysis-v8
+          run-id: 36968738592
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/jev-input/36968738592
+      - uses: actions/download-artifact@v4
+        with:
+          name: referenced-analysis-v8
+          run-id: 36968753753
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/jev-input/36968753753
+      - name: Run isolated historical decisions
+        run: python -m ForecastAgent.analysis.jev_comparison --inputs snapshots/jev-input --output snapshots/jev-comparison
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jev-v8-twenty-comparison
+          path: snapshots/jev-comparison
+          retention-days: 90

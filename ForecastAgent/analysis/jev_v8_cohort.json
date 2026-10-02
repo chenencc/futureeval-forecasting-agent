@@ -1,0 +1,152 @@
+{
+  "schema": "jev-v8-frozen-cohort-v1",
+  "rows": [
+    {
+      "id": "44513",
+      "run_id": "36967346524",
+      "reasoning_p": 0.05,
+      "mercury_p": 0.03732688573777281,
+      "resolution": 0.0
+    },
+    {
+      "id": "39886",
+      "run_id": "36967346524",
+      "reasoning_p": 0.2,
+      "mercury_p": 0.3486451217982255,
+      "resolution": 0.0
+    },
+    {
+      "id": "43333",
+      "run_id": "36967346524",
+      "reasoning_p": 0.05,
+      "mercury_p": 0.04208773182056191,
+      "resolution": 0.0
+    },
+    {
+      "id": "43505",
+      "run_id": "36967346524",
+      "reasoning_p": 0.15,
+      "mercury_p": 0.2689414096510108,
+      "resolution": 0.0
+    },
+    {
+      "id": "43707",
+      "run_id": "36967346524",
+      "reasoning_p": 0.05,
+      "mercury_p": 0.16451645470385742,
+      "resolution": 0.0
+    },
+    {
+      "id": "43708",
+      "run_id": "36967353320",
+      "reasoning_p": 0.15,
+      "mercury_p": 0.014063626268431226,
+      "resolution": 0.0
+    },
+    {
+      "id": "43853",
+      "run_id": "36967353320",
+      "reasoning_p": 0.35,
+      "mercury_p": 0.13296424019782924,
+      "resolution": 0.0
+    },
+    {
+      "id": "43881",
+      "run_id": "36967353320",
+      "reasoning_p": 0.05,
+      "mercury_p": 0.07585818785594478,
+      "resolution": 0.0
+    },
+    {
+      "id": "44193",
+      "run_id": "36967353320",
+      "reasoning_p": 0.04,
+      "mercury_p": 0.006692850459923476,
+      "resolution": 0.0
+    },
+    {
+      "id": "44230",
+      "run_id": "36967353320",
+      "reasoning_p": 0.05,
+      "mercury_p": 0.06754668550840877,
+      "resolution": 0.0
+    },
+    {
+      "id": "43494",
+      "run_id": "36968738592",
+      "reasoning_p": 0.5,
+      "mercury_p": 0.7772998508568416,
+      "resolution": 1.0
+    },
+    {
+      "id": "14025",
+      "run_id": "36968738592",
+      "reasoning_p": 0.96,
+      "mercury_p": 0.5621765008857981,
+      "resolution": 1.0
+    },
+    {
+      "id": "44117",
+      "run_id": "36968738592",
+      "reasoning_p": 0.45,
+      "mercury_p": 0.5312093733737563,
+      "resolution": 1.0
+    },
+    {
+      "id": "44358",
+      "run_id": "36968738592",
+      "reasoning_p": 0.85,
+      "mercury_p": 0.7981867729389246,
+      "resolution": 1.0
+    },
+    {
+      "id": "40967",
+      "run_id": "36968738592",
+      "reasoning_p": 0.95,
+      "mercury_p": 0.9986749776940098,
+      "resolution": 1.0
+    },
+    {
+      "id": "43984",
+      "run_id": "36968753753",
+      "reasoning_p": 0.99,
+      "mercury_p": 0.9997965729752534,
+      "resolution": 1.0
+    },
+    {
+      "id": "43435",
+      "run_id": "36968753753",
+      "reasoning_p": 0.3,
+      "mercury_p": 0.20181321265898594,
+      "resolution": 1.0
+    },
+    {
+      "id": "43283",
+      "run_id": "36968753753",
+      "reasoning_p": 0.75,
+      "mercury_p": 0.8175744828610095,
+      "resolution": 1.0
+    },
+    {
+      "id": "43682",
+      "run_id": "36968753753",
+      "reasoning_p": 1,
+      "mercury_p": 0.984093605664083,
+      "resolution": 1.0
+    },
+    {
+      "id": "40730",
+      "run_id": "36968753753",
+      "reasoning_p": 0.95,
+      "mercury_p": 0.9964063972668477,
+      "resolution": 1.0
+    }
+  ],
+  "evaluation_warning": [
+    "Versions, evidence overlays and prompts differ in the all-version metric.",
+    "Historical evidence and model knowledge can contain outcomes; these are retrospective diagnostics, not prospective tournament forecasts.",
+    "The newest ten tasks were selected conditional on Yes labels; the aggregate is not a random population sample.",
+    "Mercury and the reasoning output share analysis and are not an independent ensemble.",
+    "Quality flags do not establish claim entailment and some are known false positives. No prospective calibration was fitted."
+  ]
+}
