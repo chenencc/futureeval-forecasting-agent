@@ -1,0 +1,143 @@
+name: FutureEval competition shadow runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      collector_run:
+        description: Completed collection run whose state should be adopted
+        required: true
+        type: string
+      execute:
+        description: Run bounded supplementation and frozen diagnostic analysis (never submit)
+        type: boolean
+        default: false
+      network_supplement:
+        description: Allow bounded free HTTP and browser recovery
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: futureeval-competition-shadow
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate input and find durable shadow state
+        id: state
+        uses: actions/github-script@v7
+        env:
+          COLLECTOR_RUN: ${{ inputs.collector_run }}
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            if (!/^[0-9]+$/.test(process.env.COLLECTOR_RUN)) throw new Error('Numeric collection run required');
+            const source = (await github.rest.actions.getWorkflowRun({owner, repo, run_id: Number(process.env.COLLECTOR_RUN)})).data;
+            if (source.status !== 'completed' || source.conclusion !== 'success' ||
+                source.path !== '.github/workflows/collect_new_questions.yaml' || source.head_branch !== 'main') {
+              throw new Error('Require a successful main-branch collection worker');
+            }
+            const sourceArtifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: source.id});
+            if (!sourceArtifacts.data.artifacts.some(a => a.name === 'futureeval-collection-state' && !a.expired)) {
+              throw new Error('Collection state unavailable; do not restart budgets');
+            }
+            const runs = (await github.rest.actions.listWorkflowRuns({owner, repo,
+              workflow_id: 'competition_shadow.yaml', status: 'completed', per_page: 100})).data.workflow_runs;
+            for (const run of runs) {
+              if (run.id === context.runId) continue;
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({owner, repo, run_id: run.id});
+              if (artifacts.data.artifacts.some(a => a.name === 'futureeval-competition-shadow-state' && !a.expired)) {
+                core.setOutput('previous', run.id); return;
+              }
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {owner, repo, run_id: run.id});
+              if (jobs.flatMap(j => j.steps || []).some(s => s.name === 'Run shadow queue' && s.conclusion !== 'skipped')) {
+                throw new Error('Latest shadow ledger missing; refuse budget reset');
+              }
+            }
+            if (runs.length === 100) throw new Error('History exhausted without recoverable shadow state');
+      - name: Restore shadow state
+        if: steps.state.outputs.previous != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-competition-shadow-state
+          run-id: ${{ steps.state.outputs.previous }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/competition-shadow
+      - name: Read collection state
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-collection-state
+          run-id: ${{ inputs.collector_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/collector
+      - name: Resolve original monitor run
+        id: source
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          reports = sorted(Path('snapshots/collector/reports').glob('*/index.json'))
+          if not reports:
+              raise ValueError('No collector source report; refuse guessed monitor identity')
+          source = json.loads(reports[-1].read_text(encoding='utf-8'))['source_run_id']
+          if not str(source).isdecimal():
+              raise ValueError('Invalid source monitor run')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write(f'monitor={source}\n')
+          PY
+      - name: Read original question snapshots
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-questions-${{ steps.source.outputs.monitor }}
+          run-id: ${{ steps.source.outputs.monitor }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/incoming
+      - name: Install free readers
+        if: inputs.execute
+        run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - name: Install browser
+        if: inputs.execute && inputs.network_supplement
+        run: python -m playwright install --with-deps chromium
+      - name: Run shadow queue
+        env:
+          EXECUTE: ${{ inputs.execute }}
+          NETWORK_SUPPLEMENT: ${{ inputs.network_supplement }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.state.outputs.previous }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/competition-shadow
+        run: |
+          python - <<'PY'
+          import os, subprocess, sys
+          from pathlib import Path
+          snapshots = sorted(Path('snapshots/incoming').glob('*/index.json'))
+          if not snapshots:
+              raise ValueError('No monitor question snapshot')
+          args = [sys.executable, '-m', 'ForecastAgent.competition', '--root', 'snapshots/competition-shadow',
+                  '--snapshot', str(snapshots[-1].parent), '--collector-root', 'snapshots/collector']
+          if os.environ['EXECUTE'] == 'true':
+              args.append('--execute')
+          if os.environ['NETWORK_SUPPLEMENT'] == 'true':
+              args.append('--network-supplement')
+          subprocess.run(args, check=True)
+          PY
+      - name: Preserve shadow queue and all journals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-competition-shadow-state
+          path: snapshots/competition-shadow/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
