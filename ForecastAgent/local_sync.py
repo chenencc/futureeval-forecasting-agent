@@ -140,6 +140,17 @@ def add_records(db, repo, artifact, path, data, digest):
                       'citation-audit.json': 'analysis_citation_audit'}
     if PurePosixPath(path).name in analysis_kinds:
         add(analysis_kinds[PurePosixPath(path).name], 'root', payload, ident)
+    # Supplement records remain distinct from original collection quotas/results.
+    if payload.get('schema') == 'evidence_supplement_v1':
+        ident = payload.get('task_id', ident)
+        add('supplement_manifest', 'root', payload, ident)
+        for index, attempt in enumerate(payload.get('attempts', [])):
+            add('supplement_attempt', index, attempt, ident)
+        for index, gap in enumerate(payload.get('remaining_gaps', [])):
+            add('supplement_gap', index, gap, ident)
+        add('supplement_handoff', 'root', payload.get('analysis_handoff', {}), ident)
+    if isinstance(payload.get('supplement_provenance'), dict):
+        add('supplement_capture', 'root', payload, payload['supplement_provenance'].get('task_id', ident))
     if any('/' + directory + '/' in '/' + path for directory in ('ultra-http', 'mercury-http', 'health-http')):
         add('analysis_provider_transport', 'response', payload, ident)
     if path.endswith('state.json'):

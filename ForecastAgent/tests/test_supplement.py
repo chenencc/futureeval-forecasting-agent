@@ -81,5 +81,17 @@ class SupplementTests(unittest.TestCase):
                 browser.assert_not_called()
             self.assertTrue((folder/'out/manifest-packaging-migration.json').exists())
 
+    def test_local_index_keeps_supplement_attempts_separate(self):
+        from ForecastAgent.local_sync import connect, add_records
+        with tempfile.TemporaryDirectory() as d:
+            with connect(Path(d)) as db:
+                payload={'schema':'evidence_supplement_v1','task_id':'1',
+                    'attempts':[{'method':'browser','status':'failed'}],
+                    'remaining_gaps':[{'url':'https://example.org'}]}
+                add_records(db,'repo','artifact','tasks/1/supplement.json',json.dumps(payload).encode(),'hash')
+                kinds={row[0] for row in db.execute('SELECT kind FROM records')}
+                self.assertIn('supplement_attempt',kinds)
+                self.assertNotIn('model_attempt',kinds)
+
 
 if __name__=='__main__':unittest.main()
