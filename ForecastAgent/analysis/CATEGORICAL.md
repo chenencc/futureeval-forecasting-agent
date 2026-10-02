@@ -37,6 +37,24 @@ They test collection and distribution handling, not historical accuracy or an
 accepted competition forecast. Numeric and discrete CDF support remains a
 separate implementation task. The live competition queue remains unchanged.
 
+## Real-case acceptance on October 2, 2026
+
+The saved Fall snapshot contains six non-binary questions: two multiple-choice,
+two numeric and two discrete questions. Post 45849 / question 46024 was selected
+for the first multiple-choice diagnostic, with eight exact match-length options.
+
+Authenticated detail responses, including an explicit `include_descriptions`
+request, returned null description, resolution criteria and fine print. Bounded
+public HTTP and Chromium navigation both returned HTTP 403. Runs 36973689602,
+36974214770 and 36974735147 preserved these input failures; the latter two
+restored the same preceding artifact. No Tavily, Exa or model request was made.
+
+The rule reader recognizes only an explicit public Resolution Criteria heading
+and checks the question title. It never infers rules from a title or other
+market. It persists one HTTP and one browser attempt before execution. A verified
+official rule snapshot is required to complete the real-case analysis. Passing
+offline typed-output tests does not mean the live acquisition test passed.
+
 References:
 - https://www.metaculus.com/api/
 - https://www.metaculus.com/how-to-forecast/
