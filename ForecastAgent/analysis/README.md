@@ -4,7 +4,7 @@ The independent analysis path consumes acquired bundles without modifying acquis
 
 1. Freeze question fields and deterministic source segments, hashes, omission counts, and capture dates.
 2. Ultra decomposes the rules, builds an event tree, examines outside-view support, and records opposing cases with verbatim citations.
-3. Ultra reviews its draft for scope, date, contradiction, and coverage errors. Software validates citations against visible saved segments. Citation validity does not establish claim entailment.
+3. Ultra reviews its draft for scope, date, contradiction, and coverage errors. Software validates citations against visible saved segments. A remaining request may repair invalid citations. Presentation-only differences are mapped back to original character spans. Unsupported citations are quarantined; when any remain, derived narratives and claim interpretations are withheld and the scorer receives validated quotations and gaps only. This degraded mode is explicitly recorded. Citation validity does not establish claim entailment.
 4. Mercury Decide receives the qualitative report and citations, excluding Ultra's numeric baseline. A `noul` question gives P(YES); a separate ordinal `score` measures evidence sufficiency. Neither score nor confidence is multiplied into the event probability.
 5. Freeze inference outputs before a separate evaluation command opens binary resolution labels. Compare Brier and clipped log loss; report failures rather than fabricate probabilities.
 
@@ -18,7 +18,7 @@ The analysis pilot explicitly uses `nvidia/nemotron-3-ultra-550b-a55b:free` and 
 
 ## Durable limits
 
-Each task has a separate analysis journal: at most three physical Ultra HTTP attempts across both stages, and one Mercury request. The pilot has one additional Mercury health request. Reservations are written before HTTP. Restarting the same output directory never replenishes attempts. Completed predictions are reused only if evidence hashes match. Collection budgets and statuses are never reset or edited. No Tavily, Exa, market API, or forecast submission is called.
+Each task has a separate analysis journal: at most three physical Ultra HTTP attempts across drafting, review and optional repair, and one Mercury request. The pilot has one additional Mercury health request. Reservations are written before HTTP. Restarting the same output directory never replenishes attempts. Completed stages and predictions are reused only within the frozen evidence identity. The workflow's `resume_analysis_run` restores the prior journal. Collection budgets and statuses are never reset or edited. No Tavily, Exa, market API, or forecast submission is called.
 
 Evidence selection uses at most 10,000 characters per saved source. All omitted characters and upstream truncation are recorded. The initial pilot does not offer interactive reading of omitted passages; missing context must appear as a gap. Polymarket is not supplied when no saved market snapshot exists. Analysis and decision interfaces are separate so the reasoning model can later be replaced without rewriting scoring.
 

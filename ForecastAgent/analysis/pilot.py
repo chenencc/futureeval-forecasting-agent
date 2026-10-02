@@ -6,6 +6,7 @@ import math
 import os
 import re
 import time
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -151,6 +152,68 @@ def decision_state(packet, report):
             'evaluation_warning': WARNING, 'instruction': 'Use cited facts and explicit uncertainty; no historical outcome labels are supplied.'}
 
 
+def normalized_with_offsets(text):
+    """Normalize presentation only; retain offsets into the original saved body."""
+    folds = {'\u2018': "'", '\u2019': "'", '\u201c': '"', '\u201d': '"', '\u2011': '-'}
+    characters, offsets = [], []
+    for index, char in enumerate(text):
+        for normalized in unicodedata.normalize('NFKC', folds.get(char, char)):
+            if normalized.isspace():
+                normalized = ' '
+                if characters and characters[-1] == ' ':
+                    offsets[-1] = (offsets[-1][0], index + 1)
+                    continue
+            characters.append(normalized)
+            offsets.append((index, index + 1))
+    return ''.join(characters), offsets
+
+
+def grounded_report(message, packet):
+    """Recover presentation differences; quarantine unsupported citations and conclusions."""
+    original = json.loads(message['tool_calls'][0]['function']['arguments'])
+    report = json.loads(json.dumps(original))
+    sources = {s['source_id']: s for s in packet['sources']}
+    accepted, rejected, locations = [], [], []
+    for fact in report.get('facts', []):
+        source = sources.get(fact.get('source_id'))
+        quote = fact.get('quote')
+        match = None
+        if source and isinstance(quote, str) and len(quote.strip()) >= 10:
+            needle = normalized_with_offsets(quote)[0].strip()
+            for segment in source['segments']:
+                normalized, offsets = normalized_with_offsets(segment['text'])
+                index = normalized.find(needle)
+                if index >= 0 and needle:
+                    start, end = offsets[index][0], offsets[index + len(needle) - 1][1]
+                    match = segment['text'][start:end]
+                    locations.append({'source_id': fact['source_id'], 'start': segment['start'] + start,
+                                      'end': segment['start'] + end, 'body_sha256': source['body_sha256'],
+                                      'model_quote': quote, 'saved_quote': match, 'presentation_normalized': match != quote})
+                    break
+        if match is None:
+            rejected.append(fact)
+        else:
+            fact['quote'] = match
+            accepted.append(fact)
+    report['facts'] = accepted
+    if rejected:
+        # A narrative can depend on an invalid citation. Withhold all such prose,
+        # and let the scorer see only the recovered quotations and explicit gaps.
+        for field in FIELDS:
+            if field not in ('facts', 'gaps', 'ultra_probability_yes'):
+                report[field] = 'Withheld: citation validation failed; use validated source quotations only.'
+        report['gaps'] = list(report.get('gaps', [])) + [f'{len(rejected)} unsupported citations were quarantined; derived conclusions are withheld.']
+        for fact in report['facts']:
+            fact['claim'] = 'Model interpretation withheld; evaluate the exact source quotation in its date and scope.'
+            fact['supports'] = 'context'
+    parse_analysis({'tool_calls': [{'function': {'name': 'record_analysis', 'arguments': json.dumps(report)}}]}, packet)
+    audit = {'status': 'degraded_quote_only' if rejected else 'validated_citations',
+             'accepted_count': len(accepted), 'rejected_count': len(rejected), 'rejected_facts': rejected,
+             'citation_locations': locations, 'claim_entailment_verified': False,
+             'baseline_comparison_eligible': not rejected}
+    return report, audit
+
+
 QUESTIONS = {
     'event_yes': {'type': 'noul', 'instructions': 'What is the probability that the event in state.question resolves YES under its exact resolution_criteria, conditional on the supplied evidence and identified gaps? Evaluate the event, not whether the prose says yes.',
                   'criteria': {'true': 'The event satisfies all YES resolution conditions within the specified window.',
@@ -224,14 +287,17 @@ def run(root, output, ids):
                 except ValueError as exc:
                     if (folder / 'repair-message.json').exists():
                         repaired = load(folder / 'repair-message.json')
-                    else:
+                    elif len(list((folder / 'ultra-http').glob('*.json'))) < 3:
                         feedback = ('The software rejected this report. Repair ALL invalid citations and any arguments relying on them. '
                                     'Do not paraphrase inside quote fields, merge table headers with values, or join noncontiguous text. '
                                     'Copy short contiguous substrings including original punctuation. If a fact is unsupported, remove it '
                                     'and record a gap. Return the complete revised report. Validation errors: ' + str(exc) + '\nDraft: ' + json.dumps(revised))
                         repaired = ask_ultra(messages + [{'role': 'user', 'content': feedback}], key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
                         save(folder / 'repair-message.json', repaired)
-                    report = parse_analysis(repaired, packet)
+                    else:
+                        repaired = revised
+                    report, audit = grounded_report(repaired, packet)
+                    save(folder / 'citation-audit.json', audit)
                 save(folder / 'analysis.json', report)
             state = decision_state(packet, report)
             save(folder / 'decision-state.json', state)
@@ -242,6 +308,7 @@ def run(root, output, ids):
                 'material_conflict_probability': response['answers']['material_conflict']['noul'], 'gaps': report['gaps'],
                 'packet_sha256': digest(packet), 'analysis_sha256': digest(report), 'decision_state_sha256': digest(state),
                 'frozen_at_utc': datetime.now(timezone.utc).isoformat(), 'evaluation_warning': WARNING}
+            prediction['analysis_quality'] = load(folder / 'citation-audit.json') if (folder / 'citation-audit.json').exists() else {'status': 'validated_citations', 'baseline_comparison_eligible': True}
             save(folder / 'prediction.json', prediction)
             if (folder / 'failure.json').exists():
                 (folder / 'failure.json').rename(folder / 'previous-failure.json')

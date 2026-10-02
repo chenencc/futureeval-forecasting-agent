@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import Journal, prepare, parse_analysis, decision_state, FIELDS
+from ForecastAgent.analysis.pilot import Journal, prepare, parse_analysis, decision_state, grounded_report, FIELDS
 from ForecastAgent.providers.decisions import probability, validate, MODEL
 
 
@@ -46,6 +46,22 @@ class AnalysisPilotTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 Journal(directory, 1)('reserve', {'status': 'reserved'})
             self.assertEqual(len(list(Path(directory).glob('*.json'))), 1)
+
+    def test_presentation_recovery_and_conclusion_quarantine(self):
+        body = 'Today’s national average: $4.09.\nThe rate was held steady.'
+        packet = prepare({'request': {'id': '1', 'question': 'Threshold met?'}, 'pages': {'https://example.org': {'content': body}}})
+        report = {k: 'Unknown' for k in FIELDS}
+        report.update(facts=[{'source_id': 'S1', 'quote': "Today's national average: $4.09.", 'claim': 'Value', 'supports': 'no'},
+                             {'source_id': 'S1', 'quote': 'The threshold was definitely met.', 'claim': 'Invented conclusion', 'supports': 'yes'}],
+                      gaps=[], ultra_probability_yes=.9)
+        message = {'tool_calls': [{'function': {'name': 'record_analysis', 'arguments': json.dumps(report)}}]}
+        cleaned, audit = grounded_report(message, packet)
+        self.assertEqual(audit['rejected_count'], 1)
+        self.assertEqual(audit['status'], 'degraded_quote_only')
+        self.assertEqual(cleaned['facts'][0]['quote'], 'Today’s national average: $4.09.')
+        self.assertTrue(cleaned['case_for_yes'].startswith('Withheld'))
+        location = audit['citation_locations'][0]
+        self.assertEqual(body[location['start']:location['end']], location['saved_quote'])
 
 
 if __name__ == '__main__':
