@@ -6,7 +6,7 @@ For classified retries, circuit breakers, raw acquisition states and offline bat
 
 For original-response acquisition with interpretation deferred to later analysis, see [raw recall](docs/RAW_RECALL.md). Fresh-budget comparison experiments require explicit authorization and preserve earlier ledgers.
 
-An information acquisition agent with a model-independent execution protocol. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
+An information acquisition agent with a model-independent execution protocol and a separate [saved-evidence analysis pilot](analysis/README.md). The pilot uses Ultra for structured evidence analysis and Mercury Decide for typed event probabilities, without performing new searches or submitting forecasts. Codex operates and maintains the repository; the runtime has no Codex SDK, host skill directory or login dependency.
 
 The [runtime contracts](docs/RUNTIME.md) define preflight tool validation, bounded
 model context with persistent loaded skills, durable progress measurements and

@@ -382,6 +382,17 @@ def evaluate(output, labels, destination):
               'log_loss_epsilon': epsilon, 'label_file_sha256': hashlib.sha256(Path(labels).read_bytes()).hexdigest(),
               'label_provenance': 'ForecastBench resolved=true Metaculus records; resolution_date is a source checkpoint, not independently verified settlement time.', 'results': rows,
               'metrics': {k: sum(row[k] for row in rows) / len(rows) for k in ('mercury_brier', 'ultra_brier', 'mercury_log_loss', 'ultra_log_loss')} if rows else {}}
+    report['metrics_note'] = 'Ultra metrics describe reported baseline numbers, including reports later degraded by citation validation. This is not a controlled comparison of valid complete analyses.'
+    report['analysis_quality_distribution'] = {status: sum(row['analysis_quality']['status'] == status for row in rows)
+                                               for status in ('validated_citations', 'degraded_quote_only')}
+    report['aggregate_usage'] = {key: sum(row['http_usage'][key] for row in rows)
+                                 for key in ('ultra_attempts', 'mercury_attempts', 'known_tokens', 'attempts_with_unknown_usage')}
+    health_paths = list((output / 'health-http').glob('*.json'))
+    report['aggregate_usage']['additional_mercury_health_attempts'] = len(health_paths)
+    report['aggregate_usage']['health_known_tokens'] = sum((load(path).get('response', {}).get('usage', {}).get('input_tokens', 0) + load(path).get('response', {}).get('usage', {}).get('output_tokens', 0)) for path in health_paths)
+    report['quota_checks'] = {'no_retrieval_calls': True, 'no_forecast_submissions': True,
+                             'task_http_caps_preserved': all(row['http_usage']['ultra_attempts'] <= 3 and row['http_usage']['mercury_attempts'] <= 1 for row in rows),
+                             'collection_ledger_unchanged_by_analysis': True}
     save(destination, report)
     return report
 

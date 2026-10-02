@@ -134,6 +134,14 @@ def add_records(db, repo, artifact, path, data, digest):
                 add(kind, field, payload[field], ident)
     if '/model_calls/' in '/' + path:
         add('model_transport', 'response', payload, ident)
+    # Index analysis separately from collection and provider search budgets.
+    analysis_kinds = {'prediction.json': 'analysis_prediction', 'analysis.json': 'analysis_report',
+                      'evidence-packet.json': 'analysis_evidence_packet', 'decision-response.json': 'analysis_decision',
+                      'citation-audit.json': 'analysis_citation_audit'}
+    if PurePosixPath(path).name in analysis_kinds:
+        add(analysis_kinds[PurePosixPath(path).name], 'root', payload, ident)
+    if any('/' + directory + '/' in '/' + path for directory in ('ultra-http', 'mercury-http', 'health-http')):
+        add('analysis_provider_transport', 'response', payload, ident)
     if path.endswith('state.json'):
         add('monitor_state', 'state', payload)
 

@@ -17,6 +17,18 @@ def make_archive(path, files, manifest=False):
 
 
 class LocalSyncTests(TestCase):
+    def test_analysis_records_are_indexed_separately(self):
+        with TemporaryDirectory() as temp:
+            root = Path(temp) / 'data'
+            archive = Path(temp) / 'analysis.zip'
+            make_archive(archive, {'tasks/123/prediction.json': '{"id":"123","probability_yes":0.4}',
+                                  'tasks/123/citation-audit.json': '{"status":"degraded_quote_only"}',
+                                  'tasks/123/mercury-http/001.json': '{"status":"received"}'})
+            import_zip(root, archive, artifact_id='analysis', run_id='100')
+            with connect(root) as db:
+                records = db.execute('SELECT kind,question_id FROM records WHERE kind LIKE "analysis_%" ORDER BY kind').fetchall()
+            self.assertEqual(records, [('analysis_citation_audit', '123'), ('analysis_prediction', '123'), ('analysis_provider_transport', '123')])
+
     def test_nested_campaign_is_indexed_and_cached(self):
         with TemporaryDirectory() as temp:
             root=Path(temp)/'data'
