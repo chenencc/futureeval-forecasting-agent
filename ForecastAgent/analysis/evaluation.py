@@ -11,19 +11,40 @@ from ForecastAgent.analysis.pilot import WARNING, digest, load, save
 from ForecastAgent.providers.decisions import probability
 
 
+def transport_usage(folder):
+    records = [load(p) for kind in ('ultra-http', 'mercury-http') for p in sorted((folder / kind).glob('*.json'))]
+    usage = {'reasoning_http_attempts': len(list((folder / 'ultra-http').glob('*.json'))),
+             'decision_http_attempts': len(list((folder / 'mercury-http').glob('*.json'))),
+             'known_tokens': 0, 'attempts_with_unknown_usage': 0, 'reported_cost_usd': 0,
+             'requested_models': dict(Counter(r['request']['model'] for r in records))}
+    for record in records:
+        data = record.get('response', {}).get('usage', {}) or {}
+        if isinstance(data.get('total_tokens'), int):
+            usage['known_tokens'] += data['total_tokens']
+        elif isinstance(data.get('input_tokens'), int) and isinstance(data.get('output_tokens'), int):
+            usage['known_tokens'] += data['input_tokens'] + data['output_tokens']
+        else:
+            usage['attempts_with_unknown_usage'] += 1
+        usage['reported_cost_usd'] += data.get('cost', 0) or 0
+    return usage
+
+
 def evaluate(output, archive, labels, destination, baseline=None):
     output = Path(output)
     manifest = load(output / 'manifest.json')
     frozen = []
     failures = []
+    task_usage = {}
     with zipfile.ZipFile(archive) as saved:
         source_campaign = json.loads(saved.read('campaign.json'))
         if digest(source_campaign) != manifest['campaign_sha256']:
             raise ValueError('Evaluation source campaign identity mismatch')
         for ident in manifest['ids']:
             folder = output / 'tasks' / ident
+            task_usage[ident] = transport_usage(folder)
             if not (folder / 'prediction.json').exists():
-                failures.append(load(folder / 'failure.json') if (folder / 'failure.json').exists() else {'id': ident, 'status': 'missing_prediction'})
+                failure = load(folder / 'failure.json') if (folder / 'failure.json').exists() else {'id': ident, 'status': 'missing_prediction'}
+                failures.append({**failure, 'http_usage': task_usage[ident]})
                 continue
             prediction = load(folder / 'prediction.json')
             packet, analysis, state = [load(folder / name) for name in ('evidence-packet.json', 'analysis.json', 'decision-state.json')]
@@ -38,20 +59,7 @@ def evaluate(output, archive, labels, destination, baseline=None):
                 body = bundle['pages'][excerpt['url']]['content']
                 if hashlib.sha256(body.encode()).hexdigest() != excerpt['body_sha256'] or body[excerpt['start']:excerpt['end']] != excerpt['text']:
                     raise ValueError('Referenced source span failed: ' + excerpt['evidence_id'])
-            records = [load(p) for kind in ('ultra-http', 'mercury-http') for p in sorted((folder / kind).glob('*.json'))]
-            usage = {'reasoning_http_attempts': len(list((folder / 'ultra-http').glob('*.json'))),
-                     'decision_http_attempts': len(list((folder / 'mercury-http').glob('*.json'))),
-                     'known_tokens': 0, 'attempts_with_unknown_usage': 0, 'reported_cost_usd': 0,
-                     'requested_models': dict(Counter(r['request']['model'] for r in records))}
-            for record in records:
-                data = record.get('response', {}).get('usage', {}) or {}
-                if isinstance(data.get('total_tokens'), int):
-                    usage['known_tokens'] += data['total_tokens']
-                elif isinstance(data.get('input_tokens'), int) and isinstance(data.get('output_tokens'), int):
-                    usage['known_tokens'] += data['input_tokens'] + data['output_tokens']
-                else:
-                    usage['attempts_with_unknown_usage'] += 1
-                usage['reported_cost_usd'] += data.get('cost', 0) or 0
+            usage = task_usage[ident]
             frozen.append({**prediction, 'prediction_sha256': digest(prediction), 'http_usage': usage,
                            'evidence_stats': {'source_count': len(packet['sources']), 'fact_count': len(analysis['facts']),
                                'referenced_spans': len(excerpts), 'all_spans_verified_against_original_bundle': True,
@@ -94,11 +102,11 @@ def evaluate(output, archive, labels, destination, baseline=None):
         'label_provenance': 'Local ForecastBench resolved=true Metaculus records; checkpoint dates are not necessarily settlement timestamps.',
         'source_archive_sha256': hashlib.sha256(Path(archive).read_bytes()).hexdigest(),
         'label_file_sha256': hashlib.sha256(Path(labels).read_bytes()).hexdigest(),
-        'results': rows, 'failures': failures, 'evaluated_count': len(rows),
+        'results': rows, 'failures': failures, 'requested_count': len(manifest['ids']), 'evaluated_count': len(rows),
         'quality_distribution': dict(Counter(r['quality']['status'] for r in rows)),
         'metrics': {key: sum(r[key] for r in rows) / len(rows) for key in ('mercury_brier', 'mercury_log_loss', 'reasoning_brier')} if rows else {},
-        'consumption': {key: sum(r['http_usage'][key] for r in rows) for key in ('reasoning_http_attempts', 'decision_http_attempts', 'known_tokens', 'attempts_with_unknown_usage', 'reported_cost_usd')},
-        'quota_checks': {'within_task_caps': all(r['http_usage']['reasoning_http_attempts'] <= 3 and r['http_usage']['decision_http_attempts'] <= 1 for r in rows),
+        'consumption': {key: sum(usage[key] for usage in task_usage.values()) for key in ('reasoning_http_attempts', 'decision_http_attempts', 'known_tokens', 'attempts_with_unknown_usage', 'reported_cost_usd')},
+        'quota_checks': {'within_task_caps': all(usage['reasoning_http_attempts'] <= 3 and usage['decision_http_attempts'] <= 1 for usage in task_usage.values()),
                          'no_collection_reopened': True, 'no_search_or_forecast_tools_exposed': True}}
     save(destination, report)
     return report

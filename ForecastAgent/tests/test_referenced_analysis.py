@@ -37,6 +37,28 @@ class ReferencedAnalysisTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse(self.message(), self.packet)
 
+    def test_declared_full_coverage_with_gap_is_not_complete(self):
+        self.report['conditions'][0].update(coverage='full', status='supported')
+        quality = assess(self.packet, self.report, True)
+        self.assertFalse(quality['all_necessary_conditions_complete'])
+        self.assertEqual(quality['status'], 'review_required')
+
+    def test_failed_transport_usage_is_not_zero_cost(self):
+        from ForecastAgent.analysis.evaluation import transport_usage
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'ultra-http').mkdir()
+            records = [
+                {'request': {'model': 'test:free'}, 'status': 'received', 'response': {'usage': {'total_tokens': 123}}},
+                {'request': {'model': 'test:free'}, 'status': 'missing_choices', 'response': {'error': {'code': 502}}},
+            ]
+            for index, record in enumerate(records):
+                (root / 'ultra-http' / f'{index}.json').write_text(json.dumps(record), encoding='utf-8')
+            usage = transport_usage(root)
+            self.assertEqual(usage['reasoning_http_attempts'], 2)
+            self.assertEqual(usage['known_tokens'], 123)
+            self.assertEqual(usage['attempts_with_unknown_usage'], 1)
+
     def test_full_condition_requires_source_reference(self):
         self.report['conditions'][0].update(coverage='full', evidence_refs=[])
         with self.assertRaises(ValueError):

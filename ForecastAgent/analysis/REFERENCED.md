@@ -1,4 +1,4 @@
-# Referenced analysis v2
+# Referenced analysis
 
 This experimental module consumes immutable `acquired` bundles. Collection is finished; the module does not restart it, perform searches, or submit forecasts. All prompts and analysis schemas are backend-neutral. The pilot workflow selects the free Ultra backend; Mercury Decide remains the probability adapter.
 
@@ -20,11 +20,13 @@ Mercury receives the question, reviewed qualitative analysis, exact referenced s
 
 ## Durable experiment state
 
+The initial v2 experiment used the acquisition transport's 3,000-token output limit and exposed truncated structured replies. V3 preserves that experiment and uses a 6,000-token completion allowance, including a requested 1,500-token reasoning budget, supported by the selected free backend. Tool use is required and invalid-output feedback excludes verbose reasoning. Collection's original transport defaults are unchanged. Provider support for generation settings must be checked before switching backends.
+
 The manifest freezes source-campaign identity, protocol, prompt/tool contract, selected IDs and configured reasoning model. Each task freezes its full original bundle hash. Sessions atomically retain messages, local-read library, draft and consumed HTTP index. Received provider responses can be replayed after interruption without another HTTP request. Each task has at most three physical reasoning HTTP attempts and one Mercury HTTP attempt; restoring the journal never resets them. Completed outputs retain separate hashes for evidence, analysis and scorer input.
 
 ```sh
-python -m ForecastAgent.analysis.referenced --root PATH_TO_CAMPAIGN --output PATH_TO_V2_EXPERIMENT --ids 44801,43688,41140
-python -m ForecastAgent.analysis.evaluation --output PATH_TO_V2_EXPERIMENT --source-archive ORIGINAL_CAMPAIGN.zip --labels snapshots/forecastbench-history/resolved_metaculus.jsonl --report OUTPUT_REPORT.json --baseline OPTIONAL_V1_REPORT.json
+python -m ForecastAgent.analysis.referenced --root PATH_TO_CAMPAIGN --output PATH_TO_EXPERIMENT --ids 44801,43688,41140
+python -m ForecastAgent.analysis.evaluation --output PATH_TO_EXPERIMENT --source-archive ORIGINAL_CAMPAIGN.zip --labels snapshots/forecastbench-history/resolved_metaculus.jsonl --report OUTPUT_REPORT.json --baseline OPTIONAL_V1_REPORT.json
 ```
 
 The `Referenced evidence analysis pilot` workflow runs the same interface against a completed collection artifact and uploads the full state. Its optional resume input restores the existing experiment. Every fresh protocol experiment is separate from v1 and from collection budgets; provider requests remain subject to the account's shared limits.
@@ -32,3 +34,7 @@ The `Referenced evidence analysis pilot` workflow runs the same interface agains
 Current saved sources and model knowledge can contain outcomes. Evaluation after frozen inference is a retrospective diagnostic, not a clean historical forecasting benchmark. Old v1 outputs remain available for exploratory comparison; a changed protocol and changed evidence context are not a controlled test of model superiority.
 
 Evaluation reopens the original campaign archive and verifies every materialized span, full source-bundle identity and frozen analysis/scorer-input hashes before loading outcomes. It reports per-task conditions, gaps, HTTP attempts, known and unknown token usage, native probabilities and Brier/log loss. Optional v1 comparisons include only shared question IDs; no missing case is silently treated as zero cost or perfect prediction.
+
+## Pilot status
+
+V2 run `36950597546` produced one provisional scored case out of three. Two cases failed structured-output validation; the completed case still requires review because time-window evidence is incomplete. V3 run `36952076125` attempted one case and received three upstream 502 errors without a usable model response. The revised generation policy therefore remains unvalidated in a successful live run. Both experiments retain their exhausted attempt journals. A subsequent validation must use a separately identified experiment; restoration must never reopen those budgets.
