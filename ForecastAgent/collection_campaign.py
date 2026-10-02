@@ -177,7 +177,9 @@ def unavailable(directory, attempts):
         records=transport_records(directory,attempts)
     except (ValueError,OSError):
         return False  # Classified as integrity failure by the caller.
-    return sum(r.get('http_status') in {429,500,502,503,504} for r in records)>=2
+    # Successful fallback recovery clears the preceding transport outage streak.
+    last_success = max((i for i,r in enumerate(records) if r.get('status')=='received'), default=-1)
+    return sum(r.get('http_status') in {429,500,502,503,504} for r in records[last_success+1:])>=2
 
 
 def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reason='', question_ids=None):
@@ -190,6 +192,12 @@ def run_batch(root, limit=1, runner=run_retrieval, question_id=None, resume_reas
         campaign = reconcile(root, read(root / 'campaign.json'))
         if campaign['model'] != configured_model():
             raise ValueError('Frozen campaign model differs from the configured backend')
+        from ForecastAgent.providers.model import reset_route
+        reset_route()
+        if os.environ.get('FORECAST_MODEL_FALLBACK_SUPER') == '1':
+            campaign['model_routing_policy'] = {'primary':configured_model(),
+                'fallback':'nvidia/nemotron-3-super-120b-a12b:free', 'consecutive_service_failures':2,
+                'sticky_scope':'dispatch', 'budget_reset':False}
         if question_ids is not None:
             question_ids = [str(ident) for ident in question_ids]
             if question_id is not None or not question_ids or len(question_ids) > limit or len(set(question_ids)) != len(question_ids):

@@ -87,31 +87,32 @@ def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_pa
                          preserve_raw_on_failure=preserve_raw_on_failure)
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None) -> dict:
-    request = Request(
-        OPENROUTER_URL,
-        data=json.dumps({
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None) -> dict:
+    payload_request = {
             "model": configured_model(),
             "messages": messages,
             "tools": TOOLS if tools is None else tools,
             "tool_choice": {"type": "function", "function": {"name": forced_tool or "search_tavily"}} if first_turn or forced_tool else "auto",
             "temperature": 0.2,
             "max_tokens": 3000,
-        }).encode("utf-8"),
-        headers={
+        }
+    headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://github.com/chenencc/futureeval-forecasting-agent",
             "X-Title": "ForecastAgent information acquisition",
-        },
-        method="POST",
-    )
+        }
     for attempt in range(3):
         if deadline is not None and time.monotonic() >= deadline:
             raise RuntimeError('Model run deadline exhausted')
         started = time.monotonic()
+        payload_request['model'] = model_route.model() if model_route else configured_model()
+        request = Request(OPENROUTER_URL, data=json.dumps(payload_request).encode('utf-8'), headers=headers, method='POST')
         record = {'started_at_utc': utc_now(), 'retry_index': attempt,
                   'request': json.loads(request.data), 'status': 'reserved'}
+        if model_route:
+            record['model_routing'] = {'primary':configured_model(), 'fallback_active':model_route.fallback,
+                                      'reason':model_route.reason, 'budget_reset':False}
         token = observer('reserve', record) if observer else None
         try:
             timeout = min(180, max(0.1, deadline - time.monotonic())) if deadline else 180
@@ -122,6 +123,8 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             valid = bool(isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get('message'), dict))
             record.update(status='received' if valid else 'missing_choices', response=payload,
                           duration_seconds=time.monotonic() - started)
+            if model_route:
+                model_route.observe(record)
             if observer:
                 observer('complete', record, token)
         except HTTPError as exc:
@@ -129,10 +132,11 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             detail = raw_error[:800]
             record.update(status='http_error', http_status=exc.code, response_body=raw_error,
                           duration_seconds=time.monotonic() - started)
+            retryable = model_route.observe(record) if model_route else exc.code in {429,500,502,503,504}
             if observer:
                 observer('complete', record, token)
             # Daily quota exhaustion cannot be repaired by short retries.
-            if attempt < 2 and exc.code in {429, 500, 502, 503, 504} and "free-models-per-day" not in detail:
+            if attempt < 2 and retryable and "free-models-per-day" not in detail:
                 delay = 10 * (2 ** attempt)
                 if deadline is not None and time.monotonic() + delay >= deadline:
                     raise RuntimeError('Model retry deadline exhausted') from exc
@@ -144,6 +148,12 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
                           duration_seconds=time.monotonic() - started)
             if observer:
                 observer('complete', record, token)
+            if model_route and isinstance(exc, (OSError, TimeoutError, json.JSONDecodeError)) and model_route.observe(record) and attempt < 2:
+                delay = 10 * (2 ** attempt)
+                if deadline is not None and time.monotonic() + delay >= deadline:
+                    raise RuntimeError('Model retry deadline exhausted') from exc
+                time.sleep(delay)
+                continue
             raise
         choices = payload.get("choices") if isinstance(payload, dict) else None
         if isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get("message"), dict):

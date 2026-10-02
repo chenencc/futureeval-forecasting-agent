@@ -42,7 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 95
     env:
-      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '1'
       CAMPAIGN_ROOT: snapshots/raw-collection-100-v1
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +101,7 @@ jobs:
           FORECAST_RESTORED_STATE_ROOT: snapshots/raw-collection-100-v1
       - name: Run a bounded acquisition dispatch
         run: |
+          python -m ForecastAgent.collection_campaign switch-model --root "$CAMPAIGN_ROOT" --resume-reason "User authorized Ultra primary with automatic free Super fallback on 2026-10-02; preserve every consumed quota and snapshot."
           if [ -n "$MODEL_CHANGE_REASON" ]; then
             python -m ForecastAgent.collection_campaign switch-model --root "$CAMPAIGN_ROOT" --resume-reason "$MODEL_CHANGE_REASON"
             python - <<'PY'
