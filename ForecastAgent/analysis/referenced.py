@@ -210,6 +210,7 @@ def run(root, output, ids):
                     'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
                                        'consecutive_service_failures': 2, 'scope': 'dispatch', 'shared_http_cap': 3},
                     'generation': GENERATION,
+                    'terminal_tool_policy': 'Re-evaluate record_analysis enforcement before every physical retry.',
                     'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
@@ -255,7 +256,9 @@ def run(root, output, ids):
                         force = 'record_analysis' if session['draft'] or len(list((folder / 'ultra-http').glob('*.json'))) >= 2 else None
                         raw = ask_ultra(session['messages'], os.environ['OPENROUTER_API_KEY'], tools=[READ, RECORD],
                                         forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
-                                        model_route=route, **GENERATION)
+                                        model_route=route,
+                                        tool_selector=lambda: 'record_analysis' if session['draft'] or len(list((folder / 'ultra-http').glob('*.json'))) >= 2 else None,
+                                        **GENERATION)
                         consumed_count = len(list((folder / 'ultra-http').glob('*.json')))
                     else:
                         if session['draft']:

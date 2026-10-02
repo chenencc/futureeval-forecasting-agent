@@ -87,7 +87,7 @@ def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_pa
                          preserve_raw_on_failure=preserve_raw_on_failure)
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None, max_output_tokens=3000, reasoning=None, require_tool=False) -> dict:
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None, max_output_tokens=3000, reasoning=None, require_tool=False, tool_selector=None) -> dict:
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 12000:
         raise ValueError('Invalid output token budget')
     payload_request = {
@@ -111,6 +111,10 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             raise RuntimeError('Model run deadline exhausted')
         started = time.monotonic()
         payload_request['model'] = model_route.model() if model_route else configured_model()
+        if tool_selector is not None:
+            selected = tool_selector()
+            payload_request['tool_choice'] = ({'type': 'function', 'function': {'name': selected}}
+                                              if selected else ('required' if require_tool else 'auto'))
         request = Request(OPENROUTER_URL, data=json.dumps(payload_request).encode('utf-8'), headers=headers, method='POST')
         record = {'started_at_utc': utc_now(), 'retry_index': attempt,
                   'request': json.loads(request.data), 'status': 'reserved'}
