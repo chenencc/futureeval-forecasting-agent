@@ -14,6 +14,7 @@ from ForecastAgent.competition.nonbinary_debug import blind_input
 from ForecastAgent.competition.platform import Client, deliver, has_existing_forecast
 from ForecastAgent.competition.queue import descriptor, digest, load, questions, save, utc
 from ForecastAgent.runtime.task_lock import task_lock
+from ForecastAgent.competition.mercury import VERSION
 
 SCHEMA = 'official-competition-v1'
 TERMINAL = {'accepted', 'already_forecasted', 'closed', 'deadline_missed', 'blocked_integrity', 'provider_blocked', 'platform_rejected'}
@@ -32,6 +33,7 @@ def live_request(post, question):
             'background': question.get('description') or post.get('description') or '',
             'mode': 'live', 'pipeline': 'collection', 'acquisition_profile': 'collection_v3'}
     request['official_competition'] = True
+    request['acquisition_focus'] = 'raw_recall'
     request.update({key: question.get(key) for key in ('open_time', 'close_time',
         'scheduled_close_time', 'scheduled_resolve_time', 'spot_scoring_time')})
     return request
@@ -59,7 +61,7 @@ def current(client, task, *, allow_closed_receipt=False):
     return post, question
 
 
-def analyze(bundle_path, folder, ident):
+def legacy_analyze(bundle_path, folder, ident, *, reasoning_only=False):
     bundle = load(bundle_path)
     kind = bundle['request']['question_type']
     if kind == 'binary':
@@ -68,7 +70,7 @@ def analyze(bundle_path, folder, ident):
         save(base / 'tasks' / ident / 'bundle.json', bundle)
         save(base / 'campaign.json', {'schema': SCHEMA, 'tasks': {ident: {'status': 'acquired'}}})
         try:
-            run(base, folder / 'analysis', [ident], mode='both', live=True)
+            run(base, folder / 'analysis', [ident], mode='reasoning_only' if reasoning_only else 'both', live=True)
         except RuntimeError:
             result_path = folder / 'analysis' / 'tasks' / ident / 'result.json'
             if not result_path.exists() or load(result_path).get('reasoning_probability_yes') is None:
@@ -86,7 +88,9 @@ def analyze(bundle_path, folder, ident):
             from ForecastAgent.analysis.categorical import run
         else:
             from ForecastAgent.analysis.range_forecast import run
-        result = run(bundle_path, folder / 'analysis')
+        def disabled_mercury(*args, **kwargs):
+            raise RuntimeError('Mercury already unavailable; no extra decision request in reasoning fallback')
+        result = run(bundle_path, folder / 'analysis', **({'decision':disabled_mercury} if reasoning_only else {}))
         raw = result['payload_preview']
         report = load(folder / 'analysis' / 'analysis.json')
         mercury = result.get('mercury_probabilities') if kind == 'multiple_choice' else result.get('mercury_cdf')
@@ -100,6 +104,26 @@ def analyze(bundle_path, folder, ident):
     save(folder / 'candidate.json', {'payload': candidate, 'selection': selected_route,
         'model_result_sha256': digest(result), 'comment': comment, 'automatic': True})
     return load(folder / 'candidate.json')
+
+
+def analyze(bundle_path, folder, ident):
+    """Release 1.0.1 uses independent Mercury; retain authorized single-route fallback."""
+    from ForecastAgent.competition.mercury import run as mercury
+    bundle=load(bundle_path)
+    if bundle['request']['id'] != str(ident):
+        raise ValueError('Analysis question identity mismatch')
+    try:
+        candidate=mercury(bundle, folder/'mercury-v1.0.1')
+    except RuntimeError as exc:
+        save(folder/'mercury-unavailable.json', {'release_version':VERSION,'error':str(exc),
+            'fallback':'single_available_reasoning_route','no_budget_reset':True})
+        candidate=legacy_analyze(bundle_path,folder/'reasoning-fallback-v1.0.1',ident,reasoning_only=True)
+        candidate['release_version']=VERSION
+        candidate['selection']='single_available_reasoning_route'
+        candidate['comment']=candidate['comment'].replace('# ForecastAgent 1.0 competition',f'# ForecastAgent {VERSION} competition')
+        candidate['comment']+='\n\nMercury was unavailable; the previously authorized reasoning-only fallback supplied this forecast.'
+    save(folder/'candidate.json',candidate)
+    return candidate
 
 
 def supplement_bundle(bundle, folder, ident):
@@ -147,7 +171,7 @@ def run(root, snapshot_root, *, enabled=False, legacy_root=None, limit=5, client
             if ident not in state['tasks']:
                 state['tasks'][ident] = {'id': ident, 'post_id': str(row['post_id']), 'stage': 'queued',
                     'discovered_at_utc': utc().isoformat(), 'collection_executions': 0,
-                    'commit': os.environ.get('GITHUB_SHA'), 'history': []}
+                    'commit': os.environ.get('FORECAST_RELEASE_COMMIT',os.environ.get('GITHUB_SHA')), 'release_version':VERSION,'history': []}
                 snapshot = load(index_path.parent / f"{row['post_id']}.json")['post']
                 q = next((q for q in questions(snapshot) if str(q['id']) == ident), None)
                 if snapshot['id'] != row['post_id'] or q is None:
@@ -252,6 +276,8 @@ def run(root, snapshot_root, *, enabled=False, legacy_root=None, limit=5, client
                         save(frozen, overlay)
                     current(client, task)
                     task['stage'] = 'analyzing'
+                    task['analysis_release_version'] = VERSION
+                    task['analysis_commit'] = os.environ.get('FORECAST_RELEASE_COMMIT',os.environ.get('GITHUB_SHA'))
                     save(state_path, state)
                     candidate = (infer or analyze)(frozen, folder, ident)
                 current(client, task)
@@ -277,10 +303,10 @@ def run(root, snapshot_root, *, enabled=False, legacy_root=None, limit=5, client
         counts = {}
         for task in state['tasks'].values():
             counts[task['stage']] = counts.get(task['stage'], 0) + 1
-        report = {'schema': SCHEMA, 'commit': os.environ.get('GITHUB_SHA'), 'enabled': enabled,
+        report = {'schema': SCHEMA, 'commit': os.environ.get('FORECAST_RELEASE_COMMIT',os.environ.get('GITHUB_SHA')), 'enabled': enabled,'release_version':VERSION,
             'snapshot_at_utc': index['retrieved_at_utc'], 'open_question_count': index.get('open_question_count'),
             'state_distribution': counts, 'processed_ids': processed, 'problems': problems,
-            'selection_policy': 'Mean if reasoning and Mercury exist; otherwise reasoning only',
+            'selection_policy': 'Mercury independent original evidence with conditional rereading; valid first decision if reread unavailable; reasoning only if Mercury unavailable',
             'probability_policy': POLICY, 'finished_at_utc': utc().isoformat()}
         save(root / 'report.json', report)
         return report

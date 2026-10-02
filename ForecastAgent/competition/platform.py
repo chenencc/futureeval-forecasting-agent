@@ -32,7 +32,7 @@ class Client:
         body = json.dumps(data).encode() if data is not None else None
         request = Request(HOST + path, data=body, method=method, headers={
             'Authorization': 'Token ' + self.token, 'Accept': 'application/json',
-            'Content-Type': 'application/json', 'User-Agent': 'ForecastAgent-official/1.0'})
+            'Content-Type': 'application/json', 'User-Agent': 'ForecastAgent-official/1.0.1'})
         with build_opener(NoRedirect()).open(request, timeout=60) as response:
             raw = response.read()
             return {'status': response.status, 'data': json.loads(raw) if raw else {}}
@@ -143,7 +143,7 @@ def deliver(client, task, candidate, comment, folder, *, enabled=False):
         return {'status': 'already_forecasted', 'checked_at_utc': utc().isoformat(),
             'reason': 'Authenticated platform forecast exists; no new POST'}
     record = {'schema': 'official-submission-v1', **expected, 'status': 'reserved',
-        'reserved_at_utc': utc().isoformat(), 'commit': task.get('commit'), 'method': 'POST',
+        'reserved_at_utc': utc().isoformat(), 'commit': task.get('analysis_commit',task.get('commit')), 'release_version':task.get('analysis_release_version',task.get('release_version')), 'method': 'POST',
         'endpoint': 'questions/bulk-forecast-comment/', 'atomic_forecast_and_comment': True}
     save(path, record)
     body = {'user_id': BOT_ID, 'forecasts': [candidate], 'comments': [{'on_post': int(task['post_id']),

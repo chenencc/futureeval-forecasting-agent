@@ -249,7 +249,7 @@ class OfficialTests(unittest.TestCase):
                 if mercury is None:
                     raise RuntimeError('Mercury unavailable; valid reasoning retained')
             with patch('ForecastAgent.analysis.referenced.run', fake_run):
-                result = live.analyze(source, folder, '7')
+                result = live.legacy_analyze(source, folder, '7')
             self.assertAlmostEqual(result['payload']['probability_yes'], expected)
 
     def test_account_permission_and_rules_guard(self):

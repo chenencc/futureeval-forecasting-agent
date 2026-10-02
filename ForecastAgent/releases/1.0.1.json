@@ -1,0 +1,37 @@
+{
+  "version": "1.0.1",
+  "git_tag": "v1.0.1",
+  "pipeline": ["original_acquisition", "independent_supplement", "mercury_original_evidence_conditional_rereading", "validated_atomic_submission"],
+  "acquisition": {
+    "entry_point": "ForecastAgent.agent.run_research",
+    "profile": "collection_v3",
+    "focus": "raw_recall",
+    "primary_model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "service_failure_fallback": "nvidia/nemotron-3-super-120b-a12b:free",
+    "tavily_basic_lifetime_max": 3,
+    "exa_search_lifetime_max": 1,
+    "budget_reset": false
+  },
+  "supplement": {"entry_point": "ForecastAgent.supplement.stage.run", "network": true, "model_calls": 0, "search_calls": 0},
+  "analysis": {
+    "entry_point": "ForecastAgent.competition.mercury.run",
+    "model": "inception/mercury-decide:free",
+    "physical_http_cap": 2,
+    "first_request_byte_limit": 22000,
+    "second_request_byte_limit": 28000,
+    "minimum_new_original_chars": 900,
+    "second_failure_policy": "retain_validated_first_decision",
+    "first_unavailable_policy": "previously_authorized_single_reasoning_fallback",
+    "normal_output_fusion": "none"
+  },
+  "delivery": {
+    "workflow": "official_competition.yaml",
+    "automatic_submission": true,
+    "probability_policy": "probability-clip-0.02-0.98-v1",
+    "closed_bound_endpoints": "platform_required_zero_or_one",
+    "private_comment": true,
+    "receipt_readback_required": true,
+    "skip_existing_forecasts": true,
+    "unknown_delivery_policy": "reconcile_without_duplicate_post"
+  }
+}

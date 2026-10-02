@@ -29,9 +29,15 @@ jobs:
       FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: v1.0.1
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verify immutable production release
+        run: |
+          test "$(git describe --tags --exact-match)" = "v1.0.1"
+          echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Find latest exact official state and legacy collection ledgers
         id: previous
         uses: actions/github-script@v7

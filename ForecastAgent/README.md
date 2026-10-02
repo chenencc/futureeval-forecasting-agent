@@ -1,5 +1,7 @@
 # ForecastAgent
 
+The official competition worker is pinned to [release 1.0.1](releases/1.0.1.md): original acquisition → independent supplement → Mercury original-evidence conditional rereading → validated automatic submission. The machine-readable policy is [1.0.1.json](releases/1.0.1.json).
+
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
 
 For classified retries, circuit breakers, raw acquisition states and offline batch validation, see [bounded batch operation](docs/BATCH_COLLECTION.md).
