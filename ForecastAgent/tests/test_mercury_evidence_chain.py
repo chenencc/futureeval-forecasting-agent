@@ -29,6 +29,16 @@ def response(insufficient=False):
 
 
 class EvidenceChainTests(unittest.TestCase):
+    def test_high_yes_with_refuted_condition_routes_without_overriding_score(self):
+        result = response(False)
+        result['answers']['event_yes']['noul'] = .8
+        result['answers']['time_window']['probabilities'] = {'supported': .05, 'contradicted': .88, 'insufficient': .07}
+        self.assertIn('time_window', chain.route(result))
+        self.assertIn('decision_condition_conflict', chain.route(result))
+        self.assertEqual(result['answers']['event_yes']['noul'], .8)
+        result['answers']['event_yes']['noul'] = .1
+        self.assertEqual(chain.route(result), [])
+
     def test_full_body_and_exact_offsets(self):
         original = bundle()
         packet = chain.full_packet(original)

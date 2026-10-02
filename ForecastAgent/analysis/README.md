@@ -51,7 +51,8 @@ The first request is capped at 22,000 encoded bytes and the second at 28,000;
 these are byte bounds, not token counts. Actual provider token usage must be
 audited against the model context limit before enlarging them.
 
-A second request requires a diagnostic gap or conflict and at least 900 newly
+A second request requires a diagnostic gap, source conflict, or disagreement
+between a high YES probability and a strongly refuted required condition, plus at least 900 newly
 added original characters. It retains every first-pass span and never presents
 first-pass probabilities or judgments as source facts. Routing thresholds are
 experimental and frozen before outcome evaluation; they are not calibration.

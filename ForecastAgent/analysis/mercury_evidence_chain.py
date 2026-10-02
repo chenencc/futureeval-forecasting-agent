@@ -11,12 +11,13 @@ from ForecastAgent.analysis.inputs import resolve_bundle
 from ForecastAgent.analysis.pilot import Journal, QUESTIONS, WARNING, digest, load, save
 from ForecastAgent.providers import decisions
 
-PROTOCOL = 'mercury-evidence-chain-v1'
+PROTOCOL = 'mercury-evidence-chain-v2'
 FIRST_BYTES = 22000
 SECOND_BYTES = 28000
 # Experimental routing thresholds, fixed before outcome evaluation.
 ROUTING = {'insufficient_probability': 0.40, 'conflict_probability': 0.50,
-           'minimum_new_chars': 900}
+           'minimum_new_chars': 900, 'yes_conflict_probability': 0.65,
+           'condition_refuted_probability': 0.65}
 
 CHECKS = {
     'time_window': 'Does the original evidence establish the required event timing under state.question, including the opening context and any target observation date? Distinguish event dates from publication dates.',
@@ -122,7 +123,14 @@ def route(response):
         reasons.append('material_conflict')
     if answers['evidence_sufficiency']['score'] < 2:
         reasons.append('evidence_sufficiency')
-    return reasons
+    # Diagnostics do not feed the event head internally. Route disagreement to
+    # original text rather than multiplying marginals or rewriting probability.
+    if answers['event_yes']['noul'] >= ROUTING['yes_conflict_probability']:
+        opposing = [key for key in CHECKS if answers[key]['probabilities']['contradicted'] >= ROUTING['condition_refuted_probability']]
+        if opposing:
+            reasons.extend(opposing)
+            reasons.append('decision_condition_conflict')
+    return list(dict.fromkeys(reasons))
 
 
 def call(state, folder):
