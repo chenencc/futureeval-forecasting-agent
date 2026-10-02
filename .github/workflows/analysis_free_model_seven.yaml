@@ -1,0 +1,66 @@
+name: Frozen seven-question free model comparison
+on:
+  workflow_dispatch:
+    inputs:
+      resume_run:
+        type: string
+        default: ''
+        description: Exact prior experiment run to resume without resetting attempts
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: analysis-free-model-seven
+  cancel-in-progress: false
+jobs:
+  analyze:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [1, 2]
+        backend:
+          - name: qwen
+            model: qwen/qwen3.8-27b:free
+          - name: apodex
+            model: apodex/apodex-1.1-mini:free
+          - name: inkling
+            model: thinkingmachines/inkling:free
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: 36961850565
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-supplement
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: free-model-seven-${{ matrix.backend.name }}-batch-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial
+      - name: Run unchanged analysis contract with one backend
+        run: python -m ForecastAgent.analysis.free_model_trial --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --batch ${{ matrix.batch }} --model ${{ matrix.backend.name }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          FORECAST_MODEL: ${{ matrix.backend.model }}
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-model-seven-${{ matrix.backend.name }}-batch-${{ matrix.batch }}
+          path: snapshots/trial
+          retention-days: 90
