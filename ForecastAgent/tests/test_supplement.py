@@ -68,5 +68,18 @@ class SupplementTests(unittest.TestCase):
                 run(archive,folder/'out',['1'],network=True,browser_limit=0)
                 browser.assert_not_called()
 
+    def test_legacy_packaging_migration_retains_attempts(self):
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d);archive,_=self.fixture(folder)
+            with patch('ForecastAgent.supplement.stage.render_page',side_effect=RuntimeError('failed')):
+                run(archive,folder/'out',['1'],network=True)
+            manifest=folder/'out/manifest.json';previous=json.loads(manifest.read_text())
+            previous.pop('parent_files_sha256');previous['parent_sha256']='legacy_zip_hash'
+            manifest.write_text(json.dumps(previous))
+            with patch('ForecastAgent.supplement.stage.render_page') as browser:
+                run(archive,folder/'out',['1'],network=True)
+                browser.assert_not_called()
+            self.assertTrue((folder/'out/manifest-packaging-migration.json').exists())
+
 
 if __name__=='__main__':unittest.main()

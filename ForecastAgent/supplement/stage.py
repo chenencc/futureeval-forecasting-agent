@@ -143,8 +143,24 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
             'ids':ids,'network_enabled':network,'browser_limit_per_task':browser_limit,
             'http_limit_per_task':http_limit,'browser_request_limit_per_render':25,
             'source_run_id':__import__('os').environ.get('SUPPLEMENT_SOURCE_RUN_ID')}
-        if (output/'manifest.json').exists() and json.loads((output/'manifest.json').read_text())!=identity:
-            raise ValueError('Frozen supplement input or budget changed')
+        if (output/'manifest.json').exists():
+            previous=json.loads((output/'manifest.json').read_text())
+            if previous!=identity:
+                # Initial pilot bound ZIP packaging; restore binds original member bytes.
+                compatible=({k:v for k,v in previous.items() if k!='parent_sha256'} ==
+                    {k:v for k,v in identity.items() if k!='parent_files_sha256'})
+                old_plan=json.loads((output/'gap-inventory.json').read_text(encoding='utf-8'))
+                compatible=compatible and old_plan.get('parent_input_sha256')==plan.get('parent_input_sha256')
+                compatible=compatible and [g for g in old_plan['task_gaps'] if g['task_id'] in ids]==[g for g in plan['task_gaps'] if g['task_id'] in ids]
+                for ident in ids:
+                    child_path=output/'tasks'/ident/'supplement.json'
+                    if not child_path.exists():compatible=False;continue
+                    old_child=json.loads(child_path.read_text(encoding='utf-8'))
+                    compatible=compatible and old_child.get('parent_bundle_sha256')==parent_identity[f'tasks/{ident}/bundle.json']
+                if not compatible:raise ValueError('Frozen supplement input or budget changed')
+                save(output/'manifest-packaging-migration.json',{'previous':previous,'replacement':identity,
+                    'reason':'Bind identical original member bytes across artifact repackaging; retain all reservations and quotas.',
+                    'budget_reset':False})
         save(output/'manifest.json',identity);save(output/'gap-inventory.json',plan)
         summary=[]
         with zipfile.ZipFile(archive) as source:
