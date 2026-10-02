@@ -78,6 +78,9 @@ def evidence_packet(bundle):
             excluded.append({'url': url, 'reason': diagnostics.get('state', 'unusable_saved_body')})
             del visible['pages'][url]
     packet = prepare(visible, source_limit=10_000)
+    if bundle['request'].get('official_competition'):
+        packet['evaluation_warning'] = 'Live automatic forecast; evidence available at acquisition time.'
+        packet['question']['fine_print'] = bundle['request'].get('fine_print', '')
     packet['excluded_unusable_sources'] = excluded
     library = []
     for source in packet['sources']:
@@ -250,7 +253,9 @@ def assess(packet, report, reviewed):
             'automated_use_eligible': False, 'calibration_status': 'No prospective calibration fitted'}
 
 
-def run(root, output, ids, supplement_root=None, mode='both'):
+def run(root, output, ids, supplement_root=None, mode='both', *, live=False):
+    prompt = PROMPT if not live else PROMPT.replace('Saved text may contain outcomes; flag retrospective leakage.', 'Forecast the currently open event using only information available now; flag any apparent outcome leakage.').replace('for diagnostic comparison', 'as an independent reasoning forecast')
+    warning = WARNING if not live else 'Live automatic competition forecast; no resolution labels or community probabilities supplied.'
     from ForecastAgent.providers.ultra import ask_ultra
     from ForecastAgent.providers.model import configured_model, ULTRA_MODEL, SUPER_MODEL
     if not configured_model().endswith(':free'):
@@ -266,13 +271,13 @@ def run(root, output, ids, supplement_root=None, mode='both'):
         identity = {'ids': ids, 'protocol': PROTOCOL, 'campaign_sha256': digest(campaign),
                     'reasoning_model': configured_model(),
                     'route_mode': mode, 'supplement_identity': supplement_identity(supplement_root),
-                    'fusion': 'Equal mean diagnostic; shared analysis, identity calibration, no automatic use',
+                    'fusion': 'Equal mean when both available; otherwise reasoning only' if live else 'Equal mean diagnostic; shared analysis, identity calibration, no automatic use',
                     'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
                                        'consecutive_service_failures': 2, 'scope': 'dispatch',
                                        'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
                     'generation': GENERATION,
                     'terminal_tool_policy': 'Reserve two remaining attempts for draft and review; cache repeated local reads.',
-                    'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
+                    'contract_sha256': digest({'prompt': prompt, 'tools': [READ, RECORD]}), 'evaluation_warning': warning}
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
         save(output / 'manifest.json', identity)
@@ -309,7 +314,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                 active_model = lambda: route.model() if route else configured_model()
                 session_path = folder / 'session.json'
                 session = load(session_path) if session_path.exists() else {'messages': [
-                    {'role': 'system', 'content': PROMPT}, {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False)}],
+                    {'role': 'system', 'content': prompt}, {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False)}],
                     'draft': None, 'reviewed': False, 'local_read_calls': 0, 'packet': packet}
                 packet = session['packet']
                 save(packet_path, packet)
@@ -393,7 +398,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                 save(folder / 'quality.json', quality)
                 qualitative = {k: v for k, v in report.items() if k != 'reasoning_probability_yes'}
                 state = {'question': packet['question'], 'analysis': qualitative, 'exact_evidence': excerpts,
-                         'quality': quality, 'evaluation_warning': WARNING,
+                         'quality': quality, 'evaluation_warning': warning,
                          'instruction': 'Use effective_condition_coverage when it conflicts with declared full coverage. Missing entire-window observations cannot establish a period-wide negative. Evidence quality is not event probability.'}
                 if session.get('recovery'):
                     state['analysis'] = {'conditions': report['conditions'], 'gaps': report['gaps']}
@@ -403,7 +408,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                           'packet_sha256': digest(packet), 'analysis_sha256': digest(report),
                           'decision_state_sha256': digest(state), 'quality': quality,
                           'reasoning_models_used': sorted({load(p)['request']['model'] for p in (folder / 'ultra-http').glob('*.json')}),
-                          'evaluation_warning': WARNING}
+                          'evaluation_warning': warning}
                 routes['reasoning_probability_backend'] = session.get('draft_model')
                 routes_path = folder / 'routes.json'
                 if not routes_path.exists():
@@ -429,7 +434,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                     'reasoning_baseline_probability_yes': report['reasoning_probability_yes'],
                     'evidence_sufficiency': response['answers']['evidence_sufficiency']['score'],
                     'quality': quality, 'packet_sha256': digest(packet), 'analysis_sha256': digest(report),
-                    'decision_state_sha256': digest(state), 'evaluation_warning': WARNING}
+                    'decision_state_sha256': digest(state), 'evaluation_warning': warning}
                 save(folder / 'prediction.json', prediction)
                 routes.update(compare(report['reasoning_probability_yes'], prediction['probability_yes']))
                 save(routes_path, routes)

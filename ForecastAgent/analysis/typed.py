@@ -22,6 +22,10 @@ def run(bundle_path, output, *, protocol, prompt, packet_builder, record_tool, p
     bundle = load(bundle_path)
     packet = packet_builder(bundle)
     packet['protocol'] = protocol
+    if bundle['request'].get('official_competition'):
+        packet['evaluation_warning'] = 'Live automatic competition forecast; no outcomes or community probabilities supplied.'
+        packet['question']['fine_print'] = bundle['request'].get('fine_print', '')
+        prompt += '\nThis is a live competition forecast. Use the acquisition timestamp and actual event window; predict the future outcome.'
     identity = {'protocol': protocol, 'bundle_sha256': digest(bundle), 'packet_sha256': digest(packet),
                 'prompt_sha256': digest(prompt), 'tool_sha256': digest(record_tool),
                 'decision_questions_sha256': digest(decision_questions),
@@ -69,6 +73,8 @@ def run(bundle_path, output, *, protocol, prompt, packet_builder, record_tool, p
                 raise RuntimeError('No valid typed analysis within preserved lifetime caps')
             save(output / 'analysis.json', report)
         state = decision_state(report, packet)
+        if bundle['request'].get('official_competition'):
+            state['evaluation_warning'] = packet['evaluation_warning']
         save(output / 'decision-state.json', state)
         mercury = None
         error = None

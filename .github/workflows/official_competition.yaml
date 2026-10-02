@@ -1,0 +1,103 @@
+name: FutureEval official competition worker
+
+on:
+  workflow_run:
+    workflows: ['FutureEval official question monitor']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: futureeval-official-worker
+  cancel-in-progress: false
+
+jobs:
+  compete:
+    if: vars.FORECAST_COMPETITION_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '1'
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      EXA_API_KEY: ${{ secrets.EXA_API }}
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Find latest exact official state and legacy collection ledgers
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          script: |
+            const {owner,repo}=context.repo;
+            async function find(workflow,name,stage) {
+              for (let page=1;page<=10;page++) {
+                const {data}=await github.rest.actions.listWorkflowRuns({owner,repo,
+                  workflow_id:workflow,status:'completed',branch:'main',per_page:100,page});
+                for (const run of data.workflow_runs) {
+                  if (run.id===context.runId) continue;
+                  const artifacts=await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{owner,repo,run_id:run.id});
+                  if (artifacts.some(a=>a.name===name&&!a.expired)) return String(run.id);
+                  const jobs=await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
+                  if (jobs.flatMap(j=>j.steps||[]).some(s=>s.name===stage&&s.conclusion!=='skipped'))
+                    throw new Error('Latest ledger missing; refuse to reset quotas or duplicate submissions');
+                }
+                if (data.workflow_runs.length<100) return '';
+              }
+              throw new Error('State history exceeds the audited recovery window');
+            }
+            const official=await find('official_competition.yaml','futureeval-official-state','Acquire analyze and submit eligible questions');
+            const legacy=official?'':await find('collect_new_questions.yaml','futureeval-collection-state','Collect captured questions');
+            core.setOutput('official',official);
+            core.setOutput('legacy',legacy);
+            core.setOutput('completed',[official,legacy].filter(Boolean).join(','));
+      - name: Restore official state
+        if: steps.previous.outputs.official != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-official-state
+          run-id: ${{ steps.previous.outputs.official }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/official
+      - name: Restore prelaunch collection ledgers
+        if: steps.previous.outputs.legacy != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-collection-state
+          run-id: ${{ steps.previous.outputs.legacy }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/official/legacy
+      - name: Read triggering complete question snapshots
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-questions-${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/incoming
+      - name: Install free readers and browser
+        run: |
+          python -m pip install -r ForecastAgent/requirements-supplement.txt
+          python -m playwright install --with-deps chromium
+      - name: Acquire analyze and submit eligible questions
+        run: python -m ForecastAgent.competition.live --root snapshots/official --snapshots snapshots/incoming --legacy-root snapshots/official/legacy --limit 5 --submit
+        env:
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/official
+      - name: Preserve official campaign and delivery receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-state
+          path: snapshots/official/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
