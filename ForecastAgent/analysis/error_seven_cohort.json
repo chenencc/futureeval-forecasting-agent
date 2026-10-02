@@ -1,0 +1,18 @@
+{
+  "schema": "error-seven-development-v1",
+  "selection": "Previously audited failures; development diagnostic, not held-out evaluation",
+  "baseline_run": 36998681648,
+  "batches": [
+    [
+      "42491",
+      "44547",
+      "42489",
+      "40852",
+      "41480"
+    ],
+    [
+      "42485",
+      "43491"
+    ]
+  ]
+}

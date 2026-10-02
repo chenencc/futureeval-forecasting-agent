@@ -89,7 +89,7 @@ def evidence_packet(bundle):
             library.extend(units(segment['text'], segment['start'], source, len(library) + 1))
     packet['evidence'] = library
     packet['protocol'] = PROTOCOL
-    for key in ('close_time', 'scheduled_close_time', 'scheduled_resolve_time', 'as_of_utc', 'historical_cutoff_utc'):
+    for key in ('open_time', 'market_info_open_datetime', 'forecast_due_date', 'close_time', 'scheduled_close_time', 'scheduled_resolve_time', 'as_of_utc', 'historical_cutoff_utc'):
         if key in bundle['request']:
             packet['question'][key] = bundle['request'][key]
     packet['acquisition_gaps'] = bundle.get('gaps', [])
@@ -168,6 +168,31 @@ Original acquisition gaps and supplemental repair gaps remain unresolved unless 
 They describe retrieval failures, not proof that the event did not happen. Assess their relevance to each condition.
 Provide a separate baseline probability for diagnostic comparison; the decision model will not see this number.
 Return record_analysis only when ready. Keep descriptions concise; aim for under 1500 output tokens.'''
+
+AUDIT_GUIDANCE = '''
+Before concluding, extract an explicit temporal and semantic contract in rule_decomposition:
+identify the event window, forecast date, subject, actor, target, required event stage, and AND/OR branches.
+Opening time is contextual evidence for a prospective question, not a universal lower-bound rule:
+infer and explain the intended window from title, rules and background; flag ambiguity rather than
+counting a known pre-opening event as new fulfillment. Keep historical base-rate events separate.
+An evidence date after the forecasting date is retrospective information; this diagnostic permits
+it but must not claim a leakage-free forecast. Publication, filing, signing, entry and effective dates differ.
+For every decisive cited claim, check the full proposition, qualifiers, exceptions and author:
+a proposed/unsigned order, party brief, allegation or requested relief is not an entered court holding.
+An interim/acting role is not automatically the permanent role; plans and target dates are not completion.
+A ruling about a particular instance is not a categorical rule; preserve negation and limiting language.
+Keep alternative statutory grounds, proceedings and actors separate. One blocked OR branch does not
+disprove all branches. A denial supports only the exact proposition denied.
+Apply the question's actual confirmation threshold. Do not silently demand official admission,
+two independent reports or original publisher access if the rule allows credible attributed reporting.
+Record provenance and credibility limits without replacing observed reporting with unsupported priors.
+If a decisive individual action or observation is absent, mark that predicate unknown. A general
+schedule, meeting or aggregate event does not establish a named participant's action.
+If critical text ends mid-sentence, or the conclusion depends on omitted context, use read_saved_source
+to read the contiguous paragraph and relevant document header/footer before claiming full coverage.
+Before finalizing, compare each conclusion with the exact cited span; explicitly address any opposite
+proposition in that same span. Unknown decisive predicates must remain visible in the final scoring state.
+'''
 
 
 def parse(message, packet):
@@ -253,8 +278,10 @@ def assess(packet, report, reviewed):
             'automated_use_eligible': False, 'calibration_status': 'No prospective calibration fitted'}
 
 
-def run(root, output, ids, supplement_root=None, mode='both', *, live=False):
+def run(root, output, ids, supplement_root=None, mode='both', *, live=False, audit_contract=False, question_metadata=None):
     prompt = PROMPT if not live else PROMPT.replace('Saved text may contain outcomes; flag retrospective leakage.', 'Forecast the currently open event using only information available now; flag any apparent outcome leakage.').replace('for diagnostic comparison', 'as an independent reasoning forecast')
+    if audit_contract:
+        prompt += AUDIT_GUIDANCE
     warning = WARNING if not live else 'Live automatic competition forecast; no resolution labels or community probabilities supplied.'
     from ForecastAgent.providers.ultra import ask_ultra
     from ForecastAgent.providers.model import configured_model, ULTRA_MODEL, SUPER_MODEL
@@ -278,6 +305,9 @@ def run(root, output, ids, supplement_root=None, mode='both', *, live=False):
                     'generation': GENERATION,
                     'terminal_tool_policy': 'Reserve two remaining attempts for draft and review; cache repeated local reads.',
                     'contract_sha256': digest({'prompt': prompt, 'tools': [READ, RECORD]}), 'evaluation_warning': warning}
+        if audit_contract or question_metadata is not None:
+            identity['audit_contract'] = audit_contract
+            identity['question_metadata_sha256'] = digest(question_metadata or {})
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
         save(output / 'manifest.json', identity)
@@ -298,6 +328,12 @@ def run(root, output, ids, supplement_root=None, mode='both', *, live=False):
                 save(folder / 'input.json', {'bundle_sha256': bundle_hash, 'original_bundle_sha256': original_hash})
                 packet_path = folder / 'evidence-packet.json'
                 packet = load(packet_path) if packet_path.exists() else evidence_packet(bundle)
+                if question_metadata is not None:
+                    allowed = ('open_time', 'market_info_open_datetime', 'forecast_due_date', 'as_of_utc')
+                    metadata = (question_metadata or {}).get(ident, {})
+                    if set(metadata) - set(allowed):
+                        raise ValueError('Non-temporal fields in question metadata')
+                    packet['question'].update(metadata)
                 save(packet_path, packet)
                 if (folder / 'prediction.json').exists():
                     prediction = load(folder / 'prediction.json')
