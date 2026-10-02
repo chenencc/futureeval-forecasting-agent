@@ -2,16 +2,11 @@
 import argparse
 import copy
 import json
-import os
-import time
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import Journal
-from ForecastAgent.analysis.referenced import ModelJournal, evidence_packet
-from ForecastAgent.competition.queue import digest, load, save
-from ForecastAgent.providers.decisions import decide, probability
-from ForecastAgent.providers.model import ModelRoute, ULTRA_MODEL, SUPER_MODEL, configured_model
-from ForecastAgent.runtime.task_lock import task_lock
+from ForecastAgent.analysis.referenced import evidence_packet
+from ForecastAgent.competition.queue import load, save
+from ForecastAgent.providers.decisions import probability
 
 PROTOCOL = 'categorical-diagnostic-v1'
 WARNING = 'Current-evidence diagnostic on a closed question. Not a historical backtest or an accepted forecast.'
@@ -110,100 +105,41 @@ def fuse(reasoning, mercury, options):
     mean = {key: (left[key] + right[key]) / 2 for key in options} if right is not None else None
     selected = mean or left
     # A separate API payload preview; do not silently alter the reported distributions.
-    epsilon = .001
-    preview = {key: epsilon + (1 - len(options) * epsilon) * selected[key] for key in options}
+    from ForecastAgent.analysis.distributions import clip_categories, POLICY
+    preview = clip_categories(selected, options)
     return {'reasoning_probabilities': left, 'mercury_probabilities': right, 'equal_mean_probabilities': mean,
         'selection': 'equal_mean' if mean is not None else 'single_available_reasoning_route',
         'payload_preview': {'probability_yes_per_category': preview},
-        'payload_preview_policy': 'Uniform affine floor 0.001 per option; raw route outputs remain unchanged',
+        'payload_preview_policy': POLICY,
+        'probability_adjustment': {'raw': selected, 'adjusted': preview,
+            'max_absolute_change': max(abs(preview[k] - selected[k]) for k in options)},
         'independent_forecasters': False, 'calibration': 'identity; not fitted', 'no_forecasts_submitted': True}
 
 
 def run(bundle_path, output, *, ask=None, decision=None):
-    from ForecastAgent.providers.ultra import ask_ultra
-    ask = ask or ask_ultra
-    decision = decision or decide
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
-    bundle = load(bundle_path)
-    options = options_from(bundle['request'])
-    packet = evidence_packet(bundle)
-    packet['protocol'] = PROTOCOL
-    packet['question'].update(options=options, fine_print=bundle['request'].get('fine_print', ''),
-                              background=bundle['request'].get('background', ''), type='multiple_choice')
-    packet['evaluation_warning'] = WARNING
-    identity = {'protocol': PROTOCOL, 'bundle_sha256': digest(bundle), 'packet_sha256': digest(packet),
-                'prompt_sha256': digest(SYSTEM), 'tool_sha256': digest(tool(options)), 'primary_model': configured_model()}
-    if configured_model() != ULTRA_MODEL:
-        raise ValueError('This diagnostic requires the authorized Ultra-to-Super routing policy')
-    with task_lock(output):
-        if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
-            raise ValueError('Frozen categorical input identity changed')
-        save(output / 'manifest.json', identity)
-        save(output / 'evidence-packet.json', packet)
-        route = ModelRoute()
-        for path in sorted((output / 'reasoning-http').glob('*.json')):
-            route.observe(load(path))
-        journal = ModelJournal(output / 'reasoning-http', {ULTRA_MODEL, SUPER_MODEL})
-        messages = [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps(packet)}]
-        report = None
-        # Received transport replay protects the reservation/parse crash window.
-        if (output / 'analysis.json').exists():
-            saved = load(output / 'analysis.json')
-            report = parse({'tool_calls': [{'function': {'name': 'record_categorical', 'arguments': json.dumps(saved)}}]}, packet, options)
-        else:
-            for path in sorted((output / 'reasoning-http').glob('*.json')):
-                record = load(path)
-                if record.get('status') == 'received':
-                    try:
-                        report = parse(record['response']['choices'][0]['message'], packet, options)
-                    except (ValueError, KeyError, TypeError):
-                        continue
-                    break
-            if report is None:
-                for _ in range(3):
-                    if not journal.remaining(route.model()):
-                        break
-                    message = ask(messages, os.environ['OPENROUTER_API_KEY'], tools=[tool(options)],
-                        forced_tool='record_categorical', observer=journal, model_route=route,
-                        max_output_tokens=6000, reasoning={'max_tokens': 1500}, deadline=time.monotonic() + 600)
-                    try:
-                        report = parse(message, packet, options)
-                        break
-                    except ValueError as exc:
-                        messages.append({'role': 'user', 'content': 'Previous structured response was invalid: ' + str(exc) + '. Return a complete corrected result.'})
-            if report is None:
-                save(output / 'result.json', {'status': 'unavailable', 'no_forecasts_submitted': True})
-                raise RuntimeError('No valid categorical analysis within preserved lifetime caps')
-            save(output / 'analysis.json', report)
+    from ForecastAgent.analysis.typed import run as execute
+    options = options_from(load(bundle_path)['request'])
+    def packet_builder(bundle):
+        packet = evidence_packet(bundle)
+        packet['question'].update(options=options, fine_print=bundle['request'].get('fine_print', ''),
+            background=bundle['request'].get('background', ''), type='multiple_choice')
+        packet['evaluation_warning'] = WARNING
+        return packet
+    def decision_state(report, packet):
         qualitative = copy.deepcopy(report)
         qualitative.pop('probabilities')
-        state = {'question': packet['question'], 'analysis': qualitative, 'exact_evidence': packet['evidence'],
-                 'evaluation_warning': WARNING, 'instruction': 'Estimate option probabilities from evidence; the numeric reasoning forecast is intentionally withheld.'}
-        save(output / 'decision-state.json', state)
-        mercury = None
-        error = None
-        try:
-            if (output / 'decision-response.json').exists():
-                response = load(output / 'decision-response.json')
-            else:
-                received = [load(p) for p in (output / 'mercury-http').glob('*.json') if load(p).get('status') == 'received']
-                response = received[0]['response'] if received else decision(state, choice_questions(options),
-                    os.environ['OPENROUTER_API_KEY'], Journal(output / 'mercury-http', 1))
-                save(output / 'decision-response.json', response)
-            from ForecastAgent.providers.decisions import validate
-            validate(response, choice_questions(options))
-            answer = response['answers']['event_outcome']['probabilities']
-            # Provider choice responses may be rounded; normalize within documented audit tolerance.
-            mercury = distribution({option: answer[f'option_{i}'] for i, option in enumerate(options)}, options, .02)
-        except Exception as exc:
-            error = str(exc)
-        result = {'schema': PROTOCOL, 'status': 'completed' if mercury is not None else 'partial',
-                  'question_id': bundle['request']['id'], 'options': options,
-                  **fuse(report['probabilities'], mercury, options), 'mercury_error': error,
-                  'evaluation_warning': WARNING, 'quality': 'diagnostic; quote presence checked, entailment and calibration unverified'}
-        save(output / 'result.json', result)
-        return result
+        return {'question': packet['question'], 'analysis': qualitative, 'exact_evidence': packet['evidence'],
+            'evaluation_warning': WARNING, 'instruction': 'Estimate option probabilities from evidence; the numeric reasoning forecast is intentionally withheld.'}
+    def parse_decision(response):
+        answer = response['answers']['event_outcome']['probabilities']
+        return distribution({option: answer[f'option_{i}'] for i, option in enumerate(options)}, options, .02)
+    result = execute(bundle_path, output, protocol=PROTOCOL, prompt=SYSTEM, packet_builder=packet_builder,
+        record_tool=tool(options), parse_report=lambda message, packet: parse(message, packet, options),
+        decision_state=decision_state, decision_questions=choice_questions(options), parse_decision=parse_decision,
+        fuse_reports=lambda report, mercury: fuse(report['probabilities'], mercury, options), ask=ask, decision=decision)
+    result['options'] = options
+    save(Path(output) / 'result.json', result)
+    return result
 
 
 if __name__ == '__main__':

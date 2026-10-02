@@ -1,4 +1,4 @@
-"""One-question multiple-choice diagnostic; never reopen the competition queue."""
+"""One-question nonbinary diagnostic; never reopen the competition queue."""
 import argparse
 import json
 import os
@@ -14,8 +14,8 @@ def blind_input(post, ident):
     if len(matches) != 1:
         raise ValueError('Selected post/question identity mismatch')
     question = matches[0]
-    if question.get('type') != 'multiple_choice':
-        raise ValueError('This diagnostic currently supports multiple-choice only')
+    if question.get('type') not in ('multiple_choice', 'numeric', 'discrete', 'date'):
+        raise ValueError('A supported nonbinary question is required')
     criteria = question.get('resolution_criteria') or post.get('resolution_criteria')
     if not isinstance(criteria, str) or not criteria.strip():
         raise ValueError('Full resolution criteria missing; refuse title-only inference')
@@ -27,14 +27,26 @@ def blind_input(post, ident):
         'background': question.get('description') or post.get('description') or '',
         'scheduled_resolve_time': question.get('scheduled_resolve_time'),
         'mode': 'live', 'pipeline': 'collection', 'acquisition_profile': 'collection_v3'}
-    options_from(request)
+    if question['type'] == 'multiple_choice':
+        options_from(request)
+    else:
+        from ForecastAgent.analysis.distributions import range_metadata
+        request.update({key: question.get(key) for key in
+            ('scaling', 'inbound_outcome_count', 'open_lower_bound', 'open_upper_bound', 'unit')})
+        range_metadata(request)
     return request
 
 
 def run(root, post_id, ident, collector_root=None):
     from ForecastAgent.monitor_tournament import get_json, API_ROOT
     from ForecastAgent.agent import run_research
-    from ForecastAgent.analysis.categorical import run as analyze
+    def analyze(bundle, output):
+        kind = load(bundle)['request']['question_type']
+        if kind == 'multiple_choice':
+            from ForecastAgent.analysis.categorical import run as execute
+        else:
+            from ForecastAgent.analysis.range_forecast import run as execute
+        return execute(bundle, output)
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     if not str(post_id).isdecimal() or not str(ident).isdecimal():

@@ -11,7 +11,9 @@ Reference rules: https://www.metaculus.com/notebooks/38928/aib-resource-page/
 Participation: https://www.metaculus.com/futureeval/participate/
 Announcement: https://www.metaculus.com/notebooks/45615/announcement-of-futureeval-fall-2026/
 
-The owner must confirm completion of the required participation form. No
+The owner confirmed completion of the required participation form on
+October 2, 2026. This is an owner attestation, not a platform registration
+receipt. No
 human may set, edit or selectively approve probabilities on competition
 questions. Human involvement is limited to software and operational repair.
 Publish the automatically generated reasoning comment as required by the

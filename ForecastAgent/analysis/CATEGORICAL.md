@@ -19,8 +19,9 @@ Missing or duplicated options, invalid probabilities, invented quotes and
 changed frozen inputs are rejected. A failed Mercury request preserves an
 explicit single reasoning route; there is no uninformed default distribution.
 
-The diagnostic saves a separate payload preview using a uniform affine floor
-of 0.001 per option. This does not modify the raw route or mean probabilities
+The diagnostic saves a separate payload preview using bounded simplex
+projection into [0.02, 0.98] per option, retaining a probability sum of one.
+This does not modify the raw route or mean probabilities
 and does not call a Metaculus submission endpoint. Model distribution outputs
 have not been fitted or proven calibrated for forecasting.
 
@@ -34,8 +35,9 @@ Every repeat restores the same artifact, with fail-closed missing-ledger checks.
 
 These closed-question runs use current evidence without a historical cutoff.
 They test collection and distribution handling, not historical accuracy or an
-accepted competition forecast. Numeric and discrete CDF support remains a
-separate implementation task. The live competition queue remains unchanged.
+accepted competition forecast. Numeric, discrete and date diagnostics use
+`ForecastAgent.analysis.range_forecast` and the shared durable typed executor.
+The live competition queue's nonbinary scheduling remains unchanged.
 
 ## Real-case acceptance on October 2, 2026
 
@@ -54,6 +56,13 @@ and checks the question title. It never infers rules from a title or other
 market. It persists one HTTP and one browser attempt before execution. A verified
 official rule snapshot is required to complete the real-case analysis. Passing
 offline typed-output tests does not mean the live acquisition test passed.
+
+The subsequent GET-only permission audit confirmed the current bot has enabled
+API forecasting access but a restricted data tier. The official API policy
+limits closed-question text to questions forecasted by the account, explaining
+why missing closed-question rules do not establish a forecasting permission
+failure. Format acceptance can use historical grid metadata without labels;
+real evidence-grounded analysis still requires the question's official rules.
 
 References:
 - https://www.metaculus.com/api/
