@@ -1,0 +1,42 @@
+name: Saved evidence analysis pilot
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: 'Completed acquisition run containing immutable evidence'
+        required: true
+        default: '36941248183'
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: saved-evidence-analysis-pilot
+  cancel-in-progress: false
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/analysis-input
+      - name: Analyze three source-complete saved questions
+        run: python -m ForecastAgent.analysis.pilot run --root snapshots/analysis-input --output snapshots/analysis-v1 --ids 44801,44693,43688
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: saved-evidence-analysis-v1
+          path: snapshots/analysis-v1
+          if-no-files-found: error
+          retention-days: 90
