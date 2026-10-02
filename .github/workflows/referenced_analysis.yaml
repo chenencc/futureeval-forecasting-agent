@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest ForecastAgent.tests.test_referenced_analysis ForecastAgent.tests.test_analysis_routes
+      - run: python -m unittest ForecastAgent.tests.test_referenced_analysis ForecastAgent.tests.test_analysis_routes ForecastAgent.tests.test_analysis_recovery
       - uses: actions/download-artifact@v4
         with:
           name: raw-collection-100-v1-state
@@ -52,15 +52,15 @@ jobs:
       - uses: actions/download-artifact@v4
         if: inputs.resume_analysis_run != ''
         with:
-          name: referenced-analysis-v7
+          name: referenced-analysis-v8
           run-id: ${{ inputs.resume_analysis_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/analysis-v7
+          path: snapshots/analysis-v8
       - shell: bash
         run: |
           args=()
           if [ -n "$SUPPLEMENT_RUN" ]; then args+=(--supplement-root snapshots/analysis-supplement); fi
-          python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v7 --ids "$PILOT_IDS" --mode "$ROUTE_MODE" "${args[@]}"
+          python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v8 --ids "$PILOT_IDS" --mode "$ROUTE_MODE" "${args[@]}"
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
@@ -70,8 +70,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: referenced-analysis-v7
-          path: snapshots/analysis-v7
+          name: referenced-analysis-v8
+          path: snapshots/analysis-v8
           retention-days: 90
 
 

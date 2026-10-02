@@ -71,7 +71,7 @@ class AnalysisRoutesTests(unittest.TestCase):
             routes = load(output / 'tasks/1/routes.json')
             routes['equal_mean_probability_yes'] = .99
             save(output / 'tasks/1/routes.json', routes)
-            with self.assertRaisesRegex(ValueError, 'aggregation changed'):
+            with self.assertRaisesRegex(ValueError, 'aggregation changed|Task result is inconsistent'):
                 evaluate(output, archive, labels, Path(d) / 'tampered.json')
 
     def test_reasoning_only_never_calls_mercury_and_resume_keeps_mode(self):
@@ -149,6 +149,65 @@ class AnalysisRoutesTests(unittest.TestCase):
         packet = referenced.evidence_packet(self.bundle)
         self.assertEqual(len(packet['sources']), 1)
         self.assertEqual(packet['excluded_unusable_sources'][0]['url'], 'https://blocked.example')
+
+    def test_invalid_citations_recover_within_same_cap_and_hide_narratives(self):
+        self.report['facts'][0]['evidence_refs'] = []
+        observed = {}
+        def score(state, questions, key, observer):
+            observed.update(state)
+            return self.decision(state, questions, key, observer)
+        with tempfile.TemporaryDirectory() as d:
+            root, output, archive, labels = self.inputs(d)
+            env, backend = self.contexts()
+            with env, backend, patch.object(referenced, 'decide', side_effect=score):
+                referenced.run(root, output, ['1'])
+            self.assertEqual(self.calls, {'reasoning': 3, 'decision': 1})
+            result = load(output / 'tasks/1/result.json')
+            self.assertEqual(result['status'], 'provisional')
+            self.assertEqual(set(observed['analysis']), {'conditions', 'gaps'})
+            self.assertEqual(result['reasoning_probability_yes'], .4)
+            report = evaluate(output, archive, labels, Path(d) / 'report.json')
+            self.assertEqual(report['recovered_model_results'], 1)
+
+    def test_no_numeric_output_still_records_explicit_operational_default(self):
+        def broken(messages, key, observer, **kwargs):
+            record = {'status': 'reserved', 'request': {'model': 'offline-model:free'}}
+            token = observer('reserve', record)
+            message = {'content': 'Unable to produce a structured prediction.'}
+            record.update(status='received', response={'choices': [{'message': message}]})
+            observer('complete', record, token)
+            return message
+        with tempfile.TemporaryDirectory() as d:
+            root, output, archive, labels = self.inputs(d)
+            env, unused = self.contexts()
+            with env, patch('ForecastAgent.providers.ultra.ask_ultra', side_effect=broken):
+                with self.assertRaises(RuntimeError):
+                    referenced.run(root, output, ['1'])
+            result = load(output / 'tasks/1/result.json')
+            self.assertEqual(result['operational_probability_yes'], .5)
+            self.assertIsNone(result['reasoning_probability_yes'])
+            report = evaluate(output, archive, labels, Path(d) / 'report.json')
+            self.assertEqual(report['evaluated_count'], 0)
+            self.assertEqual(report['operational_brier_including_explicit_defaults'], .25)
+            self.assertEqual(report['task_result_coverage']['recorded'], 1)
+
+    def test_review_service_failure_preserves_valid_first_draft(self):
+        def flaky(messages, key, observer, **kwargs):
+            if not self.calls['reasoning']:
+                return self.reasoning(messages, key, observer, **kwargs)
+            record = {'status': 'reserved', 'request': {'model': 'offline-model:free'}}
+            token = observer('reserve', record)
+            record.update(status='failed', response={'error': {'code': 503}})
+            observer('complete', record, token)
+            raise RuntimeError('Review service unavailable')
+        with tempfile.TemporaryDirectory() as d:
+            root, output, archive, labels = self.inputs(d)
+            env, unused = self.contexts()
+            with env, patch('ForecastAgent.providers.ultra.ask_ultra', side_effect=flaky), patch.object(referenced, 'decide', side_effect=self.decision):
+                referenced.run(root, output, ['1'])
+            self.assertFalse(load(output / 'tasks/1/quality.json')['review_completed'])
+            self.assertEqual(load(output / 'tasks/1/result.json')['reasoning_probability_yes'], .4)
+            self.assertEqual(len(list((output / 'tasks/1/ultra-http').glob('*.json'))), 2)
 
 
 if __name__ == '__main__':

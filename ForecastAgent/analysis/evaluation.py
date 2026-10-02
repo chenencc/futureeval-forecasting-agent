@@ -11,6 +11,7 @@ from ForecastAgent.analysis.pilot import WARNING, digest, load, save
 from ForecastAgent.providers.decisions import probability
 from ForecastAgent.analysis.inputs import resolve_bundle, supplement_identity
 from ForecastAgent.analysis.ensemble import compare
+from ForecastAgent.analysis.recovery import task_result
 
 
 def transport_usage(folder):
@@ -39,12 +40,20 @@ def evaluate(output, archive, labels, destination, baseline=None, supplement_roo
     frozen = []
     failures = []
     task_usage = {}
+    task_results = []
     with zipfile.ZipFile(archive) as saved:
         source_campaign = json.loads(saved.read('campaign.json'))
         if digest(source_campaign) != manifest['campaign_sha256']:
             raise ValueError('Evaluation source campaign identity mismatch')
         for ident in manifest['ids']:
             folder = output / 'tasks' / ident
+            if (folder / 'result.json').exists():
+                result = load(folder / 'result.json')
+                routes = load(folder / 'routes.json') if result.get('operational_origin') == 'available_model_output' else None
+                expected_result = task_result(ident, routes, result.get('error'))
+                if result != expected_result:
+                    raise ValueError('Task result is inconsistent with frozen route or default policy')
+                task_results.append(result)
             task_usage[ident] = transport_usage(folder)
             has_prediction = (folder / 'prediction.json').exists()
             if not has_prediction:
@@ -141,6 +150,15 @@ def evaluate(output, archive, labels, destination, baseline=None, supplement_roo
                 'previous_brier': prior[ident]['mercury_brier'],
                 'note': 'Same saved question; changed protocol and context. Not a controlled model comparison.'}
         rows.append(row)
+    operational = []
+    for result in task_results:
+        ident = result['id']
+        if ident not in outcomes or result.get('operational_probability_yes') is None:
+            continue
+        p = probability(result['operational_probability_yes'])
+        y = float(outcomes[ident]['resolved_to'])
+        operational.append({'id': ident, 'status': result['status'], 'origin': result['operational_origin'],
+                            'probability_yes': p, 'brier': (p - y) ** 2})
     report = {'schema': 'referenced_analysis_review_v2', 'manifest': manifest, 'evaluation_warning': WARNING,
         'label_provenance': 'Local ForecastBench resolved=true Metaculus records; checkpoint dates are not necessarily settlement timestamps.',
         'source_archive_sha256': hashlib.sha256(Path(archive).read_bytes()).hexdigest(),
@@ -154,6 +172,15 @@ def evaluate(output, archive, labels, destination, baseline=None, supplement_roo
                                    for key in ('brier', 'log_loss')}
                            for prefix in ('reasoning', 'mercury', 'equal_mean')} if any('mercury_brier' in r for r in rows) else {},
         'calibration': {'method': 'identity', 'fitted': False},
+        'task_result_coverage': {'requested': len(manifest['ids']), 'recorded': len(task_results),
+                                 'statuses': dict(Counter(r['status'] for r in task_results))},
+        'operational_results': operational,
+        'operational_brier_including_explicit_defaults': sum(r['brier'] for r in operational) / len(operational) if operational else None,
+        'recovered_model_results': sum(bool(r['quality'].get('recovery_applied')) for r in rows),
+        'paired_non_recovered_count': sum('mercury_brier' in r and not r['quality'].get('recovery_applied') for r in rows),
+        'paired_non_recovered_metrics': {prefix: {key: sum(r[prefix + '_' + key] for r in rows if 'mercury_brier' in r and not r['quality'].get('recovery_applied')) / sum('mercury_brier' in r and not r['quality'].get('recovery_applied') for r in rows)
+                                               for key in ('brier', 'log_loss')}
+                                       for prefix in ('reasoning', 'mercury', 'equal_mean')} if any('mercury_brier' in r and not r['quality'].get('recovery_applied') for r in rows) else {},
         'consumption': {key: sum(usage[key] for usage in task_usage.values()) for key in ('reasoning_http_attempts', 'decision_http_attempts', 'known_tokens', 'attempts_with_unknown_usage', 'reported_cost_usd')},
         'quota_checks': {'within_task_caps': all(
             usage['decision_http_attempts'] <= 1 and

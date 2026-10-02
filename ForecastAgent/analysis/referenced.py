@@ -12,8 +12,9 @@ from ForecastAgent.providers.decisions import decide, probability
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.analysis.inputs import resolve_bundle, supplement_identity, source_metadata
 from ForecastAgent.analysis.ensemble import compare
+from ForecastAgent.analysis.recovery import recover, task_result
 
-PROTOCOL = 'referenced-analysis-v7'
+PROTOCOL = 'referenced-analysis-v8'
 GENERATION = {'max_output_tokens': 6000, 'reasoning': {'max_tokens': 1500}, 'require_tool': True}
 
 
@@ -104,8 +105,13 @@ def read_saved(bundle, packet, arguments):
     body = bundle['pages'][source['url']]['content']
     if hashlib.sha256(body.encode()).hexdigest() != source['body_sha256'] or start >= len(body):
         raise ValueError('Saved source changed or reading start is outside body')
+    cache_key = digest({'source': source['source_id'], 'body_sha256': source['body_sha256'], 'start': start, 'length': length})
+    cached = packet.setdefault('local_read_cache', {}).get(cache_key)
+    if cached:
+        return [e for e in packet['evidence'] if e['evidence_id'] in cached]
     added = units(body[start:start + length], start, source, len(packet['evidence']) + 1)
     packet['evidence'].extend(added)
+    packet['local_read_cache'][cache_key] = [e['evidence_id'] for e in added]
     return added
 
 
@@ -265,7 +271,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                                        'consecutive_service_failures': 2, 'scope': 'dispatch',
                                        'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
                     'generation': GENERATION,
-                    'terminal_tool_policy': 'Re-evaluate remaining capacity and expose only record_analysis on each terminal request.',
+                    'terminal_tool_policy': 'Reserve two remaining attempts for draft and review; cache repeated local reads.',
                     'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
@@ -296,6 +302,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                     routes = load(routes_path)
                     routes.update(compare(prediction['reasoning_baseline_probability_yes'], prediction['probability_yes']))
                     save(routes_path, routes)
+                    save(folder / 'result.json', task_result(ident, routes))
                     results.append(prediction)
                     continue
                 journal = ModelJournal(folder / 'ultra-http', [configured_model(), SUPER_MODEL] if route else [configured_model()])
@@ -315,12 +322,19 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                         consumed_count, record = pending.pop(0)
                         raw = record['response']['choices'][0]['message']
                     elif journal.remaining(active_model()):
-                        force = 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 1 else None
-                        raw = ask_ultra(session['messages'], os.environ['OPENROUTER_API_KEY'], tools=[READ, RECORD],
-                                        forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
-                                        model_route=route,
-                                        tool_selector=lambda: 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 1 else None,
-                                        **GENERATION)
+                        force = 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 2 else None
+                        try:
+                            raw = ask_ultra(session['messages'], os.environ['OPENROUTER_API_KEY'], tools=[READ, RECORD],
+                                            forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
+                                            model_route=route,
+                                            tool_selector=lambda: 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 2 else None,
+                                            **GENERATION)
+                        except Exception as exc:
+                            if session['draft'] is None:
+                                raise
+                            session['review_failure'] = str(exc)
+                            save(session_path, session)
+                            break
                         consumed_count = len(list((folder / 'ultra-http').glob('*.json')))
                     else:
                         if session['draft']:
@@ -344,13 +358,23 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                     else:
                         try:
                             report = parse(raw, packet)
-                            was_draft = session['draft'] is not None
+                            was_draft = session['draft'] is not None and not session.get('recovery')
                             session['draft'] = report
+                            session.pop('recovery', None)
                             session['draft_model'] = load(sorted((folder / 'ultra-http').glob('*.json'))[consumed_count - 1])['request']['model']
                             session['reviewed'] = was_draft
                             if not was_draft:
                                 session['messages'].append({'role': 'user', 'content': 'Critically review and revise this complete draft. Check whether cited IDs actually support each claim and each measurement, date, scope and necessary observation window. Downgrade unsupported completeness. Return record_analysis only. Draft: ' + json.dumps(report)})
                         except (ValueError, KeyError, TypeError) as exc:
+                            recovered = recover(raw, packet, exc)
+                            if recovered is not None:
+                                report, audit = recovered
+                                save(folder / f'recovery-{consumed_count:02}.json', audit)
+                                if session['draft'] is None or session.get('recovery'):
+                                    session['draft'] = report
+                                    session['recovery'] = audit
+                                    session['draft_model'] = load(sorted((folder / 'ultra-http').glob('*.json'))[consumed_count - 1])['request']['model']
+                                    session['reviewed'] = False
                             projection = {'tool_calls': raw.get('tool_calls', []), 'content': (raw.get('content') or '')[:2000]}
                             session['messages'].append({'role': 'user', 'content': 'Repair the structured output; preserve source identity and mark unsupported conditions unknown. Error: ' + str(exc) + '. Invalid output (reasoning omitted): ' + json.dumps(projection)[:7000]})
                     session['consumed_http'] = consumed_count
@@ -360,6 +384,9 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                         break
                 report = session['draft']
                 quality = assess(packet, report, session['reviewed'])
+                if session.get('recovery'):
+                    quality.update(status='review_required', recovery_applied=True,
+                                   review_completed=False, all_necessary_conditions_complete=False)
                 excerpts = materialize(packet, report)
                 save(folder / 'analysis.json', report)
                 save(folder / 'citation-audit.json', {'resolved_evidence': excerpts, 'claim_entailment_verified': False})
@@ -368,6 +395,9 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                 state = {'question': packet['question'], 'analysis': qualitative, 'exact_evidence': excerpts,
                          'quality': quality, 'evaluation_warning': WARNING,
                          'instruction': 'Use effective_condition_coverage when it conflicts with declared full coverage. Missing entire-window observations cannot establish a period-wide negative. Evidence quality is not event probability.'}
+                if session.get('recovery'):
+                    state['analysis'] = {'conditions': report['conditions'], 'gaps': report['gaps']}
+                    state['instruction'] += ' Unvalidated model narratives are withheld; reason directly from exact evidence and unknown conditions.'
                 save(folder / 'decision-state.json', state)
                 routes = {**compare(report['reasoning_probability_yes']), 'id': ident,
                           'packet_sha256': digest(packet), 'analysis_sha256': digest(report),
@@ -384,6 +414,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                     if (folder / 'failure.json').exists():
                         (folder / 'failure.json').unlink()
                     results.append(routes)
+                    save(folder / 'result.json', task_result(ident, routes))
                     save(output / 'summary.json', {'results': results, 'no_retrieval_calls': True, 'no_forecasts_submitted': True})
                     continue
                 response_path = folder / 'decision-response.json'
@@ -402,6 +433,7 @@ def run(root, output, ids, supplement_root=None, mode='both'):
                 save(folder / 'prediction.json', prediction)
                 routes.update(compare(report['reasoning_probability_yes'], prediction['probability_yes']))
                 save(routes_path, routes)
+                save(folder / 'result.json', task_result(ident, routes))
                 if (folder / 'failure.json').exists():
                     (folder / 'failure.json').unlink()
                 results.append(prediction)
@@ -409,6 +441,8 @@ def run(root, output, ids, supplement_root=None, mode='both'):
             except Exception as exc:
                 failure = {'id': ident, 'status': 'failed', 'error': str(exc)}
                 save(folder / 'failure.json', failure)
+                saved_routes = load(folder / 'routes.json') if (folder / 'routes.json').exists() and not any(term in str(exc).lower() for term in ('hash', 'identity', 'changed', 'mismatch')) else None
+                save(folder / 'result.json', task_result(ident, saved_routes, str(exc)))
                 results.append(failure)
             save(output / 'summary.json', {'results': results, 'no_retrieval_calls': True, 'no_forecasts_submitted': True})
         if any(r.get('status') == 'failed' for r in results):

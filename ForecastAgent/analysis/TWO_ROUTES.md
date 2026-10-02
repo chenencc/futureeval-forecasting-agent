@@ -1,5 +1,27 @@
 # Two-route analysis v7
 
+## Current v8 recovery policy
+
+V8 reserves the last two reasoning attempts for an analysis and its review. Exact
+repeated saved-source reads reuse evidence IDs. Numeric model output may survive a
+structured citation failure, but the raw candidate and validation error are
+preserved; unknown references are quarantined, all conditions are downgraded and
+unsupported interpretation narratives are withheld from Mercury. This is marked
+provisional, never equivalent to a validated or independently reviewed forecast.
+A later valid output replaces the provisional draft within the same lifetime cap.
+
+Every attempted task writes `result.json`: completed, partial, provisional,
+unavailable or blocked_integrity. If neither model produces a usable probability,
+the operational result has an explicitly uninformed 0.5 workflow default, with
+both model probabilities null. Integrity failures have no default probability.
+Automatic use stays disabled. Evaluation exposes result coverage and operational
+scores separately from model and paired scores; defaults never count as model
+predictions. Recovered model results are counted explicitly.
+
+The workflow now uploads `referenced-analysis-v8`. V7 artifacts and exhausted
+provider journals stay immutable; offline recovery of a stored response is a
+separate sidecar diagnostic and never replenishes requests or rewrites old scores.
+
 This protocol compares direct reasoning probability with Mercury's probability
 from the same qualitative reasoning report. It is not an independent model
 ensemble: both routes share the reasoning analysis and evidence. Ultra is the

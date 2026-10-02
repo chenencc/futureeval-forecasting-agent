@@ -1,6 +1,7 @@
 # Referenced analysis
 
-The current v7 protocol adds supplemental evidence overlays and direct-reasoning
+The current v8 protocol adds bounded output recovery and per-task result records
+on top of v7 supplemental evidence overlays and direct-reasoning
 versus Mercury route comparisons. See [Two-route analysis](TWO_ROUTES.md) for the
 current interface, paired evaluation and durable limits. The v2-v6 notes below
 describe preserved earlier experiments.
