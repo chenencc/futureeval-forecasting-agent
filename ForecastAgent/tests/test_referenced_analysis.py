@@ -59,6 +59,32 @@ class ReferencedAnalysisTests(unittest.TestCase):
             self.assertEqual(usage['known_tokens'], 123)
             self.assertEqual(usage['attempts_with_unknown_usage'], 1)
 
+    def test_analysis_route_restores_service_failures_and_sticky_fallback(self):
+        from ForecastAgent.providers.model import ULTRA_MODEL, SUPER_MODEL
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / 'tasks' / '1' / 'ultra-http'
+            folder.mkdir(parents=True)
+            for index in range(2):
+                record = {'started_at_utc': str(index), 'request': {'model': ULTRA_MODEL},
+                          'status': 'missing_choices', 'response': {'error': {'code': 502}}}
+                (folder / f'{index}.json').write_text(json.dumps(record), encoding='utf-8')
+            route = referenced.restore_route(temporary)
+            self.assertEqual(route.model(), SUPER_MODEL)
+            route.observe({'status': 'received'})
+            self.assertEqual(route.model(), SUPER_MODEL)
+            self.assertEqual(len(list(folder.glob('*.json'))), 2)
+
+    def test_account_errors_do_not_enable_analysis_fallback(self):
+        from ForecastAgent.providers.model import ULTRA_MODEL
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / 'tasks' / '1' / 'ultra-http'
+            folder.mkdir(parents=True)
+            for index in range(2):
+                record = {'request': {'model': ULTRA_MODEL}, 'status': 'missing_choices',
+                          'response': {'error': {'code': 429}}}
+                (folder / f'{index}.json').write_text(json.dumps(record), encoding='utf-8')
+            self.assertEqual(referenced.restore_route(temporary).model(), ULTRA_MODEL)
+
     def test_full_condition_requires_source_reference(self):
         self.report['conditions'][0].update(coverage='full', evidence_refs=[])
         with self.assertRaises(ValueError):

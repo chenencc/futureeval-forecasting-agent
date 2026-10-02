@@ -11,8 +11,23 @@ from ForecastAgent.analysis.pilot import Journal, WARNING, digest, load, prepare
 from ForecastAgent.providers.decisions import decide, probability
 from ForecastAgent.runtime.task_lock import task_lock
 
-PROTOCOL = 'referenced-analysis-v3'
+PROTOCOL = 'referenced-analysis-v4'
 GENERATION = {'max_output_tokens': 6000, 'reasoning': {'max_tokens': 1500}, 'require_tool': True}
+
+
+def restore_route(output):
+    """Replay completed dispatch transports without reopening request budgets."""
+    from ForecastAgent.providers.model import ModelRoute, ULTRA_MODEL, SUPER_MODEL
+    route = ModelRoute()
+    records = [load(path) for path in Path(output).glob('tasks/*/ultra-http/*.json')]
+    for record in sorted(records, key=lambda row: row.get('started_at_utc', '')):
+        model = record.get('request', {}).get('model')
+        if model == SUPER_MODEL:
+            route.fallback = True
+            route.reason = 'Restored dispatch fallback from preserved Super transport.'
+        elif model == ULTRA_MODEL and record.get('status') != 'reserved':
+            route.observe(record)
+    return route
 
 
 def units(text, start, source, first_id):
@@ -181,7 +196,7 @@ def assess(packet, report, reviewed):
 
 def run(root, output, ids):
     from ForecastAgent.providers.ultra import ask_ultra
-    from ForecastAgent.providers.model import configured_model
+    from ForecastAgent.providers.model import configured_model, ULTRA_MODEL, SUPER_MODEL
     if not configured_model().endswith(':free'):
         raise ValueError('This pilot requires a free reasoning backend')
     if not 1 <= len(ids) <= 5 or len(set(ids)) != len(ids) or not all(ident.isdecimal() for ident in ids):
@@ -192,11 +207,14 @@ def run(root, output, ids):
         campaign = load(Path(root) / 'campaign.json')
         identity = {'ids': ids, 'protocol': PROTOCOL, 'campaign_sha256': digest(campaign),
                     'reasoning_model': configured_model(),
+                    'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
+                                       'consecutive_service_failures': 2, 'scope': 'dispatch', 'shared_http_cap': 3},
                     'generation': GENERATION,
                     'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
         save(output / 'manifest.json', identity)
+        route = restore_route(output) if configured_model() == ULTRA_MODEL else None
         results = []
         for ident in ids:
             folder = output / 'tasks' / ident
@@ -236,7 +254,8 @@ def run(root, output, ids):
                     elif len(list((folder / 'ultra-http').glob('*.json'))) < 3:
                         force = 'record_analysis' if session['draft'] or len(list((folder / 'ultra-http').glob('*.json'))) >= 2 else None
                         raw = ask_ultra(session['messages'], os.environ['OPENROUTER_API_KEY'], tools=[READ, RECORD],
-                                        forced_tool=force, observer=journal, deadline=time.monotonic() + 420, **GENERATION)
+                                        forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
+                                        model_route=route, **GENERATION)
                         consumed_count = len(list((folder / 'ultra-http').glob('*.json')))
                     else:
                         if session['draft']:
@@ -292,6 +311,7 @@ def run(root, output, ids):
                     response = received[0]['response'] if received else decide(state, QUESTIONS, os.environ['OPENROUTER_API_KEY'], Journal(folder / 'mercury-http', 1))
                     save(response_path, response)
                 prediction = {'id': ident, 'question': packet['question']['question'], 'probability_yes': response['answers']['event_yes']['noul'],
+                    'reasoning_models_used': sorted({load(p)['request']['model'] for p in (folder / 'ultra-http').glob('*.json')}),
                     'reasoning_baseline_probability_yes': report['reasoning_probability_yes'],
                     'evidence_sufficiency': response['answers']['evidence_sufficiency']['score'],
                     'quality': quality, 'packet_sha256': digest(packet), 'analysis_sha256': digest(report),

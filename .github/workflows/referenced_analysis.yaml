@@ -36,11 +36,11 @@ jobs:
       - uses: actions/download-artifact@v4
         if: inputs.resume_analysis_run != ''
         with:
-          name: referenced-analysis-v3
+          name: referenced-analysis-v4
           run-id: ${{ inputs.resume_analysis_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/analysis-v3
-      - run: python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v3 --ids "$PILOT_IDS"
+          path: snapshots/analysis-v4
+      - run: python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v4 --ids "$PILOT_IDS"
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
@@ -48,6 +48,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: referenced-analysis-v3
-          path: snapshots/analysis-v3
+          name: referenced-analysis-v4
+          path: snapshots/analysis-v4
           retention-days: 90
+
