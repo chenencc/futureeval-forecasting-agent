@@ -33,4 +33,39 @@ python -m ForecastAgent.analysis.pilot evaluate --output PATH_TO_ANALYSIS --labe
 
 ## Interpretation
 
+## Conditional Mercury original-evidence pilot
+
+`mercury_evidence_chain` is an isolated experimental route. It does not change
+competition workers, acquisition budgets or the production ensemble. It uses
+Mercury Decide only, without Super, Jev, new searches or forecast submissions.
+
+The first request batches the event probability, evidence sufficiency, conflict,
+and five focused Choice judgments: timing, actor/action/target, event stage,
+scope/exceptions and observation coverage. Each judgment is independent; adding
+checks is not sequential reasoning and does not by itself improve the probability.
+
+Selection accesses complete usable saved bodies rather than the earlier 10,000
+character source excerpts. Original headers, relevant passages and neighboring
+passages are balanced across sources. Hashes and exact offsets are preserved.
+The first request is capped at 22,000 encoded bytes and the second at 28,000;
+these are byte bounds, not token counts. Actual provider token usage must be
+audited against the model context limit before enlarging them.
+
+A second request requires a diagnostic gap or conflict and at least 900 newly
+added original characters. It retains every first-pass span and never presents
+first-pass probabilities or judgments as source facts. Routing thresholds are
+experimental and frozen before outcome evaluation; they are not calibration.
+Missing original data stays missing, and no condition probabilities are multiplied.
+Each stage has one durable HTTP reservation. Resume with the previous artifact
+and the same code/input identity; never rerun into an empty directory to reset
+failed attempts. The manual workflow supports `resume_run` for this purpose.
+
+```sh
+python -m ForecastAgent.analysis.mercury_evidence_chain --inputs SAVED_RAW --supplements SAVED_SUPPLEMENT --output NEW_OUTPUT --ids 42491,40695,44547,43822,43461
+```
+
+`--dry-run` prepares provenance audits without calling a provider. Use a separate
+output directory for actual inference. Reports contain no outcome labels; compare
+against historical labels only after requests and outputs have been frozen.
+
 These current saved sources may contain post-resolution evidence, and models may know outcomes. Even separated labels do not remove this leakage. This pilot is a retrospective integration and diagnostic test, not a leakage-free historical forecast benchmark. Three cases cannot establish calibration or superiority of either model. Prospective frozen unresolved questions and subsequent outcomes are needed for that comparison.

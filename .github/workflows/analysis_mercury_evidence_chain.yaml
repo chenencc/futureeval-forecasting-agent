@@ -1,0 +1,56 @@
+name: Mercury conditional original evidence pilot
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: One to five development question IDs
+        required: true
+        default: '42491,40695,44547,43822,43461'
+      resume_run:
+        description: Prior pilot run whose preserved stage journals should be resumed
+        required: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: analysis-mercury-evidence-chain
+  cancel-in-progress: false
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: 36961850565
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-supplement
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.resume_run != '' }}
+        with:
+          name: mercury-evidence-chain-pilot
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial
+      - name: Diagnose and conditionally reread saved originals
+        run: python -m ForecastAgent.analysis.mercury_evidence_chain --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --ids "$TRIAL_IDS"
+        env:
+          TRIAL_IDS: ${{ inputs.ids }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-evidence-chain-pilot
+          path: snapshots/trial
+          retention-days: 90
