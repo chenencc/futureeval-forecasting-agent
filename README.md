@@ -1,5 +1,12 @@
 ## Current architecture: ForecastAgent
 
+The tested research baseline is frozen as **ForecastAgent 1.0.0** at code commit
+`7af9941`. See [release notes](ForecastAgent/releases/1.0.0.md), the
+[release manifest](ForecastAgent/releases/1.0.0.json), and the
+[competition launch plan](ForecastAgent/docs/COMPETITION_LAUNCH.md).
+The current scheduled chain captures questions and evidence; production
+forecast submission is not yet connected to the v8 analysis baseline.
+
 All maintained implementation code, research skills, fixtures and tests live in [ForecastAgent/](ForecastAgent/README.md). Codex is an operator only; the agent runs independently in GitHub Actions or the command line. Old root modules and scripts are compatibility entry points. Existing snapshot paths and per-task budgets remain unchanged.
 
 New tasks use collection-only mode: capture source material and exact excerpts, then export `intelligence.json` without a truth verdict, probability or audit requirement. Channel catalogs and local long-document tools are documented in [the collection contract](ForecastAgent/docs/COLLECTION.md). Existing ledgers retain their prior pipeline and consumed budgets.
