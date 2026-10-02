@@ -1,0 +1,111 @@
+name: Nonbinary forecasting diagnostic
+run-name: Nonbinary diagnostic ${{ inputs.question_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        type: string
+        required: true
+        default: '45849'
+      question_id:
+        type: string
+        required: true
+        default: '46024'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: futureeval-nonbinary-diagnostic-${{ inputs.question_id }}
+  cancel-in-progress: false
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate identity and find original ledgers
+        id: state
+        uses: actions/github-script@v7
+        env:
+          QUESTION_ID: ${{ inputs.question_id }}
+          POST_ID: ${{ inputs.post_id }}
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            if (!/^[0-9]+$/.test(process.env.QUESTION_ID) || !/^[0-9]+$/.test(process.env.POST_ID)) {
+              throw new Error('Numeric post and question IDs required');
+            }
+            const runs = (await github.rest.actions.listWorkflowRuns({owner,repo,
+              workflow_id:'nonbinary_debug.yaml',status:'completed',per_page:100})).data.workflow_runs;
+            const name = `nonbinary-debug-${process.env.QUESTION_ID}`;
+            let restored = false;
+            for (const run of runs) {
+              if (run.id === context.runId || run.display_title !== `Nonbinary diagnostic ${process.env.QUESTION_ID}`) continue;
+              const artifacts = (await github.rest.actions.listWorkflowRunArtifacts({owner,repo,run_id:run.id})).data.artifacts;
+              if (artifacts.some(a => a.name === name && !a.expired)) {
+                core.setOutput('previous',run.id); restored = true; break;
+              }
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
+              if (jobs.flatMap(j=>j.steps||[]).some(s=>s.name === 'Run single question diagnostic' && s.conclusion !== 'skipped')) {
+                throw new Error('Prior diagnostic state missing; refuse search/model budget reset');
+              }
+            }
+            if (runs.length === 100 && !restored) {
+              // Conservative history boundary: do not assume a new task after truncation.
+              throw new Error('Diagnostic history truncated; inspect original state before proceeding');
+            }
+            const collection = (await github.rest.actions.listWorkflowRuns({owner,repo,
+              workflow_id:'collect_new_questions.yaml',status:'completed',per_page:100})).data.workflow_runs;
+            const latest = collection.find(r=>r.conclusion==='success' && r.head_branch==='main');
+            if (!latest) throw new Error('No original live collection state to check');
+            core.setOutput('collector',latest.id);
+      - name: Restore diagnostic state
+        if: steps.state.outputs.previous != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: nonbinary-debug-${{ inputs.question_id }}
+          run-id: ${{ steps.state.outputs.previous }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/nonbinary-debug
+      - name: Inspect existing collection budgets
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-collection-state
+          run-id: ${{ steps.state.outputs.collector }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/live-collector
+      - name: Install free readers and browser
+        run: |
+          python -m pip install -r ForecastAgent/requirements-supplement.txt
+          python -m playwright install --with-deps chromium
+      - name: Run single question diagnostic
+        env:
+          QUESTION_ID: ${{ inputs.question_id }}
+          POST_ID: ${{ inputs.post_id }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.state.outputs.previous }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/nonbinary-debug
+        run: |
+          python -m ForecastAgent.competition.nonbinary_debug --root snapshots/nonbinary-debug --post-id "$POST_ID" --question-id "$QUESTION_ID" --collector-root snapshots/live-collector
+      - name: Preserve all diagnostic records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nonbinary-debug-${{ inputs.question_id }}
+          path: snapshots/nonbinary-debug/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
