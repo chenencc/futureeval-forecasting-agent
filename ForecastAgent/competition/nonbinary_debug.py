@@ -53,7 +53,15 @@ def run(root, post_id, ident, collector_root=None):
                     result = analyze(root / 'analysis-input.json', root / 'analysis')
                     return result
             else:
-                post = get_json(f'{API_ROOT}{post_id}/', os.environ['METACULUS_TOKEN'])
+                post = get_json(f'{API_ROOT}{post_id}/?include_descriptions=true&with_cp=false', os.environ['METACULUS_TOKEN'])
+                matches = [q for q in questions(post) if str(q['id']) == str(ident)]
+                save(root / 'input-inspection.json', {'post_id': post.get('id'),
+                    'question_id': str(ident), 'post_fields': sorted(post),
+                    'question_fields': sorted(matches[0]) if matches else [],
+                    'question_content': {key: matches[0].get(key) for key in
+                        ('title', 'type', 'status', 'description', 'resolution_criteria', 'fine_print', 'options')} if matches else {},
+                    'post_content': {key: post.get(key) for key in ('description', 'resolution_criteria', 'fine_print')},
+                    'no_outcome_or_community_input': True})
                 request = blind_input(post, ident)
                 save(root / 'question-input.json', request)
                 save(manifest, {'schema': 'nonbinary-debug-v1', 'post_id': str(post_id), 'question_id': str(ident),
