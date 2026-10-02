@@ -11,8 +11,26 @@ from ForecastAgent.analysis.pilot import Journal, WARNING, digest, load, prepare
 from ForecastAgent.providers.decisions import decide, probability
 from ForecastAgent.runtime.task_lock import task_lock
 
-PROTOCOL = 'referenced-analysis-v4'
+PROTOCOL = 'referenced-analysis-v5'
 GENERATION = {'max_output_tokens': 6000, 'reasoning': {'max_tokens': 1500}, 'require_tool': True}
+
+
+class ModelJournal(Journal):
+    """Each authorized model gets three attempts; fallback never erases history."""
+    def __init__(self, root, models):
+        self.models = set(models)
+        super().__init__(root, 3 * len(self.models))
+
+    def remaining(self, model):
+        if model not in self.models:
+            raise ValueError('Unapproved analysis model')
+        used = sum(load(path).get('request', {}).get('model') == model for path in self.root.glob('*.json'))
+        return max(0, 3 - used)
+
+    def __call__(self, phase, record, token=None):
+        if phase == 'reserve' and not self.remaining(record['request']['model']):
+            raise RuntimeError('Analysis model lifetime HTTP attempt cap exhausted')
+        return super().__call__(phase, record, token)
 
 
 def restore_route(output):
@@ -113,7 +131,7 @@ Conditions are full only if the cited text covers their exact scope and necessar
 cannot prove a period-wide negative. A qualifying dated threshold crossing may prove an existential YES. September is not August;
 50% reliability is not 80%; a market expectation is not an official announcement. A source URL alone is not proof of its contents.
 Mark missing measurements or incomplete windows partial or unknown and uncertain. Do not infer absence from unsuccessful retrieval.
-Use read_saved_source if material context is omitted. There are at most three total HTTP attempts including review and retries;
+Use read_saved_source if material context is omitted. Each selected backend has at most three HTTP attempts including review and retries;
 prefer a complete analysis now if enough context is visible. Each local read returns new stable evidence IDs.
 State the event tree, outside-view support (or unavailable), opposing cases, contradictions, source dependence and gaps.
 Do not assume independent sources when reports cite the same original measurements.
@@ -208,7 +226,8 @@ def run(root, output, ids):
         identity = {'ids': ids, 'protocol': PROTOCOL, 'campaign_sha256': digest(campaign),
                     'reasoning_model': configured_model(),
                     'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
-                                       'consecutive_service_failures': 2, 'scope': 'dispatch', 'shared_http_cap': 3},
+                                       'consecutive_service_failures': 2, 'scope': 'dispatch',
+                                       'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
                     'generation': GENERATION,
                     'terminal_tool_policy': 'Re-evaluate record_analysis enforcement before every physical retry.',
                     'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
@@ -237,7 +256,8 @@ def run(root, output, ids):
                         raise ValueError('Frozen prediction evidence changed')
                     results.append(prediction)
                     continue
-                journal = Journal(folder / 'ultra-http', 3)
+                journal = ModelJournal(folder / 'ultra-http', [configured_model(), SUPER_MODEL] if route else [configured_model()])
+                active_model = lambda: route.model() if route else configured_model()
                 session_path = folder / 'session.json'
                 session = load(session_path) if session_path.exists() else {'messages': [
                     {'role': 'system', 'content': PROMPT}, {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False)}],
@@ -252,12 +272,12 @@ def run(root, output, ids):
                     if pending:
                         consumed_count, record = pending.pop(0)
                         raw = record['response']['choices'][0]['message']
-                    elif len(list((folder / 'ultra-http').glob('*.json'))) < 3:
-                        force = 'record_analysis' if session['draft'] or len(list((folder / 'ultra-http').glob('*.json'))) >= 2 else None
+                    elif journal.remaining(active_model()):
+                        force = 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 1 else None
                         raw = ask_ultra(session['messages'], os.environ['OPENROUTER_API_KEY'], tools=[READ, RECORD],
                                         forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
                                         model_route=route,
-                                        tool_selector=lambda: 'record_analysis' if session['draft'] or len(list((folder / 'ultra-http').glob('*.json'))) >= 2 else None,
+                                        tool_selector=lambda: 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 1 else None,
                                         **GENERATION)
                         consumed_count = len(list((folder / 'ultra-http').glob('*.json')))
                     else:

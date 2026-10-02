@@ -106,7 +106,12 @@ def evaluate(output, archive, labels, destination, baseline=None):
         'quality_distribution': dict(Counter(r['quality']['status'] for r in rows)),
         'metrics': {key: sum(r[key] for r in rows) / len(rows) for key in ('mercury_brier', 'mercury_log_loss', 'reasoning_brier')} if rows else {},
         'consumption': {key: sum(usage[key] for usage in task_usage.values()) for key in ('reasoning_http_attempts', 'decision_http_attempts', 'known_tokens', 'attempts_with_unknown_usage', 'reported_cost_usd')},
-        'quota_checks': {'within_task_caps': all(usage['reasoning_http_attempts'] <= 3 and usage['decision_http_attempts'] <= 1 for usage in task_usage.values()),
+        'quota_checks': {'within_task_caps': all(
+            usage['decision_http_attempts'] <= 1 and
+            (all(count <= 3 for model, count in usage['requested_models'].items() if model != 'inception/mercury-decide:free')
+             and usage['reasoning_http_attempts'] <= 3 * manifest['routing_policy']['maximum_models']
+             if 'http_cap_per_model' in manifest.get('routing_policy', {}) else usage['reasoning_http_attempts'] <= 3)
+            for usage in task_usage.values()),
                          'no_collection_reopened': True, 'no_search_or_forecast_tools_exposed': True}}
     save(destination, report)
     return report

@@ -85,6 +85,24 @@ class ReferencedAnalysisTests(unittest.TestCase):
                 (folder / f'{index}.json').write_text(json.dumps(record), encoding='utf-8')
             self.assertEqual(referenced.restore_route(temporary).model(), ULTRA_MODEL)
 
+    def test_fallback_gets_three_attempts_without_erasing_primary(self):
+        from ForecastAgent.providers.model import ULTRA_MODEL, SUPER_MODEL
+        with tempfile.TemporaryDirectory() as temporary:
+            journal = referenced.ModelJournal(temporary, [ULTRA_MODEL, SUPER_MODEL])
+            for model in [ULTRA_MODEL, ULTRA_MODEL, SUPER_MODEL, SUPER_MODEL, SUPER_MODEL]:
+                record = {'request': {'model': model}, 'status': 'reserved'}
+                token = journal('reserve', record)
+                record['status'] = 'received'
+                journal('complete', record, token)
+            restored = referenced.ModelJournal(temporary, [ULTRA_MODEL, SUPER_MODEL])
+            self.assertEqual(restored.remaining(ULTRA_MODEL), 1)
+            self.assertEqual(restored.remaining(SUPER_MODEL), 0)
+            with self.assertRaises(RuntimeError):
+                restored('reserve', {'request': {'model': SUPER_MODEL}})
+            self.assertEqual(len(list(Path(temporary).glob('*.json'))), 5)
+            with self.assertRaises(ValueError):
+                restored('reserve', {'request': {'model': 'unapproved:free'}})
+
     def test_full_condition_requires_source_reference(self):
         self.report['conditions'][0].update(coverage='full', evidence_refs=[])
         with self.assertRaises(ValueError):
