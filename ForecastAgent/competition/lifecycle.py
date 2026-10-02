@@ -18,4 +18,4 @@ def describe(post, question, now=None):
         'spot_scoring_time': question.get('spot_scoring_time'),
         'scheduled_resolve_time': expected, 'actual_resolve_time': question.get('actual_resolve_time'),
         'resolution_overdue': phase == 'closed_waiting_resolution' and bool(expected and utc(expected) <= utc(now)),
-        'open': phase == 'open', 'forecast_permission_checked_by_worker': True}
+        'open': phase == 'open', 'requires_worker_permission_check': phase == 'open'}
