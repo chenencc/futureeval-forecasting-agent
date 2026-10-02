@@ -1,0 +1,88 @@
+name: Full supplemental acquisition campaign
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: 'Frozen raw acquisition parent run'
+        default: '36948699455'
+        type: string
+      seed_run:
+        description: 'Completed three-question repair pilot; preserve its attempts'
+        default: '36961146573'
+        type: string
+      resume_run:
+        description: 'Latest completed full supplement campaign run to resume'
+        default: ''
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: supplement-acquisition
+  cancel-in-progress: false
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_gap_repair ForecastAgent.tests.test_supplement ForecastAgent.tests.test_supplement_campaign ForecastAgent.tests.test_local_sync
+      - run: python -m ForecastAgent.supplement.verify_ci
+      - name: Validate completed parent runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+          SEED_RUN: ${{ inputs.seed_run }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: |
+          for run in "$SOURCE_RUN" "$SEED_RUN" "$RESUME_RUN"; do
+            if [ -n "$run" ]; then
+              [[ "$run" =~ ^[0-9]+$ ]]
+              [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq .status)" = "completed" ]
+            fi
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplement-parent
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-v1
+          run-id: ${{ inputs.seed_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplement-seed
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplement-campaign
+      - name: Assess all tasks in batches of at most five
+        env:
+          SUPPLEMENT_SOURCE_RUN_ID: ${{ inputs.source_run }}
+          SUPPLEMENT_SEED_RUN_ID: ${{ inputs.seed_run }}
+          FORECAST_COMPLETED_RESTORE_RUNS: '${{ inputs.resume_run }},${{ inputs.seed_run }}'
+          FORECAST_RESTORED_STATE_ROOT: snapshots/supplement-campaign
+        run: |
+          python -c "import shutil; shutil.make_archive('snapshots/supplement-parent', 'zip', 'snapshots/supplement-parent')"
+          python -u -m ForecastAgent.supplement.campaign --archive snapshots/supplement-parent.zip --output snapshots/supplement-campaign --seed snapshots/supplement-seed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acquisition-supplement-100-v1
+          path: snapshots/supplement-campaign/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: supplement-campaign-ci-proof
+          path: snapshots/supplement-ci/
+          retention-days: 90

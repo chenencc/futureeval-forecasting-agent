@@ -54,3 +54,16 @@ Current boundaries: no general crawler, semantic source search, historical
 archive retrieval, automatic source substitution, OCR or private data access.
 Spreadsheet rows/columns and total text are bounded and truncation is explicit.
 Keep formula text; do not silently recompute cells or treat formulas as values.
+
+## Full queue
+
+`supplement_campaign.yaml` restores the three-question pilot and assesses every
+task in the frozen raw acquisition artifact, in sequential batches of at most
+five. The campaign retains the pilot's existing attempts and captures. It saves
+the parent member hashes, batch partition, per-task progress and aggregate counts.
+`assessed` means the permitted repair routes were processed, not that all missing
+information was obtained. Tasks without an executable repair are still assessed
+and retain their gaps. For interrupted campaigns, supply the last completed
+campaign `resume_run`; never start a fresh queue to replace exhausted allowances.
+Use `campaign-state.json` to locate each task's batch and pass that batch folder
+to `analysis_overlay`. Original forecasts and collection states remain unchanged.
