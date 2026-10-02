@@ -28,6 +28,8 @@ V4 uses free Ultra by default and switches to free Super after two consecutive s
 
 Run `36953666625` verified two Ultra 502 failures followed by a successful Super tool response. That response requested local reading instead of a terminal report, leaving no valid draft within the three-attempt cap. The terminal tool policy now re-evaluates remaining capacity before each physical retry and forces `record_analysis` on the last attempt, including provider fallback inside a single logical call. This repair has offline regression coverage but has not yet passed live validation. The earlier run remains exhausted and preserved.
 
+V5 run `36954705847` verified the independent allowance: two Ultra service failures and three successful Super responses. Super performed two local reads, then called `record_analysis` with read-tool arguments, which strict validation rejected. No probability was produced. The terminal request now exposes only the selected output tool's schema; both read and output schemas were previously visible. This schema restriction passes offline regression checks and still needs live validation. The exhausted run retains all five requests and is not resumed under a changed contract.
+
 ```sh
 python -m ForecastAgent.analysis.referenced --root PATH_TO_CAMPAIGN --output PATH_TO_EXPERIMENT --ids 44801,43688,41140
 python -m ForecastAgent.analysis.evaluation --output PATH_TO_EXPERIMENT --source-archive ORIGINAL_CAMPAIGN.zip --labels snapshots/forecastbench-history/resolved_metaculus.jsonl --report OUTPUT_REPORT.json --baseline OPTIONAL_V1_REPORT.json

@@ -229,7 +229,7 @@ def run(root, output, ids):
                                        'consecutive_service_failures': 2, 'scope': 'dispatch',
                                        'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
                     'generation': GENERATION,
-                    'terminal_tool_policy': 'Re-evaluate record_analysis enforcement before every physical retry.',
+                    'terminal_tool_policy': 'Re-evaluate remaining capacity and expose only record_analysis on each terminal request.',
                     'contract_sha256': digest({'prompt': PROMPT, 'tools': [READ, RECORD]}), 'evaluation_warning': WARNING}
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')

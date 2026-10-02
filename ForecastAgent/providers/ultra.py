@@ -115,6 +115,11 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             selected = tool_selector()
             payload_request['tool_choice'] = ({'type': 'function', 'function': {'name': selected}}
                                               if selected else ('required' if require_tool else 'auto'))
+            available = TOOLS if tools is None else tools
+            payload_request['tools'] = ([tool for tool in available if tool.get('function', {}).get('name') == selected]
+                                        if selected else available)
+            if selected and not payload_request['tools']:
+                raise ValueError('Selected terminal tool is not available')
         request = Request(OPENROUTER_URL, data=json.dumps(payload_request).encode('utf-8'), headers=headers, method='POST')
         record = {'started_at_utc': utc_now(), 'retry_index': attempt,
                   'request': json.loads(request.data), 'status': 'reserved'}

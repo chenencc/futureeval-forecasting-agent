@@ -75,8 +75,12 @@ class ModelFallbackTests(TestCase):
         attempts=[]
         def observer(stage,record,token=None):
             if stage=='reserve': attempts.append(record['request'])
-        ask_ultra([], 'test', tools=[], model_route=ModelRoute(), observer=observer,
+        catalog=[{'type':'function','function':{'name':'read_saved_source'}},
+                 {'type':'function','function':{'name':'record_analysis'}}]
+        ask_ultra([], 'test', tools=catalog, model_route=ModelRoute(), observer=observer,
                   require_tool=True, tool_selector=lambda: 'record_analysis' if len(attempts)>=2 else None)
         self.assertEqual(attempts[-1]['model'], SUPER_MODEL)
         self.assertEqual(attempts[-1]['tool_choice']['function']['name'], 'record_analysis')
+        self.assertEqual([tool['function']['name'] for tool in attempts[-1]['tools']], ['record_analysis'])
+        self.assertEqual(len(attempts[0]['tools']),2)
         self.assertEqual(len(attempts),3)
