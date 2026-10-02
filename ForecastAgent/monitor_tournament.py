@@ -174,6 +174,13 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
 
     posts = {row["id"]: row for row in archive_posts if isinstance(row.get("id"), int)}
     posts.update({row["id"]: row for row in open_posts if isinstance(row.get("id"), int)})
+    # List responses cap group children at three; detail responses are complete.
+    for post_id, post in list(posts.items()):
+        if post.get('group_of_questions'):
+            detail = get_json(f'{API_ROOT}{post_id}/?include_descriptions=true&with_cp=false', token)
+            if detail.get('id') != post_id or not detail.get('group_of_questions'):
+                raise ValueError('Group detail identity mismatch; refuse a partial question scan')
+            posts[post_id] = detail
     index: list[dict] = []
     pending_research: list[tuple[dict, dict]] = []
     for post in posts.values():
@@ -185,12 +192,14 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
         for question in questions:
             qid = question["id"]
             is_new = qid not in seen
-            is_open = post.get("status") == "open" and question.get("status", "open") == "open"
+            from ForecastAgent.competition.lifecycle import describe
+            lifecycle = describe(post, question, now.isoformat())
+            is_open = lifecycle['open']
             index.append({"post_id": post_id, "question_id": qid,
                           "title": question.get("title") or post.get("title"),
                           "type": question.get("type"), "status": question.get("status") or post.get("status"),
                           "url": f"https://www.metaculus.com/questions/{post_id}/",
-                          "new": is_new, "open": is_open, "snapshot_saved": True})
+                          "new": is_new, **lifecycle, "open": is_open, "snapshot_saved": True})
             seen.add(qid)
             if is_open and question.get("type") == "binary" and qid not in researched:
                 retry = retries.get(str(qid), {})
@@ -209,6 +218,9 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
         "tournament": TOURNAMENT, "retrieved_at_utc": now.isoformat(), "code_commit": os.environ.get("GITHUB_SHA"),
         "question_count": len(index), "new_question_count": sum(row["new"] for row in index),
         "open_scan_complete": open_complete, "open_question_count": sum(row["open"] for row in index),
+        "lifecycle_counts": {phase: sum(row['lifecycle'] == phase for row in index) for phase in
+            ('upcoming', 'open', 'closed_waiting_resolution', 'resolved', 'unpublished_or_unapproved', 'unknown')},
+        "resolution_overdue_count": sum(row['resolution_overdue'] for row in index),
         "archive_pages_scanned": archive_pages, "archive_cycle_complete": archive_next is None,
         "archive_error": archive_error, "research": research_results, "questions": index,
         "research_requested": os.environ.get("QUEUE_READ_ONLY_RESEARCH", "1") == "1",

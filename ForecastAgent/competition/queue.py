@@ -43,12 +43,16 @@ def questions(post):
 def descriptor(post, question):
     """Whitelist rules and timing; exclude outcomes and community predictions."""
     result = {key: question.get(key) for key in ('id', 'type', 'status', 'open_time',
-              'close_time', 'scheduled_close_time', 'spot_scoring_time')}
+              'close_time', 'actual_close_time', 'scheduled_close_time', 'spot_scoring_time')}
     result['post_id'] = post['id']
     for key in ('title', 'resolution_criteria', 'fine_print'):
         result[key] = question.get(key) or post.get(key) or ''
     result['rule_sha256'] = digest({key: result[key] for key in ('title', 'resolution_criteria', 'fine_print', 'type')})
-    deadlines = [utc(result[key]) for key in ('close_time', 'scheduled_close_time', 'spot_scoring_time') if result.get(key)]
+    closing = [utc(result[key]) for key in ('actual_close_time', 'close_time', 'scheduled_close_time') if result.get(key)]
+    result['submission_deadline_utc'] = min(closing).isoformat() if closing else None
+    # Internal competition deadline includes the scoring instant. It does not
+    # redefine the platform's open/closed status or its resolution date.
+    deadlines = closing + ([utc(result['spot_scoring_time'])] if result.get('spot_scoring_time') else [])
     result['deadline_utc'] = min(deadlines).isoformat() if deadlines else None
     return result
 
