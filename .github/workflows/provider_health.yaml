@@ -1,6 +1,14 @@
 name: Forecast provider health probe
 on:
   workflow_dispatch:
+    inputs:
+      model:
+        description: 'Free model for this single health request; acquisition backend is unchanged'
+        type: choice
+        default: nvidia/nemotron-3-super-120b-a12b:free
+        options:
+          - nvidia/nemotron-3-super-120b-a12b:free
+          - nvidia/nemotron-3-ultra-550b-a55b:free
 permissions:
   contents: read
 concurrency:
@@ -19,7 +27,7 @@ jobs:
         run: python -m ForecastAgent.provider_health --output snapshots/provider-health/report.json
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
-          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL: ${{ inputs.model || 'nvidia/nemotron-3-super-120b-a12b:free' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
