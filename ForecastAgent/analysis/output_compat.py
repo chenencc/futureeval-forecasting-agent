@@ -15,6 +15,17 @@ def normalize(message):
         return result, changes
     if not isinstance(report, dict):
         return result, changes
+    for field in ('facts', 'conditions'):
+        if isinstance(report.get(field), str):
+            original = report[field]
+            try:
+                decoded = json.loads(original)
+            except (ValueError, TypeError):
+                continue
+            if isinstance(decoded, list):
+                report[field] = decoded
+                changes.append({'path': field, 'before': original, 'after': decoded,
+                                'reason': 'Decode a JSON-encoded array without altering its elements.'})
     if isinstance(report.get('gaps'), str):
         original = report['gaps']
         report['gaps'] = [original]

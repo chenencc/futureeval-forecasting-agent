@@ -34,6 +34,15 @@ class OutputCompatibilityTests(unittest.TestCase):
                'arguments': json.dumps({'conditions': [{'status': 'true'}], 'gaps': []})}}]}
         self.assertEqual(normalize(raw), (raw, []))
 
+    def test_json_encoded_facts_are_decoded_without_inventing_evidence(self):
+        facts = [{'claim': 'Unchanged claim', 'evidence_refs': ['E9999'], 'supports': 'yes'}]
+        raw = {'tool_calls': [{'function': {'name': 'record_analysis',
+               'arguments': json.dumps({'facts': json.dumps(facts), 'conditions': []})}}]}
+        result, changes = normalize(raw)
+        actual = json.loads(result['tool_calls'][0]['function']['arguments'])
+        self.assertEqual(actual['facts'], facts)
+        self.assertEqual(len(changes), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
