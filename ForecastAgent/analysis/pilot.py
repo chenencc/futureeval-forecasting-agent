@@ -128,6 +128,7 @@ def parse_analysis(message, packet):
     if not isinstance(report['facts'], list) or not report['facts']:
         raise ValueError('No grounded facts')
     sources = {s['source_id']: s for s in packet['sources']}
+    citation_errors = []
     for fact in report['facts']:
         if set(fact) != {'source_id', 'quote', 'claim', 'supports'} or fact['supports'] not in ('yes', 'no', 'context') or not isinstance(fact['claim'], str):
             raise ValueError('Invalid fact schema')
@@ -137,7 +138,9 @@ def parse_analysis(message, packet):
             raise ValueError('Unknown source or empty quote')
         matching = [s for s in source['segments'] if quote in s['text']]
         if not matching:
-            raise ValueError('Quotation not found verbatim: ' + fact['source_id'] + ' ' + quote[:100])
+            citation_errors.append({'source_id': fact['source_id'], 'invalid_quote': quote})
+    if citation_errors:
+        raise ValueError('Quotations not found verbatim: ' + json.dumps(citation_errors, ensure_ascii=False))
     return report
 
 
@@ -201,16 +204,34 @@ def run(root, output, ids):
             else:
                 messages = [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False)}]
                 journal = Journal(folder / 'ultra-http', 3)
-                first = ask_ultra(messages, key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
-                save(folder / 'draft-message.json', first)
+                if (folder / 'draft-message.json').exists():
+                    first = load(folder / 'draft-message.json')
+                else:
+                    first = ask_ultra(messages, key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
+                    save(folder / 'draft-message.json', first)
                 try:
                     draft = parse_analysis(first, packet)
                     review = 'Review this draft critically against the supplied segments. Correct wrong dates, scope, cherry-picked negatives, or unsupported claims. Return the revised complete report. Draft: ' + json.dumps(draft)
                 except ValueError as exc:
                     review = 'Repair the invalid structured draft. ' + str(exc) + '. Copy exact quotes only. Draft: ' + json.dumps(first)
-                revised = ask_ultra(messages + [{'role': 'user', 'content': review}], key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
-                save(folder / 'review-message.json', revised)
-                report = parse_analysis(revised, packet)
+                if (folder / 'review-message.json').exists():
+                    revised = load(folder / 'review-message.json')
+                else:
+                    revised = ask_ultra(messages + [{'role': 'user', 'content': review}], key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
+                    save(folder / 'review-message.json', revised)
+                try:
+                    report = parse_analysis(revised, packet)
+                except ValueError as exc:
+                    if (folder / 'repair-message.json').exists():
+                        repaired = load(folder / 'repair-message.json')
+                    else:
+                        feedback = ('The software rejected this report. Repair ALL invalid citations and any arguments relying on them. '
+                                    'Do not paraphrase inside quote fields, merge table headers with values, or join noncontiguous text. '
+                                    'Copy short contiguous substrings including original punctuation. If a fact is unsupported, remove it '
+                                    'and record a gap. Return the complete revised report. Validation errors: ' + str(exc) + '\nDraft: ' + json.dumps(revised))
+                        repaired = ask_ultra(messages + [{'role': 'user', 'content': feedback}], key, tools=[TOOL], forced_tool='record_analysis', observer=journal, deadline=time.monotonic() + 420)
+                        save(folder / 'repair-message.json', repaired)
+                    report = parse_analysis(repaired, packet)
                 save(folder / 'analysis.json', report)
             state = decision_state(packet, report)
             save(folder / 'decision-state.json', state)
@@ -222,6 +243,8 @@ def run(root, output, ids):
                 'packet_sha256': digest(packet), 'analysis_sha256': digest(report), 'decision_state_sha256': digest(state),
                 'frozen_at_utc': datetime.now(timezone.utc).isoformat(), 'evaluation_warning': WARNING}
             save(folder / 'prediction.json', prediction)
+            if (folder / 'failure.json').exists():
+                (folder / 'failure.json').rename(folder / 'previous-failure.json')
             rows.append(prediction)
         except Exception as exc:
             failure = {'id': ident, 'status': 'failed', 'error': str(exc)}
@@ -259,7 +282,28 @@ def evaluate(output, labels, destination):
         if outcome is None:
             raise ValueError('Missing binary held-out resolution: ' + prediction['id'])
         y = float(outcome['resolved_to'])
-        row = {**prediction, 'resolution': y, 'resolution_date': outcome.get('resolution_date'), 'prediction_sha256': digest(prediction)}
+        folder = output / 'tasks' / prediction['id']
+        packet = load(folder / 'evidence-packet.json')
+        report = load(folder / 'analysis.json')
+        records = [load(path) for kind in ('ultra-http', 'mercury-http') for path in sorted((folder / kind).glob('*.json'))]
+        known_tokens = 0
+        unknown_usage = 0
+        for record in records:
+            usage = record.get('response', {}).get('usage', {})
+            if isinstance(usage.get('total_tokens'), int):
+                known_tokens += usage['total_tokens']
+            elif isinstance(usage.get('input_tokens'), int) and isinstance(usage.get('output_tokens'), int):
+                known_tokens += usage['input_tokens'] + usage['output_tokens']
+            else:
+                unknown_usage += 1
+        row = {**prediction, 'resolution': y, 'resolution_date': outcome.get('resolution_date'), 'prediction_sha256': digest(prediction),
+               'evidence_stats': {'sources': len(packet['sources']), 'quoted_facts': len(report['facts']),
+                                  'omitted_chars': sum(s['packet_omitted_chars'] for s in packet['sources']),
+                                  'saved_truncated_sources': sum(s['saved_body_truncated'] for s in packet['sources'])},
+               'http_usage': {'ultra_attempts': len(list((folder / 'ultra-http').glob('*.json'))),
+                              'mercury_attempts': len(list((folder / 'mercury-http').glob('*.json'))),
+                              'known_tokens': known_tokens, 'attempts_with_unknown_usage': unknown_usage,
+                              'requested_models': sorted(set(r['request']['model'] for r in records))}}
         for field, prefix in [('probability_yes', 'mercury'), ('ultra_baseline_probability_yes', 'ultra')]:
             p = probability(prediction[field])
             clipped = min(1 - epsilon, max(epsilon, p))
@@ -268,7 +312,8 @@ def evaluate(output, labels, destination):
             row[prefix + '_correct_at_half'] = (p >= 0.5) == bool(y)
         rows.append(row)
     report = {'evaluation_warning': WARNING, 'requested_ids': manifest['ids'], 'evaluated_count': len(rows),
-              'log_loss_epsilon': epsilon, 'label_file_sha256': hashlib.sha256(Path(labels).read_bytes()).hexdigest(), 'results': rows,
+              'log_loss_epsilon': epsilon, 'label_file_sha256': hashlib.sha256(Path(labels).read_bytes()).hexdigest(),
+              'label_provenance': 'ForecastBench resolved=true Metaculus records; resolution_date is a source checkpoint, not independently verified settlement time.', 'results': rows,
               'metrics': {k: sum(row[k] for row in rows) / len(rows) for k in ('mercury_brier', 'ultra_brier', 'mercury_log_loss', 'ultra_log_loss')} if rows else {}}
     save(destination, report)
     return report

@@ -7,6 +7,10 @@ on:
         required: true
         default: '36941248183'
         type: string
+      resume_analysis_run:
+        description: 'Optional completed pilot to restore existing analysis HTTP reservations and stages'
+        default: ''
+        type: string
 permissions:
   contents: read
   actions: read
@@ -28,6 +32,13 @@ jobs:
           run-id: ${{ inputs.source_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/analysis-input
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_analysis_run != ''
+        with:
+          name: saved-evidence-analysis-v1
+          run-id: ${{ inputs.resume_analysis_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/analysis-v1
       - name: Analyze three source-complete saved questions
         run: python -m ForecastAgent.analysis.pilot run --root snapshots/analysis-input --output snapshots/analysis-v1 --ids 44801,44693,43688
         env:
