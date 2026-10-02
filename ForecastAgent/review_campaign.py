@@ -11,12 +11,15 @@ import sqlite3
 from ForecastAgent.runtime.collection_v2 import eligible, late_dates
 from ForecastAgent.readers.saved import select, version_digest
 from ForecastAgent.runtime.temporal_policy import unrestricted
+from ForecastAgent.local_sync import DEFAULT_REPO
 
 
-def review(root, artifact):
+def review(root, artifact, repo=DEFAULT_REPO):
     db = sqlite3.connect(f'file:{(root / "index.sqlite3").as_posix()}?mode=ro', uri=True)
-    files = dict(db.execute('SELECT path,sha256 FROM files WHERE artifact_id=?', (artifact,)))
-    rows = db.execute("SELECT path,body_json FROM records WHERE artifact_id=? AND kind='json_document' AND path LIKE '%/bundle.json'", (artifact,)).fetchall()
+    # The local store retains many large campaign versions. Scope by both parts
+    # of the primary index to avoid scanning every historical JSON body.
+    files = dict(db.execute('SELECT path,sha256 FROM files WHERE repo=? AND artifact_id=?', (repo, artifact)))
+    rows = db.execute("SELECT path,body_json FROM records WHERE repo=? AND artifact_id=? AND kind='json_document' AND path LIKE '%/bundle.json'", (repo, artifact)).fetchall()
     results = []
     for path, encoded in rows:
         bundle = json.loads(encoded)
