@@ -1,0 +1,27 @@
+{
+  "schema": "mercury-remaining13-v1",
+  "baseline_run": 36998681648,
+  "reuse_seven_run": 37017365367,
+  "selection": "Original frozen twenty minus the seven previously audited failures; no new outcome filtering.",
+  "batches": [
+    [
+      "40695",
+      "43822",
+      "43461",
+      "36871",
+      "40849"
+    ],
+    [
+      "41206",
+      "41489",
+      "42630",
+      "42490",
+      "43844"
+    ],
+    [
+      "40417",
+      "41485",
+      "43987"
+    ]
+  ]
+}

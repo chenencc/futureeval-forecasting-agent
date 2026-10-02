@@ -1,0 +1,45 @@
+name: Mercury-only remaining thirteen direct evidence comparison
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: analysis-mercury-remaining13
+  cancel-in-progress: false
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: 36961850565
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-supplement
+      - name: Score saved evidence directly with Mercury only
+        run: python -m ForecastAgent.analysis.mercury_remaining_trial --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --batch ${{ matrix.batch }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-remaining13-batch-${{ matrix.batch }}
+          path: snapshots/trial
+          retention-days: 90
