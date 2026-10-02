@@ -42,6 +42,7 @@ jobs:
               });
               if (artifacts.data.artifacts.some(a => a.name === 'futureeval-monitor-state' && !a.expired)) {
                 core.setOutput('artifact', 'futureeval-monitor-state');
+                core.setOutput('health_available', artifacts.data.artifacts.some(a => a.name === 'futureeval-monitor-health' && !a.expired));
                 return run.id;
               }
               const {data: jobs} = await github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:run.id});
@@ -64,7 +65,16 @@ jobs:
           run-id: ${{ fromJSON(steps.previous.outputs.result) }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/monitor/
+      - name: Restore monitor health history
+        if: steps.previous.outputs.health_available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-monitor-health
+          run-id: ${{ fromJSON(steps.previous.outputs.result) }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/monitor/
       - name: Save read-only question snapshot
+        id: snapshot
         run: python -m ForecastAgent.monitor_tournament
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
@@ -73,6 +83,78 @@ jobs:
           OFFICIAL_OPEN_SCAN_PRIORITY: '1'
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/monitor
+      - name: Record monitor health and trigger history
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SNAPSHOT_OUTCOME: ${{ steps.snapshot.outcome }}
+        with:
+          script: |
+            const fs = require('fs');
+            const root = 'snapshots/monitor';
+            fs.mkdirSync(root, {recursive: true});
+            const path = `${root}/monitor-health.json`;
+            let previous = {};
+            if (fs.existsSync(path)) previous = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const {owner, repo} = context.repo;
+            let current = {}, scheduled = [], historyError = null;
+            try {
+              current = (await github.rest.actions.getWorkflowRun({owner, repo, run_id: context.runId})).data;
+              const history = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: 'run_bot_on_tournament.yaml', event: 'schedule', per_page: 3,
+              });
+              scheduled = history.data.workflow_runs.map(r => ({
+                run_id: r.id, created_at_utc: r.created_at, status: r.status,
+                conclusion: r.conclusion, commit: r.head_sha, url: r.html_url,
+              }));
+            } catch (error) {
+              historyError = error.message;
+              core.warning(`Trigger history unavailable: ${historyError}`);
+            }
+            const now = new Date().toISOString();
+            const indexes = fs.readdirSync(root, {withFileTypes: true})
+              .filter(d => d.isDirectory() && /^\d{8}T\d{6}Z$/.test(d.name))
+              .map(d => `${root}/${d.name}/index.json`).filter(p => fs.existsSync(p)).sort();
+            const index = indexes.length ? JSON.parse(fs.readFileSync(indexes.at(-1), 'utf8')) : {};
+            const fresh = process.env.SNAPSHOT_OUTCOME === 'success' && index.code_commit === context.sha
+              && (!current.created_at || Date.parse(index.retrieved_at_utc) >= Date.parse(current.created_at));
+            const record = {
+              run_id: context.runId, run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event: context.eventName, schedule: context.payload.schedule || null,
+              created_at_utc: current.created_at || null, started_at_utc: current.run_started_at || null,
+              recorded_at_utc: now, commit: context.sha,
+              url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              snapshot_outcome: process.env.SNAPSHOT_OUTCOME, snapshot_fresh: fresh,
+              snapshot_at_utc: fresh ? index.retrieved_at_utc : null,
+              open_scan_complete: fresh ? index.open_scan_complete : false,
+              open_question_count: fresh ? index.open_question_count : null,
+              lifecycle_counts: fresh ? index.lifecycle_counts : null,
+              previous_record_interval_seconds: previous.latest?.recorded_at_utc
+                ? (Date.parse(now) - Date.parse(previous.latest.recorded_at_utc)) / 1000 : null,
+            };
+            const lastScheduled = scheduled[0] || null;
+            const age = lastScheduled ? (Date.parse(now) - Date.parse(lastScheduled.created_at_utc)) / 1000 : null;
+            const health = {
+              schema: 'futureeval-monitor-health-v1', expected_interval_seconds: 600,
+              latest: record, latest_successful_snapshot: fresh && index.open_scan_complete
+                ? record : previous.latest_successful_snapshot || null,
+              last_scheduled_run: lastScheduled, scheduled_age_seconds: age,
+              scheduled_history: scheduled, history_error: historyError,
+              schedule_observation: historyError ? 'unknown' : !lastScheduled ? 'not_observed'
+                : age > 1800 ? 'overdue' : 'recently_observed',
+              records: [...(previous.records || []), record].slice(-1000),
+            };
+            fs.writeFileSync(path, JSON.stringify(health, null, 2));
+            await core.summary.addHeading('Official monitor health')
+              .addTable([
+                [{data: 'Check', header: true}, {data: 'Value', header: true}],
+                ['Trigger', record.event], ['Commit', record.commit],
+                ['Fresh complete snapshot', String(fresh && index.open_scan_complete)],
+                ['Open questions', String(record.open_question_count)],
+                ['Last scheduled run', lastScheduled ? lastScheduled.created_at_utc : 'Not observed'],
+                ['Schedule observation (30-minute tolerance)', health.schedule_observation],
+              ]).write();
+            if (health.schedule_observation === 'overdue') core.warning('No schedule-origin run observed within 30 minutes');
       - name: Save state for the next poll
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,6 +165,14 @@ jobs:
             snapshots/monitor/state.json
             snapshots/monitor/retrieval/
           if-no-files-found: warn
+          retention-days: 90
+      - name: Upload monitor health
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-monitor-health
+          path: snapshots/monitor/monitor-health.json
+          if-no-files-found: error
           retention-days: 90
       - name: Upload question snapshots
         if: always()
