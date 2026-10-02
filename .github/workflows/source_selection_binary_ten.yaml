@@ -1,0 +1,54 @@
+name: Mercury saved-source selection binary ten acquisition comparison
+on:
+  workflow_dispatch:
+    inputs:
+      resume_run:
+        description: Restore exact experiment journals without resetting reservations
+        required: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: source-selection-binary-ten-v1
+  cancel-in-progress: false
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [1, 2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/input
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.resume_run != '' }}
+        with:
+          name: source-selection-binary-ten-batch-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial
+      - name: Classify saved candidates and compare raw acquisition only
+        run: python -m ForecastAgent.source_selection_trial --inputs snapshots/input --output snapshots/trial --batch "$BATCH"
+        env:
+          BATCH: ${{ matrix.batch }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          FORECAST_SHARED_CACHE_ROOT: ''
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-selection-binary-ten-batch-${{ matrix.batch }}
+          path: snapshots/trial
+          retention-days: 90
