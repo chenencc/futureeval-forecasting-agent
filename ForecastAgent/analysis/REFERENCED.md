@@ -43,4 +43,6 @@ Evaluation reopens the original campaign archive and verifies every materialized
 
 ## Pilot status
 
+V6 retains the same per-model allowances and clarifies source IDs versus evidence IDs in the schema and prompt. Validation reports all unknown references in one response and lists representative existing evidence IDs for mistaken source IDs, without automatically replacing them or asserting support. This addresses VIX case `43257` in run `36956609534`, whose three Super replies repeatedly cited source IDs as evidence. Earlier outputs and exhausted journals remain preserved; a corrected-protocol validation uses a separate experiment.
+
 V2 run `36950597546` produced one provisional scored case out of three. Two cases failed structured-output validation; the completed case still requires review because time-window evidence is incomplete. V3 run `36952076125` attempted one case and received three upstream 502 errors without a usable model response. The revised generation policy therefore remains unvalidated in a successful live run. Both experiments retain their exhausted attempt journals. A subsequent validation must use a separately identified experiment; restoration must never reopen those budgets.

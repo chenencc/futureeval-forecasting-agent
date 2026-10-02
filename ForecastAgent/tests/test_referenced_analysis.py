@@ -37,6 +37,14 @@ class ReferencedAnalysisTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse(self.message(), self.packet)
 
+    def test_all_source_ids_are_rejected_in_one_repair_message(self):
+        self.report['facts'][0]['evidence_refs'] = ['S1']
+        self.report['conditions'][0]['evidence_refs'] = ['S2']
+        with self.assertRaises(ValueError) as raised:
+            parse(self.message(), self.packet)
+        self.assertIn('S1, S2', str(raised.exception))
+        self.assertIn('not automatic replacements', str(raised.exception))
+
     def test_declared_full_coverage_with_gap_is_not_complete(self):
         self.report['conditions'][0].update(coverage='full', status='supported')
         quality = assess(self.packet, self.report, True)
