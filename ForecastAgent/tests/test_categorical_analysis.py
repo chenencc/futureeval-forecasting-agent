@@ -121,6 +121,16 @@ class CategoricalTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'repeated'):
             parse({'tool_calls': [{'function': {'name': 'record_categorical', 'arguments': json.dumps(self.report)}}]}, packet, self.options)
 
+    def test_rule_reader_requires_named_section_and_excludes_later_sections(self):
+        import base64
+        from ForecastAgent.readers.metaculus_rules import extract_criteria
+        def page(body):
+            return {'raw_response_base64': base64.b64encode(body.encode()).decode()}
+        source = '<html><body><h1>Match length?</h1><h2>Resolution Criteria</h2><p>Count regulation games.</p><h2>Comments</h2><p>My probability is 90%.</p></body></html>'
+        self.assertEqual(extract_criteria(page(source), 'Match length?'), 'Count regulation games.')
+        with self.assertRaises(ValueError):
+            extract_criteria(page('<body><h1>Match length?</h1><p>Probably count fourteen games.</p></body>'), 'Match length?')
+
 
 if __name__ == '__main__':
     unittest.main()
