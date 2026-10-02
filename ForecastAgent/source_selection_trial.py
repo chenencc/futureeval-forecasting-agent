@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 
 from ForecastAgent.analysis.pilot import digest,load,save
 from ForecastAgent.providers.source_selection import select
+from ForecastAgent.providers.source_selection_guards import screen_bundle
 from ForecastAgent.providers.tavily_search import canonical_url
 from ForecastAgent.retrieval_sources import allowed_source,source_urls
 from ForecastAgent.runtime.retrieval import RetrievalTask
@@ -15,7 +16,7 @@ from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.supplement.stage import run as supplement,analysis_overlay
 
 IDS=['42491','40695','44547','43822','43461','42489','36871','40852','40849','41206']
-PROTOCOL='binary-ten-saved-selection-fresh-acquisition-v1'
+PROTOCOL='binary-ten-saved-selection-fresh-acquisition-v2'
 
 
 def freeze_candidates(bundle):
@@ -32,7 +33,7 @@ def freeze_candidates(bundle):
     for search in bundle.get('searches',[])+bundle.get('exa_searches',[]):
         for hit in search.get('results',[]):add(hit['url'],hit)
     for field in ['resolution_criteria','fine_print','background']:
-        for url in source_urls(bundle['request'].get(field,'')):add(url,origin='question_link')
+        for url in source_urls(bundle['request'].get(field,'')):add(url,origin='question_'+field)
     old=[]
     for attempt in bundle.get('fetch_attempts',[]):
         url=attempt.get('url');channel=attempt.get('channel')
@@ -47,7 +48,7 @@ def freeze_candidates(bundle):
 
 def selection_question(bundle):
     return {key:copy.deepcopy(bundle['request'][key]) for key in
-        ['id','question','resolution_criteria','fine_print','background','open_time','close_time','scheduled_close_time','scheduled_resolve_time'] if key in bundle['request']}
+        ['id','question','resolution_criteria','fine_print','background','open_time','close_time','scheduled_close_time','scheduled_resolve_time','target_issuer'] if key in bundle['request']}
 
 
 def capture_arm(parent,candidates,urls,folder,arm,comparison_identity):
@@ -73,11 +74,16 @@ def capture_arm(parent,candidates,urls,folder,arm,comparison_identity):
         z.writestr('campaign.json',json.dumps({'tasks':{request['id']:{'status':'closed_with_gaps'}}}))
         z.writestr(f"tasks/{request['id']}/bundle.json",json.dumps(bundle))
     summary=supplement(archive,folder/'supplement',[request['id']],network=True)
-    overlay=analysis_overlay(bundle,folder/'supplement',request['id']);save(folder/'collected.json',overlay)
+    overlay=screen_bundle(analysis_overlay(bundle,folder/'supplement',request['id']))
+    save(folder/'collected.json',overlay)
+    save(folder/'selection-diagnostics.json',{'gaps':overlay['selection_acquisition_gaps'],
+        'all_originals_preserved':True,'eligible_pages':len(overlay['pages'])})
     return {'selected_urls':urls,'physical_fetch_attempts':len(bundle['fetch_attempts']),
             'readable_original_pages':len(bundle['pages']),'readable_pages_after_supplement':len(overlay['pages']),
+            'eligible_original_pages':len(screen_bundle(bundle)['pages']),
             'failed_fetches':sum(r['status']=='failed' for r in bundle['fetch_attempts']),
-            'supplement':summary,'tavily_attempts':len(bundle['searches']),'exa_attempts':len(bundle['exa_searches'])}
+            'supplement':summary,'selection_exclusions':overlay['selection_acquisition_gaps'],
+            'tavily_attempts':len(bundle['searches']),'exa_attempts':len(bundle['exa_searches'])}
 
 
 def run(inputs,output,batch):

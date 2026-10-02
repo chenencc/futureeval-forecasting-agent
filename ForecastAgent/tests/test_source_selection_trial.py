@@ -8,6 +8,7 @@ from unittest.mock import patch
 from ForecastAgent.analysis.pilot import digest,load
 from ForecastAgent.source_selection_trial import freeze_candidates,selection_question,capture_arm,run,IDS
 from ForecastAgent.providers import source_selection
+from ForecastAgent.providers.source_selection_guards import candidate_guard,inspect_body,screen_bundle
 
 
 def parent():
@@ -20,6 +21,61 @@ def parent():
 
 
 class SelectionTests(unittest.TestCase):
+    def test_rule_source_survives_low_rank_without_exceeding_budget(self):
+        q={'question':'Will Acme file an S-1 with the SEC?', 'resolution_criteria':'Use https://www.sec.gov/search-filings; definition https://www.investopedia.com/terms/s/sec-form-s-1.asp'}
+        candidates=[{'candidate_id':'a','url':'https://www.sec.gov/search-filings'},
+                    {'candidate_id':'b','url':'https://news.org/b'},
+                    {'candidate_id':'c','url':'https://www.investopedia.com/terms/s/sec-form-s-1.asp'}]
+        def call(state,folder,registry):
+            return {'answers':{k:{'score':0 if k=='a_priority' else 3,
+                'probabilities':{'0':1 if k=='a_priority' else 0}} for k in registry}}
+        with tempfile.TemporaryDirectory() as d,patch.object(source_selection,'call',call):
+            r=source_selection.select(q,candidates,Path(d),1)
+            self.assertEqual(r['selected_ids'],['a'])
+            self.assertEqual(len(r['selected_urls']),1)
+        q['resolution_criteria']+=' https://news.org/b'
+        with tempfile.TemporaryDirectory() as d,patch.object(source_selection,'call',call):
+            r=source_selection.select(q,candidates,Path(d),1)
+            self.assertEqual(len(r['rule_source_overflow_ids']),1)
+
+    def test_issuer_checks_unknown_path_aliases_and_explicit_conflict(self):
+        q={'question':'Will Acme file an S-1 with the SEC?'}
+        url='https://www.sec.gov/Archives/edgar/data/123/filing.htm'
+        self.assertEqual(candidate_guard(q,{'url':url})['issuer_status'],'unknown')
+        self.assertFalse(inspect_body(q,url,'Other Energy Corp (Filer)\n'+('Registration filing details. '*15))['eligible_for_evidence'])
+        q['target_issuer']={'name':'Acme','cik':'000123','aliases':['Acme Research LLC']}
+        self.assertEqual(candidate_guard(q,{'url':url})['issuer_status'],'match')
+        self.assertEqual(candidate_guard(q,{'url':url.replace('/123/','/456/')})['issuer_status'],'mismatch')
+        del q['target_issuer']['cik']
+        self.assertEqual(candidate_guard(q,{'url':url,'issuer_name':'Acme Research LLC'})['issuer_status'],'match')
+        del q['target_issuer'];q['resolution_criteria']='Acme or any subsidiary involved in this product.'
+        self.assertEqual(candidate_guard(q,{'url':url,'issuer_name':'Other Corp'})['issuer_status'],'unverified_affiliate')
+
+    def test_shells_excluded_with_raw_preservation_and_short_records_retained(self):
+        nav='Hoppa í aðalefni\nFréttir\nÚtvarp\nSjónvarp\nMeira\nEnglish\nPolski\nLeita á síðunni\nValmynd'
+        login='Log into Facebook\nEmail or mobile number\nPassword\nLog in\nForgot password?\nCreate new account'
+        for text in [nav,login]:self.assertFalse(inspect_body({},'https://news.org',text)['eligible_for_evidence'])
+        self.assertTrue(inspect_body({},'https://agency.gov','May 15, 2026: The Board named the incumbent chair pro tempore.')['eligible_for_evidence'])
+        table='Search\nResults\nMenu\n| Candidate | Votes |\n| A | 150 |\n| B | 170 |'
+        self.assertTrue(inspect_body({},'https://agency.gov',table)['eligible_for_evidence'])
+        original={'request':{},'pages':{'https://news.org':{'content':nav}}}; before=digest(original)
+        screened=screen_bundle(original)
+        self.assertEqual(screened['pages'],{})
+        self.assertEqual(screened['selection_excluded_pages']['https://news.org']['content'],nav)
+        self.assertTrue(screened['result']['gaps'])
+        self.assertEqual(digest(original),before)
+
+    def test_compact_batches_have_one_head_per_candidate_and_keep_entire_pool(self):
+        candidates=[{'candidate_id':str(i),'url':'https://example.org/'+str(i),
+                     'snippet':'A promising discovery lead. '*50,'title':'Original record'} for i in range(41)]
+        packets=list(source_selection.batches({'question':'Does the event occur?'},candidates))
+        self.assertLessEqual(len(packets),2)
+        self.assertEqual(sum(len(chosen) for chosen,_,_ in packets),41)
+        for chosen,state,registry in packets:
+            self.assertEqual(len(registry),len(chosen))
+            self.assertLessEqual(source_selection.request_bytes(state,registry),28000)
+            self.assertTrue(all(len(c['snippet'])<=160 for c in state['candidates']))
+
     def test_full_batch_creates_output_before_lock_and_preserves_resume(self):
         with tempfile.TemporaryDirectory() as d:
             from ForecastAgent.analysis.pilot import save
