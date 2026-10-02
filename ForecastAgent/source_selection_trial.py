@@ -82,6 +82,7 @@ def capture_arm(parent,candidates,urls,folder,arm,comparison_identity):
 
 def run(inputs,output,batch):
     inputs=Path(inputs);output=Path(output);ids=IDS[(batch-1)*5:batch*5]
+    output.mkdir(parents=True,exist_ok=True)
     if len(ids)!=5:raise ValueError('Frozen ten cases, five per batch')
     manifest={'protocol':PROTOCOL,'ids':ids,'source_run':36948699455,'scope':'acquisition_only',
         'fresh_budget_authorized':True,'new_paid_searches':0,'forecast_submissions':0,'analysis_calls':0,

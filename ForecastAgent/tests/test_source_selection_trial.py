@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from ForecastAgent.analysis.pilot import digest,load
-from ForecastAgent.source_selection_trial import freeze_candidates,selection_question,capture_arm
+from ForecastAgent.source_selection_trial import freeze_candidates,selection_question,capture_arm,run,IDS
 from ForecastAgent.providers import source_selection
 
 
@@ -20,6 +20,22 @@ def parent():
 
 
 class SelectionTests(unittest.TestCase):
+    def test_full_batch_creates_output_before_lock_and_preserves_resume(self):
+        with tempfile.TemporaryDirectory() as d:
+            from ForecastAgent.analysis.pilot import save
+            root=Path(d)
+            for ident in IDS[:5]:
+                b=parent();b['request']['id']=ident
+                save(root/'inputs/tasks'/ident/'bundle.json',b)
+            def selector(question,candidates,folder,limit):
+                return {'selected_urls':['https://example.org/one'],'physical_http_batches':1}
+            def fetch(*args,**kwargs):return {'content':'Official target period source data. '*35,'links':[],'updated_at':None}
+            with patch('ForecastAgent.source_selection_trial.select',selector),patch.dict('os.environ',{'FORECAST_SHARED_CACHE_ROOT':''}),patch('ForecastAgent.runtime.retrieval.fetch_public_page',side_effect=fetch) as reader,patch('ForecastAgent.runtime.retrieval.fetch_structured',return_value=None):
+                run(root/'inputs',root/'new/output',1)
+                run(root/'inputs',root/'new/output',1)
+                self.assertEqual(reader.call_count,10)
+            self.assertTrue(all(r['status']=='completed' for r in load(root/'new/output/report.json')['rows']))
+
     def test_blind_candidate_packet_and_exact_old_order(self):
         b=parent();c,old=freeze_candidates(b)
         self.assertEqual(old,['https://example.org/one'])
