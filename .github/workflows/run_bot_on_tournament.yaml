@@ -132,13 +132,16 @@ jobs:
             };
             const lastScheduled = scheduled[0] || null;
             const age = lastScheduled ? (Date.parse(now) - Date.parse(lastScheduled.created_at_utc)) / 1000 : null;
+            const nativeScheduleEnabled = /^  schedule:/m.test(
+              fs.readFileSync('.github/workflows/run_bot_on_tournament.yaml', 'utf8'));
             const health = {
               schema: 'futureeval-monitor-health-v1', expected_interval_seconds: 600,
+              native_schedule_enabled: nativeScheduleEnabled,
               latest: record, latest_successful_snapshot: fresh && index.open_scan_complete
                 ? record : previous.latest_successful_snapshot || null,
               last_scheduled_run: lastScheduled, scheduled_age_seconds: age,
               scheduled_history: scheduled, history_error: historyError,
-              schedule_observation: historyError ? 'unknown' : !lastScheduled ? 'not_observed'
+              schedule_observation: !nativeScheduleEnabled ? 'disabled' : historyError ? 'unknown' : !lastScheduled ? 'not_observed'
                 : age > 1800 ? 'overdue' : 'recently_observed',
               records: [...(previous.records || []), record].slice(-1000),
             };
