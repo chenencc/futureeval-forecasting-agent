@@ -66,8 +66,9 @@ are diagnostics, not an approval gate or a Metaculus receipt.
   as unsupported rather than silently skipped.
 - Durable submission outbox, timeout readback, separate forecast/comment
   receipts and official testing-area validation.
-- Automatic event wiring, independent watchdog and local archival integration
-  for the new artifact. Manual dispatch and a 90-day artifact alone are not
+- Automatic event wiring and an independent watchdog. Local synchronization
+  archives the new artifact and indexes queue questions, candidates and evidence
+  bridges separately. Manual dispatch and a 90-day artifact alone are not
   durable production scheduling or long-term storage.
 - Confirmation of the required participation form and bot permissions.
 

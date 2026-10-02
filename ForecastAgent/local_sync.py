@@ -115,6 +115,14 @@ def add_records(db, repo, artifact, path, data, digest):
                 if isinstance(item, dict):
                     add('question', item.get('id'), item, item.get('id'))
         return
+    if payload.get('schema') == 'competition-shadow-v1' and isinstance(payload.get('tasks'), dict):
+        add('competition_queue', 'root', payload)
+        for question_id, task in payload['tasks'].items():
+            add('competition_question', question_id, task, question_id)
+    if payload.get('schema') == 'competition-shadow-candidate-v1':
+        add('competition_candidate', 'root', payload, payload.get('id'))
+    if payload.get('schema') == 'live-evidence-bridge-v1':
+        add('competition_evidence_bridge', 'root', payload, payload.get('question_id'))
     request = payload.get('request')
     ident = next((part for part in reversed(PurePosixPath(path).parts[:-1]) if part.isdecimal()), None)
     if isinstance(request, dict):

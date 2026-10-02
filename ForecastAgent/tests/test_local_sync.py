@@ -17,6 +17,22 @@ def make_archive(path, files, manifest=False):
 
 
 class LocalSyncTests(TestCase):
+    def test_competition_queue_and_candidate_are_distinct(self):
+        with TemporaryDirectory() as temp:
+            root = Path(temp) / 'data'
+            archive = Path(temp) / 'shadow.zip'
+            make_archive(archive, {
+                'queue.json': json.dumps({'schema': 'competition-shadow-v1',
+                    'tasks': {'123': {'stage': 'shadow_ready'}, '124': {'stage': 'unsupported_type'}}}),
+                'tasks/123/candidate.json': json.dumps({'schema': 'competition-shadow-candidate-v1', 'id': '123'}),
+                'tasks/123/input/bridge.json': json.dumps({'schema': 'live-evidence-bridge-v1', 'question_id': '123'})})
+            import_zip(root, archive, artifact_id='shadow', run_id='100')
+            with connect(root) as db:
+                rows = db.execute('SELECT kind,question_id FROM records WHERE kind LIKE "competition_%" ORDER BY kind,question_id').fetchall()
+            self.assertEqual(rows, [('competition_candidate', '123'), ('competition_evidence_bridge', '123'),
+                                   ('competition_question', '123'), ('competition_question', '124'),
+                                   ('competition_queue', None)])
+
     def test_analysis_records_are_indexed_separately(self):
         with TemporaryDirectory() as temp:
             root = Path(temp) / 'data'
