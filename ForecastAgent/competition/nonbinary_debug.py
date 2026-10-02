@@ -62,6 +62,10 @@ def run(root, post_id, ident, collector_root=None):
                         ('title', 'type', 'status', 'description', 'resolution_criteria', 'fine_print', 'options')} if matches else {},
                     'post_content': {key: post.get(key) for key in ('description', 'resolution_criteria', 'fine_print')},
                     'no_outcome_or_community_input': True})
+                if matches and not (matches[0].get('resolution_criteria') or post.get('resolution_criteria')):
+                    from ForecastAgent.readers.metaculus_rules import read_rules
+                    rules = read_rules(root, post_id, matches[0].get('title') or post['title'])
+                    matches[0]['resolution_criteria'] = rules
                 request = blind_input(post, ident)
                 save(root / 'question-input.json', request)
                 save(manifest, {'schema': 'nonbinary-debug-v1', 'post_id': str(post_id), 'question_id': str(ident),
