@@ -9,6 +9,8 @@ from pathlib import Path
 
 from ForecastAgent.analysis.pilot import WARNING, digest, load, save
 from ForecastAgent.providers.decisions import probability
+from ForecastAgent.analysis.inputs import resolve_bundle, supplement_identity
+from ForecastAgent.analysis.ensemble import compare
 
 
 def transport_usage(folder):
@@ -29,9 +31,11 @@ def transport_usage(folder):
     return usage
 
 
-def evaluate(output, archive, labels, destination, baseline=None):
+def evaluate(output, archive, labels, destination, baseline=None, supplement_root=None):
     output = Path(output)
     manifest = load(output / 'manifest.json')
+    if manifest.get('supplement_identity') != supplement_identity(supplement_root):
+        raise ValueError('Evaluation supplement identity mismatch')
     frozen = []
     failures = []
     task_usage = {}
@@ -42,16 +46,26 @@ def evaluate(output, archive, labels, destination, baseline=None):
         for ident in manifest['ids']:
             folder = output / 'tasks' / ident
             task_usage[ident] = transport_usage(folder)
-            if not (folder / 'prediction.json').exists():
+            has_prediction = (folder / 'prediction.json').exists()
+            if not has_prediction:
                 failure = load(folder / 'failure.json') if (folder / 'failure.json').exists() else {'id': ident, 'status': 'missing_prediction'}
-                failures.append({**failure, 'http_usage': task_usage[ident]})
-                continue
-            prediction = load(folder / 'prediction.json')
+                if manifest.get('route_mode') != 'reasoning_only':
+                    failures.append({**failure, 'http_usage': task_usage[ident]})
+                if not (folder / 'routes.json').exists():
+                    if manifest.get('route_mode') == 'reasoning_only':
+                        failures.append({**failure, 'http_usage': task_usage[ident]})
+                    continue
+            prediction = load(folder / 'prediction.json') if has_prediction else load(folder / 'routes.json')
+            frozen_prediction_hash = digest(prediction)
             packet, analysis, state = [load(folder / name) for name in ('evidence-packet.json', 'analysis.json', 'decision-state.json')]
             for body, key in [(packet, 'packet_sha256'), (analysis, 'analysis_sha256'), (state, 'decision_state_sha256')]:
                 if digest(body) != prediction[key]:
                     raise ValueError('Frozen inference changed: ' + ident)
             bundle = json.loads(saved.read('tasks/' + ident + '/bundle.json'))
+            input_record = load(folder / 'input.json')
+            if digest(bundle) != input_record.get('original_bundle_sha256', input_record['bundle_sha256']):
+                raise ValueError('Frozen original bundle identity mismatch')
+            bundle = resolve_bundle(bundle, ident, supplement_root)
             if digest(bundle) != load(folder / 'input.json')['bundle_sha256']:
                 raise ValueError('Frozen source bundle identity mismatch')
             excerpts = load(folder / 'citation-audit.json')['resolved_evidence']
@@ -59,10 +73,36 @@ def evaluate(output, archive, labels, destination, baseline=None):
                 body = bundle['pages'][excerpt['url']]['content']
                 if hashlib.sha256(body.encode()).hexdigest() != excerpt['body_sha256'] or body[excerpt['start']:excerpt['end']] != excerpt['text']:
                     raise ValueError('Referenced source span failed: ' + excerpt['evidence_id'])
+            reasoning_p = analysis['reasoning_probability_yes']
+            mercury_p = prediction.get('probability_yes') if has_prediction else None
+            if has_prediction and prediction['reasoning_baseline_probability_yes'] != reasoning_p:
+                raise ValueError('Reasoning probability differs from frozen analysis')
+            if has_prediction and load(folder / 'decision-response.json')['answers']['event_yes']['noul'] != mercury_p:
+                raise ValueError('Mercury probability differs from frozen response')
+            expected = compare(reasoning_p, mercury_p)
+            if (folder / 'routes.json').exists():
+                routes = load(folder / 'routes.json')
+                for body, key in [(packet, 'packet_sha256'), (analysis, 'analysis_sha256'), (state, 'decision_state_sha256')]:
+                    if routes[key] != digest(body):
+                        raise ValueError('Frozen route input changed')
+                # Incomplete route persistence is recoverable from the frozen provider response.
+                if routes['routes']['reasoning_only']['probability_yes'] != reasoning_p:
+                    raise ValueError('Frozen reasoning route changed')
+                if not has_prediction and routes['routes']['reasoning_then_mercury']['probability_yes'] is not None:
+                    raise ValueError('Unverified Mercury route without frozen prediction')
+                actual_mercury = routes['routes']['reasoning_then_mercury']['probability_yes']
+                expected_routes = compare(reasoning_p, actual_mercury)
+                if any(routes[key] != value for key, value in expected_routes.items()):
+                    raise ValueError('Route aggregation changed')
+                if has_prediction and actual_mercury is not None and actual_mercury != mercury_p:
+                    raise ValueError('Frozen Mercury route changed')
+            prediction.update(reasoning_baseline_probability_yes=reasoning_p, probability_yes=mercury_p,
+                              route_comparison=expected)
             usage = task_usage[ident]
-            frozen.append({**prediction, 'prediction_sha256': digest(prediction), 'http_usage': usage,
+            frozen.append({**prediction, 'prediction_sha256': frozen_prediction_hash, 'http_usage': usage,
                            'evidence_stats': {'source_count': len(packet['sources']), 'fact_count': len(analysis['facts']),
-                               'referenced_spans': len(excerpts), 'all_spans_verified_against_original_bundle': True,
+                               'referenced_spans': len(excerpts), 'all_spans_verified_against_frozen_evidence': True,
+                               'supplement_overlay_used': supplement_root is not None,
                                'initial_packet_omitted_chars': sum(s['packet_omitted_chars'] for s in packet['sources']),
                                'local_read_calls': load(folder / 'session.json')['local_read_calls']},
                            'conditions': analysis['conditions'], 'gaps': analysis['gaps']})
@@ -85,7 +125,10 @@ def evaluate(output, archive, labels, destination, baseline=None):
             raise ValueError('Missing binary resolution: ' + ident)
         y = float(outcomes[ident]['resolved_to'])
         row = {**prediction, 'resolution': y, 'label_checkpoint_date': outcomes[ident].get('resolution_date')}
-        for field, prefix in [('probability_yes', 'mercury'), ('reasoning_baseline_probability_yes', 'reasoning')]:
+        row['equal_mean_probability_yes'] = row['route_comparison']['equal_mean_probability_yes']
+        for field, prefix in [('probability_yes', 'mercury'), ('reasoning_baseline_probability_yes', 'reasoning'), ('equal_mean_probability_yes', 'equal_mean')]:
+            if row[field] is None:
+                continue
             p = probability(row[field])
             clipped = max(1e-6, min(1 - 1e-6, p))
             row[prefix + '_brier'] = (p - y) ** 2
@@ -104,7 +147,13 @@ def evaluate(output, archive, labels, destination, baseline=None):
         'label_file_sha256': hashlib.sha256(Path(labels).read_bytes()).hexdigest(),
         'results': rows, 'failures': failures, 'requested_count': len(manifest['ids']), 'evaluated_count': len(rows),
         'quality_distribution': dict(Counter(r['quality']['status'] for r in rows)),
-        'metrics': {key: sum(r[key] for r in rows) / len(rows) for key in ('mercury_brier', 'mercury_log_loss', 'reasoning_brier')} if rows else {},
+        'metrics': {key: sum(r[key] for r in rows if key in r) / sum(key in r for r in rows)
+                    for key in ('mercury_brier', 'mercury_log_loss', 'reasoning_brier', 'reasoning_log_loss', 'equal_mean_brier', 'equal_mean_log_loss') if any(key in r for r in rows)},
+        'route_counts': {prefix: sum(prefix + '_brier' in r for r in rows) for prefix in ('reasoning', 'mercury', 'equal_mean')},
+        'paired_metrics': {prefix: {key: sum(r[prefix + '_' + key] for r in rows if 'mercury_brier' in r) / sum('mercury_brier' in r for r in rows)
+                                   for key in ('brier', 'log_loss')}
+                           for prefix in ('reasoning', 'mercury', 'equal_mean')} if any('mercury_brier' in r for r in rows) else {},
+        'calibration': {'method': 'identity', 'fitted': False},
         'consumption': {key: sum(usage[key] for usage in task_usage.values()) for key in ('reasoning_http_attempts', 'decision_http_attempts', 'known_tokens', 'attempts_with_unknown_usage', 'reported_cost_usd')},
         'quota_checks': {'within_task_caps': all(
             usage['decision_http_attempts'] <= 1 and
@@ -124,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--labels', required=True)
     parser.add_argument('--report', required=True)
     parser.add_argument('--baseline')
+    parser.add_argument('--supplement-root')
     args = parser.parse_args()
-    report = evaluate(args.output, args.source_archive, args.labels, args.report, args.baseline)
+    report = evaluate(args.output, args.source_archive, args.labels, args.report, args.baseline, args.supplement_root)
     print(json.dumps({'evaluated_count': report['evaluated_count'], 'failures': report['failures'], 'metrics': report['metrics'], 'consumption': report['consumption']}))

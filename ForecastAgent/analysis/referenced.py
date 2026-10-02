@@ -10,8 +10,10 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import Journal, WARNING, digest, load, prepare, save, QUESTIONS
 from ForecastAgent.providers.decisions import decide, probability
 from ForecastAgent.runtime.task_lock import task_lock
+from ForecastAgent.analysis.inputs import resolve_bundle, supplement_identity, source_metadata
+from ForecastAgent.analysis.ensemble import compare
 
-PROTOCOL = 'referenced-analysis-v6'
+PROTOCOL = 'referenced-analysis-v7'
 GENERATION = {'max_output_tokens': 6000, 'reasoning': {'max_tokens': 1500}, 'require_tool': True}
 
 
@@ -67,13 +69,27 @@ def units(text, start, source, first_id):
 
 
 def evidence_packet(bundle):
-    packet = prepare(bundle, source_limit=10_000)
+    visible = copy.deepcopy(bundle)
+    excluded = []
+    for url, page in list(visible.get('pages', {}).items()):
+        diagnostics = page.get('body_diagnostics') or {}
+        if diagnostics.get('usable_text') is False:
+            excluded.append({'url': url, 'reason': diagnostics.get('state', 'unusable_saved_body')})
+            del visible['pages'][url]
+    packet = prepare(visible, source_limit=10_000)
+    packet['excluded_unusable_sources'] = excluded
     library = []
     for source in packet['sources']:
+        source['capture_metadata'] = source_metadata(bundle['pages'][source['url']])
         for segment in source.pop('segments'):
             library.extend(units(segment['text'], segment['start'], source, len(library) + 1))
     packet['evidence'] = library
     packet['protocol'] = PROTOCOL
+    for key in ('close_time', 'scheduled_close_time', 'scheduled_resolve_time', 'as_of_utc', 'historical_cutoff_utc'):
+        if key in bundle['request']:
+            packet['question'][key] = bundle['request'][key]
+    packet['acquisition_gaps'] = bundle.get('gaps', [])
+    packet['supplement_handoff'] = bundle.get('supplement_lineage')
     return packet
 
 
@@ -139,6 +155,8 @@ prefer a complete analysis now if enough context is visible. Each local read ret
 State the event tree, outside-view support (or unavailable), opposing cases, contradictions, source dependence and gaps.
 Do not assume independent sources when reports cite the same original measurements.
 No outcome labels or community probabilities are supplied. Saved text may contain outcomes; flag retrospective leakage.
+Original acquisition gaps and supplemental repair gaps remain unresolved unless saved evidence covers them.
+They describe retrieval failures, not proof that the event did not happen. Assess their relevance to each condition.
 Provide a separate baseline probability for diagnostic comparison; the decision model will not see this number.
 Return record_analysis only when ready. Keep descriptions concise; aim for under 1500 output tokens.'''
 
@@ -226,19 +244,23 @@ def assess(packet, report, reviewed):
             'automated_use_eligible': False, 'calibration_status': 'No prospective calibration fitted'}
 
 
-def run(root, output, ids):
+def run(root, output, ids, supplement_root=None, mode='both'):
     from ForecastAgent.providers.ultra import ask_ultra
     from ForecastAgent.providers.model import configured_model, ULTRA_MODEL, SUPER_MODEL
     if not configured_model().endswith(':free'):
         raise ValueError('This pilot requires a free reasoning backend')
+    if mode not in ('both', 'reasoning_only'):
+        raise ValueError('Unknown analysis route mode')
     if not 1 <= len(ids) <= 5 or len(set(ids)) != len(ids) or not all(ident.isdecimal() for ident in ids):
-        raise ValueError('Select one to five unique numeric acquired question IDs')
+        raise ValueError('Select one to five unique numeric terminal collection question IDs')
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     with task_lock(output):
         campaign = load(Path(root) / 'campaign.json')
         identity = {'ids': ids, 'protocol': PROTOCOL, 'campaign_sha256': digest(campaign),
                     'reasoning_model': configured_model(),
+                    'route_mode': mode, 'supplement_identity': supplement_identity(supplement_root),
+                    'fusion': 'Equal mean diagnostic; shared analysis, identity calibration, no automatic use',
                     'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
                                        'consecutive_service_failures': 2, 'scope': 'dispatch',
                                        'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
@@ -254,13 +276,15 @@ def run(root, output, ids):
             folder = output / 'tasks' / ident
             folder.mkdir(parents=True, exist_ok=True)
             try:
-                if campaign['tasks'][ident]['status'] != 'acquired':
-                    raise ValueError('Only acquired tasks are eligible')
+                if campaign['tasks'][ident]['status'] not in ('acquired', 'closed_with_gaps', 'needs_attention'):
+                    raise ValueError('Only terminal collection tasks are eligible')
                 bundle = load(Path(root) / 'tasks' / ident / 'bundle.json')
+                original_hash = digest(bundle)
+                bundle = resolve_bundle(bundle, ident, supplement_root)
                 bundle_hash = digest(bundle)
                 if (folder / 'input.json').exists() and load(folder / 'input.json')['bundle_sha256'] != bundle_hash:
                     raise ValueError('Frozen input bundle changed')
-                save(folder / 'input.json', {'bundle_sha256': bundle_hash})
+                save(folder / 'input.json', {'bundle_sha256': bundle_hash, 'original_bundle_sha256': original_hash})
                 packet_path = folder / 'evidence-packet.json'
                 packet = load(packet_path) if packet_path.exists() else evidence_packet(bundle)
                 save(packet_path, packet)
@@ -268,6 +292,10 @@ def run(root, output, ids):
                     prediction = load(folder / 'prediction.json')
                     if prediction['packet_sha256'] != digest(packet) or prediction['analysis_sha256'] != digest(load(folder / 'analysis.json')) or prediction['decision_state_sha256'] != digest(load(folder / 'decision-state.json')):
                         raise ValueError('Frozen prediction evidence changed')
+                    routes_path = folder / 'routes.json'
+                    routes = load(routes_path)
+                    routes.update(compare(prediction['reasoning_baseline_probability_yes'], prediction['probability_yes']))
+                    save(routes_path, routes)
                     results.append(prediction)
                     continue
                 journal = ModelJournal(folder / 'ultra-http', [configured_model(), SUPER_MODEL] if route else [configured_model()])
@@ -318,6 +346,7 @@ def run(root, output, ids):
                             report = parse(raw, packet)
                             was_draft = session['draft'] is not None
                             session['draft'] = report
+                            session['draft_model'] = load(sorted((folder / 'ultra-http').glob('*.json'))[consumed_count - 1])['request']['model']
                             session['reviewed'] = was_draft
                             if not was_draft:
                                 session['messages'].append({'role': 'user', 'content': 'Critically review and revise this complete draft. Check whether cited IDs actually support each claim and each measurement, date, scope and necessary observation window. Downgrade unsupported completeness. Return record_analysis only. Draft: ' + json.dumps(report)})
@@ -340,6 +369,23 @@ def run(root, output, ids):
                          'quality': quality, 'evaluation_warning': WARNING,
                          'instruction': 'Use effective_condition_coverage when it conflicts with declared full coverage. Missing entire-window observations cannot establish a period-wide negative. Evidence quality is not event probability.'}
                 save(folder / 'decision-state.json', state)
+                routes = {**compare(report['reasoning_probability_yes']), 'id': ident,
+                          'packet_sha256': digest(packet), 'analysis_sha256': digest(report),
+                          'decision_state_sha256': digest(state), 'quality': quality,
+                          'reasoning_models_used': sorted({load(p)['request']['model'] for p in (folder / 'ultra-http').glob('*.json')}),
+                          'evaluation_warning': WARNING}
+                routes['reasoning_probability_backend'] = session.get('draft_model')
+                routes_path = folder / 'routes.json'
+                if not routes_path.exists():
+                    save(routes_path, routes)
+                elif any(load(routes_path)[key] != routes[key] for key in ('packet_sha256', 'analysis_sha256', 'decision_state_sha256')):
+                    raise ValueError('Frozen route input changed')
+                if mode == 'reasoning_only':
+                    if (folder / 'failure.json').exists():
+                        (folder / 'failure.json').unlink()
+                    results.append(routes)
+                    save(output / 'summary.json', {'results': results, 'no_retrieval_calls': True, 'no_forecasts_submitted': True})
+                    continue
                 response_path = folder / 'decision-response.json'
                 if response_path.exists():
                     response = load(response_path)
@@ -354,6 +400,10 @@ def run(root, output, ids):
                     'quality': quality, 'packet_sha256': digest(packet), 'analysis_sha256': digest(report),
                     'decision_state_sha256': digest(state), 'evaluation_warning': WARNING}
                 save(folder / 'prediction.json', prediction)
+                routes.update(compare(report['reasoning_probability_yes'], prediction['probability_yes']))
+                save(routes_path, routes)
+                if (folder / 'failure.json').exists():
+                    (folder / 'failure.json').unlink()
                 results.append(prediction)
                 print(json.dumps({'id': ident, 'status': quality['status'], 'local_read_calls': session['local_read_calls']}), flush=True)
             except Exception as exc:
@@ -370,5 +420,7 @@ if __name__ == '__main__':
     parser.add_argument('--root', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--ids', required=True)
+    parser.add_argument('--supplement-root')
+    parser.add_argument('--mode', choices=['both', 'reasoning_only'], default='both')
     args = parser.parse_args()
-    run(args.root, args.output, args.ids.split(','))
+    run(args.root, args.output, args.ids.split(','), args.supplement_root, args.mode)

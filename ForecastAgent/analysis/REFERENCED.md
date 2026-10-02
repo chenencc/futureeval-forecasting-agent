@@ -1,5 +1,10 @@
 # Referenced analysis
 
+The current v7 protocol adds supplemental evidence overlays and direct-reasoning
+versus Mercury route comparisons. See [Two-route analysis](TWO_ROUTES.md) for the
+current interface, paired evaluation and durable limits. The v2-v6 notes below
+describe preserved earlier experiments.
+
 This experimental module consumes immutable `acquired` bundles. Collection is finished; the module does not restart it, perform searches, or submit forecasts. All prompts and analysis schemas are backend-neutral. The pilot workflow selects the free Ultra backend; Mercury Decide remains the probability adapter.
 
 ## Evidence references
