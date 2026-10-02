@@ -1,0 +1,49 @@
+name: Referenced evidence analysis pilot
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        type: string
+        required: true
+        default: '36948699455'
+      resume_analysis_run:
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: referenced-analysis-v2
+  cancel-in-progress: false
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/analysis-input
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_analysis_run != ''
+        with:
+          name: referenced-analysis-v2
+          run-id: ${{ inputs.resume_analysis_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/analysis-v2
+      - run: python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v2 --ids 44801,43688,41140
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: referenced-analysis-v2
+          path: snapshots/analysis-v2
+          retention-days: 90
