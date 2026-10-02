@@ -184,6 +184,22 @@ class OfficialTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 platform.Client('offline-dummy').account()
 
+    def test_local_archive_indexes_official_ledger_and_receipts(self):
+        from ForecastAgent.local_sync import add_records, connect
+        with connect(self.root / 'store') as db:
+            documents = {
+                'campaign.json': {'schema': live.SCHEMA, 'tasks': {'7': {'stage': 'accepted'}}},
+                'tasks/7/submission.json': {'schema': 'official-submission-v1', 'payload': {'question': 7}},
+                'tasks/7/candidate.json': {'automatic': True, 'payload': {'question': 7}},
+                'tasks/7/reasoning-http/001.json': {'status': 'received'},
+            }
+            import json
+            for path, document in documents.items():
+                add_records(db, 'offline', '1', path, json.dumps(document).encode(), 'test-hash')
+            kinds = {row[0] for row in db.execute('SELECT kind FROM records WHERE question_id="7"')}
+            self.assertTrue({'competition_question', 'competition_submission', 'competition_candidate',
+                'analysis_provider_transport'} <= kinds)
+
 
 if __name__ == '__main__':
     unittest.main()

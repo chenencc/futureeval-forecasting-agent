@@ -115,7 +115,7 @@ def add_records(db, repo, artifact, path, data, digest):
                 if isinstance(item, dict):
                     add('question', item.get('id'), item, item.get('id'))
         return
-    if payload.get('schema') == 'competition-shadow-v1' and isinstance(payload.get('tasks'), dict):
+    if payload.get('schema') in ('competition-shadow-v1', 'official-competition-v1') and isinstance(payload.get('tasks'), dict):
         add('competition_queue', 'root', payload)
         for question_id, task in payload['tasks'].items():
             add('competition_question', question_id, task, question_id)
@@ -125,6 +125,10 @@ def add_records(db, repo, artifact, path, data, digest):
         add('competition_evidence_bridge', 'root', payload, payload.get('question_id'))
     request = payload.get('request')
     ident = next((part for part in reversed(PurePosixPath(path).parts[:-1]) if part.isdecimal()), None)
+    if payload.get('schema') == 'official-submission-v1':
+        add('competition_submission', 'root', payload, payload.get('payload', {}).get('question', ident))
+    if PurePosixPath(path).name == 'candidate.json' and payload.get('automatic') is True:
+        add('competition_candidate', 'root', payload, payload.get('payload', {}).get('question', ident))
     if isinstance(request, dict):
         ident = request.get('id', request.get('question_id', request.get('post_id', ident)))
     if isinstance(request, dict):
@@ -159,7 +163,7 @@ def add_records(db, repo, artifact, path, data, digest):
         add('supplement_handoff', 'root', payload.get('analysis_handoff', {}), ident)
     if isinstance(payload.get('supplement_provenance'), dict):
         add('supplement_capture', 'root', payload, payload['supplement_provenance'].get('task_id', ident))
-    if any('/' + directory + '/' in '/' + path for directory in ('ultra-http', 'mercury-http', 'health-http')):
+    if any('/' + directory + '/' in '/' + path for directory in ('ultra-http', 'reasoning-http', 'mercury-http', 'health-http')):
         add('analysis_provider_transport', 'response', payload, ident)
     if path.endswith('state.json'):
         add('monitor_state', 'state', payload)
