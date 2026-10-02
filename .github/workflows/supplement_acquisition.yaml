@@ -1,0 +1,86 @@
+name: Supplemental acquisition stage
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: 'Completed raw acquisition parent run'
+        default: '36948699455'
+        type: string
+      question_ids:
+        description: 'One to five existing task IDs'
+        default: '43259,43682,40005'
+        type: string
+      network:
+        description: 'Enable bounded public browser and document repair'
+        default: true
+        type: boolean
+      resume_run:
+        description: 'Restore previous supplement run; mandatory when resuming an existing experiment'
+        default: ''
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: supplement-acquisition
+  cancel-in-progress: false
+jobs:
+  supplement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_gap_repair ForecastAgent.tests.test_supplement
+      - run: python -m ForecastAgent.supplement.verify_ci
+      - name: Check parent and optional resume runs are completed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
+          [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .status)" = "completed" ]
+          if [ -n "$RESUME_RUN" ]; then
+            [[ "$RESUME_RUN" =~ ^[0-9]+$ ]]
+            [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RESUME_RUN" --jq .status)" = "completed" ]
+          fi
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: acquisition-supplement-v1
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplement-output
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplement-parent
+      - name: Package immutable parent and run the repair stage
+        env:
+          QUESTION_IDS: ${{ inputs.question_ids }}
+          NETWORK_ENABLED: ${{ inputs.network }}
+          SUPPLEMENT_SOURCE_RUN_ID: ${{ inputs.source_run }}
+        run: |
+          python -c "import shutil; shutil.make_archive('snapshots/supplement-parent', 'zip', 'snapshots/supplement-parent')"
+          flags=()
+          if [ "$NETWORK_ENABLED" = "true" ]; then flags+=(--network); fi
+          python -m ForecastAgent.supplement.stage --archive snapshots/supplement-parent.zip --output snapshots/supplement-output --ids "$QUESTION_IDS" "${flags[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acquisition-supplement-v1
+          path: snapshots/supplement-output/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: supplement-ci-proof
+          path: snapshots/supplement-ci/
+          retention-days: 90

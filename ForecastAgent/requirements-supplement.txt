@@ -1,0 +1,4 @@
+-r requirements-retrieval.txt
+playwright==1.63.0
+xlrd==2.0.2
+openpyxl==3.1.5
