@@ -2,11 +2,6 @@ name: FutureEval official question monitor
 
 on:
   workflow_dispatch:
-    inputs:
-      snapshot_only:
-        description: 'Capture questions without queuing a collection worker'
-        type: boolean
-        default: false
   schedule:
     - cron: '3,13,23,33,43,53 * * * *'
 
