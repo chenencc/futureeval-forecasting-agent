@@ -24,8 +24,11 @@ The manifest freezes source-campaign identity, protocol, prompt/tool contract, s
 
 ```sh
 python -m ForecastAgent.analysis.referenced --root PATH_TO_CAMPAIGN --output PATH_TO_V2_EXPERIMENT --ids 44801,43688,41140
+python -m ForecastAgent.analysis.evaluation --output PATH_TO_V2_EXPERIMENT --source-archive ORIGINAL_CAMPAIGN.zip --labels snapshots/forecastbench-history/resolved_metaculus.jsonl --report OUTPUT_REPORT.json --baseline OPTIONAL_V1_REPORT.json
 ```
 
 The `Referenced evidence analysis pilot` workflow runs the same interface against a completed collection artifact and uploads the full state. Its optional resume input restores the existing experiment. Every fresh protocol experiment is separate from v1 and from collection budgets; provider requests remain subject to the account's shared limits.
 
 Current saved sources and model knowledge can contain outcomes. Evaluation after frozen inference is a retrospective diagnostic, not a clean historical forecasting benchmark. Old v1 outputs remain available for exploratory comparison; a changed protocol and changed evidence context are not a controlled test of model superiority.
+
+Evaluation reopens the original campaign archive and verifies every materialized span, full source-bundle identity and frozen analysis/scorer-input hashes before loading outcomes. It reports per-task conditions, gaps, HTTP attempts, known and unknown token usage, native probabilities and Brier/log loss. Optional v1 comparisons include only shared question IDs; no missing case is silently treated as zero cost or perfect prediction.

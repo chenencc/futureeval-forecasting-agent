@@ -3,7 +3,11 @@ import copy
 import hashlib
 import json
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from ForecastAgent.analysis.referenced import evidence_packet, read_saved, parse, materialize, assess, FIELDS
+from ForecastAgent.analysis import referenced
 
 
 class ReferencedAnalysisTests(unittest.TestCase):
@@ -52,6 +56,52 @@ class ReferencedAnalysisTests(unittest.TestCase):
         self.bundle['pages']['https://example.org']['content'] += 'changed'
         with self.assertRaises(ValueError):
             read_saved(self.bundle, self.packet, {'source_id': 'S1', 'start': 0, 'length': 100})
+
+    def test_resume_after_scoring_crash_reuses_completed_http(self):
+        counters = {'reasoning': 0, 'decision': 0}
+
+        def reasoning(messages, key, observer, **kwargs):
+            counters['reasoning'] += 1
+            message = self.message()
+            record = {'status': 'reserved', 'request': {'model': 'offline-model:free'}}
+            token = observer('reserve', record)
+            record.update(status='received', response={'choices': [{'message': message}], 'usage': {'total_tokens': 12}})
+            observer('complete', record, token)
+            return message
+
+        def decision(state, questions, key, observer):
+            counters['decision'] += 1
+            response = {'model': 'inception/mercury-decide:free', 'answers': {'event_yes': {'noul': .4}, 'evidence_sufficiency': {'score': 1.0}}}
+            record = {'status': 'reserved', 'request': {'model': 'inception/mercury-decide:free'}}
+            token = observer('reserve', record)
+            record.update(status='received', response=response)
+            observer('complete', record, token)
+            return response
+
+        original_save = referenced.save
+        def crash_on_prediction(path, value):
+            if Path(path).name == 'prediction.json':
+                raise OSError('Simulated interruption after decision persistence')
+            original_save(path, value)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'source'
+            output = Path(directory) / 'analysis'
+            original_save(root / 'campaign.json', {'tasks': {'1': {'status': 'acquired'}}})
+            original_save(root / 'tasks' / '1' / 'bundle.json', self.bundle)
+            with patch.dict('os.environ', {'OPENROUTER_API_KEY': 'offline-placeholder', 'FORECAST_MODEL': 'offline-model:free'}), \
+                 patch('ForecastAgent.providers.ultra.ask_ultra', side_effect=reasoning), patch.object(referenced, 'decide', side_effect=decision):
+                with patch.object(referenced, 'save', side_effect=crash_on_prediction), self.assertRaises(RuntimeError):
+                    referenced.run(root, output, ['1'])
+                self.assertEqual(counters, {'reasoning': 2, 'decision': 1})
+                referenced.run(root, output, ['1'])
+                self.assertEqual(counters, {'reasoning': 2, 'decision': 1})
+                changed = copy.deepcopy(self.bundle)
+                changed['request']['question'] = 'Changed question'
+                original_save(root / 'tasks' / '1' / 'bundle.json', changed)
+                with self.assertRaises(RuntimeError):
+                    referenced.run(root, output, ['1'])
+                self.assertEqual(counters, {'reasoning': 2, 'decision': 1})
 
 
 if __name__ == '__main__':
