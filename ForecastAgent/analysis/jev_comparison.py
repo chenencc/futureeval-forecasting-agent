@@ -83,8 +83,8 @@ def metrics(rows):
     return result
 
 
-def run(inputs, output):
-    cohort = load(Path(__file__).with_name('jev_v8_cohort.json'))
+def run(inputs, output, cohort_path=None):
+    cohort = load(cohort_path or Path(__file__).with_name('jev_v8_cohort.json'))
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     frozen_path = output/'cohort.json'

@@ -1,0 +1,247 @@
+{
+  "schema": "three-route-new20-cohort-v1",
+  "selection": "Fixed hash order, round robin across topic and saved gap strata; no resolution labels consulted. Requires readable saved original or supplemental captures.",
+  "source_run": "36948699455",
+  "supplement_run": "36961850565",
+  "excluded_previously_analyzed_count": 34,
+  "excluded_no_readable_captures": [
+    "44799",
+    "43900",
+    "41508"
+  ],
+  "eligible_unseen_count": 63,
+  "development_rows": [
+    {
+      "id": "42491",
+      "question": "Will Anthropic be a designated supply chain risk on May 1, 2026?",
+      "topic": "ai_technology",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 6,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 2
+    },
+    {
+      "id": "40695",
+      "question": "Will Jerome Powell cease to be Chair of the Federal Reserve Board of Governors before his term is up?",
+      "topic": "finance_economy",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 7,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 1
+    },
+    {
+      "id": "44547",
+      "question": "Will Mitch McConnell cast a roll-call vote in the U.S. Senate before September 2026?",
+      "topic": "government_law",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 4,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "43822",
+      "question": "Will Iceland vote Yes in the 2026 EU negotiations referendum?",
+      "topic": "government_law",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 7,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 1
+    },
+    {
+      "id": "43461",
+      "question": "Will at least 5 non-passengers be linked to the MV Hondius hantavirus outbreak before August 2026?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 8,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "42489",
+      "question": "Will the United Arab Emirates conduct a direct military strike against Iran before June 1, 2026?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 2,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 2
+    },
+    {
+      "id": "36871",
+      "question": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+      "topic": "other",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 5,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "40852",
+      "question": "Will the US House of Representatives censure, expel or reprimand any of its members before April 1, 2026?",
+      "topic": "other",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 4,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 4
+    },
+    {
+      "id": "40849",
+      "question": "Will Tesla discontinue the Cybertruck before April 1, 2026?",
+      "topic": "ai_technology",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 7,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 1
+    },
+    {
+      "id": "41206",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before July 1, 2026?",
+      "topic": "finance_economy",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 7,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 1
+    },
+    {
+      "id": "41480",
+      "question": "Will the U.S. Supreme Court's decision in Louisiana v. Callais hold that race-conscious districting is unconstitutional?",
+      "topic": "government_law",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 8,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "41489",
+      "question": "Will Venezuela announce a presidential election before April 1, 2026?",
+      "topic": "government_law",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 6,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 2
+    },
+    {
+      "id": "42485",
+      "question": "Will Saudi Arabia conduct a direct military strike against Iran before June 1, 2026?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 8,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "42630",
+      "question": "Will Iran participate in the 2026 FIFA World Cup?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 3,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 7
+    },
+    {
+      "id": "43491",
+      "question": "Will a new High Representative for Bosnia and Herzegovina officially be in place before September 2, 2026?",
+      "topic": "other",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 8,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "42490",
+      "question": "Will Volodymyr Zelenskyy and Vladimir Putin meet in person before May 1, 2026?",
+      "topic": "other",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 4,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 5
+    },
+    {
+      "id": "43844",
+      "question": "Will Hakainde Hichilema receive at least 65% of the vote in the first round of Zambia's 2026 presidential election?",
+      "topic": "government_law",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 3,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 1
+    },
+    {
+      "id": "40417",
+      "question": "In Louisiana v. Callais, will SCOTUS strike down Louisiana\u2019s two majority-Black districts, restoring a GOP-leaning map?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 8,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    },
+    {
+      "id": "41485",
+      "question": "Will the United States intervene militarily in Venezuela again before May 2026?",
+      "topic": "health_conflict",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 6,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 2
+    },
+    {
+      "id": "43987",
+      "question": "Will the United States provide written notices of withdrawal from the USMCA before September 2026?",
+      "topic": "other",
+      "collection_status": "closed_with_gaps",
+      "readable_original_pages": 7,
+      "readable_supplement_captures": 0,
+      "remaining_gap_count": 0
+    }
+  ],
+  "heldout_ids": [
+    "42729",
+    "43991",
+    "41869",
+    "43911",
+    "44241",
+    "40599",
+    "41561",
+    "41514",
+    "44239",
+    "42139",
+    "43355",
+    "42480",
+    "42135",
+    "40005",
+    "42542",
+    "43171",
+    "44512",
+    "39992",
+    "43501",
+    "44395"
+  ],
+  "batches": [
+    [
+      "42491",
+      "40695",
+      "44547",
+      "43822",
+      "43461"
+    ],
+    [
+      "42489",
+      "36871",
+      "40852",
+      "40849",
+      "41206"
+    ],
+    [
+      "41480",
+      "41489",
+      "42485",
+      "42630",
+      "43491"
+    ],
+    [
+      "42490",
+      "43844",
+      "40417",
+      "41485",
+      "43987"
+    ]
+  ]
+}
