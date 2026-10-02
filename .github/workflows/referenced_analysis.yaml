@@ -9,11 +9,14 @@ on:
       resume_analysis_run:
         type: string
         default: ''
+      question_ids:
+        type: string
+        default: '41140'
 permissions:
   contents: read
   actions: read
 concurrency:
-  group: referenced-analysis-v2
+  group: referenced-analysis
   cancel-in-progress: false
 jobs:
   analyze:
@@ -33,17 +36,18 @@ jobs:
       - uses: actions/download-artifact@v4
         if: inputs.resume_analysis_run != ''
         with:
-          name: referenced-analysis-v2
+          name: referenced-analysis-v3
           run-id: ${{ inputs.resume_analysis_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/analysis-v2
-      - run: python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v2 --ids 44801,43688,41140
+          path: snapshots/analysis-v3
+      - run: python -m ForecastAgent.analysis.referenced --root snapshots/analysis-input --output snapshots/analysis-v3 --ids "$PILOT_IDS"
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          PILOT_IDS: ${{ inputs.question_ids }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: referenced-analysis-v2
-          path: snapshots/analysis-v2
+          name: referenced-analysis-v3
+          path: snapshots/analysis-v3
           retention-days: 90

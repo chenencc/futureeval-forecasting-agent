@@ -87,15 +87,19 @@ def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_pa
                          preserve_raw_on_failure=preserve_raw_on_failure)
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None) -> dict:
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None, max_output_tokens=3000, reasoning=None, require_tool=False) -> dict:
+    if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 12000:
+        raise ValueError('Invalid output token budget')
     payload_request = {
             "model": configured_model(),
             "messages": messages,
             "tools": TOOLS if tools is None else tools,
-            "tool_choice": {"type": "function", "function": {"name": forced_tool or "search_tavily"}} if first_turn or forced_tool else "auto",
+            "tool_choice": {"type": "function", "function": {"name": forced_tool or "search_tavily"}} if first_turn or forced_tool else ("required" if require_tool else "auto"),
             "temperature": 0.2,
-            "max_tokens": 3000,
+            "max_tokens": max_output_tokens,
         }
+    if reasoning is not None:
+        payload_request['reasoning'] = reasoning
     headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
