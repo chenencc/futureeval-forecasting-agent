@@ -278,7 +278,10 @@ def assess(packet, report, reviewed):
             'automated_use_eligible': False, 'calibration_status': 'No prospective calibration fitted'}
 
 
-def run(root, output, ids, supplement_root=None, mode='both', *, live=False, audit_contract=False, question_metadata=None):
+def run(root, output, ids, supplement_root=None, mode='both', *, live=False, audit_contract=False, question_metadata=None, generation=None, normalize_output=False):
+    generation = copy.deepcopy(GENERATION if generation is None else generation)
+    if set(generation) != set(GENERATION) or type(generation['max_output_tokens']) is not int or not 1 <= generation['max_output_tokens'] <= 12000 or generation['require_tool'] is not True:
+        raise ValueError('Invalid analysis generation profile')
     prompt = PROMPT if not live else PROMPT.replace('Saved text may contain outcomes; flag retrospective leakage.', 'Forecast the currently open event using only information available now; flag any apparent outcome leakage.').replace('for diagnostic comparison', 'as an independent reasoning forecast')
     if audit_contract:
         prompt += AUDIT_GUIDANCE
@@ -302,12 +305,15 @@ def run(root, output, ids, supplement_root=None, mode='both', *, live=False, aud
                     'routing_policy': {'fallback': SUPER_MODEL if configured_model() == ULTRA_MODEL else None,
                                        'consecutive_service_failures': 2, 'scope': 'dispatch',
                                        'http_cap_per_model': 3, 'maximum_models': 2 if configured_model() == ULTRA_MODEL else 1},
-                    'generation': GENERATION,
+                    'generation': generation,
                     'terminal_tool_policy': 'Reserve two remaining attempts for draft and review; cache repeated local reads.',
                     'contract_sha256': digest({'prompt': prompt, 'tools': [READ, RECORD]}), 'evaluation_warning': warning}
         if audit_contract or question_metadata is not None:
             identity['audit_contract'] = audit_contract
             identity['question_metadata_sha256'] = digest(question_metadata or {})
+        if normalize_output:
+            from ForecastAgent.analysis import output_compat
+            identity['output_compat_sha256'] = hashlib.sha256(Path(output_compat.__file__).read_bytes()).hexdigest()
         if (output / 'manifest.json').exists() and load(output / 'manifest.json') != identity:
             raise ValueError('Frozen analysis experiment changed')
         save(output / 'manifest.json', identity)
@@ -369,7 +375,7 @@ def run(root, output, ids, supplement_root=None, mode='both', *, live=False, aud
                                             forced_tool=force, observer=journal, deadline=time.monotonic() + 420,
                                             model_route=route,
                                             tool_selector=lambda: 'record_analysis' if session['draft'] or journal.remaining(active_model()) <= 2 else None,
-                                            **GENERATION)
+                                            **generation)
                         except Exception as exc:
                             if session['draft'] is None:
                                 raise
@@ -382,6 +388,13 @@ def run(root, output, ids, supplement_root=None, mode='both', *, live=False, aud
                             break
                         raise RuntimeError('HTTP cap reached without a valid analysis')
                     save(folder / f"message-{consumed_count:02}.json", raw)
+                    if normalize_output:
+                        from ForecastAgent.analysis.output_compat import normalize
+                        raw, changes = normalize(raw)
+                        if changes:
+                            save(folder / f'normalization-{consumed_count:02}.json', {
+                                'changes': changes, 'original_message_sha256': digest(load(folder / f'message-{consumed_count:02}.json')),
+                                'normalized_message': raw, 'requires_standard_validation': True})
                     calls = raw.get('tool_calls', [])
                     if calls and all(c.get('function', {}).get('name') == 'read_saved_source' for c in calls):
                         session['messages'].append({'role': 'assistant', **raw})

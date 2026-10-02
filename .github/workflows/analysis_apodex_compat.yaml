@@ -1,0 +1,48 @@
+name: Single-case Apodex compatibility pilot
+on:
+  workflow_dispatch:
+    inputs:
+      question_id:
+        type: choice
+        options: ['42491', '44547', '42489', '40852', '41480', '42485', '43491']
+        default: '42491'
+        description: One frozen development question
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: analysis-apodex-compat
+  cancel-in-progress: false
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-input
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: 36961850565
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial-supplement
+      - name: Validate budget and output compatibility on one question
+        run: python -m ForecastAgent.analysis.apodex_compat_trial --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --id ${{ inputs.question_id }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          FORECAST_MODEL: apodex/apodex-1.1-mini:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apodex-compat-${{ inputs.question_id }}
+          path: snapshots/trial
+          retention-days: 90
