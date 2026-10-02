@@ -1,0 +1,47 @@
+name: Mercury nonbinary original evidence twenty pilot
+on:
+  workflow_dispatch:
+    inputs:
+      resume_run:
+        description: Previous run to resume with all original acquisition and model journals
+        required: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: analysis-mercury-nonbinary-twenty
+  cancel-in-progress: false
+jobs:
+  pilot:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.resume_run != '' }}
+        with:
+          name: mercury-nonbinary-twenty-batch-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/trial
+      - name: Acquire saved originals and run Mercury conditional rereading
+        run: python -m ForecastAgent.analysis.mercury_nonbinary_trial --output snapshots/trial --batch "$TRIAL_BATCH"
+        env:
+          TRIAL_BATCH: ${{ matrix.batch }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-nonbinary-twenty-batch-${{ matrix.batch }}
+          path: snapshots/trial
+          retention-days: 90

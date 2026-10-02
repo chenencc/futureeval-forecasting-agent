@@ -33,6 +33,29 @@ python -m ForecastAgent.analysis.pilot evaluate --output PATH_TO_ANALYSIS --labe
 
 ## Interpretation
 
+## Nonbinary Mercury original-evidence trial
+
+The manual `analysis_mercury_nonbinary_twenty.yaml` workflow runs the frozen
+browser-verified nonbinary core twenty through Mercury only. Labels and combined
+records are never copied into the input fixture or loaded by inference.
+This dataset initially has no evidence packages, so each task receives one durable
+Tavily basic search, up to six free body fetches, and explicit snippet-only leads
+where bodies are unavailable. This is an isolated acquisition budget, below the
+three-basic-search ceiling. Existing campaign budgets are never reset.
+
+Exact multiple-choice options use a Choice distribution. Numeric and discrete
+questions use at most twenty intervals aligned with the platform grid plus allowed
+tails, then deterministic interpolation within intervals to create a CDF. This is
+a coarse distribution approximation; it does not recover exact point forecasts.
+The three date cases use explicitly research-only UTC intervals because API bounds
+and question IDs are missing. They cannot certify official payload compatibility.
+
+Focused diagnostic judgments trigger rereading of additional saved original spans.
+Every first-pass span is retained, and no first-pass model conclusion is treated as
+a fact. Each question has at most two physical Mercury attempts across both stages.
+All search attempts, free-fetch failures, original bodies, snippets, omissions and
+provider records are preserved in artifacts. No other model variant is run.
+
 ## Conditional Mercury original-evidence pilot
 
 `mercury_evidence_chain` is an isolated experimental route. It does not change

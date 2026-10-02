@@ -49,9 +49,9 @@ def full_packet(bundle):
     return packet
 
 
-def request_bytes(state):
+def request_bytes(state, decision_questions=None):
     import json
-    return len(json.dumps({'model': decisions.MODEL, 'state': state, 'questions': questions()}).encode())
+    return len(json.dumps({'model': decisions.MODEL, 'state': state, 'questions': decision_questions or questions()}).encode())
 
 
 def initial_state(packet):
@@ -63,7 +63,7 @@ def initial_state(packet):
             'context_omitted': True}
 
 
-def select(packet, state=None, reasons=(), limit=FIRST_BYTES):
+def select(packet, state=None, reasons=(), limit=FIRST_BYTES, decision_questions=None):
     """Add exact spans, balancing sources; never remove first-pass evidence."""
     state = copy.deepcopy(state) if state is not None else initial_state(packet)
     terms = set(re.findall(r'[a-z0-9]{4,}', str(packet['question']).lower()))
@@ -91,7 +91,7 @@ def select(packet, state=None, reasons=(), limit=FIRST_BYTES):
                   ('source_id', 'url', 'body_sha256', 'capture_metadata', 'saved_body_truncated') if k in s}
                   for s in packet['sources']}
     kept = {s['evidence_id'] for s in state['evidence']}
-    if request_bytes(state) > limit:
+    if request_bytes(state, decision_questions) > limit:
         raise ValueError('Existing state exceeds decision byte bound')
     for index in range(max((len(v) for v in candidates.values()), default=0)):
         for source, spans in candidates.items():
@@ -102,7 +102,7 @@ def select(packet, state=None, reasons=(), limit=FIRST_BYTES):
             state['evidence'].append(copy.deepcopy(span))
             if fresh:
                 state['sources'].append(source_map[source])
-            if request_bytes(state) > limit:
+            if request_bytes(state, decision_questions) > limit:
                 state['evidence'].pop()
                 if fresh:
                     state['sources'].pop()
@@ -111,7 +111,7 @@ def select(packet, state=None, reasons=(), limit=FIRST_BYTES):
     omitted = [s['evidence_id'] for s in packet['evidence'] if s['evidence_id'] not in kept]
     state['context_omitted'] = bool(omitted)
     return state, {'selected_ids': sorted(kept), 'omitted_ids': omitted,
-                   'state_sha256': digest(state), 'request_bytes': request_bytes(state),
+                   'state_sha256': digest(state), 'request_bytes': request_bytes(state, decision_questions),
                    'request_byte_limit': limit, 'routing_focus': list(reasons),
                    'selection': 'Source-balanced header, lexical/diagnostic focus and adjacent original passages.'}
 
@@ -133,17 +133,18 @@ def route(response):
     return list(dict.fromkeys(reasons))
 
 
-def call(state, folder):
+def call(state, folder, decision_questions=None):
     """One physical attempt per stage, cached only under an exact request identity."""
-    request = {'model': decisions.MODEL, 'state': state, 'questions': questions()}
+    registry = decision_questions or questions()
+    request = {'model': decisions.MODEL, 'state': state, 'questions': registry}
     identity = {'request_sha256': digest(request)}
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen decision stage changed')
     save(folder/'identity.json', identity)
     save(folder/'request.json', request)
     if (folder/'response.json').exists():
-        return decisions.validate(load(folder/'response.json'), questions())
-    response = decisions.decide(state, questions(), os.environ['OPENROUTER_API_KEY'], Journal(folder/'http', 1))
+        return decisions.validate(load(folder/'response.json'), registry)
+    response = decisions.decide(state, registry, os.environ['OPENROUTER_API_KEY'], Journal(folder/'http', 1))
     save(folder/'response.json', response)
     return response
 
