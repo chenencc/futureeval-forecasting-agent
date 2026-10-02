@@ -138,6 +138,50 @@ class OfficialTests(unittest.TestCase):
         self.assertEqual(calls, ['collect', 'infer'])
         self.assertEqual(self.client.posts, 1)
 
+    def test_seven_questions_resume_as_five_then_two_without_repeat(self):
+        incoming = self.root / 'incoming'
+        documents = {}
+        rows = []
+        for ident in range(1, 8):
+            document = copy.deepcopy(self.client.document)
+            document['id'] = 100 + ident
+            document['question']['id'] = ident
+            document['question']['scheduled_close_time'] = (utc() + timedelta(days=1, minutes=ident)).isoformat()
+            documents[str(100 + ident)] = document
+            save(incoming / f'{100 + ident}.json', {'post': document})
+            rows.append({'question_id': ident, 'post_id': 100 + ident, 'open': True})
+        save(incoming / 'index.json', {'tournament': 'fall-futureeval-2026',
+            'open_scan_complete': True, 'retrieved_at_utc': utc().isoformat(),
+            'open_question_count': 7, 'questions': list(reversed(rows))})
+        self.client.post = lambda ident: copy.deepcopy(documents[str(ident)])
+        acquired, analyzed, submitted = [], [], []
+        def collect(request, folder):
+            acquired.append(request['id'])
+            bundle = {'request': request, 'result': {'incomplete': False}}
+            save(folder / 'bundle.json', bundle)
+            return bundle
+        def infer(source, folder, ident):
+            analyzed.append(ident)
+            candidate = {'payload': {'question': int(ident), 'probability_yes': .63}, 'comment': 'Offline reasoning'}
+            save(folder / 'candidate.json', candidate)
+            return candidate
+        def deliver(client, task, *args, **kwargs):
+            submitted.append(task['id'])
+            return {'status': 'accepted'}
+        args = dict(enabled=True, client=self.client, collect=collect, infer=infer,
+            supplement=lambda b, f, i: b, deliver_fn=deliver)
+        first = live.run(self.root / 'official', incoming, **args)
+        self.assertEqual(first['processed_ids'], ['1', '2', '3', '4', '5'])
+        self.assertEqual(first['state_distribution'], {'accepted': 5, 'queued': 2})
+        second = live.run(self.root / 'official', incoming, **args)
+        self.assertEqual(second['processed_ids'], ['6', '7'])
+        self.assertEqual(second['state_distribution'], {'accepted': 7})
+        third = live.run(self.root / 'official', incoming, **args)
+        self.assertEqual(third['processed_ids'], [])
+        self.assertEqual(acquired, list(map(str, range(1, 8))))
+        self.assertEqual(analyzed, acquired)
+        self.assertEqual(submitted, acquired)
+
     def test_closed_question_does_not_acquire_or_submit(self):
         incoming = self.snapshot()
         self.client.document['question']['status'] = 'closed'
