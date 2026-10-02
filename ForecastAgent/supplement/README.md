@@ -20,8 +20,9 @@ subrequests, blocks unnecessary media, and uses a 20-second navigation budget.
 DNS checks and browser shutdown can add overhead. Browser records distinguish
 rendered DOM bytes from original HTTP response bytes. Failed/reserved operations
 consume their allowance. No URL is attempted twice by the same supplement.
-HTTP redirects are validated; redirect hops are not counted as separate repair
-operations. All limits are separate from original search/provider quotas.
+HTTP redirects are validated, recorded and limited to five; redirect hops are
+not counted as separate repair operations. All limits are separate from original
+search/provider quotas. Historical strict tasks never fetch current content.
 
 ## GitHub Actions
 

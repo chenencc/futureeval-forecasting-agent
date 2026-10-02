@@ -67,6 +67,8 @@ jobs:
           QUESTION_IDS: ${{ inputs.question_ids }}
           NETWORK_ENABLED: ${{ inputs.network }}
           SUPPLEMENT_SOURCE_RUN_ID: ${{ inputs.source_run }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ inputs.resume_run }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/supplement-output
         run: |
           python -c "import shutil; shutil.make_archive('snapshots/supplement-parent', 'zip', 'snapshots/supplement-parent')"
           flags=()

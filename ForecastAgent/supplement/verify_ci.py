@@ -27,9 +27,11 @@ def main():
     assert sum(r['allowed'] for r in page['browser_audit']['requests'])<=25
     import openpyxl
     book=openpyxl.Workbook();book.active.append(['date','value','unit']);book.active.append(['2026-02-18',20.31,'Celsius'])
+    second=book.create_sheet('Second');second.append(['different_measurement',77])
     raw=io.BytesIO();book.save(raw)
     spreadsheet=parse_spreadsheet(raw.getvalue(),'https://example.org/data.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     assert '20.31' in spreadsheet['content'] and spreadsheet['documents'][1]['metadata']['row']==2
+    assert any(d['metadata']['sheet']=='Second' and '77' in d['page_content'] for d in spreadsheet['documents'])
     from pathlib import Path
     output=Path('snapshots/supplement-ci');output.mkdir(parents=True,exist_ok=True)
     (output/'fixture-report.json').write_text(json.dumps({'chromium_dynamic_fixture':'passed','xlsx_fixture':'passed',
