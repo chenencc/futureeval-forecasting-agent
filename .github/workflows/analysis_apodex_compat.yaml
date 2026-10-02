@@ -7,6 +7,11 @@ on:
         options: ['42491', '44547', '42489', '40852', '41480', '42485', '43491']
         default: '42491'
         description: One frozen development question
+      profile:
+        type: choice
+        options: ['bounded_output', 'low_effort']
+        default: 'bounded_output'
+        description: Explicit generation profile recorded in the frozen manifest
 permissions:
   contents: read
   actions: read
@@ -35,7 +40,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/trial-supplement
       - name: Validate budget and output compatibility on one question
-        run: python -m ForecastAgent.analysis.apodex_compat_trial --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --id ${{ inputs.question_id }}
+        run: python -m ForecastAgent.analysis.apodex_compat_trial --inputs snapshots/trial-input --supplements snapshots/trial-supplement --output snapshots/trial --id ${{ inputs.question_id }} --profile ${{ inputs.profile }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           FORECAST_MODEL: apodex/apodex-1.1-mini:free
