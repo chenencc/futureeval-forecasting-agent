@@ -110,8 +110,10 @@ def drain(root, collector_root, *, execute=False, token='', limit=5,
                     origin = 'single_available_reasoning_route'
                 if type(probability) not in (int, float) or not 0 <= probability <= 1:
                     raise ValueError('Invalid model probability; no operational default permitted')
+                from ForecastAgent.analysis.distributions import clip_probability, POLICY
                 candidate = {'schema': 'competition-shadow-candidate-v1', 'id': ident,
-                    'probability_yes': probability, 'selection': origin, 'analysis_status': result['status'],
+                    'probability_yes': clip_probability(probability), 'raw_probability_yes': probability,
+                    'probability_policy': POLICY, 'selection': origin, 'analysis_status': result['status'],
                     'quality': routes.get('quality'), 'created_at_utc': clock(),
                     'frozen_input_sha256': task['frozen_input_sha256'], 'routes_sha256': digest(routes),
                     'deadline_utc': task['question']['deadline_utc'],
