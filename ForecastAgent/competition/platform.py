@@ -47,7 +47,9 @@ class Client:
     def post(self, ident):
         if not str(ident).isdecimal():
             raise ValueError('Numeric post ID required')
-        return self.request('GET', f'posts/{ident}/?include_descriptions=true&with_cp=false')['data']
+        # User forecast history is only populated when with_cp is enabled.
+        # Community forecasts are never copied into the model's live request.
+        return self.request('GET', f'posts/{ident}/?include_descriptions=true&with_cp=true')['data']
 
     def comments(self, post_id):
         path = 'comments/?' + urlencode({'post': int(post_id), 'author': BOT_ID, 'is_private': 'true', 'limit': 100})
@@ -61,6 +63,18 @@ class Client:
             if len(rows) < 100:
                 return result
         raise ValueError('Private comment readback pagination incomplete')
+
+
+def has_existing_forecast(question):
+    """Fail closed when authenticated forecast history cannot be inspected."""
+    own = question.get('my_forecasts')
+    if not isinstance(own, dict) or 'latest' not in own or not isinstance(own.get('history'), list):
+        raise RuntimeError('Own forecast history unreadable; refuse acquisition or duplicate submission')
+    rows = own['history'] + ([own['latest']] if own['latest'] is not None else [])
+    for row in rows:
+        if not isinstance(row, dict) or row.get('author_id') != BOT_ID:
+            raise RuntimeError('Own forecast history identity unreadable; refuse duplicate submission')
+    return bool(rows)
 
 
 def forecast_matches(question, candidate):
@@ -125,6 +139,9 @@ def deliver(client, task, candidate, comment, folder, *, enabled=False):
     deadline = descriptor(post, question)['deadline_utc']
     if not deadline or utc(deadline) <= utc():
         raise RuntimeError('Forecasting deadline has passed')
+    if has_existing_forecast(question):
+        return {'status': 'already_forecasted', 'checked_at_utc': utc().isoformat(),
+            'reason': 'Authenticated platform forecast exists; no new POST'}
     record = {'schema': 'official-submission-v1', **expected, 'status': 'reserved',
         'reserved_at_utc': utc().isoformat(), 'commit': task.get('commit'), 'method': 'POST',
         'endpoint': 'questions/bulk-forecast-comment/', 'atomic_forecast_and_comment': True}

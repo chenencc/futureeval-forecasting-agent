@@ -11,12 +11,12 @@ from pathlib import Path
 
 from ForecastAgent.analysis.distributions import POLICY, payload
 from ForecastAgent.competition.nonbinary_debug import blind_input
-from ForecastAgent.competition.platform import Client, deliver
+from ForecastAgent.competition.platform import Client, deliver, has_existing_forecast
 from ForecastAgent.competition.queue import descriptor, digest, load, questions, save, utc
 from ForecastAgent.runtime.task_lock import task_lock
 
 SCHEMA = 'official-competition-v1'
-TERMINAL = {'accepted', 'closed', 'deadline_missed', 'blocked_integrity', 'provider_blocked', 'platform_rejected'}
+TERMINAL = {'accepted', 'already_forecasted', 'closed', 'deadline_missed', 'blocked_integrity', 'provider_blocked', 'platform_rejected'}
 
 
 def live_request(post, question):
@@ -186,6 +186,10 @@ def run(root, snapshot_root, *, enabled=False, legacy_root=None, limit=5, client
                     continue
                 if not desc['deadline_utc'] or utc(desc['deadline_utc']) <= utc():
                     task['stage'] = 'deadline_missed'
+                    save(state_path, state)
+                    continue
+                if has_existing_forecast(question):
+                    task.update(stage='already_forecasted', platform_forecast_checked_at_utc=utc().isoformat())
                     save(state_path, state)
                     continue
                 identity = rule_identity(post, question)

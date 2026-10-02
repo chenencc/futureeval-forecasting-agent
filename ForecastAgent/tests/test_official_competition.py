@@ -17,6 +17,7 @@ class FakePlatform:
         self.fail_after_accept = False
         self.document = {'id': 42, 'title': 'Will the event occur?', 'user_permission': 'forecaster',
             'question': {'id': 7, 'type': 'binary', 'status': 'open',
+                'my_forecasts': {'latest': None, 'history': []},
                 'resolution_criteria': 'YES if the official announcement occurs.',
                 'scheduled_close_time': (utc() + timedelta(days=1)).isoformat()}}
 
@@ -143,6 +144,38 @@ class OfficialTests(unittest.TestCase):
         report = live.run(self.root / 'official', incoming, enabled=True, client=self.client,
             collect=lambda *a: self.fail('Closed question collected'))
         self.assertEqual(report['state_distribution'], {'closed': 1})
+        self.assertEqual(self.client.posts, 0)
+
+    def test_existing_platform_forecast_skips_all_paid_stages(self):
+        self.client.document['question']['my_forecasts'] = {'latest': {
+            'author_id': platform.BOT_ID, 'forecast_values': [.4, .6]}, 'history': []}
+        args = dict(enabled=True, client=self.client,
+            collect=lambda *a: self.fail('Existing forecast collected'),
+            supplement=lambda *a: self.fail('Existing forecast supplemented'),
+            infer=lambda *a: self.fail('Existing forecast analyzed'))
+        for _ in range(2):
+            report = live.run(self.root / 'official', self.snapshot(), **args)
+            self.assertEqual(report['state_distribution'], {'already_forecasted': 1})
+        self.assertEqual(self.client.posts, 0)
+
+    def test_delivery_checks_platform_again_before_first_post(self):
+        self.client.document['question']['my_forecasts'] = {'latest': {
+            'author_id': platform.BOT_ID, 'forecast_values': [.4, .6]}, 'history': []}
+        result = platform.deliver(self.client, self.task, {'question': 7, 'probability_yes': .63},
+            'Automatic reasoning', self.root / 'delivery', enabled=True)
+        self.assertEqual(result['status'], 'already_forecasted')
+        self.assertEqual(self.client.posts, 0)
+        self.assertFalse((self.root / 'delivery' / 'submission.json').exists())
+
+    def test_unreadable_platform_history_prevents_spend(self):
+        for history in [None, {'latest': None}, {'latest': {'author_id': 1}, 'history': []}]:
+            self.client.document['question']['my_forecasts'] = history
+            report = live.run(self.root / 'official', self.snapshot(), enabled=True, client=self.client,
+                collect=lambda *a: self.fail('Unreadable history incurred collection'))
+            self.assertEqual(report['state_distribution'], {'retry_wait': 1})
+            state = load(self.root / 'official' / 'campaign.json')
+            state['tasks']['7']['retry_at_utc'] = None
+            save(self.root / 'official' / 'campaign.json', state)
         self.assertEqual(self.client.posts, 0)
 
     def test_collection_cap_preserved(self):
