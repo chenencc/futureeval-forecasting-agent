@@ -10,8 +10,8 @@ from ForecastAgent.tests.test_analysis_p0 import bundle
 
 def response(questions):
     return {'model': cc.decisions.MODEL, 'answers': {k: {'type': 'choice', 'choice': 'insufficient',
-        'probabilities': {'supports': .1, 'refutes': .1, 'insufficient': .7, 'not_applicable': .1},
-        'confidence': .6} for k in questions}}
+        'probabilities': {option:(1.0 if option=='insufficient' else 0.0) for option in q['criteria']},
+        'confidence': .6} for k,q in questions.items()}}
 
 
 class ConditionChainTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class ConditionChainTests(unittest.TestCase):
         b=bundle(); _,s,q,bindings=cc.prepare(b)
         r=cc.bind(s,response(q),q,bindings,b)
         self.assertFalse(r['semantic_truth_verified'])
-        self.assertEqual(len(r['receipts']),len(q))
+        self.assertEqual(len(r['receipts']),len(bindings))
         broken=copy.deepcopy(b);broken['pages'][s['evidence'][0]['url']]['content']='changed'
         with self.assertRaises(ValueError):cc.bind(s,response(q),q,bindings,broken)
 
