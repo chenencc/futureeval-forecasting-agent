@@ -81,8 +81,12 @@ def evaluate(inputs, output, labels):
                        'new': metrics(row['clipped_probability_yes'], y),
                        'old': metrics(row['baseline_probability_yes'], y)})
     def aggregate(items):
-        return {'n': len(items), **{route: {k: sum(r[route][k] for r in items)/len(items)
-                     for k in ('brier', 'log_loss', 'correct_at_half')} for route in ('old', 'new')} if items else {}}
+        summary = {'n': len(items)}
+        if items:
+            summary.update({route: {k: sum(r[route][k] for r in items)/len(items)
+                           for k in ('brier', 'log_loss', 'correct_at_half')}
+                           for route in ('old', 'new')})
+        return summary
     report = {'protocol': chain.PROTOCOL, 'output_sha256_before_labels': frozen,
               'evaluation_warning': WARNING, 'error_selected_development_set': True,
               'same_saved_bodies_different_selection_and_instructions': True,

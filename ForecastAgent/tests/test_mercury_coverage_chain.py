@@ -6,11 +6,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ForecastAgent.analysis import mercury_coverage_chain as chain
+from ForecastAgent.analysis import coverage_pilot
 from ForecastAgent.analysis.pilot import load
 from ForecastAgent.tests.test_mercury_evidence_chain import bundle, response
 
 
 class CoverageTests(unittest.TestCase):
+    def test_pilot_scope(self):
+        self.assertEqual(len(coverage_pilot.IDS), 12)
+        self.assertEqual(len(set(coverage_pilot.IDS)), 12)
+        self.assertTrue(set(coverage_pilot.ERROR_IDS).isdisjoint(coverage_pilot.CONTROL_IDS))
     def test_exact_table_recall_and_duplicate_omission(self):
         original = bundle()
         original['request'].update(question='Will Acme desktop share exceed 8% in August 2026?',
