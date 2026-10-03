@@ -3,7 +3,7 @@ import re
 import ipaddress
 from urllib.parse import urlsplit, urlunsplit, urljoin
 
-STOP = set("will before after have from this that with more than into according question resolves yes total currently page official service area https http www com org gov html".split())
+STOP = set("will before after have from this that with more than into according question resolves yes total currently page official service area https http www com org gov html approval approved regulatory regulation authority announced announcement news report reports release issued update updates during about been which would should latest date month year".split())
 
 def tokens(text):
     return {t.lower() for t in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", text) if t.lower() not in STOP}
@@ -50,7 +50,7 @@ def discover(bundle, gaps, limit=3):
             elif isinstance(link,dict):add(link.get('url') or link.get('href'),link.get('text',''),'saved_page_link',parent)
     plans=[]
     for gap in gaps:
-        if gap['category'] not in {'access_restricted','missing_url','index_or_banner','javascript_shell','format_or_parser_gap','saved_empty_body'}:continue
+        if gap['category'] not in {'access_restricted','missing_url','index_or_banner','javascript_shell','format_or_parser_gap','saved_empty_body','transport_or_unknown','size_limit'}:continue
         source=gap['url'];host=urlsplit(source).hostname;ranked={}
         for url,label,origin,parent in observed:
             if url==safe_url(source):continue

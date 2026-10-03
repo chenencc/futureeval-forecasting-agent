@@ -131,7 +131,15 @@ def fetch_document(url):
         return page
 
 
-def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
+def extend_budget(previous, identity, reason):
+    """Authorize a monotonic free-tool extension without changing input or reservations."""
+    caps={'browser_limit_per_task':4,'http_limit_per_task':10}
+    if not reason or {k:v for k,v in previous.items() if k not in caps}!={k:v for k,v in identity.items() if k not in caps}:
+        return False
+    return all(0<=previous[k]<=identity[k]<=maximum for k,maximum in caps.items())
+
+
+def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2,budget_extension_reason=None):
     if not 1<=len(ids)<=5 or len(set(ids))!=len(ids) or not all(i.isdecimal() for i in ids):
         raise ValueError('Select one to five unique task IDs')
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
@@ -145,10 +153,17 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
             'http_limit_per_task':http_limit,'browser_request_limit_per_render':25,
             'source_run_id':__import__('os').environ.get('SUPPLEMENT_SOURCE_RUN_ID')}
         if (output/'manifest.json').exists():
-            previous=json.loads((output/'manifest.json').read_text())
+            previous=json.loads((output/'manifest.json').read_text(encoding='utf-8'))
             if previous!=identity:
+                if extend_budget(previous,identity,budget_extension_reason):
+                    audit_path=output/'budget-extensions.json'
+                    history=json.loads(audit_path.read_text(encoding='utf-8')) if audit_path.exists() else []
+                    history.append({'previous':previous,'replacement':identity,'reason':budget_extension_reason,
+                        'at_utc':now(),'budget_reset':False,'existing_attempts_preserved':True})
+                    save(audit_path,history)
+                    previous=identity
                 # Initial pilot bound ZIP packaging; restore binds original member bytes.
-                compatible=({k:v for k,v in previous.items() if k!='parent_sha256'} ==
+                compatible=previous==identity or ({k:v for k,v in previous.items() if k!='parent_sha256'} ==
                     {k:v for k,v in identity.items() if k!='parent_files_sha256'})
                 old_plan=json.loads((output/'gap-inventory.json').read_text(encoding='utf-8'))
                 compatible=compatible and old_plan.get('parent_input_sha256')==plan.get('parent_input_sha256')
@@ -159,7 +174,7 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                     old_child=json.loads(child_path.read_text(encoding='utf-8'))
                     compatible=compatible and old_child.get('parent_bundle_sha256')==parent_identity[f'tasks/{ident}/bundle.json']
                 if not compatible:raise ValueError('Frozen supplement input or budget changed')
-                save(output/'manifest-packaging-migration.json',{'previous':previous,'replacement':identity,
+                if previous!=identity:save(output/'manifest-packaging-migration.json',{'previous':previous,'replacement':identity,
                     'reason':'Bind identical original member bytes across artifact repackaging; retain all reservations and quotas.',
                     'budget_reset':False})
         save(output/'manifest.json',identity);save(output/'gap-inventory.json',plan)
@@ -227,7 +242,11 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                             'proposed_route':'bounded_discovered_public_source','saved_raw_available':False,
                             'discovery_provenance':candidate,'kind':'discovered_source','task_id':ident})
                 proposals.sort(key=lambda r:(-r['discovery_provenance']['score'],r['url']))
-                candidates=proposals+candidates
+                # Retain exact rule sources first, then repair original failures.
+                # Generic alternatives must not consume the entire repair allowance.
+                primary=[p for p in proposals if p['discovery_provenance']['kind']=='rule_primary_source']
+                alternatives=[p for p in proposals if p not in primary]
+                candidates=primary+candidates+alternatives
                 save(path,child)
                 for row in candidates:
                     url=row['url'];category=row['category'];page=captures.get(url,{})
