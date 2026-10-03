@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from ForecastAgent.infrastructure.storage import split, verify
+from ForecastAgent.infrastructure import prune_imported
 
 spec = importlib.util.spec_from_file_location('watch', Path(__file__).parent / 'public_monitor/watch.py')
 watch = importlib.util.module_from_spec(spec)
@@ -29,6 +31,7 @@ class Acceptance(unittest.TestCase):
             self.assertFalse(report['quota_reset'])
             checkpoint = first / 'checkpoint'
             self.assertTrue((checkpoint / 'tasks/1/bundle.json').exists())
+            self.assertEqual(json.loads((checkpoint / 'tasks/1/bundle.json').read_text())['search_attempts'], [1, 2, 3])
             self.assertFalse((checkpoint / 'tasks/2/bundle.json').exists())
             self.assertTrue((first / 'evidence/tasks/2/bundle.json').exists())
             self.assertTrue((checkpoint / 'tasks/2/submission.json').exists())
@@ -64,6 +67,26 @@ class Acceptance(unittest.TestCase):
             return {'results': [], 'next': '/api/posts/?offset=100'}
         self.assertEqual(watch.open_ids('unused', empty), set())
         self.assertEqual(len(empty_calls), 1)
+
+    def test_cleanup_protects_recent_state_not_highest_ids(self):
+        import sqlite3
+        from contextlib import closing
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with closing(sqlite3.connect(root / 'index.sqlite3')) as db:
+                db.execute('CREATE TABLE artifacts(repo TEXT, artifact_id TEXT, archive_sha256 TEXT, status TEXT)')
+                db.commit()
+            items = [{'id': ident, 'name': 'futureeval-official-state', 'expired': False,
+                'created_at': timestamp, 'size_in_bytes': 10} for ident, timestamp in
+                [(999, '2020-01-01T00:00:00Z'), (1, '2026-01-01T00:00:00Z'),
+                 (2, '2026-02-01T00:00:00Z'), (3, '2026-03-01T00:00:00Z')]]
+            def fake_api(gh, path, method='GET'):
+                self.assertEqual(method, 'GET')
+                return {'artifacts': items} if '/actions/artifacts?' in path else {'workflow_runs': []}
+            with patch.object(prune_imported, 'api', fake_api):
+                report = prune_imported.run(root, 'owner/repo', 'unused')
+            self.assertEqual(report['protected_ids'], [1, 2, 3])
+            self.assertEqual(report['deleted_ids'], [])
 
 
 if __name__ == '__main__':

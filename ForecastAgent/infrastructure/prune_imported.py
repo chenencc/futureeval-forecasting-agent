@@ -48,10 +48,10 @@ def run(root, repo, gh, *, execute=False):
     recovery_names = {'futureeval-official-state', 'futureeval-official-control',
         'futureeval-monitor-state', 'futureeval-monitor-health', 'futureeval-collection-state'}
     protected = {a['id'] for name, group in groups.items() if name in recovery_names
-        for a in sorted(group, key=lambda x: x['id'], reverse=True)[:3]}
+        for a in sorted(group, key=lambda x: (x['created_at'], x['id']), reverse=True)[:3]}
     # Recent monitor scans can still be referenced by a delayed workflow_run event.
     scans = [a for a in artifacts if a['name'].startswith('futureeval-questions-') and not a['expired']]
-    protected.update(a['id'] for a in sorted(scans, key=lambda x: x['id'], reverse=True)[:3])
+    protected.update(a['id'] for a in sorted(scans, key=lambda x: (x['created_at'], x['id']), reverse=True)[:3])
     # Do not remove inputs/state used by active workers, even with a local backup.
     active = []
     for status in ('in_progress', 'queued', 'waiting', 'pending', 'requested'):
@@ -72,6 +72,9 @@ def run(root, repo, gh, *, execute=False):
         'inventory_bytes': sum(a['size_in_bytes'] for a in artifacts if not a['expired']),
         'verified_candidate_bytes': sum(a['size_in_bytes'] for a in candidates),
         'candidate_ids': [a['id'] for a in candidates], 'protected_ids': sorted(protected),
+        'candidates': [{'id': a['id'], 'name': a['name'], 'size_bytes': a['size_in_bytes'],
+            'run_id': (a.get('workflow_run') or {}).get('id'),
+            'local_zip_sha256': imported[str(a['id'])]} for a in candidates],
         'active_runs': len(active), 'deleted_ids': []}
     for item in candidates if execute else []:
         api(gh, f"repos/{repo}/actions/artifacts/{item['id']}", 'DELETE')

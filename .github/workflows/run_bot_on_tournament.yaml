@@ -193,7 +193,7 @@ jobs:
             const {owner,repo}=context.repo;
             const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
             for(const name of ['futureeval-monitor-state','futureeval-monitor-health']) {
-              const items=artifacts.filter(a=>a.name===name&&!a.expired).sort((a,b)=>b.id-a.id);
+              const items=artifacts.filter(a=>a.name===name&&!a.expired).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||b.id-a.id);
               if(!items.some(a=>a.workflow_run?.id===context.runId)) throw new Error('Current monitor state not confirmed');
               for(const artifact of items.slice(3,13))
                 await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
