@@ -31,3 +31,31 @@ backtest. Missing candidates can reflect query design, first-page limits, absent
 contracts or API errors. No-match and API-error counts are reported separately.
 
 API reference: https://github.com/Polymarket/py-sdk/blob/main/src/polymarket/clients/public.py
+
+## No-Stream-inspired trial (2026-10-03)
+
+Run: https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37090846344
+Implementation commit: `6a6b809`.
+
+The same twenty questions reused cached response projections, added one public
+Gamma query each, formed a deduplicated pool of up to sixty child contracts, and
+made one free Super ranking request per question. All twenty calls succeeded.
+Four questions retained nine reference contracts: four other-cut rows and five
+driver/consequence rows. No row was graded same-quantity/same-date. These are model
+classifications, not independently verified equivalence labels or accuracy.
+
+Actual additional usage: twenty Gamma requests and twenty model HTTP attempts;
+469,091 reported prompt tokens and 1,111 completion tokens. No Tavily, Exa,
+forecast submissions or production changes.
+
+Known limits to address before expanding:
+
+- Nineteen pools reached the sixty-child ceiling. Large event families can crowd
+  out later API results. Preserve event families and report omitted rows before
+  treating the selected slate as exhaustive.
+- Contract direction must be explicit. A YES on removal is not a YES on
+  participation, even when both concern the same tournament.
+- Ranking reads bounded rules text and must retain original complete responses
+  for subsequent clause review.
+- Query expansion and pooling changed together; this is an exploratory pipeline
+  comparison. A frozen-pool comparison is needed to isolate the ranker's effect.
