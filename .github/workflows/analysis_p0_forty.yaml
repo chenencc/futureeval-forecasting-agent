@@ -1,7 +1,11 @@
-name: P0 analysis paired forty saved evidence experiment
+name: Condition bindings paired forty saved evidence experiment
 on:
   workflow_dispatch:
     inputs:
+      pilot_only:
+        description: Run only the first five binary cases before expanding
+        type: boolean
+        default: true
       resume_run:
         description: Restore exact experiment journals without resetting allowances
         required: false
@@ -9,16 +13,14 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: analysis-p0-forty
+  group: analysis-conditions-forty
   cancel-in-progress: false
 jobs:
   paired:
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix:
-        cohort: [binary, nonbinary]
-        batch: [1, 2, 3, 4]
+      matrix: ${{ fromJSON(inputs.pilot_only && '{"include":[{"cohort":"binary","batch":1}]}' || '{"cohort":["binary","nonbinary"],"batch":[1,2,3,4]}') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -58,12 +60,12 @@ jobs:
       - uses: actions/download-artifact@v4
         if: inputs.resume_run != ''
         with:
-          name: analysis-p0-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/paired
       - name: Replay preserved collection and repair then analyze with Mercury
-        run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired --strategy p0
+        run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired --strategy conditions
         env:
           COHORT: ${{ matrix.cohort }}
           BATCH: ${{ matrix.batch }}
@@ -71,7 +73,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: analysis-p0-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           path: snapshots/paired
           retention-days: 90
 
