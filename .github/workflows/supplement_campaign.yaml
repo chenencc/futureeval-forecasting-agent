@@ -6,7 +6,7 @@ on:
         description: 'Existing campaign or free repair of the completed fifty'
         default: campaign
         type: choice
-        options: [campaign, recollection50]
+        options: [campaign, recollection50, targeted6]
       source_run:
         description: 'Frozen raw acquisition parent run'
         default: '36948699455'
@@ -26,8 +26,57 @@ concurrency:
   group: supplement-acquisition
   cancel-in-progress: false
 jobs:
+  targeted-six:
+    if: inputs.mode == 'targeted6'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_targeted_supplement
+      - name: Require journals when retrying a dispatched repair
+        run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: recollection-fifty-free-repair-*
+          merge-multiple: false
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/targeted-parent
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: repaired-fifty-analysis-*
+          merge-multiple: false
+          run-id: ${{ inputs.seed_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/targeted-baseline
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: targeted-supplement-six
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/targeted-six
+      - name: Repair observed URLs and replay retained analysis
+        run: python -u -m ForecastAgent.supplement.targeted run --parent snapshots/targeted-parent --baseline snapshots/targeted-baseline --output snapshots/targeted-six --plan ForecastAgent/fixtures/targeted_six_sources_v1.json --network --analyze
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - name: Evaluate after inference against separate labels
+        run: python -m ForecastAgent.supplement.targeted evaluate --baseline snapshots/targeted-baseline --output snapshots/targeted-six --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: targeted-supplement-six
+          path: snapshots/targeted-six
+          retention-days: 90
   repair:
-    if: inputs.mode != 'recollection50'
+    if: inputs.mode == 'campaign'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

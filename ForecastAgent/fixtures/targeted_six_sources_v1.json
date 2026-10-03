@@ -1,0 +1,32 @@
+{
+  "schema": "observed-source-repair-plan-v1",
+  "purpose": "Retrospective repair of identified evidence gaps; no clean historical backtest claim.",
+  "discovery": "Human-assisted public web search on 2026-10-03; discovered URLs only, not search snippets as evidence.",
+  "tasks": {
+    "40701": {"gap": "Exact US Hot 100 entry and AI authorship", "sources": [
+      {"url": "https://www.wired.com/story/ai-music-app-treblo-just-snitched-on-rubberz-song-of-the-summer/", "origin": "public_search", "role": "First-hand reporting on authorship investigation and chart entry"},
+      {"url": "https://ca.billboard.com/business/tech/canadian-musicians-generative-ai-study", "origin": "public_search", "role": "Chart publisher reporting distinguishing US and Canadian charts"}
+    ]},
+    "40967": {"gap": "Actual departure date and effective event stage", "sources": [
+      {"url": "https://www.gov.uk/government/speeches/keir-starmers-final-speech-as-prime-minister-20-july-2026", "origin": "public_search", "role": "Official departure speech and delivered date"}
+    ]},
+    "43435": {"gap": "Qualifying official foreign visit inside the specified interval", "sources": [
+      {"url": "https://www.vatican.va/content/leo-xiv/en/events/event.dir.html/content/vaticanevents/en/2026/8/22/visita-repubblica-san-marino.html", "origin": "public_search", "role": "Rule-designated official event calendar detail"},
+      {"url": "https://press.vatican.va/content/leo-xiv/en/speeches/2026/august/documents/20260822-visita-repubblica-sanmarino.html", "origin": "public_search", "role": "Official delivered address with place and event date"},
+      {"url": "https://press.vatican.va/content/salastampa/it/bollettino/pubblico/2026/08/22/0655/01222.html", "origin": "public_search", "role": "Official actual arrival bulletin"}
+    ]},
+    "43615": {"gap": "US chart peak plus publication date versus chart issue date", "sources": [
+      {"url": "https://ca.billboard.com/business/streaming/world-cup-final-streaming-gains-shakira-bts-madonna", "origin": "public_search", "role": "Publisher explanation of tracking, publication and chart issue dates"},
+      {"url": "https://en.wikipedia.org/wiki/Dai_Dai", "origin": "saved_source", "role": "Preserve full peak table as a secondary source requiring temporal cross-check"}
+    ]},
+    "44358": {"gap": "Both pilot zones, actual deployment and seven-day duration under permitted source rules", "sources": [
+      {"url": "https://www.reutersconnect.com/item/lebanese-army-takes-over-control-of-southern-town-from-israel-as-displaced-residents-await-return/dGFnOnJldXRlcnMuY29tLDIwMjY6bmV3c21sX1ZBOTY4NTIxMDcyMDI2UlAx", "origin": "public_search", "role": "Reuters primary on-scene deployment record"},
+      {"url": "https://www.timesofisrael.com/liveblog_entry/lebanese-army-deploys-in-southern-pilot-zone-after-israeli-withdrawal-official-says/", "origin": "public_search", "role": "Reuters-attributed and LAF statement reporting; provenance still requires checking"},
+      {"url": "https://cises.org/2026/08/21/the-lebanese-pilot-zone-initiative/", "origin": "public_search", "role": "Secondary account of geographical scope; not a substitute for permitted-source confirmation"}
+    ]},
+    "44693": {"gap": "August worldwide desktop-only Linux measurement", "sources": [
+      {"url": "https://gs.statcounter.com/os-market-share/desktop", "origin": "public_search", "role": "Official desktop-only page; verify displayed month"},
+      {"url": "https://gs.statcounter.com/os-market-share/desktop/worldwide/#monthly-202608-202608-bar", "origin": "explicit_period_selector_derived_from_rule_url", "role": "Official page with explicit August selector; verify rendered output, not URL alone", "browser_only": true}
+    ]}
+  }
+}
