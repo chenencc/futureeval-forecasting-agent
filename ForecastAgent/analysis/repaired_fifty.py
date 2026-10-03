@@ -12,9 +12,11 @@ from ForecastAgent.analysis.pilot import WARNING, digest, load, save
 PROTOCOL='repaired-fifty-mercury-v1'
 
 
-def run(inputs,output,batch,*,dry_run=False):
+def run(inputs,output,batch,*,dry_run=False,variant='after'):
     inputs,output=Path(inputs),Path(output)
-    paths=sorted(inputs.glob('recollection-fifty-free-repair-*/tasks/*/analysis-input.json'),key=lambda p:int(p.parent.name))
+    if variant not in ('before','after'):raise ValueError('Known evidence variant required')
+    pattern='handoffs/*/analysis-input.json' if variant=='before' else 'recollection-fifty-free-repair-*/tasks/*/analysis-input.json'
+    paths=sorted(inputs.glob(pattern),key=lambda p:int(p.parent.name))
     if len(paths)!=50 or len({p.parent.name for p in paths})!=50:
         raise ValueError('Exactly fifty unique repaired inputs required')
     if batch not in range(10):raise ValueError('Ten fixed batches of five required')
@@ -24,6 +26,8 @@ def run(inputs,output,batch,*,dry_run=False):
         'inputs':{p.parent.name:digest(load(p)) for p in selected},'dry_run':dry_run,
         'physical_http_cap_per_task':2,'outcome_labels_loaded':False,
         'chain_sha256':hashlib.sha256(Path(chain.__file__).read_bytes()).hexdigest()}
+    if variant=='before':
+        identity.update(evidence_variant='before_free_extension',excluded_ids=['43900','44799'])
     if (output/'manifest.json').exists() and load(output/'manifest.json')!=identity:
         raise ValueError('Frozen analysis input or version changed')
     save(output/'manifest.json',identity)
@@ -33,6 +37,12 @@ def run(inputs,output,batch,*,dry_run=False):
         save(task/'analysis-input.json',bundle)
         row={'id':ident,'status':'failed','bundle_sha256':digest(bundle),
              'saved_pages':len(bundle.get('pages',{})),'acquisition_gaps':bundle.get('gaps',[])}
+        if variant=='before' and ident in identity['excluded_ids']:
+            row.update(status='skipped_by_user',error='Excluded empty-body case; no model request')
+            save(task/'outcome.json',row);rows.append(row)
+            save(output/'report.json',{'protocol':PROTOCOL,'batch':batch,'rows':rows,
+                'outcome_labels_loaded':False,'new_retrieval_calls':0,'forecast_submissions':0})
+            continue
         try:
             row.update(chain.run_task(bundle,task/'mercury',dry_run=dry_run))
         except Exception as exc:
@@ -122,6 +132,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('action',choices=['run','evaluate'])
     p.add_argument('--inputs',required=True);p.add_argument('--output',required=True)
     p.add_argument('--batch',type=int);p.add_argument('--labels');p.add_argument('--dry-run',action='store_true')
+    p.add_argument('--variant',choices=['before','after'],default='after')
     a=p.parse_args()
-    if a.action=='run':run(a.inputs,a.output,a.batch,dry_run=a.dry_run)
+    if a.action=='run':run(a.inputs,a.output,a.batch,dry_run=a.dry_run,variant=a.variant)
     else:evaluate(a.inputs,a.labels,a.output)

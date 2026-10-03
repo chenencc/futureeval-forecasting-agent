@@ -5,11 +5,15 @@ on:
       mode:
         description: 'Historical twenty or newly repaired fifty'
         type: choice
-        options: [twenty, repaired50]
+        options: [twenty, repaired50, before48]
         default: twenty
       source_run:
         description: 'Completed free repair parent for repaired50'
         default: '37103408115'
+        type: string
+      baseline_run:
+        description: 'Frozen after-repair analysis reused for paired comparison'
+        default: '37106094306'
         type: string
       resume_run:
         description: Prior twenty-case run whose preserved journals should be resumed
@@ -22,7 +26,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   compare:
-    if: inputs.mode != 'repaired50'
+    if: inputs.mode == 'twenty'
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -74,7 +78,7 @@ jobs:
           path: snapshots/trial
           retention-days: 90
   repaired-fifty:
-    if: inputs.mode == 'repaired50'
+    if: inputs.mode == 'repaired50' || inputs.mode == 'before48'
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -87,7 +91,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest ForecastAgent.tests.test_mercury_evidence_chain ForecastAgent.tests.test_repaired_fifty
+      - run: python -m unittest ForecastAgent.tests.test_mercury_evidence_chain ForecastAgent.tests.test_repaired_fifty ForecastAgent.tests.test_paired_repair_fifty
       - name: Validate completed repair parent and restore policy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +99,7 @@ jobs:
           RESUME_RUN: ${{ inputs.resume_run }}
         run: |
           [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
-          [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .conclusion)" = success ]
+          [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .status)" = completed ]
           if [ "$GITHUB_RUN_ATTEMPT" != 1 ] && [ -z "$RESUME_RUN" ]; then
             echo 'Restore preserved analysis journals before retrying.'
             exit 1
@@ -105,9 +109,17 @@ jobs:
             [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RESUME_RUN" --jq .status)" = completed ]
           fi
       - uses: actions/download-artifact@v4
+        if: inputs.mode == 'repaired50'
         with:
           pattern: recollection-fifty-free-repair-*
           merge-multiple: false
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/repaired-fifty-inputs
+      - uses: actions/download-artifact@v4
+        if: inputs.mode == 'before48'
+        with:
+          name: recollection-120-v1-state
           run-id: ${{ inputs.source_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/repaired-fifty-inputs
@@ -121,7 +133,8 @@ jobs:
       - name: Analyze preserved originals without acquisition or submission
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
-        run: python -u -m ForecastAgent.analysis.repaired_fifty run --inputs snapshots/repaired-fifty-inputs --output snapshots/repaired-fifty-analysis --batch ${{ matrix.batch }}
+          EVIDENCE_VARIANT: ${{ inputs.mode == 'before48' && 'before' || 'after' }}
+        run: python -u -m ForecastAgent.analysis.repaired_fifty run --inputs snapshots/repaired-fifty-inputs --output snapshots/repaired-fifty-analysis --batch ${{ matrix.batch }} --variant "$EVIDENCE_VARIANT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -129,7 +142,7 @@ jobs:
           path: snapshots/repaired-fifty-analysis/
           retention-days: 90
   evaluate-fifty:
-    if: inputs.mode == 'repaired50'
+    if: inputs.mode == 'repaired50' || inputs.mode == 'before48'
     needs: repaired-fifty
     runs-on: ubuntu-latest
     steps:
@@ -144,6 +157,17 @@ jobs:
           path: snapshots/repaired-fifty-results
       - name: Score frozen outputs against separate evaluation labels
         run: python -m ForecastAgent.analysis.repaired_fifty evaluate --inputs snapshots/repaired-fifty-results --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json --output snapshots/repaired-fifty-metrics
+      - uses: actions/download-artifact@v4
+        if: inputs.mode == 'before48'
+        with:
+          pattern: repaired-fifty-analysis-*
+          merge-multiple: false
+          run-id: ${{ inputs.baseline_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/repaired-fifty-baseline
+      - name: Compare before and after on identical questions and analysis version
+        if: inputs.mode == 'before48'
+        run: python -m ForecastAgent.analysis.paired_repair_fifty --old-results snapshots/repaired-fifty-results --new-results snapshots/repaired-fifty-baseline --old-metrics snapshots/repaired-fifty-metrics/metrics.json --new-metrics snapshots/repaired-fifty-baseline/repaired-fifty-analysis-metrics/metrics.json --output snapshots/repaired-fifty-metrics
       - uses: actions/upload-artifact@v4
         with:
           name: repaired-fifty-analysis-metrics
