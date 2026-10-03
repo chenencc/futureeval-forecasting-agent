@@ -8,6 +8,38 @@ from ForecastAgent.runtime.collection_v2 import eligible
 STATUS_WORDS = r'\b(?:deprecated|discontinued|retired|sunset|shutdown|no longer)\b'
 
 
+def material_read_action(task):
+    """Prioritize observed, unspent dependencies under frozen task limits."""
+    if (not getattr(task,'raw_recall',False) or task.cutoff or
+        task.bundle.get('capacity',{}).get('material_no_progress_limit') is None or
+        task.budget()['page_fetch_remaining']<=0): return None
+    from ForecastAgent.supplement import materials
+    from ForecastAgent.evidence.source_identity import page_links
+    from ForecastAgent.supplement.source_contract import contract,match_source
+    attempted={canonical_url(a['url']) for a in task.bundle.get('fetch_attempts',[]) if a.get('url')}
+    catalog=task.catalog(); candidates={}; expected=contract(task.bundle['request'])
+    priority={'target_data_file':4,'source_attachment':3,'result_summary':2,'archive_navigation':1}
+    for parent,page in task.bundle['pages'].items():
+        info=materials.requirements(task.bundle['request'],parent,page)
+        parent_match=match_source(expected,parent,page.get('content',''))
+        for link in page_links(page,parent):
+            url=link['url'];key=canonical_url(url)
+            if key in attempted or key in task.bundle['pages'] or key not in catalog:continue
+            route=materials.dependency(task.bundle['request'],parent,page,link,info=info,match=parent_match)
+            if route['role'] not in priority or route['different_explicit_day']:continue
+            if match_source(expected,url,link['label'])['quarter_status']=='mismatch':continue
+            candidates[key]={'url':catalog[key]['url'],'role':route['role'],'parent_url':parent}
+    ordered=sorted(candidates.values(),key=lambda x:(-priority[x['role']],x['url']))[:4]
+    if not ordered:return None
+    return {'tool':'read_sources','urls':[x['url'] for x in ordered], 'material_dependencies':ordered,
+        'instruction':'Acquire these exact observed files/details before closing. They have not been fetched or reserved; do not repeat the parent directory. Routing does not establish semantic relevance or truth.'}
+
+
+def no_progress_limit(task):
+    capacity=task.bundle.get('capacity',{})
+    return capacity.get('material_no_progress_limit',2) if material_read_action(task) else capacity.get('raw_no_progress_limit',2)
+
+
 def discovery_read_action(task):
     """Require one real reading batch per discovery advance, before more search."""
     b = task.bundle
@@ -47,7 +79,7 @@ def raw_stop_reason(task):
     budget=task.budget()
     if primary_rescue(task):
         return None
-    if task.bundle['control'].get('no_progress_turns',0)>=2:
+    if task.bundle['control'].get('no_progress_turns',0)>=no_progress_limit(task):
         return 'raw_no_progress_limit'
     if budget['page_fetch_remaining']<=0:
         return 'raw_source_budget_exhausted'
@@ -131,7 +163,7 @@ def next_action(task):
         if rescue:
             return {'tool':'extract_failed_pages','candidates':rescue,
                 'instruction':'Rescue the failed named source once within the existing Extract budget; preserve vendor provenance and failures.'}
-        return discovery_read_action(task)
+        return material_read_action(task) or discovery_read_action(task)
     passages=pending_passages(task)
     from ForecastAgent.runtime.needs import active_needs
     critical={n['id'] for n in active_needs(task.bundle) if n['priority']=='critical'}

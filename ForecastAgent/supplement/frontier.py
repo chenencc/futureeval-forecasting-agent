@@ -7,6 +7,12 @@ from ForecastAgent.evidence.source_coverage import calendar_dates
 from ForecastAgent.evidence.source_checks import inspect_body
 
 POLICY = {'linked_total':16, 'linked_per_parent':4, 'linked_per_host':8}
+MATERIAL_POLICY = {'linked_total':32, 'linked_per_parent':8, 'linked_per_host':16}
+
+
+def material_policy(question):
+    return MATERIAL_POLICY if (question.get('budget_profile')=='solid_v2' and
+        question.get('experiment_id') and question.get('pipeline')=='collection') else POLICY
 NAV = r'/(?:faqs?|privacy|terms|contact|careers|login|signin|feeds)(?:/|\.|$)'
 
 
@@ -39,6 +45,7 @@ def admit(sources, question, retained=(), pages=None):
         dependency = source.get('material_dependency', {})
         material_role = dependency.get('role','ordinary_detail')
         dependency_route = material_role != 'ordinary_detail'
+        selected_policy = material_policy(question) if dependency_route else POLICY
         reason = None
         if not source['rule_primary'] and re.search(NAV,path,re.I):
             reason = 'navigation_route'
@@ -57,11 +64,11 @@ def admit(sources, question, retained=(), pages=None):
                 reason = 'weak_detail_anchor'
             elif anchor and not literal_anchor and not detail_file and not dependency_route:
                 reason = 'different_named_subject_or_unobserved_subject'
-            elif len(linked) >= POLICY['linked_total']:
+            elif len(linked) >= selected_policy['linked_total']:
                 reason = 'linked_total_ceiling'
-            elif parents[source.get('parent_url')] >= POLICY['linked_per_parent']:
+            elif parents[source.get('parent_url')] >= selected_policy['linked_per_parent']:
                 reason = 'parent_branch_ceiling'
-            elif hosts[host] >= POLICY['linked_per_host']:
+            elif hosts[host] >= selected_policy['linked_per_host']:
                 reason = 'host_branch_ceiling'
         if reason:
             deferred.append({**source,'deferred_reason':reason,'equivalence_verified':False})
@@ -69,5 +76,5 @@ def admit(sources, question, retained=(), pages=None):
         accepted.append(source); families.add(family)
         if linked_source:
             linked.append(source); parents[source.get('parent_url')] += 1; hosts[host] += 1
-    return {'accepted':accepted, 'deferred':deferred, 'policy':POLICY,
+    return {'accepted':accepted, 'deferred':deferred, 'policy':POLICY,'material_policy':material_policy(question),
             'subject_routing_anchor':anchor,'full_recall_verified':False}

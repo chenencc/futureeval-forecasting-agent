@@ -313,9 +313,10 @@ class RetrievalTask:
         self.bundle['pages'][canonical]['last_checked_at_utc'] = utc_now()
         if page.get('http_revalidation'):
             self.bundle['pages'][canonical]['http_revalidation']=page['http_revalidation']
-        for link in page.get('links', []):
-            if allowed_source(link):
-                self.bundle['source_leads'].setdefault(canonical_url(link), {'url': link, 'origin': 'page_link', 'parent_url': url})
+        from ForecastAgent.evidence.source_identity import page_links
+        for link in page_links(page,url):
+            if allowed_source(link['url']):
+                self.bundle['source_leads'].setdefault(canonical_url(link['url']), {'url': link['url'], 'title':link['label'], 'origin': 'page_link', 'parent_url': url})
         update = {'url': canonical, 'state': state, 'old_sha256': old.get('sha256') if old else None,
                   'new_sha256': page.get('sha256'), 'raw_changed': raw_changed,
                   'old_content_sha256': previous_digest, 'new_content_sha256': digest, 'checked_at_utc': utc_now()}
@@ -959,9 +960,6 @@ class RetrievalTask:
                     page["independence_note"] = "Original-source grouping is assessed by the model, not automatically verified"
                     self.store_page(url, page)
                     if not self.cutoff and not structured_url(url): save_cached_page(canonical,page)
-                    for link in page.get("links", []):
-                        if allowed_source(link):
-                            b["source_leads"].setdefault(canonical_url(link), {"url": link, "origin": "page_link", "parent_url": url, "published_date": None})
                     attempt["status"] = "completed"
                 except Exception as exc:
                     attempt.update(status="failed", error=type(exc).__name__,detail=str(exc)[:250])
@@ -1242,10 +1240,12 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= lifetime_http else 'model_dispatch_budget'
                 control['forced_close'] = True
                 break
-            if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
-                    (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= dispatch_http-2)):
+            from ForecastAgent.runtime.collection_actions import no_progress_limit
+            stall_limit=no_progress_limit(task) if collection and task.raw_recall else 3
+            if turn >= turn_limit-2 or control["consecutive_errors"] >= 3 or (collection and
+                    (control.get('no_progress_turns',0)>=stall_limit or len(task.bundle.get('model_attempts',[]))-dispatch_start >= dispatch_http-2)):
                 control["forced_close"] = True
-                termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
+                termination_reason = ('stalled' if control.get('no_progress_turns',0)>=stall_limit else
                                       'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
             if collection and task.raw_recall and control['forced_close']:

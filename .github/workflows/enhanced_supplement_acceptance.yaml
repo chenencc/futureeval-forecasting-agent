@@ -8,6 +8,12 @@ on:
       resume_run:
         type: string
         default: ''
+      collection_cohort:
+        type: string
+        default: pilot5
+      collection_batch:
+        type: string
+        default: '1'
   workflow_dispatch:
     inputs:
       experiment:
@@ -19,6 +25,14 @@ on:
         description: Restore all five exact artifacts; empty starts an authorized fresh experiment
         required: false
         default: ''
+      collection_cohort:
+        type: choice
+        options: [pilot5, repair3, new15]
+        default: pilot5
+      collection_batch:
+        type: choice
+        options: ['1', '2', '3']
+        default: '1'
 permissions:
   contents: read
   actions: read
@@ -26,6 +40,22 @@ concurrency:
   group: enhanced-solid-collection
   cancel-in-progress: false
 jobs:
+  select:
+    if: inputs.experiment == 'solid_collection'
+    runs-on: ubuntu-latest
+    outputs:
+      cases: ${{ steps.cohort.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - id: cohort
+        run: |
+          python -c 'import json,os; from ForecastAgent.experiments.solid_collection import case_indices; print("cases="+json.dumps(case_indices(os.environ["COHORT"],int(os.environ["BATCH"]))))' >> "$GITHUB_OUTPUT"
+        env:
+          COHORT: ${{ inputs.collection_cohort }}
+          BATCH: ${{ inputs.collection_batch }}
   acceptance:
     if: inputs.experiment != 'solid_collection'
     runs-on: ubuntu-latest
@@ -51,11 +81,12 @@ jobs:
           path: snapshots/enhanced-acceptance
   solid:
     if: inputs.experiment == 'solid_collection'
+    needs: select
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        case: [1, 2, 3, 4, 5]
+        case: ${{ fromJSON(needs.select.outputs.cases) }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -65,7 +96,7 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
       - run: python -m playwright install --with-deps chromium
-      - run: python -m unittest ForecastAgent.tests.test_material_recovery ForecastAgent.tests.test_source_architecture ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_solid_collection ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_acquisition_quality
+      - run: python -m unittest ForecastAgent.tests.test_material_recovery ForecastAgent.tests.test_material_continuation ForecastAgent.tests.test_source_architecture ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_solid_collection ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_acquisition_quality
       - name: Require exact parent state on job reruns
         run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
         env:
@@ -83,9 +114,10 @@ jobs:
           if [ -n "$RESUME_RUN" ]; then
             EXPERIMENT_ID=$(python -c 'import json; print(json.load(open("snapshots/solid/manifest.json"))["experiment_id"])')
           fi
-          python -u -m ForecastAgent.experiments.solid_collection --case "$CASE" --output snapshots/solid --experiment-id "$EXPERIMENT_ID"
+          python -u -m ForecastAgent.experiments.solid_collection --case "$CASE" --cohort "$COHORT" --output snapshots/solid --experiment-id "$EXPERIMENT_ID"
         env:
           CASE: ${{ matrix.case }}
+          COHORT: ${{ inputs.collection_cohort }}
           RESUME_RUN: ${{ inputs.resume_run }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
           FORECAST_MODEL_FALLBACK_SUPER: '1'

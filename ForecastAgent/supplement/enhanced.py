@@ -186,8 +186,9 @@ def run(bundle, folder, *, prior=(), network=False, search=None, caps=None, max_
             raise ValueError('Invalid program-owned supplement capacity')
         if caps is not None and not bundle.get('request', {}).get('experiment_id'):
             raise ValueError('Expanded supplement capacity requires an explicit experiment')
-        if type(max_link_depth) is not int or not 0 <= max_link_depth <= 2:
-            raise ValueError('Link discovery depth must be zero, one or two')
+        depth_limit = 3 if bundle.get('request',{}).get('budget_profile')=='solid_v2' and bundle.get('request',{}).get('experiment_id') else 2
+        if type(max_link_depth) is not int or not 0 <= max_link_depth <= depth_limit:
+            raise ValueError('Link discovery depth exceeds authorized profile')
         return _run(bundle, folder, prior=prior, network=network, search=search,
                     caps=selected, max_link_depth=max_link_depth)
 
@@ -270,6 +271,9 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     def expand_children(url, depth):
         if not max_link_depth or depth >= max_link_depth: return
         children = [s for s in current_plan['sources'] if s['url'] not in queued and s.get('parent_url') == url]
+        if depth>=2:
+            deferred.extend({**s,'deferred_reason':'ordinary_link_depth_ceiling'} for s in children if s['material_dependency']['role']=='ordinary_detail')
+            children = [s for s in children if s['material_dependency']['role']!='ordinary_detail']
         admission = routing.admit(children, overlay['request'], [s for s,_ in frontier], overlay['pages'])
         deferred.extend(admission['deferred'])
         for discovered in admission['accepted']:
@@ -279,6 +283,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         unique_deferred = {(r['url'],r['deferred_reason']):r for r in deferred}
         save(folder/'frontier.json', {'max_link_depth':max_link_depth,
             'policy':routing.POLICY if max_link_depth else None,
+            'material_policy':routing.material_policy(overlay['request']) if max_link_depth else None,
             'candidates':[{**s,'depth':d} for s,d in frontier],
             'deferred':list(unique_deferred.values()), 'processed_count':cursor,
             'unprocessed_urls':[s['url'] for s,_ in frontier[cursor:]],

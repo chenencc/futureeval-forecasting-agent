@@ -10,6 +10,16 @@ on:
       resume_run:
         description: Restore exact experiment journals without resetting allowances
         required: false
+      collection_cohort:
+        description: Frozen raw acquisition cohort, without analysis or submission
+        type: choice
+        options: [pilot5, repair3, new15]
+        default: pilot5
+      collection_batch:
+        description: At most five cases per dispatch; new15 has three batches
+        type: choice
+        options: ['1', '2', '3']
+        default: '1'
 permissions:
   contents: read
   actions: read
@@ -23,6 +33,8 @@ jobs:
     with:
       experiment: solid_collection
       resume_run: ${{ inputs.resume_run }}
+      collection_cohort: ${{ inputs.collection_cohort }}
+      collection_batch: ${{ inputs.collection_batch }}
     secrets: inherit
   enhanced-pair:
     if: inputs.experiment == 'enhanced_pair40'

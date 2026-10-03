@@ -1,0 +1,33 @@
+{
+  "protocol": "solid-material-v2-preregistered-cohorts",
+  "scope": "Raw acquisition only; no forecasting, adjudication or outcome labels.",
+  "comparison": "Online source discovery changes between runs; use saved-response replay to attribute routing defects.",
+  "repair3": {
+    "44126": ["Q2 2026 issuer earnings release with digital advertising metric", "Observed earnings presentation or prepared remarks attachment when available"],
+    "26754": ["Model evaluation report discussing IMO gold-standard performance", "Public release or availability notice", "Contest scoring or results context"],
+    "45045": ["Target-day measurement file with station identity, units and time-series observations", "Station metadata and timestamp convention"]
+  },
+  "new15": {
+    "43658": ["Official July 2026 housing starts release", "SAAR series, thousands-of-units definition and revision metadata"],
+    "44431": ["Copper futures observations covering August 2026", "Contract, price-field and trading-session definitions"],
+    "44939": ["US gas price observation for August 17, 2026", "Geographic scope and unit definition"],
+    "44128": ["June 2026 official inbound air visitor statistics", "Visitor-category and reporting-period definitions"],
+    "43919": ["June and July 2026 hourly earnings observations", "BLS release and units/revision metadata"],
+    "41480": ["Louisiana v. Callais court judgment or opinion", "Decision date and relevant disposition text"],
+    "43822": ["Iceland referendum official result or electoral notice", "Ballot proposition and event date"],
+    "44547": ["US Senate roll-call records through August 2026", "Member identity and vote record dates"],
+    "43844": ["Zambia presidential election official result", "Candidate identity, round and vote-share definition"],
+    "44940": ["Florida primary turnout report", "Election date, turnout denominator and reporting completeness"],
+    "43461": ["Official outbreak reports through July 2026", "Case definitions, passenger exposure categories and timestamps"],
+    "42630": ["Official 2026 FIFA participation records", "Participation status and relevant match or roster records"],
+    "44727": ["AI hallucination case database entries for late August 2026", "Entry timestamps, pagination and date-field definition"],
+    "45048": ["Dated startup or tech job-opening source for September 2, 2026", "Employer identity, universe definition and counts or underlying rows"],
+    "44728": ["Shark Percy tracker records near September 1, 2026", "Animal identity, observation time and location source"]
+  },
+  "gate": {
+    "required": ["Original bytes and parsed-body hashes verified", "All three artifacts and provider journals preserved", "No quota violation or unfinished reservation", "Kaub target-data candidate actually captured", "NYT target-period metric text actually captured", "IMO evaluation and availability material manually inspected"],
+    "blocked": ["Provider quota or credential failure", "Critical material still missing", "Lost state or accounting inconsistency"],
+    "new_dispatch_size": 5,
+    "semantic_truth_verified": false
+  }
+}

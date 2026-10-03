@@ -29,13 +29,18 @@ def active_tools(task, tools, forced=None):
                 entry['function']['parameters']['properties']['name'] = {'type':'string', 'enum':names}
     if forced:
         if forced == 'read_sources':
+            from ForecastAgent.runtime.collection_actions import material_read_action
+            material=material_read_action(task) if task.bundle.get('control',{}).get('no_progress_turns',0)>=2 else None
             for entry in tools:
                 if entry['function']['name'] == 'read_sources':
-                    entry['function']['parameters']['properties']['urls']['items'] = {'type': 'string', 'enum': list(task.catalog())}
+                    entry['function']['parameters']['properties']['urls']['items'] = {'type': 'string', 'enum': material['urls'] if material else list(task.catalog())}
         return [tool for tool in tools if tool['function']['name']==forced]
     b=task.bundle
     budget=task.budget()
     excluded=set()
+    from ForecastAgent.runtime.collection_actions import material_read_action
+    if not b['control'].get('forced_close') and material_read_action(task):
+        excluded.add('finish_collection')
     if ready(task) and not b['control'].get('forced_close'):
         excluded.add('finish_collection')
     if b['plan'] is not None:

@@ -44,6 +44,30 @@ persisted for restart inspection.
 
 ## Running and resuming
 
+`collection_cohort=repair3` selects NYT, IMO and Kaub for live repair acceptance.
+`collection_cohort=new15` selects fifteen other frozen questions covering official
+statistics, markets, government records, elections and dynamic databases. These
+questions were not in the five-case acquisition pilot; they are not claimed to
+be unseen forecasting holdouts. `collection_batch=1`, `2` or `3` dispatches at
+most five cases. Every case exports the preregistered material checklist from
+`COLLECTION_COHORTS.json`; labels and old captures remain excluded.
+
+The new cohorts use `solid_v2`. Search, HTTP, model and Extract allowances are
+identical to `solid_v1`. Only explicit unspent material actions extend the
+no-progress tolerance from two to four turns. Spent, failed or reserved URLs
+cannot extend it. Once the tolerance is exhausted, state exports with gaps.
+
+Target data files, focused source attachments, result summaries and recorded
+archive routes may use eight links per parent, sixteen per host and thirty-two
+total linked routes, and a third dependency level. Ordinary links retain the
+four/eight/sixteen ceilings and two levels. All routes share the same sixty-four
+combined HTTP allowance. No runtime tool may increase these limits.
+
+Run repair acceptance before dispatching a new batch. Runtime success alone is
+insufficient: inspect actual target files and primary text, raw hashes, quotas
+and unresolved reservations. Preserve gaps and stop expansion on critical
+missing material or a provider/account requirement.
+
 Use the registered `Checked handoff paired forty snapshot experiment` workflow
 with `experiment=solid_collection`. It delegates to the reusable expanded
 collection workflow on the same commit. An empty `resume_run` creates an independent fresh

@@ -10,15 +10,26 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import load, save, digest
 from ForecastAgent.evidence.raw_capture import capture_report
 from ForecastAgent.runtime.retrieval import run_retrieval
-from ForecastAgent.runtime.capacity import SOLID
+from ForecastAgent.runtime.capacity import SOLID, SOLID_V2
 from ForecastAgent.supplement import enhanced
 
 IDS = ['40695', '44126', '45183', '26754', '45045']
+COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'],
+    'new15':['43658','44431','44939','44128','43919',
+             '41480','43822','44547','43844','44940',
+             '43461','42630','44727','45048','44728']}
 REPAIR_CAPS = {'tavily': 6, 'exa': 2, 'http': 64, 'browser': 12}
 FIXTURES = Path(__file__).parents[1]/'fixtures/enhanced_pair40'
 
 
-def question(ident, experiment_id):
+def case_indices(cohort, batch=1):
+    if cohort not in COHORTS or type(batch) is not int or batch<1: raise ValueError('Invalid frozen cohort batch')
+    start=(batch-1)*5
+    if start>=len(COHORTS[cohort]):raise ValueError('Batch outside frozen cohort')
+    return list(range(start+1,min(start+5,len(COHORTS[cohort]))+1))
+
+
+def question(ident, experiment_id, profile='solid_v1'):
     manifest = load(FIXTURES/'manifest.json')
     for batch in range(1, 9):
         compressed = (FIXTURES/f'batch-{batch}.json.gz').read_bytes()
@@ -33,7 +44,7 @@ def question(ident, experiment_id):
                 request.pop(key, None)
             request.update(id=ident, mode='live', pipeline='collection',
                 acquisition_profile='collection_v3', acquisition_focus='raw_recall',
-                collection_temporal_policy='current_information', budget_profile='solid_v1',
+                collection_temporal_policy='current_information', budget_profile=profile,
                 experiment_id=experiment_id, exa_search_policy='required')
             return request
     raise ValueError('Frozen pilot question not found')
@@ -71,14 +82,18 @@ def audit(bundle, overlay, state):
         'scope': 'Capture integrity and observable source coverage, not forecasting accuracy.'}
 
 
-def run(case, output, experiment_id, prepare_only=False):
-    if case not in range(1, 6) or not experiment_id:
-        raise ValueError('One of five frozen cases and an explicit experiment ID required')
+def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
+    if cohort not in COHORTS or case not in range(1,len(COHORTS[cohort])+1) or not experiment_id:
+        raise ValueError('A frozen cohort case and explicit experiment ID required')
     output = Path(output)
-    ident = IDS[case-1]
-    request = question(ident, experiment_id)
+    ident = COHORTS[cohort][case-1]
+    profile='solid_v1' if cohort=='pilot5' else 'solid_v2'
+    capacity=SOLID if profile=='solid_v1' else SOLID_V2
+    request = question(ident, experiment_id, profile)
     manifest = {'protocol': 'solid-raw-collection-v1', 'experiment_id': experiment_id,
-        'question_id': ident, 'request_sha256': digest(request), 'capacity': SOLID,
+        'question_id': ident, 'request_sha256': digest(request), 'capacity': capacity,
+        'cohort':cohort,'frozen_cohort_ids':COHORTS[cohort],
+        'material_max_depth':2 if profile=='solid_v1' else 3,
         'repair_caps': REPAIR_CAPS, 'fresh_authorized_allowance': True,
         'old_ledgers_imported': False, 'old_ledgers_deleted': False,
         'model_policy': 'Ultra preferred; Super after two consecutive service failures',
@@ -89,13 +104,17 @@ def run(case, output, experiment_id, prepare_only=False):
         raise ValueError('Frozen fresh experiment changed; do not reset counters')
     save(output/'manifest.json', manifest)
     save(output/'question.json', request)
+    checklist=load(Path(__file__).with_name('COLLECTION_COHORTS.json'))
+    save(output/'acceptance-checklist.json',{'id':ident,'cohort':cohort,
+        'required_materials':checklist.get(cohort,{}).get(ident,[]),
+        'scope':'Predeclared acquisition checklist, not resolution labels or semantic acceptance.'})
     if prepare_only:
         return manifest
     try:
         bundle = run_retrieval(request, output/'acquisition', os.environ['TAVILY_API_KEY'],
                                os.environ['OPENROUTER_API_KEY'])
         overlay = enhanced.run(bundle, output/'supplement', network=True,
-                               caps=REPAIR_CAPS, max_link_depth=2)
+                               caps=REPAIR_CAPS, max_link_depth=manifest['material_max_depth'])
         # A raw acquisition deliverable retains blocked/context bodies as well.
         # Their technical diagnostics remain visible; nothing becomes evidence
         # merely because it has been restored to the raw inventory.
@@ -120,5 +139,6 @@ if __name__ == '__main__':
     parser.add_argument('--output', required=True)
     parser.add_argument('--experiment-id', required=True)
     parser.add_argument('--prepare-only', action='store_true')
+    parser.add_argument('--cohort',choices=sorted(COHORTS),default='pilot5')
     args = parser.parse_args()
-    run(args.case, args.output, args.experiment_id, args.prepare_only)
+    run(args.case, args.output, args.experiment_id, args.prepare_only,args.cohort)
