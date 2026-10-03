@@ -64,6 +64,26 @@ class MaterialContinuationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Frozen'):
             freeze({'capacity':dict(SOLID)}, {'budget_profile':'solid_v2','pipeline':'collection','experiment_id':'x'},True)
 
+    def test_third_level_is_material_only_and_restart_does_not_refetch(self):
+        b=dataset_bundle();b['pages']={}
+        q=b['request'];q.update(budget_profile='solid_v2',pipeline='collection')
+        root='https://example.org/station'
+        q['resolution_criteria']='Use station 87654321 in cm at 08:00 CEST from '+root
+        urls=[root,'https://example.org/archive', 'https://example.org/archive/01.09.2026',
+              'https://example.org/archive/01.09.2026/data.txt']
+        def fetch(url):
+            index=urls.index(url)
+            return {'content':'01.09.2026\n87654321\ncm\n07:45#17\n08:00#18\n08:15#19' if index==3 else
+                'Download raw data for the last 31 days. Older archive data are available.',
+                'links':[] if index==3 else [urls[index+1]]}
+        with tempfile.TemporaryDirectory() as tmp,patch.object(enhanced,'fetch_document',side_effect=fetch) as http:
+            out=enhanced.run(b,tmp,network=True,max_link_depth=3)
+            self.assertIn(urls[-1],out['pages']);self.assertEqual(http.call_count,4)
+            enhanced.run(b,tmp,network=True,max_link_depth=3)
+            self.assertEqual(http.call_count,4)
+            last=next(x for x in load(Path(tmp)/'frontier.json')['candidates'] if x['url']==urls[-1])
+            self.assertEqual(last['depth'],3)
+
     def test_three_acceptance_then_fifteen_disjoint_new_cases(self):
         self.assertEqual(len(COHORTS['repair3']),3);self.assertEqual(len(COHORTS['new15']),15)
         self.assertFalse(set(COHORTS['new15'])&set(COHORTS['pilot5']))
