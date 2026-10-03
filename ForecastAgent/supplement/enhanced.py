@@ -14,6 +14,7 @@ from ForecastAgent.supplement.discovery import safe_url, tokens
 from ForecastAgent.evidence.source_checks import inspect_body
 from ForecastAgent.supplement.stage import fetch_document, now
 from ForecastAgent.readers.browser import render_page
+from ForecastAgent.supplement.source_contract import contract, match_source
 
 PROTOCOL = 'enhanced-supplement-candidate-v1'
 CAPS = {'tavily': 3, 'exa': 1, 'http': 16, 'browser': 6}
@@ -35,9 +36,13 @@ def assess(question, url, body):
     required = tokens(rule)
     matched = sorted(required & tokens(body))
     dates = [m for m in months if re.search(r'\b'+m+r'\b', body, re.I)]
+    source_match = match_source(contract(question), url, body)
     return {**check, 'target_months': months, 'observed_target_months': dates,
             'matched_rule_terms': matched, 'coverage_status': 'candidate_text' if check['eligible_for_evidence'] and
-            (not months or dates) and len(matched) >= 2 else 'gap_or_context',
+            (not months or dates) and len(matched) >= 2 and source_match['entity_acceptable'] and
+            source_match['topic_acceptable'] and source_match['quarter_observed'] and
+            source_match['metric_phrase_observed'] else 'gap_or_context',
+            'source_contract': source_match,
             'event_timing_verified': False, 'metric_verified': False, 'truth_verified': False}
 
 
@@ -46,6 +51,7 @@ def plan(bundle):
     q = bundle['request']; rule = str(q.get('resolution_criteria', ''))
     context = str(q.get('question', '')) + ' ' + rule
     candidates = {}; primaries = set()
+    expected = contract(q)
     def add(url, label, origin):
         url = safe_url(url)
         if not url or (urlsplit(url).hostname or '') == 'metaculus.com' or (urlsplit(url).hostname or '').endswith('.metaculus.com'):
@@ -53,8 +59,11 @@ def plan(bundle):
         if re.search(r'/(?:login|signin|privacy|terms)(?:/|$)', urlsplit(url).path, re.I):
             return
         overlap = tokens(context) & tokens(label+' '+url)
+        source_match = match_source(expected, url, label)
         row = {'url': url, 'origin': origin, 'matched_terms': sorted(overlap),
-               'rule_primary': url in primaries, 'score': 100 if url in primaries else len(overlap)*3}
+               'rule_primary': url in primaries, 'score': 100 if url in primaries else
+               len(source_match['topic_matches'])*6 + 20*source_match['preferred_domain'],
+               'source_contract': source_match}
         if url not in candidates or row['score'] > candidates[url]['score']:
             candidates[url] = row
     for url in re.findall(r'https?://[^\s<>]+', rule):
@@ -83,9 +92,12 @@ def plan(bundle):
             if a['coverage_status'] != 'candidate_text']
     if not assessments:
         gaps.append({'url': None, 'reason': 'no_saved_bodies'})
-    sources = [c for c in candidates.values() if c['rule_primary'] or c['score'] >= 6]
+    sources = [c for c in candidates.values() if c['rule_primary'] or
+               (c['source_contract']['entity_acceptable'] and
+                (c['source_contract']['topic_acceptable'] or c['source_contract']['preferred_domain']))]
     sources.sort(key=lambda c: (-c['score'], c['url']))
     return {'protocol': PROTOCOL, 'sources': sources, 'body_assessments': assessments, 'gaps': gaps,
+            'source_contract': expected,
             'search_query': str(q.get('question', '')) + ' '+ ' '.join(a for a in MONTHS if a.lower() in context.lower()),
             'search_role': 'key_gap', 'labels_used': False, 'urls_synthesized': False,
             'condition_coverage_requires_analysis': True}
@@ -110,6 +122,7 @@ def hints(bundle):
         return {'protocol': PROTOCOL, 'packet_sha256': None, 'spans': [], 'status': 'no_readable_sources', 'truth_verified': False}
     packet = chain.full_packet(bundle); terms = tokens(str(bundle['request'].get('question', ''))+' '+str(bundle['request'].get('resolution_criteria', '')))
     rows = []
+    expected = contract(bundle['request'])
     for span in packet['evidence']:
         score = len(terms & tokens(span['text']))
         date_measure = bool(re.search(r'\b20\d\d\b|\d+(?:\.\d+)?%|publish|chart dated', span['text'], re.I))
@@ -119,6 +132,9 @@ def hints(bundle):
         temporal_qualifier = bool(re.search(r'publish|effective|issued|released', span['text'], re.I)) and bool(
             re.search(r'\b\d{1,4}\b', span['text'])) and score > 3
         score += 12*temporal_qualifier
+        observed = match_source(expected, span['url'], span['text'])
+        score += 12*observed['preferred_domain'] + 3*len(observed['topic_matches'])
+        if not observed['entity_acceptable']: score -= 30
         rows.append({'evidence_id': span['evidence_id'], 'url': span['url'], 'body_sha256': span['body_sha256'],
                      'start': span['start'], 'end': span['end'], 'score': score})
     # One strongest passage per source precedes additional passages.
@@ -150,7 +166,8 @@ def _run(bundle, folder, *, prior, network, search):
     if len({digest(j) for j in prior}) != len(prior):
         raise ValueError('Duplicate prior journals would double-count lifetime usage')
     identity = {'protocol': PROTOCOL, 'parent_sha256': digest(bundle), 'prior_sha256': digest(prior),
-                'caps': CAPS, 'implementation_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+                'caps': CAPS, 'implementation_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                'source_contract_sha256': hashlib.sha256(Path(__file__).with_name('source_contract.py').read_bytes()).hexdigest()}
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
     save(folder/'identity.json', identity)

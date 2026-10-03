@@ -52,6 +52,20 @@ must include this supplemental journal in lifetime accounting.
 The official workflow stays pinned to release **v1.0.1**. This is an opt-in
 development candidate, pending live Linux worker acceptance before promotion.
 
+## Source contract revision
+
+Observed-URL ranking now separates distinctive question topics from generic
+release/month words. A named reporting issuer must appear in source text or use
+a domain explicitly supplied by the question. Exact rule URLs are always
+retained. Coverage diagnostics also track an observed quarter and derived metric
+phrases. Readable context remains preserved, but an unrelated issuer or topic
+does not count as target evidence. Preferred domains and lexical matches do not
+prove source identity, target observation timing or an initial release value.
+
+Dependency hashes freeze source-contract policy as well as executor code.
+`python -m ForecastAgent.supplement.replay_acceptance` rechecks saved captures
+offline, importing the old repair journal and all newer attempts without resets.
+
 ## Offline acceptance
 
 ```bash

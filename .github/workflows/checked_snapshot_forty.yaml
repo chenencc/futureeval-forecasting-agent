@@ -2,6 +2,11 @@ name: Checked handoff paired forty snapshot experiment
 on:
   workflow_dispatch:
     inputs:
+      experiment:
+        description: Legacy handoff replay or frozen identical-body selector comparison
+        type: choice
+        options: [legacy, enhanced_pair40]
+        default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
         required: false
@@ -12,7 +17,44 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  enhanced-pair:
+    if: inputs.experiment == 'enhanced_pair40'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [1, 2, 3, 4, 5, 6, 7, 8]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_enhanced_pair40
+      - name: Require preserved journals for job reruns
+        run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: enhanced-pair40-batch-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-pair
+      - run: python -u -m ForecastAgent.analysis.enhanced_pair40 --batch "$BATCH" --output snapshots/enhanced-pair
+        env:
+          BATCH: ${{ matrix.batch }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enhanced-pair40-batch-${{ matrix.batch }}
+          path: snapshots/enhanced-pair
+          retention-days: 90
   paired:
+    if: inputs.experiment != 'enhanced_pair40'
     strategy:
       fail-fast: false
       max-parallel: 1

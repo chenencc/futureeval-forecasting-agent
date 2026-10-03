@@ -1,0 +1,110 @@
+{
+  "protocol": "enhanced-pair40-frozen-public-evidence-v1",
+  "batches": {
+    "1": {
+      "ids": [
+        "40695",
+        "42491",
+        "43461",
+        "43822",
+        "44547"
+      ],
+      "cohort": "binary",
+      "sha256": "044e45149d1cbbbc580c623fc81176004b922a7d5fba8ae1a0087617c1cbdd10",
+      "compressed_bytes": 258737
+    },
+    "2": {
+      "ids": [
+        "36871",
+        "40849",
+        "40852",
+        "41206",
+        "42489"
+      ],
+      "cohort": "binary",
+      "sha256": "fc17665fae1513a6393d0ec438c9bc26343ab2682ae91b58faf47ed888d059aa",
+      "compressed_bytes": 152755
+    },
+    "3": {
+      "ids": [
+        "41480",
+        "41489",
+        "42485",
+        "42630",
+        "43491"
+      ],
+      "cohort": "binary",
+      "sha256": "e8c11e983c90153c05308f2e73484026ec87ec075f6007fe66d08ade46fedbaa",
+      "compressed_bytes": 578440
+    },
+    "4": {
+      "ids": [
+        "40417",
+        "41485",
+        "42490",
+        "43844",
+        "43987"
+      ],
+      "cohort": "binary",
+      "sha256": "56e9728ee990ef78a543b1eae2455114e5302ef384bd04e7466df29f40299207",
+      "compressed_bytes": 461401
+    },
+    "5": {
+      "ids": [
+        "43658",
+        "43801",
+        "44126",
+        "44431",
+        "44939"
+      ],
+      "cohort": "nonbinary",
+      "sha256": "dd1abd9f1791718a341bf805423e233ad4386360bb105c47b0050e7c13c39904",
+      "compressed_bytes": 287538
+    },
+    "6": {
+      "ids": [
+        "43665",
+        "44128",
+        "44129",
+        "44728",
+        "44731"
+      ],
+      "cohort": "nonbinary",
+      "sha256": "31a4fa286bb265b174760a5d5d69145147412d43334057aec7e4daf25098cf48",
+      "compressed_bytes": 447844
+    },
+    "7": {
+      "ids": [
+        "43919",
+        "44727",
+        "44938",
+        "44940",
+        "45183"
+      ],
+      "cohort": "nonbinary",
+      "sha256": "ae0438a82b7844056de6d3087f0a7bec9ad1b0f47d98bd24b91f6f6e58abb1a1",
+      "compressed_bytes": 297201
+    },
+    "8": {
+      "ids": [
+        "26754",
+        "28102",
+        "45045",
+        "45048",
+        "676"
+      ],
+      "cohort": "nonbinary",
+      "sha256": "3060d1a937861bf61889c96872ae9826cd7b1698fa07513287e758730c0c13e9",
+      "compressed_bytes": 351094
+    }
+  },
+  "source_run": "37086283246",
+  "source_archive": "Locally archived original checked snapshot artifacts.",
+  "model": "inception/mercury-decide:free",
+  "question_count": 40,
+  "original_body_coverage_identical": true,
+  "labels_included": false,
+  "max_model_http_attempts": 160,
+  "new_searches": 0,
+  "date_questions_research_only_when_official_scale_missing": true
+}
