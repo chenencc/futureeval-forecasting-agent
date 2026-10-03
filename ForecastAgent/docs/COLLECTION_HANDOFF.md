@@ -62,3 +62,23 @@ python -m ForecastAgent.evidence.collection_handoff --bundle bundle.json --outpu
 The standalone command performs no collector, inference or forecast submission.
 Network repair requires an explicit `--network`. Offline replay establishes
 preservation and screening behavior, not live repair success or forecast accuracy.
+
+## Fixed forty-case paired experiment
+
+`checked_snapshot_forty.yaml` runs eight sequential batches of five. The binary
+cohort uses the raw campaign snapshot from run `36948699455`, preserved independent
+supplement from `36961850565`, and Mercury baseline from `37022482053`. The nonbinary
+cohort uses the original collector, preserved supplement and Mercury baseline
+from full-pipeline run `37031590213`.
+
+The experiment replays the existing independent repair overlay instead of issuing
+new network repair requests. Original acquisition quotas and prior repair attempts
+remain unchanged. Each task receives a new, separately journaled Mercury experiment
+with at most two free-model HTTP attempts. Search and submission credentials are
+not provided to the workflow. Baseline forecasts are saved for evaluation only;
+they are never placed in the inference state. Failures preserve their journals;
+`resume_run` restores the exact artifact without resetting allowances.
+
+This isolates deterministic inspection and deduplication against historical
+results. Repeated inference can vary, and these saved sources do not enforce a
+historical information cutoff. Report binary and each nonbinary type separately.

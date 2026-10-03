@@ -1,0 +1,76 @@
+name: Checked handoff paired forty snapshot experiment
+on:
+  workflow_dispatch:
+    inputs:
+      resume_run:
+        description: Restore exact experiment journals without resetting allowances
+        required: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: checked-snapshot-forty
+  cancel-in-progress: false
+jobs:
+  paired:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        cohort: [binary, nonbinary]
+        batch: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - uses: actions/download-artifact@v4
+        if: matrix.cohort == 'binary'
+        with:
+          name: raw-collection-100-v1-state
+          run-id: 36948699455
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/raw
+      - uses: actions/download-artifact@v4
+        if: matrix.cohort == 'binary'
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: 36961850565
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/supplements
+      - uses: actions/download-artifact@v4
+        if: matrix.cohort == 'binary'
+        with:
+          name: mercury-evidence-chain-twenty-batch-${{ matrix.batch }}
+          run-id: 37022482053
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/baseline
+      - uses: actions/download-artifact@v4
+        if: matrix.cohort == 'nonbinary'
+        with:
+          name: nonbinary-full-pipeline-batch-${{ matrix.batch }}
+          run-id: 37031590213
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/raw
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: checked-snapshot-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/paired
+      - name: Replay preserved collection and repair then analyze with Mercury
+        run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired
+        env:
+          COHORT: ${{ matrix.cohort }}
+          BATCH: ${{ matrix.batch }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checked-snapshot-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          path: snapshots/paired
+          retention-days: 90
