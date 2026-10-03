@@ -5,7 +5,7 @@ on:
       mode:
         description: 'Historical twenty or newly repaired fifty'
         type: choice
-        options: [twenty, repaired50, before48]
+        options: [twenty, repaired50, before48, coverage12]
         default: twenty
       source_run:
         description: 'Completed free repair parent for repaired50'
@@ -25,6 +25,46 @@ concurrency:
   group: analysis-mercury-evidence-chain
   cancel-in-progress: false
 jobs:
+  coverage-pilot:
+    if: inputs.mode == 'coverage12'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest ForecastAgent.tests.test_mercury_coverage_chain ForecastAgent.tests.test_mercury_evidence_chain
+      - name: Require original dispatch or restored pilot journals
+        run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: repaired-fifty-analysis-*
+          merge-multiple: false
+          run-id: ${{ inputs.baseline_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/coverage-baseline
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: mercury-coverage-twelve
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/coverage-pilot
+      - name: Replay frozen raw evidence with no acquisition
+        run: python -u -m ForecastAgent.analysis.coverage_pilot run --inputs snapshots/coverage-baseline --output snapshots/coverage-pilot
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - name: Evaluate only after saving provider outputs
+        run: python -m ForecastAgent.analysis.coverage_pilot evaluate --inputs snapshots/coverage-baseline --output snapshots/coverage-pilot --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-coverage-twelve
+          path: snapshots/coverage-pilot
+          retention-days: 90
   compare:
     if: inputs.mode == 'twenty'
     strategy:
