@@ -72,6 +72,9 @@ def run(root, repo, gh, *, execute=False):
         'inventory_bytes': sum(a['size_in_bytes'] for a in artifacts if not a['expired']),
         'verified_candidate_bytes': sum(a['size_in_bytes'] for a in candidates),
         'candidate_ids': [a['id'] for a in candidates], 'protected_ids': sorted(protected),
+        'candidates': [{'id': a['id'], 'name': a['name'], 'size_bytes': a['size_in_bytes'],
+            'run_id': (a.get('workflow_run') or {}).get('id'),
+            'local_zip_sha256': imported[str(a['id'])]} for a in candidates],
         'active_runs': len(active), 'deleted_ids': []}
     for item in candidates if execute else []:
         api(gh, f"repos/{repo}/actions/artifacts/{item['id']}", 'DELETE')
