@@ -59,3 +59,32 @@ Known limits to address before expanding:
   for subsequent clause review.
 - Query expansion and pooling changed together; this is an exploratory pipeline
   comparison. A frozen-pool comparison is needed to isolate the ranker's effect.
+
+## Family coverage and direction optimization (2026-10-03)
+
+Implementation `b4440ad`, output-contract repair `6e56c1e`.
+Twenty frozen-response pools now allocate slots across event families before
+additional siblings. Siblings are ordered lexically with no rejection floor.
+The market cap is 120, family cap 60. Full parsed rows and omitted IDs are saved;
+this is not an exhaustive market catalogue or a semantic matching guarantee.
+Family representations increased from 95 to 292. All nine previously selected
+reference contracts remain in the new pools. Sixteen pools remain incomplete.
+Increasing the cap and changing coverage ordering happened together.
+
+Five representative ranking requests: four complete results, one truncated JSON
+failure. That failure is preserved and not retried. Parser replay found and fixed
+a missing-direction-field bug. Direction fields now survive parsing; target
+propositions must copy the exact question title or remain unknown. Non-equivalent
+conditions downgrade an inverse claim to partial, without price conversion.
+
+A separately journaled one-case acceptance request verified the Iran case:
+three removal contracts are partial references, with the original participation
+question preserved. None is authorized for probability inversion or edge.
+All six actual requests used free Super, no new public searches, Tavily or Exa.
+Total reported tokens: 243,019 input and 6,764 output. The wider context costs
+more per question; this optimization claims coverage and metadata improvements,
+not inference cost savings or verified matching accuracy.
+
+Runs:
+- https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37091334541
+- https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37091515835
