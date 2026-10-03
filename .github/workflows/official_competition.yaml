@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 concurrency:
   group: futureeval-official-worker
@@ -31,6 +31,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: v1.0.1
+      - name: Check out independent infrastructure utilities
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .infrastructure
+          persist-credentials: false
+          sparse-checkout: ForecastAgent/infrastructure
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -89,6 +96,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/incoming
+      - name: Verify restored checkpoint hashes
+        if: steps.previous.outputs.official != ''
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py verify --root snapshots/official
       - name: Install free readers and browser
         run: |
           python -m pip install -r ForecastAgent/requirements-supplement.txt
@@ -98,12 +108,59 @@ jobs:
         env:
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/official
+      - name: Split recovery checkpoint and changed evidence
+        if: always() && hashFiles('snapshots/official/campaign.json') != ''
+        id: split
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py split --root snapshots/official --output snapshots/storage-export
+      - name: Archive changed evidence
+        if: always() && steps.split.outcome == 'success'
+        id: evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-evidence-${{ github.run_id }}
+          path: snapshots/storage-export/evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Preserve official campaign and delivery receipts
-        if: always()
+        if: always() && steps.evidence.outcome == 'success'
+        id: checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-state
+          path: snapshots/storage-export/checkpoint/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Emergency full recovery if storage export failed
+        if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/official/campaign.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: futureeval-official-state
           path: snapshots/official/
           include-hidden-files: true
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 90
+      - name: Publish small private listener control ledger
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-control
+          path: snapshots/storage-export/checkpoint/campaign.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Rotate superseded recovery checkpoints
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
+            const current=artifacts.find(a=>String(a.id)==='${{ steps.checkpoint.outputs.artifact-id }}'&&!a.expired);
+            if(!current || current.name!=='futureeval-official-state') throw new Error('Uploaded checkpoint not confirmed');
+            for(const name of ['futureeval-official-state','futureeval-official-control']) {
+              const checkpoints=artifacts.filter(a=>a.name===name&&!a.expired)
+                .sort((a,b)=>b.id-a.id);
+              for(const artifact of checkpoints.slice(3))
+                await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
+            }

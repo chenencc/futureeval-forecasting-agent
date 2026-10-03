@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 concurrency:
   group: futureeval-question-monitor
@@ -180,6 +180,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: futureeval-questions-${{ github.run_id }}
-          path: snapshots/monitor/
+          path: |
+            snapshots/monitor/*/index.json
+            snapshots/monitor/*/*.json
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 7
+      - name: Rotate superseded monitor state and health
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
+            for(const name of ['futureeval-monitor-state','futureeval-monitor-health']) {
+              const items=artifacts.filter(a=>a.name===name&&!a.expired).sort((a,b)=>b.id-a.id);
+              if(!items.some(a=>a.workflow_run?.id===context.runId)) throw new Error('Current monitor state not confirmed');
+              for(const artifact of items.slice(3))
+                await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
+            }
