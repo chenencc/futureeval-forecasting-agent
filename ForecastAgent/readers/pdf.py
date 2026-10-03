@@ -31,10 +31,16 @@ def parse_pdf(raw, source):
     documents = []
     for i, page in enumerate(reader.pages):
         stream = page.get_contents()
-        if stream and len(stream.get_data()) > 10_000_000:
+        if stream is not None and len(stream.get_data()) > 10_000_000:
             raise ValueError("PDF page stream exceeds extraction budget")
-        text = page.extract_text(extraction_mode="layout") or ""
-        documents.append(Document(text, {"source": source, "format": "pdf", "page": i + 1}))
+        text = page.extract_text(extraction_mode="layout") or "" if stream is not None else ""
+        extraction = 'pypdf_layout'
+        if not text.strip() and stream is not None:
+            # Some text PDFs yield empty layout output despite a valid text layer.
+            text = page.extract_text() or ""
+            extraction = 'pypdf_plain_fallback'
+        documents.append(Document(text, {"source": source, "format": "pdf", "page": i + 1,
+                                          "extraction_method": extraction}))
     try:
         import pdfplumber
         with pdfplumber.open(BytesIO(raw)) as pdf:
@@ -69,3 +75,4 @@ def parse_pdf(raw, source):
         if not document.page_content.strip():
             document.metadata['reading_gap'] = 'No text on this page; OCR unavailable or bounded page limit reached.'
     return documents
+

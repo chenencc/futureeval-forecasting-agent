@@ -59,6 +59,7 @@ def capture_status(attempt, page=None, *, now=None):
             'transport_state':'http_error' if code and code>=400 else 'http_success' if code else 'unknown',
             'body_state':state,'usable_text':usable,'raw_state':raw,'saved_raw_available':raw=='verified',
             'parse_failure_present':bool(page.get('parse_failure')),
+            'pdf_diagnosis':page.get('pdf_diagnosis'),
             'document_reading_gaps':list((page.get('body_diagnostics') or {}).get('page_reading_gaps',[])),
             'content_truncated':bool(page.get('content_truncated')),
             'original_detail':detail,'retry_at_utc':deadline,'truth_verified':False,'execution_authorized':False}

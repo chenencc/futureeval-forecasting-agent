@@ -14,11 +14,19 @@ from ForecastAgent.readers.encoding import decode_response
 def load_response(response, *, retrieved_at, max_chars=150_000, preserve_raw_on_failure=False):
     try:
         return parse_response(response,retrieved_at=retrieved_at,max_chars=max_chars)
-    except (ValueError,ImportError,RuntimeError) as exc:
+    except Exception as exc:
         if not preserve_raw_on_failure:
             raise
         original=response['raw']
-        return {'url':response['url'],'final_url':response['final_url'],
+        diagnosis={}
+        if response['content_type']=='application/pdf' or original.lstrip().startswith(b'%PDF-'):
+            from ForecastAgent.readers.pdf_diagnostics import diagnose_pdf
+            try:
+                decoded,_=decode_response(original,response.get('response_headers'))
+                diagnosis={'pdf_diagnosis':diagnose_pdf(decoded,response['content_type'],exc)}
+            except ValueError:
+                diagnosis={'pdf_diagnosis':{'schema':'pdf_diagnosis_v1','state':'transport_decoding_failure','next_action':'inspect_content_encoding','network_calls':0,'ocr_performed':False}}
+        return {**diagnosis,'url':response['url'],'final_url':response['final_url'],
             'retrieved_at_utc':retrieved_at,'content_type':response['content_type'],
             'sha256':hashlib.sha256(original).hexdigest(),
             'raw_response_base64':base64.b64encode(original).decode('ascii'),
