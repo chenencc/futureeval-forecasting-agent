@@ -27,6 +27,11 @@ def collection_system(task, skills):
         template = template.replace('at most ONE Tavily BASIC Extract rescue batch',
             f"at most {capacity['extract_batches']} Tavily BASIC Extract rescue batches")
         template = template.replace('the single required Exa attempt', 'at least one required complementary Exa attempt')
-    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({**capacity,
+    material_policy = ('\nA readable directory, download help page or publication index is context, not the requested data. '
+        'Inspect material_requirements and follow observed target-date file links or recorded archive links. '
+        'Retain issuer/period-matched primary releases and observed supporting attachments. '
+        'Do not fabricate file URLs, treat a date in the URL as proof of body coverage, or repeat an already readable directory. '
+        'If the target file cannot be acquired, finish with an explicit target_data_file_missing gap; never imply the observation was collected.\n')
+    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + material_policy + '\nFrozen task budget: '+json.dumps({**capacity,
         'tavily_basic_lifetime':task.search_limit, 'exa_lifetime':task.exa_limit,
         'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional')})+'\nAvailable skill catalog: '+json.dumps(skills)

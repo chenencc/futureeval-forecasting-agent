@@ -36,6 +36,9 @@ def admit(sources, question, retained=(), pages=None):
         path = urlsplit(url).path; host = urlsplit(url).hostname
         text = unquote(url+' '+source.get('label','')).lower()
         linked_source = source.get('origin') == 'saved_link'
+        dependency = source.get('material_dependency', {})
+        material_role = dependency.get('role','ordinary_detail')
+        dependency_route = material_role != 'ordinary_detail'
         reason = None
         if not source['rule_primary'] and re.search(NAV,path,re.I):
             reason = 'navigation_route'
@@ -48,9 +51,11 @@ def admit(sources, question, retained=(), pages=None):
             dated_file = detail_file and bool(set(expected_days)&set(calendar_dates(text)))
             literal_anchor = anchor and anchor in re.sub(r'[^a-z0-9]+',' ',text)
             topic_match = len(source['source_contract']['topic_matches']) >= 2
-            if not literal_anchor and not dated_file and not topic_match:
+            if dependency.get('different_explicit_day') and dependency.get('parent_collection_state')=='directory_only':
+                reason = 'different_target_day_file'
+            elif not literal_anchor and not dated_file and not topic_match and not dependency_route:
                 reason = 'weak_detail_anchor'
-            elif anchor and not literal_anchor and not detail_file:
+            elif anchor and not literal_anchor and not detail_file and not dependency_route:
                 reason = 'different_named_subject_or_unobserved_subject'
             elif len(linked) >= POLICY['linked_total']:
                 reason = 'linked_total_ceiling'

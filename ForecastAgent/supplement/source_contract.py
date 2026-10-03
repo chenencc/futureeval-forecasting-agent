@@ -42,7 +42,8 @@ def contract(question):
     return {'issuer_name': name, 'issuer_aliases': issuer.get('aliases', []) if isinstance(issuer, dict) else [],
             'topic_terms': sorted(topics), 'preferred_domains': sorted({host_root(u) for u in sources}),
             'rule_urls': [u for u, origin in sources.items() if origin == 'resolution_criteria'],
-            'quarter': periods[0][0] if periods else None, 'metric_phrases': metrics,
+            'quarter': periods[0][0] if periods else None,
+            'quarter_year': periods[0][1] or None if periods else None, 'metric_phrases': metrics,
             'target_months': [m for m in MONTHS if re.search(r'\b'+m+r'\b', title, re.I)],
             'initial_release_required': bool(re.search(r'initially published|first release|preliminary', rules, re.I))}
 
@@ -63,10 +64,19 @@ def match_source(expected, url, text):
         if re.search(r'\b'+name+r' quarter\b',text,re.I): body_quarters.add(number)
     quarter_matches = not period or period in body_quarters
     quarter_status = 'not_required' if not period else 'observed' if period in observed_quarters else 'mismatch' if observed_quarters else 'unknown'
+    year = expected.get('quarter_year')
+    period_pairs = re.findall(r'\bQ([1-4])[\s_-]*(20\d{2})\b',signal,re.I)
+    for number,name in {'1':'first','2':'second','3':'third','4':'fourth'}.items():
+        period_pairs += [(number,y) for y in re.findall(r'\b'+name+r' quarter(?: of)?\s+(20\d{2})\b',signal,re.I)]
+    years = {y for q,y in period_pairs if q==period}
+    year_status = 'not_required' if not year else 'observed' if year in years else 'mismatch' if years else 'unknown'
+    if year_status=='mismatch':
+        quarter_status='mismatch'; quarter_matches=False
     metrics = expected['metric_phrases']
     metric_observed = not metrics or any(m in body for m in metrics)
     return {'entity_status': entity, 'preferred_domain': preferred, 'topic_matches': topic_matches,
             'quarter_observed': quarter_matches, 'quarter_status':quarter_status,
+            'quarter_year_status':year_status,'observed_quarter_years':sorted(years),
             'observed_quarters':sorted(observed_quarters), 'entity_acceptable': entity != 'not_observed',
             'body_quarters':sorted(body_quarters),
             'topic_acceptable': bool(expected['topic_terms']) and len(topic_matches) >= min(2, len(expected['topic_terms'])),

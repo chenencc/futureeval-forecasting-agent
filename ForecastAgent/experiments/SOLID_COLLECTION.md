@@ -95,3 +95,24 @@ python -m ForecastAgent.experiments.source_architecture_replay \
 It preserves cumulative provider journals and checks zero new reservations.
 The resulting frontier is a prospective routing diagnostic, not evidence of
 counterfactual live acquisition quality or actual HTTP savings.
+# Observed material dependency recovery
+
+Readable indexes and download instructions are retained as context. They do not
+establish that the requested observations have been acquired. The agent receives
+`material_requirements` with observed download/archive URLs and reported retention
+windows. Missing target files remain explicit gaps.
+
+The supplement normalizes string, dictionary, relative and Markdown links.
+Verified saved HTML can recover labels and links omitted by an adapter; navigation
+links remain excluded. It never guesses a `down.txt` URL, rewrites station IDs or
+fabricates historical endpoints. Date, station, unit and clock checks remain
+separate; neither route context nor a filename verifies a value or timezone.
+
+Observed target-date files, issuer/period attachments and focused result indexes
+receive priority using the parent body hash and recorded link provenance. Broad
+feeds cannot lend their topic to unrelated results. The existing branch, depth
+and shared HTTP/browser limits still apply. Cached readable parents expand their
+dependencies without another fetch; resume never repeats spent reservations.
+
+The regression suite uses mocked transports and preserved snapshots. Live
+retrieval and rolling archive availability still require separate acceptance.

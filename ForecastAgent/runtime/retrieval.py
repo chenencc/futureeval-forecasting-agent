@@ -262,6 +262,9 @@ class RetrievalTask:
         if 'page_date_metadata' in view:
             view['page_date_metadata']={k:v for k,v in view['page_date_metadata'].items() if k!='tables'}
         view['capture_status']=observed
+        if getattr(self,'raw_recall',False):
+            from ForecastAgent.supplement.materials import requirements
+            view['material_requirements']=requirements(self.bundle['request'],page.get('url',''),page)
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
         view['read_url'] = page.get('url', '')
         if page.get('capture_method') == 'wayback_replay':

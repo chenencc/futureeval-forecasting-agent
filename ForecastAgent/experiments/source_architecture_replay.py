@@ -44,7 +44,7 @@ def run(inputs, output):
             'semantic_recall_verified':False}
         save(root/'review.json',row); rows.append(row)
     if len(rows)!=5:raise ValueError('All five saved cases required')
-    report={'protocol':'source-architecture-offline-replay-v1','parent_run':'37120007538',
+    report={'protocol':'source-architecture-offline-replay-v1','parent_run':inputs.name.rsplit('-',1)[-1],
         'rows':rows,'new_provider_requests':0,'new_model_requests':0,
         'all_originals_preserved':True,'labels_used':False,'forecast_submissions':0,
         'limitations':'Offline routing diagnostic; does not prove how future live retrieval will perform.'}

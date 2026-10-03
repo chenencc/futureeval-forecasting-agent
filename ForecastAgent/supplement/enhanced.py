@@ -15,8 +15,9 @@ from ForecastAgent.evidence.source_checks import inspect_body
 from ForecastAgent.supplement.stage import fetch_document, now
 from ForecastAgent.readers.browser import render_page
 from ForecastAgent.supplement.source_contract import contract, match_source
-from ForecastAgent.evidence.source_identity import observed_urls, observed_links
+from ForecastAgent.evidence.source_identity import observed_urls, observed_links, page_links
 from ForecastAgent.evidence.source_coverage import observe
+from ForecastAgent.supplement import materials
 
 PROTOCOL = 'enhanced-supplement-candidate-v1'
 CAPS = {'tavily': 3, 'exa': 1, 'http': 16, 'browser': 6}
@@ -40,10 +41,12 @@ def assess(question, url, body, page=None):
     dates = [m for m in months if re.search(r'\b'+m+r'\b', body, re.I)]
     source_match = match_source(contract(question), url, body)
     coverage = observe(question, url, body, page)
+    material = materials.requirements(question, url, page or {'content':body})
     prose_candidate = check['eligible_for_evidence'] and (not months or dates) and len(matched) >= 2 and source_match['entity_acceptable'] and source_match['topic_acceptable'] and source_match['quarter_observed'] and source_match['metric_phrase_observed']
     return {**check, 'target_months': months, 'observed_target_months': dates,
             'matched_rule_terms': matched, 'coverage_status': 'candidate_data' if check['eligible_for_evidence'] and coverage['data_capture_candidate'] else 'candidate_text' if prose_candidate else 'gap_or_context',
             'coverage_axes': coverage,
+            'material_requirements': material,
             'source_contract': source_match,
             'event_timing_verified': False, 'metric_verified': False, 'truth_verified': False}
 
@@ -54,7 +57,7 @@ def plan(bundle):
     context = str(q.get('question', '')) + ' ' + rule
     candidates = {}; primaries = set()
     expected = contract(q)
-    def add(url, label, origin, parent_url=None):
+    def add(url, label, origin, parent_url=None, dependency=None):
         url = safe_url(url)
         if not url or (urlsplit(url).hostname or '') == 'metaculus.com' or (urlsplit(url).hostname or '').endswith('.metaculus.com'):
             return
@@ -66,6 +69,8 @@ def plan(bundle):
                'rule_primary': url in primaries, 'score': 100 if url in primaries else
                len(source_match['topic_matches'])*6 + 20*source_match['preferred_domain'],
                'source_contract': source_match}
+        row['material_dependency'] = dependency or {'role':'ordinary_detail'}
+        row['score'] += {'target_data_file':80, 'source_attachment':60, 'result_summary':40, 'archive_navigation':35}.get(row['material_dependency']['role'],0)
         if url not in candidates or row['score'] > candidates[url]['score']:
             candidates[url] = row
     for url in observed_urls(rule):
@@ -82,10 +87,9 @@ def plan(bundle):
     for url, page in bundle.get('pages', {}).items():
         assessments[url] = assess(q, url, page.get('content', ''), page)
         add(url, page.get('title', ''), 'saved_page')
-        for link in page.get('links', []):
-            if isinstance(link, dict):
-                from urllib.parse import urljoin
-                add(urljoin(url, link.get('url') or link.get('href') or ''), str(link.get('text', '')), 'saved_link', url)
+        for link in page_links(page, url):
+            add(link['url'], link['label'], 'saved_link', url, materials.dependency(q,url,page,link,
+                info=assessments[url]['material_requirements'],match=assessments[url]['source_contract']))
     leads = bundle.get('source_leads', {})
     for lead in (leads.values() if isinstance(leads, dict) else leads):
         if isinstance(lead, dict):
@@ -95,20 +99,30 @@ def plan(bundle):
                 extracted = observed_urls(url or '')
                 url = extracted[0] if extracted else None
             add(url, str(lead.get('title', '')), 'saved_link' if origin=='page_link' else 'saved_lead', lead.get('parent_url'))
-    gaps = [{'url': u, 'reason': a.get('reason') or 'target_coverage_unknown'} for u, a in assessments.items()
+    gaps = [{'url': u, 'reason': a.get('reason') or ('target_data_file_missing' if a['material_requirements']['state']=='directory_only' else 'target_coverage_unknown')} for u, a in assessments.items()
             if a['coverage_status'] not in {'candidate_text','candidate_data'}]
     if not assessments:
         gaps.append({'url': None, 'reason': 'no_saved_bodies'})
+    data_present = any(a['coverage_status']=='candidate_data' for a in assessments.values())
+    if data_present:
+        for gap in gaps:
+            if gap['reason']=='target_data_file_missing': gap['reason']='directory_context_target_data_saved'
     period_context = [dict(c,deferred_reason='observed_other_period_context') for c in candidates.values()
                       if not c['rule_primary'] and c['source_contract']['quarter_status']=='mismatch']
     sources = [c for c in candidates.values() if c['rule_primary'] or
+               (c['material_dependency']['role']!='ordinary_detail' and c['source_contract']['quarter_status']!='mismatch') or
                (c['source_contract']['entity_acceptable'] and
                 c['source_contract']['quarter_status']!='mismatch' and
-                (c['source_contract']['topic_acceptable'] or c['source_contract']['preferred_domain']))]
+                (c['source_contract']['topic_acceptable'] or c['source_contract']['preferred_domain'] or
+                 c['material_dependency']['role']!='ordinary_detail'))]
     sources.sort(key=lambda c: (-c['score'], c['url']))
     return {'protocol': PROTOCOL, 'sources': sources, 'body_assessments': assessments, 'gaps': gaps,
             'observed_period_context':period_context,
             'source_contract': expected,
+            'material_coverage':{'target_data_candidate_saved':data_present,
+                'directory_urls':[u for u,a in assessments.items() if a['material_requirements']['state']=='directory_only'],
+                'candidate_data_urls':[u for u,a in assessments.items() if a['coverage_status']=='candidate_data'],
+                'semantic_completeness_verified':False},
             'search_query': str(q.get('question', '')) + ' '+ ' '.join(a for a in MONTHS if a.lower() in context.lower()),
             'search_role': 'key_gap', 'labels_used': False, 'urls_synthesized': False,
             'condition_coverage_requires_analysis': True}
@@ -192,6 +206,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     identity['routing_sha256'] = hashlib.sha256(Path(routing.__file__).read_bytes()).hexdigest()
     identity['source_identity_sha256'] = hashlib.sha256(Path(__file__).parents[1].joinpath('evidence/source_identity.py').read_bytes()).hexdigest()
     identity['coverage_sha256'] = hashlib.sha256(Path(__file__).parents[1].joinpath('evidence/source_coverage.py').read_bytes()).hexdigest()
+    identity['materials_sha256'] = hashlib.sha256(Path(materials.__file__).read_bytes()).hexdigest()
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
     save(folder/'identity.json', identity)
@@ -251,6 +266,14 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         frontier = [(source, 0) for source in gap_plan['sources']]
     queued = {source['url'] for source, _ in frontier}
     cursor = 0
+    current_plan = gap_plan
+    def expand_children(url, depth):
+        if not max_link_depth or depth >= max_link_depth: return
+        children = [s for s in current_plan['sources'] if s['url'] not in queued and s.get('parent_url') == url]
+        admission = routing.admit(children, overlay['request'], [s for s,_ in frontier], overlay['pages'])
+        deferred.extend(admission['deferred'])
+        for discovered in admission['accepted']:
+            queued.add(discovered['url']); frontier.append((discovered,depth+1))
     def save_frontier():
         # Deduplicate diagnostics across restarts without deleting candidates.
         unique_deferred = {(r['url'],r['deferred_reason']):r for r in deferred}
@@ -267,6 +290,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         url = source['url']
         if any(r.get('url') == url and r['status'] == 'captured' for r in state['attempts']) or (
             url in overlay['pages'] and assess(overlay['request'], url, overlay['pages'][url].get('content', ''), overlay['pages'][url])['eligible_for_evidence']):
+            expand_children(url,depth)
+            save_frontier()
             continue
         if not network: continue
         row = None
@@ -287,12 +312,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         if max_link_depth and row and row.get('status') == 'captured':
             captured = load(folder/row['response_file'])
             overlay['pages'][url] = captured
-            if depth < max_link_depth:
-                children = [s for s in plan(overlay)['sources'] if s['url'] not in queued and s.get('parent_url') == url]
-                admission = routing.admit(children, overlay['request'], [s for s,_ in frontier], overlay['pages'])
-                deferred.extend(admission['deferred'])
-                for discovered in admission['accepted']:
-                    queued.add(discovered['url']); frontier.append((discovered,depth+1))
+            current_plan = plan(overlay)
+            expand_children(url,depth)
         save_frontier()
     save_frontier()
     for row in state['attempts']:
@@ -315,6 +336,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     from ForecastAgent.evidence.source_identity import inventory
     overlay['capture_identity_inventory'] = inventory(overlay['pages'])
     overlay['enhanced_supplement']['deferred_candidates'] = load(folder/'frontier.json')['deferred']
+    overlay['enhanced_supplement']['material_coverage'] = plan(overlay)['material_coverage']
     save(folder/'analysis-input.json', overlay); save(folder/'reading-hints.json', hints(overlay))
     save(folder/'report.json', {'usage': usage(bundle, prior, state), 'caps': caps,
          'raw_preserved': True, 'search_callback_enabled': bool(search), 'no_forecasts_submitted': True})
