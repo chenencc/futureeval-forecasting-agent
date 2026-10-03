@@ -3,7 +3,9 @@ import io
 import json
 import os
 import subprocess
+import time
 import zipfile
+from urllib.error import HTTPError
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlencode
 from urllib.request import Request, build_opener, HTTPRedirectHandler
@@ -67,8 +69,19 @@ def open_ids(token, get=None):
         else:
             request = Request(url, headers={'Authorization': 'Token ' + token,
                 'Accept': 'application/json', 'User-Agent': 'FutureEval-public-monitor/1.0'})
-            with build_opener(NoRedirect()).open(request, timeout=45) as response:
-                data = json.load(response)
+            for attempt in range(3):
+                try:
+                    with build_opener(NoRedirect()).open(request, timeout=45) as response:
+                        data = json.load(response)
+                    break
+                except HTTPError as error:
+                    if error.code not in {429, 500, 502, 503, 504} or attempt == 2:
+                        raise
+                    try:
+                        delay = min(45, max(1, int(error.headers.get('Retry-After', '10'))))
+                    except ValueError:
+                        delay = 10
+                    time.sleep(delay)
         if not isinstance(data, dict):
             raise ValueError('Unexpected Metaculus response')
         rows = data.get('results', data.get('posts'))
@@ -89,7 +102,9 @@ def open_ids(token, get=None):
                 if not ident.isdecimal():
                     raise ValueError('Invalid question identity')
                 ids.add(ident)
-        url = data.get('next')
+        # Metaculus's infinite-count paginator can return next for an empty page.
+        # Empty rows prove completion; following next would create a rate-limit loop.
+        url = data.get('next') if rows else None
         if url and url.startswith('/'):
             url = 'https://www.metaculus.com' + url
     return ids
@@ -114,14 +129,19 @@ def run():
     token = os.environ.get('METACULUS_TOKEN')
     if not token:
         raise ValueError('Configure METACULUS_TOKEN as a repository secret')
+    token = token.strip()
+    if token.startswith('Token '):
+        token = token[6:].strip()
     base = f'repos/{target}/actions'
     recent = []
     for workflow in (MONITOR, WORKER):
         recent.extend(gh(f'{base}/workflows/{workflow}/runs?per_page=30')['workflow_runs'])
     active = any(r['status'] != 'completed' or (now() - date(r['created_at'])).total_seconds() < 120 for r in recent)
+    ids = open_ids(token)
     if active:
         return {'schema': 'public-monitor-health-v1', 'checked_at_utc': now().isoformat(),
-            'reason': 'worker_active', 'dispatched': False}
+            'reason': 'worker_active', 'dispatched': False,
+            'open_question_count': len(ids), 'open_scan_complete': True}
     state = {'tasks': {}}
     checkpoint_time = None
     completed = sorted([r for r in recent if r.get('path') == '.github/workflows/' + WORKER
@@ -143,10 +163,11 @@ def run():
         if any(s['name'] == 'Acquire analyze and submit eligible questions' and s['conclusion'] != 'skipped'
                for job in jobs for s in job.get('steps', [])):
             raise ValueError('Latest executed worker checkpoint missing; refuse rediscovery')
-    ids = open_ids(token)
     last = checkpoint_time or (max((date(r['created_at']) for r in recent), default=None))
     heartbeat = last is None or (now() - last).total_seconds() >= 86400
     reason = decision(ids, state, heartbeat=heartbeat)
+    if reason == 'idle' and os.environ.get('MONITOR_DISPATCH_PROBE', 'false').lower() == 'true':
+        reason = 'acceptance_checkpoint_refresh'
     dispatched = reason != 'idle'
     if dispatched:
         if os.environ.get('MONITOR_DISPATCH_ENABLED', 'false').lower() != 'true':
@@ -165,6 +186,9 @@ if __name__ == '__main__':
     except Exception as error:
         report = {'schema': 'public-monitor-health-v1', 'checked_at_utc': now().isoformat(),
             'status': 'failed', 'error_type': type(error).__name__, 'dispatched': False}
+        if isinstance(error, HTTPError):
+            report['metaculus_http_status'] = error.code
+            report['response_format'] = 'json' if 'json' in error.headers.get('Content-Type', '') else 'non_json'
         print(json.dumps(report))
         with open('health.json', 'w', encoding='utf-8') as stream:
             json.dump(report, stream, indent=2)

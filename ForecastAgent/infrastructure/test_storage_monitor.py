@@ -57,7 +57,13 @@ class Acceptance(unittest.TestCase):
                 'next': '/api/posts/?offset=100' if len(calls) == 1 else None}
         self.assertEqual(watch.open_ids('unused', get), {'1', '2'})
         with self.assertRaisesRegex(ValueError, 'pagination URL'):
-            watch.open_ids('unused', lambda _: {'results': [], 'next': 'https://evil.example/api/posts/'})
+            watch.open_ids('unused', lambda _: {'results': [{'question': {'id': 1, 'status': 'open'}}], 'next': 'https://evil.example/api/posts/'})
+        empty_calls = []
+        def empty(url):
+            empty_calls.append(url)
+            return {'results': [], 'next': '/api/posts/?offset=100'}
+        self.assertEqual(watch.open_ids('unused', empty), set())
+        self.assertEqual(len(empty_calls), 1)
 
 
 if __name__ == '__main__':
