@@ -161,6 +161,6 @@ jobs:
             for(const name of ['futureeval-official-state','futureeval-official-control']) {
               const checkpoints=artifacts.filter(a=>a.name===name&&!a.expired)
                 .sort((a,b)=>b.id-a.id);
-              for(const artifact of checkpoints.slice(3))
+              for(const artifact of checkpoints.slice(3,13))
                 await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
             }
