@@ -24,7 +24,7 @@ SEARCH = {'query':'Agency release', 'reason':'Find primary record', 'need_ids':[
 
 
 def prepared(directory, request=LIVE):
-    task = RetrievalTask(Path(directory), request)
+    task = RetrievalTask(Path(directory), deepcopy(request))
     task.bundle['plan'] = deepcopy(PLAN)
     task.bundle['pages'][URL] = page()
     freeze_skills(task.bundle)
