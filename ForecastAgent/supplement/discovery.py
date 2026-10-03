@@ -23,9 +23,10 @@ def safe_url(url):
     except (ValueError,TypeError):return None
 
 def discover(bundle, gaps, limit=3):
+    from ForecastAgent.evidence.source_identity import observed_urls, observed_links
     request=bundle.get('request',{})
     criteria=str(request.get('resolution_criteria',''))
-    rule_urls=[u.rstrip(').,') for u in re.findall(r'https?://[^\s<>]+',criteria)]
+    rule_urls=observed_urls(criteria)
     rule_urls=[u for u in (safe_url(u) for u in rule_urls) if u]
     rule_hosts={urlsplit(u).hostname for u in rule_urls}
     context=tokens(str(request.get('question',''))+' '+criteria)
@@ -35,7 +36,7 @@ def discover(bundle, gaps, limit=3):
         if url:observed.append((url,str(label or ''),origin,parent))
     for field in ['resolution_criteria','background']:
         text=str(request.get(field,''))
-        for label,url in re.findall(r'\[([^]]+)\]\((https?://[^)]+)\)',text):add(url,label,'question_'+field)
+        for link in observed_links(text):add(link['url'],link['label'],'question_'+field)
     for search in bundle.get('searches',[])+bundle.get('exa_searches',[]):
         for hit in search.get('results',[]):
             add(hit.get('url'),str(hit.get('title',''))+' '+str(hit.get('content',''))[:2000],'saved_search')

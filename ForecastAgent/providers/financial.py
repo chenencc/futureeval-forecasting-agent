@@ -23,9 +23,8 @@ def quoted_dates(text):
 
 
 def source_urls(text):
-    # Decode Markdown/HTML link syntax without inventing any path or authority.
-    text = re.sub(r'\\([&?_#=])', r'\1', unescape(text))
-    return list(dict.fromkeys(u.rstrip('.,;') for u in re.findall(r'https?://[^\s<>"\[\]()]+', text) if canonical_url(u)))
+    from ForecastAgent.evidence.source_identity import observed_urls
+    return [url for url in observed_urls(text) if canonical_url(url)]
 
 
 def allowed_source(url):

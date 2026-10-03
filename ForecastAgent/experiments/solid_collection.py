@@ -59,6 +59,8 @@ def audit(bundle, overlay, state):
         'source_diagnostics': checks['body_assessments'],
         'rule_primary_urls': primary, 'rule_primary_unreadable_or_missing': missing_primary,
         'remaining_gaps': overlay.get('enhanced_supplement', {}).get('remaining_gaps', []),
+        'capture_identity_inventory': overlay.get('capture_identity_inventory', {}),
+        'deferred_candidates': overlay.get('enhanced_supplement', {}).get('deferred_candidates', []),
         'cumulative_usage': counts, 'initial_usage': {
             'http': len(bundle.get('fetch_attempts', [])),
             'model_http': len(bundle.get('model_attempts', [])),

@@ -61,3 +61,37 @@ entity/period/metric diagnostics, original fetch failures and unfetched candidat
 Report actual provider requests, known tokens and missing usage separately.
 Runtime success or a readable body is not semantic completeness. Evaluate source
 quality blind to variant identity before changing production.
+
+## Source architecture
+
+`evidence/source_identity.py` extracts observed Markdown/HTML URLs and keeps exact
+transport identities. Query bytes, path case and substantive date parameters are
+preserved. Slash variants are only possible aliases: selecting one for initial
+capture defers the other with an explicit reason, never verifies equivalence.
+Exact rule URLs remain eligible. Saved identical bodies form hash groups without
+deleting any original capture or declaring the resources semantically equivalent.
+
+`supplement/frontier.py` distinguishes seed sources from observed child links.
+Page-link provenance survives copying into the source catalog. Child expansion is
+limited to 4 per parent, 8 per host and 16 per task under the existing depth and
+HTTP/render caps. Navigation routes, weak subject anchors and possible aliases
+are deferred into the inspectable backlog. These bounds are collection policy,
+not a completeness claim. Missing identifiers do not delete original bodies.
+
+`evidence/source_coverage.py` exposes separate literal axes for identifiers, dates,
+units, clock strings and measurements. A URL's date is separate from a date in
+saved content. An observed data candidate requires compatible identifiers, body
+dates and measurement structure. It does not select a resolved value, convert a
+timezone, verify metric meaning or claim official authority. Prose keeps its
+independent diagnostics; literal uncertainty is never an event non-occurrence.
+
+`source_architecture_replay` validates these contracts using saved captures only:
+
+```sh
+python -m ForecastAgent.experiments.source_architecture_replay \
+  --inputs saved-solid-collection-artifacts --output offline-review
+```
+
+It preserves cumulative provider journals and checks zero new reservations.
+The resulting frontier is a prospective routing diagnostic, not evidence of
+counterfactual live acquisition quality or actual HTTP savings.

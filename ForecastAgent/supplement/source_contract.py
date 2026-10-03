@@ -1,7 +1,8 @@
 """Observable source contracts, without event judgments or outcome labels."""
 import re
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, unquote
 from ForecastAgent.supplement.discovery import tokens, safe_url
+from ForecastAgent.evidence.source_identity import observed_urls
 
 MONTHS = 'January February March April May June July August September October November December'.split()
 GENERIC = set('what when how much many company companies report reported reporting earnings release releases financial quarterly annual total adjusted seasonally thousands units million billion percent percentage preliminary initial value amount highest lowest publicly available the for a an and or of to in on at by is are was were all any its their this that it has have been with from than as before after during according'.split())
@@ -28,8 +29,8 @@ def contract(question):
     topics = tokens(title) - GENERIC - {m.lower() for m in MONTHS}
     sources = {}
     for field in ('resolution_criteria', 'background'):
-        for raw in re.findall(r'https?://[^\s<>]+', str(question.get(field, ''))):
-            url = safe_url(raw.rstrip(').,'))
+        for raw in observed_urls(question.get(field, '')):
+            url = safe_url(raw)
             if url:
                 sources[url] = field
     periods = re.findall(r'\bQ([1-4])\s*(20\d\d)?', title, re.I)
@@ -54,11 +55,20 @@ def match_source(expected, url, text):
     topic_matches = sorted(set(expected['topic_terms']) & tokens(text+' '+urlsplit(url).path))
     entity = 'not_required' if not issuer else 'observed_name' if observed else 'preferred_domain' if preferred else 'not_observed'
     period = expected['quarter']
-    quarter_matches = not period or bool(re.search(r'\bQ'+period+r'\b|\b'+{'1':'first','2':'second','3':'third','4':'fourth'}[period]+r' quarter\b', text, re.I))
+    signal = text+' '+unquote(urlsplit(url).path)
+    observed_quarters = set(re.findall(r'\bQ([1-4])\b',signal,re.I))
+    body_quarters = set(re.findall(r'\bQ([1-4])\b',text,re.I))
+    for number,name in {'1':'first','2':'second','3':'third','4':'fourth'}.items():
+        if re.search(r'\b'+name+r' quarter\b',signal,re.I): observed_quarters.add(number)
+        if re.search(r'\b'+name+r' quarter\b',text,re.I): body_quarters.add(number)
+    quarter_matches = not period or period in body_quarters
+    quarter_status = 'not_required' if not period else 'observed' if period in observed_quarters else 'mismatch' if observed_quarters else 'unknown'
     metrics = expected['metric_phrases']
     metric_observed = not metrics or any(m in body for m in metrics)
     return {'entity_status': entity, 'preferred_domain': preferred, 'topic_matches': topic_matches,
-            'quarter_observed': quarter_matches, 'entity_acceptable': entity != 'not_observed',
+            'quarter_observed': quarter_matches, 'quarter_status':quarter_status,
+            'observed_quarters':sorted(observed_quarters), 'entity_acceptable': entity != 'not_observed',
+            'body_quarters':sorted(body_quarters),
             'topic_acceptable': bool(expected['topic_terms']) and len(topic_matches) >= min(2, len(expected['topic_terms'])),
             'metric_phrase_observed': metric_observed, 'source_identity_verified': False,
             'metric_verified': False, 'initial_release_verified': False}
