@@ -6,7 +6,7 @@ on:
         description: 'Existing campaign or free repair of the completed fifty'
         default: campaign
         type: choice
-        options: [campaign, recollection50, targeted6]
+        options: [campaign, recollection50, targeted6, enhanced5]
       source_run:
         description: 'Frozen raw acquisition parent run'
         default: '36948699455'
@@ -26,6 +26,56 @@ concurrency:
   group: supplement-acquisition
   cancel-in-progress: false
 jobs:
+  enhanced-five:
+    if: inputs.mode == 'enhanced5'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_competition_mercury ForecastAgent.tests.test_targeted_supplement ForecastAgent.tests.test_collection_handoff ForecastAgent.tests.test_acquisition_quality
+      - name: Require preserved state for reruns
+        run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: checked-snapshot-*
+          merge-multiple: false
+          run-id: '37086283246'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-parents
+      - uses: actions/download-artifact@v4
+        with:
+          name: acquisition-supplement-100-v1
+          run-id: '36961850565'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-journals/binary
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nonbinary-full-pipeline-*
+          merge-multiple: false
+          run-id: '37031590213'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-journals/nonbinary
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: enhanced-supplement-five
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-five
+      - run: python -u -m ForecastAgent.supplement.acceptance_five --parents snapshots/enhanced-parents --journals snapshots/enhanced-journals --output snapshots/enhanced-five --network
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enhanced-supplement-five
+          path: snapshots/enhanced-five
+          retention-days: 90
   targeted-six:
     if: inputs.mode == 'targeted6'
     runs-on: ubuntu-latest
