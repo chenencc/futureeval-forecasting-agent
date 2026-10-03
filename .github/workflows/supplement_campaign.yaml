@@ -44,24 +44,11 @@ jobs:
           RESUME_RUN: ${{ inputs.resume_run }}
       - uses: actions/download-artifact@v4
         with:
-          pattern: checked-snapshot-*
-          merge-multiple: false
-          run-id: '37086283246'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/enhanced-parents
-      - uses: actions/download-artifact@v4
-        with:
-          name: acquisition-supplement-100-v1
-          run-id: '36961850565'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/enhanced-journals/binary
-      - uses: actions/download-artifact@v4
-        with:
           pattern: nonbinary-full-pipeline-*
           merge-multiple: false
           run-id: '37031590213'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/enhanced-journals/nonbinary
+          path: snapshots/enhanced-parents
       - uses: actions/download-artifact@v4
         if: inputs.resume_run != ''
         with:
@@ -69,7 +56,7 @@ jobs:
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/enhanced-five
-      - run: python -u -m ForecastAgent.supplement.acceptance_five --parents snapshots/enhanced-parents --journals snapshots/enhanced-journals --output snapshots/enhanced-five --network
+      - run: python -u -m ForecastAgent.supplement.acceptance_five --parents snapshots/enhanced-parents --journals snapshots/enhanced-parents --output snapshots/enhanced-five --network
       - uses: actions/upload-artifact@v4
         if: always()
         with:

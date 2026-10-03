@@ -4,12 +4,20 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import load, save, digest
 from ForecastAgent.supplement import enhanced
 
-IDS = ['41206', '43461', '44547', '43658', '45045']
+IDS = ['44126', '43658', '45183', '26754', '45045']
 
 
 def run(parents, journals, output, network=False):
     parents, journals, output = map(Path, (parents, journals, output))
     inputs = {p.parent.name: p for p in parents.glob('checked-snapshot-*/tasks/*/analysis-input.json')}
+    bundles = {i: load(p) for i, p in inputs.items() if i in IDS}
+    # Fall back to canonical, still-available full-pipeline artifacts, restoring
+    # their exact independent repair overlays rather than fabricating budgets.
+    from ForecastAgent.analysis.inputs import resolve_bundle
+    for path in parents.glob('nonbinary-full-pipeline-*/tasks/*/acquisition/bundle.json'):
+        ident = path.parent.parent.name
+        if ident in IDS:
+            bundles[ident] = resolve_bundle(load(path), ident, path.parent.parent/'supplement')
     prior = {}
     for path in journals.rglob('supplement.json'):
         if path.parent.name not in IDS: continue
@@ -17,10 +25,10 @@ def run(parents, journals, output, network=False):
         if path.parent.name in prior and digest(prior[path.parent.name]) != digest(row):
             raise ValueError('Ambiguous prior journal: '+path.parent.name)
         prior[path.parent.name] = row
-    if not set(IDS) <= set(inputs) or not set(IDS) <= set(prior):
+    if not set(IDS) <= set(bundles) or not set(IDS) <= set(prior):
         raise ValueError('Frozen input or prior journal missing')
     identity = {'protocol': 'enhanced-online-five-acceptance-v1', 'ids': IDS,
-                'input_sha256': {i: digest(load(inputs[i])) for i in IDS},
+                'input_sha256': {i: digest(bundles[i]) for i in IDS},
                 'prior_journal_sha256': {i: digest(prior[i]) for i in IDS},
                 'caps': enhanced.CAPS, 'budget_reset': False, 'search_calls_enabled': False,
                 'model_calls_enabled': False}
@@ -28,7 +36,7 @@ def run(parents, journals, output, network=False):
         raise ValueError('Frozen pilot changed')
     save(output/'manifest.json', identity); results = []
     for ident in IDS:
-        folder = output/'tasks'/ident; original = load(inputs[ident])
+        folder = output/'tasks'/ident; original = bundles[ident]
         save(folder/'parent-input.json', original); save(folder/'prior-supplement.json', prior[ident])
         before = enhanced.plan(original)
         try:
