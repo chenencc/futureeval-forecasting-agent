@@ -59,6 +59,7 @@ def run(root, repo, gh, *, execute=False):
     if active and execute:
         raise RuntimeError('Active runs exist; retry cleanup when workers are idle')
     candidates = []
+    unverified = []
     for item in artifacts:
         ident = str(item['id'])
         expected = imported.get(ident)
@@ -66,7 +67,9 @@ def run(root, repo, gh, *, execute=False):
             continue
         archive = root / 'archives' / expected[:2] / (expected + '.zip')
         if not archive.is_file() or digest(archive) != expected:
-            raise ValueError('Local archive missing or corrupt; retain remote artifact')
+            unverified.append({'id': item['id'], 'name': item['name'],
+                'size_bytes': item['size_in_bytes'], 'reason': 'local_zip_missing_or_hash_mismatch'})
+            continue
         candidates.append(item)
     report = {'schema': 'verified-artifact-prune-v1', 'repo': repo, 'execute': execute,
         'inventory_bytes': sum(a['size_in_bytes'] for a in artifacts if not a['expired']),
@@ -76,6 +79,7 @@ def run(root, repo, gh, *, execute=False):
             'run_id': (a.get('workflow_run') or {}).get('id'),
             'local_zip_sha256': imported[str(a['id'])]} for a in candidates],
         'active_runs': len(active), 'deleted_ids': []}
+    report['retained_unverified'] = unverified
     for item in candidates if execute else []:
         api(gh, f"repos/{repo}/actions/artifacts/{item['id']}", 'DELETE')
         report['deleted_ids'].append(item['id'])
