@@ -1,4 +1,4 @@
-name: Condition bindings paired forty saved evidence experiment
+name: Matched original coverage condition bindings experiment
 on:
   workflow_dispatch:
     inputs:
@@ -13,7 +13,7 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: analysis-conditions-forty
+  group: analysis-matched-forty
   cancel-in-progress: false
 jobs:
   paired:
@@ -72,16 +72,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PARENT_RUN: ${{ inputs.resume_run }}
-          ARTIFACT_NAME: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          ARTIFACT_NAME: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
       - uses: actions/download-artifact@v4
         if: steps.resume_artifact.outputs.available == 'true'
         with:
-          name: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/paired
       - name: Replay preserved collection and repair then analyze with Mercury
-        run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired --strategy conditions
+        run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired --strategy matched
         env:
           COHORT: ${{ matrix.cohort }}
           BATCH: ${{ matrix.batch }}
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           path: snapshots/paired
           retention-days: 90
 

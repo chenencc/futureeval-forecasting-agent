@@ -16,7 +16,7 @@ def run(cohort, batch, raw, supplements, baseline, output, dry_run=False, strate
     if cohort not in ('binary','nonbinary') or batch not in range(1,5):
         raise ValueError('Frozen cohort and batch required')
     raw, supplements, baseline, output = map(Path,(raw,supplements,baseline,output))
-    if strategy not in ('checked','p0','conditions'):raise ValueError('Unknown analysis strategy')
+    if strategy not in ('checked','p0','conditions','matched'):raise ValueError('Unknown analysis strategy')
     if cohort == 'binary':
         selected=[{'id':ident} for ident in BINARY_IDS[(batch-1)*5:batch*5]]
         prior={row['id']:row for row in load(baseline/'report.json')['rows']}
@@ -37,7 +37,7 @@ def run(cohort, batch, raw, supplements, baseline, output, dry_run=False, strate
                         'baseline_sha256':digest(p)} for i,r,b,s,p in frozen],
               'new_searches':0,'new_network_repairs':0,'mercury_http_cap_per_task':2,
               'model':'inception/mercury-decide:free','outcome_labels_loaded':False}
-    if strategy in ('p0','conditions'):identity['strategy']=strategy
+    if strategy in ('p0','conditions','matched'):identity['strategy']=strategy
     if (output/'selection.json').exists() and load(output/'selection.json')!=identity:
         raise ValueError('Frozen paired experiment changed')
     save(output/'selection.json',identity)
@@ -49,7 +49,7 @@ def run(cohort, batch, raw, supplements, baseline, output, dry_run=False, strate
                 overlay=copy.deepcopy(saved)
                 overlay['program_inspection']=copy.deepcopy(view['program_inspection'])
                 return overlay
-            if strategy in ('p0','conditions'):
+            if strategy in ('p0','conditions','matched'):
                 # Replay the original acquisition and repair without the experimental screening layer.
                 view=copy.deepcopy(saved)
                 save(folder/'handoff/raw-bundle.json',bundle)
@@ -61,13 +61,19 @@ def run(cohort, batch, raw, supplements, baseline, output, dry_run=False, strate
             assert all(digest(view.get(k,[]))==digest(bundle.get(k,[])) for k in LEDGERS)
             save(folder/'baseline-result.json',prior_row)
             save(folder/'analysis-input.json',view)
-            if strategy in ('p0','conditions'):
-                if strategy=='conditions':
+            if strategy in ('p0','conditions','matched'):
+                if strategy=='matched':
+                    from ForecastAgent.analysis.matched_conditions import run_task, final_request
+                elif strategy=='conditions':
                     from ForecastAgent.analysis.condition_chain import run_task
                 else:
                     from ForecastAgent.analysis.p0 import run_task
                 metadata=load(Path(binary.__file__).with_name('three_route_time_metadata.json'))[ident] if cohort=='binary' else None
-                result=run_task(view,folder/'analysis',row=row if cohort=='nonbinary' else None,metadata=metadata,dry_run=dry_run)
+                if strategy=='matched':
+                    prior_folder=baseline/'tasks'/ident if cohort=='binary' else raw/'tasks'/ident/'analysis'
+                    result=run_task(view,folder/'analysis',final_request(prior_folder),row=row if cohort=='nonbinary' else None,dry_run=dry_run)
+                else:
+                    result=run_task(view,folder/'analysis',row=row if cohort=='nonbinary' else None,metadata=metadata,dry_run=dry_run)
             elif dry_run:
                 if cohort=='binary':binary.run_task(view,folder/'analysis',load(Path(binary.__file__).with_name('three_route_time_metadata.json'))[ident],True)
                 else:save(folder/'analysis/packet.json',nonbinary.chain.full_packet(view))
@@ -91,5 +97,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser()
     for name in ('cohort','raw','supplements','baseline','output'):p.add_argument('--'+name,required=True)
     p.add_argument('--batch',type=int,required=True);p.add_argument('--dry-run',action='store_true')
-    p.add_argument('--strategy',choices=['checked','p0','conditions'],default='checked')
+    p.add_argument('--strategy',choices=['checked','p0','conditions','matched'],default='checked')
     a=p.parse_args();run(a.cohort,a.batch,a.raw,a.supplements,a.baseline,a.output,a.dry_run,a.strategy)
