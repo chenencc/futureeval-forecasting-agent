@@ -1,0 +1,453 @@
+{
+  "schema": "capture_acceptance_20_result_v1",
+  "run_ids": [
+    37090996456,
+    37091294223
+  ],
+  "tested_commits": {
+    "baseline": "673c464ff7ee0c6263ba0d57f4038c8449022923",
+    "current": "1260b4c45293237a1de91b1decf038da68b87eea"
+  },
+  "primary_ids": [
+    "40967",
+    "43682",
+    "39886",
+    "43283",
+    "43259",
+    "43708",
+    "43991",
+    "44395",
+    "44512",
+    "24819",
+    "37307",
+    "38940",
+    "39992",
+    "40852",
+    "41561",
+    "42135",
+    "44241",
+    "14025",
+    "43844",
+    "45015"
+  ],
+  "reuse_controls": [
+    "40417",
+    "40730",
+    "41480"
+  ],
+  "primary_summary": {
+    "baseline": {
+      "questions": 20,
+      "readable_captures": 3,
+      "questions_with_readable_additions": 3,
+      "review_classes": {
+        "rejected": 1,
+        "partial_context": 2
+      },
+      "useful_captures": 2,
+      "questions_with_useful_additions": 2,
+      "http_request_records": 4,
+      "browser_requests_allowed": 43,
+      "local_reparse_attempts": 1,
+      "novel_decisive_gap_closures": 0,
+      "original_source_gaps_remaining": 47
+    },
+    "current": {
+      "questions": 20,
+      "readable_captures": 18,
+      "questions_with_readable_additions": 9,
+      "review_classes": {
+        "background_only": 5,
+        "rejected": 4,
+        "partial_context": 6,
+        "direct_target_evidence": 3
+      },
+      "useful_captures": 9,
+      "questions_with_useful_additions": 7,
+      "http_request_records": 45,
+      "browser_requests_allowed": 43,
+      "local_reparse_attempts": 1,
+      "novel_decisive_gap_closures": 0,
+      "original_source_gaps_remaining": 49
+    }
+  },
+  "paired_useful_capture_distribution": {
+    "improved": 6,
+    "tied": 13,
+    "regressed": 1
+  },
+  "integrity_checks": {
+    "input_hashes": true,
+    "capture_hashes": true,
+    "equal_allowances": true,
+    "no_quota_reset": true,
+    "raw_capture_hashes": true
+  },
+  "review_protocol": {
+    "reviewer": "Codex manual content review; not blinded",
+    "classes": [
+      "direct_target_evidence",
+      "partial_context",
+      "background_only",
+      "rejected"
+    ],
+    "useful_definition": "Direct target evidence or explicitly qualified partial context; partial context does not establish outcome.",
+    "critical_gap_closure_definition": "Previously missing decisive target-event evidence becomes available relative to the original parent packet, not merely an additional URL.",
+    "original_source_gap_definition": "Previously unreadable original exact URL now has a readable repair; alternatives do not silently close that URL."
+  },
+  "conclusion": {
+    "pdf_reader": "Validated source-byte recovery on task 40967.",
+    "discovery": "More readable and topic-related additions, but no observed novel decisive evidence.",
+    "tradeoffs": [
+      "Discovery consumes HTTP slots before original repair, losing two previously readable original-URL repairs.",
+      "Exact rule links can be institutional homepages or general policy context rather than event details.",
+      "Candidates include wrong years, post-deadline context, and incorrect legal/event phases."
+    ],
+    "production_recommendation": "Keep experimental; do not deploy discovery ranking as a demonstrated critical-gap improvement.",
+    "next_priorities": [
+      "Reserve capacity for existing-byte and original-source repairs before exploratory alternatives.",
+      "Rank exact entity, event/metric, event date and page type above generic official-host overlap.",
+      "Deduplicate against existing packet coverage before fetching additional contextual pages."
+    ]
+  },
+  "local_report": "E:/metaculus_data/reports/dev-crawl-paired-20-quality-37090996456.json",
+  "per_question": [
+    {
+      "task_id": "40417",
+      "cohort": "reuse_control",
+      "question": "In Louisiana v. Callais, will SCOTUS strike down Louisiana\u2019s two majority-Black districts, restoring a GOP-leaning map?",
+      "reviews": []
+    },
+    {
+      "task_id": "40730",
+      "cohort": "reuse_control",
+      "question": "Labour Party leadership election before 2027?",
+      "reviews": []
+    },
+    {
+      "task_id": "40967",
+      "cohort": "active_gap_primary",
+      "question": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://www.gov.uk/government/publications/ministerial-code/ministerial-code",
+          "classification": "background_only",
+          "reason": "Institutional conduct rules; does not document Starmer leaving office in 2026.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://www.royal.uk/appointments-knights-companion-most-noble-order-garter",
+          "classification": "rejected",
+          "reason": "2016 Garter appointments; wrong event, people and year.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://assets.publishing.service.gov.uk/media/6a05ef565f39105e0848a2d0/Letter_from_the_Prime_Minister_to_The_Rt_Hon_Wes_Streeting_MP.pdf",
+          "classification": "partial_context",
+          "reason": "14 May 2026 letter records Wes Streeting resignation, not Starmer resignation. Useful role distinction, not resolution.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "41480",
+      "cohort": "reuse_control",
+      "question": "Will the U.S. Supreme Court's decision in Louisiana v. Callais hold that race-conscious districting is unconstitutional?",
+      "reviews": []
+    },
+    {
+      "task_id": "43682",
+      "cohort": "active_gap_primary",
+      "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://blog.cvn.com/watch-the-monsanto-roundup-trial-on-cvn-that-teed-up-landmark-scotus-herbicide-ruling",
+          "classification": "direct_target_evidence",
+          "reason": "Reports June 25 Monsanto v. Durnell ruling overturning Missouri judgment; correct case, disposition and target period.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": "supremecourt.gov/opinions/25pdf/24-1068_n7ip.pdf",
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://mexicosolidarity.com/glyphosate-the-legal-political-battle-that-defines-the-future-of-the-worlds-most-widely-used-herbicide",
+          "classification": "partial_context",
+          "reason": "April 2026 oral-argument and pre-decision context; not a final merits disposition.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "39886",
+      "cohort": "active_gap_primary",
+      "question": "Will Russia, India, and China hold a trilateral (three-way) meeting before September 1, 2026?",
+      "reviews": [
+        {
+          "arm": "baseline",
+          "url": "https://www.mid.ru/en/foreign_policy/news/2151373",
+          "classification": "rejected",
+          "reason": "October 1 Russia-Abkhazia bilateral remarks; wrong participants and after the September 1 target deadline.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "43283",
+      "cohort": "active_gap_primary",
+      "question": "Will Waymo have a service area of 1,200 square miles before July 1, 2026?",
+      "reviews": [
+        {
+          "arm": "baseline",
+          "url": "https://en.wikipedia.org/wiki/Waymo",
+          "classification": "partial_context",
+          "reason": "Company and service-expansion history; not the rule-designated Robo Tracker qualifying-area time series.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://robotracker.app/leaderboard?sort_by=population",
+          "classification": "partial_context",
+          "reason": "Exact operator and metric; current 1,444 square miles has no July 1 historical as-of proof.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://waymo.com/blog/2024/06/largest-autonomous-ride-hail-territory-in-us-now-even-larger",
+          "classification": "background_only",
+          "reason": "2024 Phoenix expansion; correct company but not 2026 total qualifying service area.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "43259",
+      "cohort": "active_gap_primary",
+      "question": "Will the United States and Iran hold another face-to-face diplomatic meeting before June 6, 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "43708",
+      "cohort": "active_gap_primary",
+      "question": "Will Starlink's website show South Africa as a country with Starlink availability before September 1, 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "43991",
+      "cohort": "active_gap_primary",
+      "question": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+      "reviews": []
+    },
+    {
+      "task_id": "44395",
+      "cohort": "active_gap_primary",
+      "question": "Will any U.S. Supreme Court justice announce their retirement before September 1, 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "44512",
+      "cohort": "active_gap_primary",
+      "question": "Will the Government of Albania or Prime Minister Edi Rama resign before September 2026?",
+      "reviews": [
+        {
+          "arm": "baseline",
+          "url": "https://www.kryeministria.al/en/newsroom/komunikim-i-kryeministrit-edi-rama-3/",
+          "classification": "partial_context",
+          "reason": "Direct Rama response to calls for resignation. Capture lacks a demonstrated publication date before September 1; cannot prove entire-period non-occurrence.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://balkaninsight.com/2026/09/11/week-in-review-tests-and-pressures/bi",
+          "classification": "rejected",
+          "reason": "September 11 regional roundup; no qualifying Rama/government resignation before September 1.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://balkaninsight.com/2026/09/29/more-resorts-planned-in-protected-area-at-heart-of-albanian-protests/bi",
+          "classification": "rejected",
+          "reason": "September 29 protest/resort article; calls for resignation are not actual resignation and miss target deadline.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "24819",
+      "cohort": "active_gap_primary",
+      "question": "Will the USMCA be extended promptly at its July 2026 joint review?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://ustr.gov/sites/default/files/files/agreements/FTA/USMCA/Text/34_Final_Provisions.pdf",
+          "classification": "partial_context",
+          "reason": "Authoritative USMCA extension/review mechanism; legal definition rather than July 2026 extension confirmation.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://ustr.gov/about/policy-offices/press-office/press-releases/2025/december/public-hearing-first-joint-review-usmca",
+          "classification": "partial_context",
+          "reason": "2025 official preparations for July 1 2026 review; hearing is not an agreement-extension decision.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "37307",
+      "cohort": "active_gap_primary",
+      "question": "Will  an attempt be made to fire Jerome Powell before the end of his term?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://www.federalreserve.gov/aboutthefed.htm",
+          "classification": "background_only",
+          "reason": "Federal Reserve institutional overview; no Powell dismissal announcement before May 1.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://www.federalreserve.gov/monetarypolicy/fomc.htm",
+          "classification": "background_only",
+          "reason": "Current FOMC membership and September 2026 conference; not a pre-May termination statement.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "38940",
+      "cohort": "active_gap_primary",
+      "question": "Will over 2/3 of EU member states recognize Palestinian\u00a0statehood before July 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "39992",
+      "cohort": "active_gap_primary",
+      "question": "Will Israel participate in the Eurovision Song Contest 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "40852",
+      "cohort": "active_gap_primary",
+      "question": "Will the US House of Representatives censure, expel or reprimand any of its members before April 1, 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "41561",
+      "cohort": "active_gap_primary",
+      "question": "Will the United States launch another strike against Islamic State in Nigeria before Christmas 2026?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://issafrica.org/iss-today/will-the-us-nigeria-targeting-of-iswap-s-deputy-weaken-terrorism",
+          "classification": "direct_target_evidence",
+          "reason": "Reports May 16 2026 joint US/Nigeria assault against ISWAP in Nigeria, including Navy SEAL involvement; target event and period match.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": "pbs.org/newshour/politics/u-s-and-nigerian-mission-kills-islamic-state-group-leader-trump-says",
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "42135",
+      "cohort": "active_gap_primary",
+      "question": "Will the UK increase the qualifying period for settlement to 10 years before May 2026?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://www.london.gov.uk/media/111738/download",
+          "classification": "partial_context",
+          "reason": "January 2026 paper discusses proposed five-to-ten-year ILR reform; proposal is not effective legal adoption.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain",
+          "classification": "rejected",
+          "reason": "Naturalisation eligibility after ILR is a different measure from qualifying residence to obtain settlement.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "44241",
+      "cohort": "active_gap_primary",
+      "question": "Will the Lincoln Memorial Reflecting Pool be fully repaired before September 2026?",
+      "reviews": []
+    },
+    {
+      "task_id": "14025",
+      "cohort": "active_gap_primary",
+      "question": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+      "reviews": []
+    },
+    {
+      "task_id": "43844",
+      "cohort": "active_gap_primary",
+      "question": "Will Hakainde Hichilema receive at least 65% of the vote in the first round of Zambia's 2026 presidential election?",
+      "reviews": [
+        {
+          "arm": "current",
+          "url": "https://en.wikipedia.org/wiki/2026_Zambian_general_election",
+          "classification": "direct_target_evidence",
+          "reason": "2026 presidential-result table gives Hichilema 60.49%, votes and election date; target candidate, indicator and election match.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": "results.elections.org.zm/?type=PRESIDENTIAL",
+          "truth_verified": false
+        },
+        {
+          "arm": "current",
+          "url": "https://www.elections.org.zm/",
+          "classification": "background_only",
+          "reason": "Election Commission homepage lists nomination notices, not presidential vote-share results.",
+          "new_decisive_evidence": false,
+          "existing_parent_decisive_source": null,
+          "truth_verified": false
+        }
+      ]
+    },
+    {
+      "task_id": "45015",
+      "cohort": "active_gap_primary",
+      "question": "Will Italy's Schengen suspension against Spain be lifted before August 30, 2026?",
+      "reviews": []
+    }
+  ]
+}

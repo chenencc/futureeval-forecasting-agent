@@ -75,3 +75,40 @@ one redirect), recovered a government policy HTML page, and retained all source
 restrictions. That policy page is contextual evidence, not proof of the question's
 outcome. The court PDF exceeds the 100-page full-reader limit; no full read was
 attempted and the sampled diagnostic does not imply all pages are readable.
+
+
+## Paired acceptance: twenty active-gap questions
+
+Runs 37090996456 and 37091294223 freeze baseline `673c464` and current `1260b4c`.
+Three already-rescued PDF cases remain as no-repeat controls; twenty additional
+active-gap cases form the primary cohort. Identical original bundle hashes and
+per-arm allowances were checked: two HTTP reservations, one browser render,
+and eight local reparses per task. Arm order alternates per question. No search,
+model or forecast submission occurs. All five experiment artifacts were imported
+into the local data store (406 files). The English per-question audit is in
+`E:/metaculus_data/reports/dev-crawl-paired-20-quality-37090996456.json`.
+
+| Primary-cohort metric | Baseline | Current |
+| --- | ---: | ---: |
+| Readable additions | 3 | 18 |
+| Direct or qualified partial-context additions | 2 | 9 |
+| Questions with useful additions | 2 | 7 |
+| HTTP request records, including redirects | 4 | 45 |
+| Allowed browser requests | 43 | 43 |
+| Novel decisive target-event evidence | 0 | 0 |
+| Remaining original unreadable URL gaps | 47 | 49 |
+
+Manual review was not blinded. Six questions improved in useful-addition count,
+one regressed and thirteen tied. Of eighteen current readable pages, three
+contain direct target-event evidence already present in the original packets,
+six offer qualified partial context, five are background only and four are
+rejected for wrong event/measure/period. These counts measure additional readable
+sources, not forecast accuracy or verified factual truth.
+
+The saved-byte PDF recovery is confirmed. General discovery is experimental:
+readability and related-source recall increase, but no new decisive information
+was demonstrated. Prioritizing alternatives before original HTTP repair crowded
+out two original-URL recoveries, including one useful partial-context page.
+Next improvements should reserve original-repair capacity, rank exact entities,
+metrics/events, event dates and detail-page type, and check existing packet
+coverage before spending on further context. Production remains unchanged.
