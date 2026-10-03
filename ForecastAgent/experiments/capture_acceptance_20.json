@@ -1,0 +1,203 @@
+{
+  "schema": "capture_acceptance_20_v1",
+  "source_run": 36948699455,
+  "source_artifact": "raw-collection-100-v1-state",
+  "baseline_commit": "673c464",
+  "current_commit": "1260b4c",
+  "task_ids": [
+    "40417",
+    "40730",
+    "40967",
+    "41480",
+    "43682",
+    "39886",
+    "43283",
+    "43259",
+    "43708",
+    "43991",
+    "44395",
+    "44512",
+    "24819",
+    "37307",
+    "38940",
+    "39992",
+    "40852",
+    "41561",
+    "42135",
+    "44241"
+  ],
+  "selection": "All five PDF-gap tasks, two index-gap tasks, remaining five JS-gap tasks, and eight domain-diverse access-restricted tasks; selected without reading outcomes.",
+  "independent_experimental_allowances": true,
+  "original_campaign_quotas_reset": false,
+  "per_arm_per_task_limits": {
+    "http": 2,
+    "browser": 1,
+    "local_reparse": 8,
+    "browser_allowed_requests_per_render": 25
+  },
+  "models": 0,
+  "searches": 0,
+  "forecast_submissions": false,
+  "tasks": {
+    "40417": {
+      "bundle_sha256": "21412f5d7c87a3f9cc7ed4809304ae903f47a8a190320ad2e219ff9449b12c13",
+      "question": "In Louisiana v. Callais, will SCOTUS strike down Louisiana\u2019s two majority-Black districts, restoring a GOP-leaning map?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "40730": {
+      "bundle_sha256": "10e77bbfe4d517d78a947776567e27bb81efa6a4adf1fbeae40f8cf5469cc982",
+      "question": "Labour Party leadership election before 2027?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "40967": {
+      "bundle_sha256": "1ecb701e40a56fbb89c045f447cb2136b66e760e4a42fb6c65e220b32d748437",
+      "question": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "41480": {
+      "bundle_sha256": "3fa594a3c164853f680811cd53b0be8fe4d92a184de944c29791bd5bcae085e5",
+      "question": "Will the U.S. Supreme Court's decision in Louisiana v. Callais hold that race-conscious districting is unconstitutional?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "43682": {
+      "bundle_sha256": "4a451cffb30d4913368f270c871658af417dc7bee58ddeda23487f4884b4e001",
+      "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "39886": {
+      "bundle_sha256": "0dfe6aa8d38ffacf28d627da17765da52f456b91c5081e4f5be006eb1382f2f1",
+      "question": "Will Russia, India, and China hold a trilateral (three-way) meeting before September 1, 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "43283": {
+      "bundle_sha256": "e86a7af6c3614e145c10c8de2ac27f1821cd021ba93dfa02d7666d152585166c",
+      "question": "Will Waymo have a service area of 1,200 square miles before July 1, 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "43259": {
+      "bundle_sha256": "dfdd20d35bbf45e4533b9f5e6f51a7f086753c0c6b7ef5e0d2bec18c97cb8a29",
+      "question": "Will the United States and Iran hold another face-to-face diplomatic meeting before June 6, 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "43708": {
+      "bundle_sha256": "374bce61545e7591dda468bad02c9e69972c00ba91df5e02cee20cb9bf35726d",
+      "question": "Will Starlink's website show South Africa as a country with Starlink availability before September 1, 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "43991": {
+      "bundle_sha256": "b26d1126baeca3842ae543f70d62122e52eb83346e5dc35c66aabaedd28c93c5",
+      "question": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "44395": {
+      "bundle_sha256": "94672d6ae6a0d97ffc8a318c4b6d113ac1bfa2fa424c5f5d510fed2a592d0cf8",
+      "question": "Will any U.S. Supreme Court justice announce their retirement before September 1, 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "44512": {
+      "bundle_sha256": "ff26947a7ab230681b5ed66cefbba675c1c68562a7b642c7b57f6f74afbfdcc4",
+      "question": "Will the Government of Albania or Prime Minister Edi Rama resign before September 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "24819": {
+      "bundle_sha256": "be9f1826c015faf2d90ba5971005f44378ed7ed1216b14da6eab327ec46c2a36",
+      "question": "Will the USMCA be extended promptly at its July 2026 joint review?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "37307": {
+      "bundle_sha256": "8f90ea8baf33fa095a316c85d0047115fe6c6acfa5f67871f2b73c66192bdcaa",
+      "question": "Will  an attempt be made to fire Jerome Powell before the end of his term?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "38940": {
+      "bundle_sha256": "01764aa326f3fe4f21d6434be7cd6bfc28d408794f09863417e42a3a07c9c2a0",
+      "question": "Will over 2/3 of EU member states recognize Palestinian\u00a0statehood before July 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "39992": {
+      "bundle_sha256": "1b908053ea4a3f72f0ef67896167a939f94fb3b1c56d16727232c3e43597dae2",
+      "question": "Will Israel participate in the Eurovision Song Contest 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "40852": {
+      "bundle_sha256": "44dec497d3cbeed43f0441d77870e441058f47766cee06897dc705ca683af34f",
+      "question": "Will the US House of Representatives censure, expel or reprimand any of its members before April 1, 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "41561": {
+      "bundle_sha256": "aae5b0b80040d834cfa3df46550e2aa1a53b1ddd701cc9424a020234498af593",
+      "question": "Will the United States launch another strike against Islamic State in Nigeria before Christmas 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "42135": {
+      "bundle_sha256": "586bbd3daf18a41bea7ade08f8e295530105a48b6e34af7dfdee82fe03463570",
+      "question": "Will the UK increase the qualifying period for settlement to 10 years before May 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "44241": {
+      "bundle_sha256": "3a9f320d54e68763c58f750c08150512c860ed662854d489d504f0fb3030b988",
+      "question": "Will the Lincoln Memorial Reflecting Pool be fully repaired before September 2026?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    }
+  }
+}
