@@ -1,0 +1,29 @@
+name: Enhanced supplement offline acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt -r ForecastAgent/requirements-supplement.txt
+      - run: python -m unittest ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_competition_mercury ForecastAgent.tests.test_targeted_supplement ForecastAgent.tests.test_collection_handoff
+      - uses: actions/download-artifact@v4
+        with:
+          name: targeted-supplement-six
+          run-id: '37110607721'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/enhanced-parent
+      - run: python -m ForecastAgent.supplement.validate_enhanced --parent snapshots/enhanced-parent --output snapshots/enhanced-acceptance
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enhanced-supplement-offline-acceptance
+          path: snapshots/enhanced-acceptance

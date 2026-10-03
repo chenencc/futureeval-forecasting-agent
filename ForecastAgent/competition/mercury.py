@@ -50,10 +50,22 @@ def packet_for(bundle):
     return packet
 
 
-def run(bundle, folder):
+def run(bundle, folder, *, reading_hints=None):
     folder=Path(folder); packet=packet_for(bundle); question=bundle['request'];kind=question['question_type']
     spec=None if kind=='binary' else distribution_spec(question)
     registry=chain.questions() if kind=='binary' else typed.questions(spec)
+    selector = chain.select
+    if reading_hints is not None:
+        from ForecastAgent.analysis import priority_reading
+        # Live packet changes the warning/question envelope, but exact source
+        # spans must still match the supplement's immutable saved packet.
+        original_packet = chain.full_packet(bundle)
+        if reading_hints['packet_sha256'] != digest(original_packet):
+            raise ValueError('Supplement reading hints changed')
+        reading_hints = copy.deepcopy(reading_hints)
+        reading_hints['packet_sha256'] = digest(packet)
+        def selector(packet, state=None, reasons=(), limit=chain.FIRST_BYTES, decision_questions=None):
+            return priority_reading.select(packet, reading_hints, state, reasons, limit, decision_questions)
     # Validate distribution feasibility before any HTTP reservation.
     if kind=='multiple_choice':payload(question,{'probability_yes_per_category':{o:1/len(question['options']) for o in question['options']}})
     elif kind!='binary':
@@ -62,6 +74,9 @@ def run(bundle, folder):
               'questions_sha256':digest(registry),'http_cap':2,'byte_limits':[chain.FIRST_BYTES,chain.SECOND_BYTES],
               'implementation_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'selector_sha256':hashlib.sha256(Path(chain.__file__).read_bytes()).hexdigest()}
+    if reading_hints is not None:
+        identity['candidate_reading_hints_sha256'] = digest(reading_hints)
+        identity['candidate_selector_sha256'] = hashlib.sha256(Path(priority_reading.__file__).read_bytes()).hexdigest()
     if (folder/'identity.json').exists() and load(folder/'identity.json')!=identity:
         raise ValueError('Frozen live Mercury identity changed')
     save(folder/'identity.json',identity);save(folder/'packet.json',packet);save(folder/'distribution-spec.json',spec)
@@ -69,12 +84,12 @@ def run(bundle, folder):
     first['evaluation_warning']=LIVE_WARNING
     first['instruction'] += ' Forecast the eventual resolution of this currently open question. All listed conditions are diagnostic, not a substitute for the event probability.'
     # Reserve live instructions before selecting original evidence spans.
-    first,audit=chain.select(packet,first,limit=chain.FIRST_BYTES,decision_questions=registry)
+    first,audit=selector(packet,first,limit=chain.FIRST_BYTES,decision_questions=registry)
     save(folder/'first-state.json',first);save(folder/'first-input-audit.json',audit)
     response=chain.call(first,folder/'first',registry)
     router=chain.route if kind=='binary' else typed.route
     reasons=router(response)
-    second,second_audit=chain.select(packet,first,reasons,chain.SECOND_BYTES,registry) if reasons else (first,audit)
+    second,second_audit=selector(packet,first,reasons,chain.SECOND_BYTES,registry) if reasons else (first,audit)
     existing={s['evidence_id'] for s in first['evidence']}
     added=[s for s in second['evidence'] if s['evidence_id'] not in existing]
     new_chars=sum(len(s['text']) for s in added)
