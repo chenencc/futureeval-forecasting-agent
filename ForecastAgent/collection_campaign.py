@@ -36,8 +36,8 @@ def read(path):
 
 def prepare(root, fixture, count=100, raw_recall=False):
     rows = read(Path(fixture))
-    if type(count) is not int or not 1 <= count <= 100 or len(rows) < count:
-        raise ValueError('Select one to 100 questions from a sufficiently large fixture')
+    if type(count) is not int or not 1 <= count <= 120 or len(rows) < count:
+        raise ValueError('Select one to 120 questions from a sufficiently large fixture')
     selected = rows[:count]
     requests = {}
     for row in selected:
