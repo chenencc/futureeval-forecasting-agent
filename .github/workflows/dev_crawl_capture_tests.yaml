@@ -1,0 +1,25 @@
+name: Dev crawl capture status acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev_crawl]
+    paths:
+      - 'ForecastAgent/readers/capture_status.py'
+      - 'ForecastAgent/runtime/gap_repair.py'
+      - 'ForecastAgent/runtime/retrieval.py'
+      - 'ForecastAgent/supplement/stage.py'
+      - 'ForecastAgent/tests/test_capture_status.py'
+      - '.github/workflows/dev_crawl_capture_tests.yaml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_capture_status ForecastAgent.tests.test_supplement ForecastAgent.tests.test_collection_handoff ForecastAgent.tests.test_raw_recall ForecastAgent.tests.test_retrieval_v3 ForecastAgent.tests.test_readers

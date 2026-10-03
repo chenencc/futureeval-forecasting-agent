@@ -241,10 +241,13 @@ class RetrievalTask:
 
     def page_view(self, page, start=0):
         from ForecastAgent.readers.quality import body_diagnostics
-        diagnostic = body_diagnostics(page['content'])
+        from ForecastAgent.readers.capture_status import capture_status
+        observed=capture_status({},page)
+        diagnostic=body_diagnostics(page['content'])
+        diagnostic.update(state=observed['body_state'],usable_text=observed['usable_text'])
         if not diagnostic['usable_text']:
             return {'url':page.get('url',''), 'content':'', 'blocked':True,
-                    'body_diagnostics':diagnostic, 'warning':'Unreadable body; do not count this capture as readable material.'}
+                    'body_diagnostics':diagnostic,'capture_status':observed, 'warning':'Unreadable body; do not count this capture as readable material.'}
         text = masked(page['content'],self.cutoff)[0] if self.optimized else page["content"]
         if self.verified_only and eligible(page,self.cutoff): text=page['content']
         if self.verified_only and not eligible(page,self.cutoff):
@@ -257,6 +260,7 @@ class RetrievalTask:
         view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content", "documents"}}
         if 'page_date_metadata' in view:
             view['page_date_metadata']={k:v for k,v in view['page_date_metadata'].items() if k!='tables'}
+        view['capture_status']=observed
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
         view['read_url'] = page.get('url', '')
         if page.get('capture_method') == 'wayback_replay':
@@ -288,6 +292,8 @@ class RetrievalTask:
 
     def store_page(self, url, page):
         """Keep old raw versions so previously recorded coordinates remain usable."""
+        from ForecastAgent.readers.capture_status import capture_status
+        page['capture_status']=capture_status({},page)
         canonical = canonical_url(url)
         old = self.bundle['pages'].get(canonical)
         digest = hashlib.sha256(page['content'].encode()).hexdigest()
@@ -918,6 +924,8 @@ class RetrievalTask:
                     return {**self.page_view(shared,args.get('start_char',0)),'cached':True,'cross_task_cache':True}
                 if b["mode"] == "historical_strict":
                     raise ValueError("No verified pre-cutoff snapshot available; current web fetch forbidden")
+                if any(canonical_url(a.get('url',''))==canonical_url(url) and a.get('status') in {'failed','reserved'} for a in b['fetch_attempts']):
+                    raise ValueError('Prior failed or reserved capture exists for this URL; use its saved-response repair route or another discovered source')
                 if len(b["fetch_attempts"]) >= MAX_FETCHES:
                     raise ValueError("Page fetch budget exhausted")
                 attempt = {"url": url, "status": "reserved", "at": utc_now()}
@@ -928,8 +936,11 @@ class RetrievalTask:
                     text = page["content"]
                     fresh_diagnostics = body_diagnostics(text, documents=page.get('documents', []))
                     fresh_diagnostics['table_count'] = (page.get('body_diagnostics') or {}).get('table_count', fresh_diagnostics['table_count'])
+                    from ForecastAgent.readers.capture_status import capture_status
+                    page['capture_status']=capture_status({},page)
+                    fresh_diagnostics.update(state=page['capture_status']['body_state'],usable_text=page['capture_status']['usable_text'])
                     page['body_diagnostics'] = fresh_diagnostics
-                    if not page.get('body_diagnostics',{}).get('usable_text',True) or len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
+                    if not page.get('body_diagnostics',{}).get('usable_text',True) or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
                         b.setdefault('failed_captures',[]).append({'url':url,'page':page,'reason':'Unreadable or blocked body'})
                         raise ValueError("Empty page or access interstitial")
                     page["published_at"] = hits[0].get("published_date")

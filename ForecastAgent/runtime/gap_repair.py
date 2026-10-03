@@ -16,39 +16,8 @@ from urllib.parse import urlsplit
 
 
 def classify(attempt: dict, capture: dict | None = None) -> dict:
-    capture = capture or {}
-    detail = str(attempt.get('detail') or attempt.get('error') or '')
-    diagnostic = (capture.get('body_diagnostics') or {}).get('state')
-    match = re.search(r'HTTP Error (\d{3})', detail)
-    status = int(match.group(1)) if match else None
-    if capture.get('content') and (capture.get('body_diagnostics') or {}).get('usable_text'):
-        category, route = 'already_recovered', 'reuse_existing_capture'
-    elif status in {401, 403} or diagnostic in {'access_interstitial', 'login_preview', 'login_shell'}:
-        category, route = 'access_restricted', 'alternate_public_source_or_authorized_access'
-    elif status == 404:
-        category, route = 'missing_url', 'official_feed_sitemap_or_parent_discovery'
-    elif status == 429:
-        category, route = 'rate_limited', 'respect_retry_deadline'
-    elif status is not None and status >= 500:
-        category, route = 'service_failure', 'bounded_later_retry'
-    elif 'exceeds size limit' in detail.lower():
-        category, route = 'size_limit', 'bounded_streaming_download'
-    elif 'Unsupported content type' in detail or capture.get('parse_failure'):
-        category, route = 'format_or_parser_gap', 'reparse_saved_bytes_or_add_format_reader'
-    elif diagnostic == 'javascript_shell':
-        category, route = 'javascript_shell', 'bounded_browser_render'
-    elif diagnostic in {'navigation_shell', 'government_banner_only'}:
-        category, route = 'index_or_banner', 'discover_detail_or_structured_endpoint'
-    elif 'codec' in detail.lower() or diagnostic == 'corrupt_text':
-        category, route = 'encoding_gap', 'repair_encoding'
-    elif 'empty page' in detail.lower() or diagnostic == 'empty_text':
-        category, route = 'empty_or_interstitial_unknown', 'inspect_saved_response_then_route'
-    else:
-        category, route = 'transport_or_unknown', 'inspect_transport_then_bounded_retry'
-    return {'category':category, 'proposed_route':route, 'http_status':status,
-        'body_state':diagnostic, 'original_detail':detail,
-        'saved_raw_available':bool(capture.get('raw_response_base64')),
-        'execution_authorized':False}
+    from ForecastAgent.readers.capture_status import capture_status
+    return capture_status(attempt, capture)
 
 
 def inventory(archive: Path) -> dict:
@@ -96,6 +65,15 @@ def inventory(archive: Path) -> dict:
                         'attempted_at':capture.get('retrieved_at_utc'),
                         **classify({},capture)}
                     rows.append(row)
+            # HTTP-success shells and parsing failures are independent quality gaps.
+            for url,capture in captures.items():
+                if url in seen:continue
+                diagnostic=classify({},capture)
+                if diagnostic['category']=='already_recovered':continue
+                seen.add(url)
+                rows.append({'task_id':task_id,'task_state':task.get('status'),'url':url,
+                    'domain':urlsplit(url).hostname,'kind':'body_quality_gap',
+                    'attempted_at':capture.get('retrieved_at_utc'),**diagnostic})
             quality = task.get('quality_inventory') or {}
             gaps.append({'task_id':task_id, 'task_state':task.get('status'),
                 'raw_capture_count':quality.get('raw_capture_count'),

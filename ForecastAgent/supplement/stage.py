@@ -204,19 +204,24 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                 for row in candidates:
                     url=row['url'];category=row['category'];page=captures.get(url,{})
                     if category=='already_recovered' or any(a['url']==url for a in child['attempts']):continue
-                    method=None
-                    if page.get('raw_response_base64') and category in {'format_or_parser_gap','encoding_gap'}:method='reparse'
-                    elif network and bundle.get('mode')!='historical_strict' and category=='javascript_shell':method='browser'
-                    elif network and bundle.get('mode')!='historical_strict' and category in {'format_or_parser_gap','size_limit','service_failure','transport_or_unknown'}:method='http'
+                    from ForecastAgent.readers.capture_status import repair_route
+                    decision=repair_route(row,child['attempts'],url,network=network,
+                        historical=(bundle.get('mode') or bundle.get('request',{}).get('mode'))=='historical_strict')
+                    method=decision['method']
                     if method is None:continue
                     cap=browser_limit if method=='browser' else http_limit if method=='http' else 8
                     if sum(a['method']==method for a in child['attempts'])>=cap:continue
-                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved'}
+                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved','route_reason':decision['reason']}
                     child['attempts'].append(attempt);save(path,child)
                     try:
                         result=parse_saved(page) if method=='reparse' else render_page(url,retrieved_at=now()) if method=='browser' else fetch_document(url)
                         key=hashlib.sha256((method+url).encode()).hexdigest()
                         result['supplement_provenance']={'parent_bundle_sha256':child['parent_bundle_sha256'],'task_id':ident,'method':method}
+                        save(folder/'captures'/f'{key}.json',result)
+                        from ForecastAgent.readers.capture_status import capture_status
+                        observed=capture_status({},result)
+                        result['capture_status']=observed
+                        result.setdefault('body_diagnostics',{}).update(state=observed['body_state'],usable_text=observed['usable_text'])
                         save(folder/'captures'/f'{key}.json',result)
                         attempt.update(status='captured' if result.get('body_diagnostics',{}).get('usable_text') else 'unreadable',
                             capture_file=f'captures/{key}.json',capture_json_sha256=digest(result),
