@@ -1,0 +1,66 @@
+name: Dev crawl discovery validation
+on:
+  push:
+    branches: [dev_crawl]
+    paths: [.github/workflows/dev_crawl_discovery_validation.yaml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: dev-crawl-discovery-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_discovery ForecastAgent.tests.test_capture_status ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair ForecastAgent.tests.test_readers
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: '36948699455'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent
+      - uses: actions/download-artifact@v4
+        with:
+          name: dev-crawl-live-comparison
+          run-id: '37089712670'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: previous
+      - name: Resume existing experimental allowances
+        env:
+          SUPPLEMENT_SOURCE_RUN_ID: '36948699455'
+        run: |
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+          from ForecastAgent.supplement.stage import run
+          shutil.make_archive('parent','zip','parent')
+          run(Path('parent.zip'),Path('previous/current'),['43259','43682','43708','43283','40967'],network=True,browser_limit=1,http_limit=1)
+          PY
+      - name: Saved-byte PDF reader probe
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from ForecastAgent.supplement.stage import parse_saved,save
+          bundle=json.loads(Path('parent/tasks/40967/bundle.json').read_text())
+          page=next(c['page'] for c in bundle['failed_captures'] if c['url'].endswith('.pdf'))
+          result=parse_saved(page)
+          result['validation_probe']={'network_calls':0,'models':0,'searches':0,'original_task_reopened':False}
+          save(Path('previous/pdf-reader-probe-40967.json'),result)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-crawl-discovery-validation
+          path: previous/
+          retention-days: 90

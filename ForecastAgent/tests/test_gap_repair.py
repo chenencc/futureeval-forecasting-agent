@@ -18,7 +18,7 @@ class RepairRoutingTests(unittest.TestCase):
 
     def test_saved_format_failure_routes_to_local_reparse(self):
         result=classify({'detail':'Unsupported content type: application/vnd.ms-excel'},
-            {'raw_response_base64':'AA=='})
+            {'raw_response_base64':'AA==','sha256':__import__('hashlib').sha256(b'\x00').hexdigest()})
         self.assertTrue(result['saved_raw_available'])
         self.assertEqual(result['category'],'format_or_parser_gap')
 

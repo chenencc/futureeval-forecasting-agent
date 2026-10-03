@@ -13,6 +13,7 @@ from ForecastAgent.runtime.gap_repair import inventory
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.readers.browser import render_page, BrowserCaptureError
 from ForecastAgent.readers.loader import load_response
+from ForecastAgent.readers.encoding import decode_response
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.providers.ultra import SafeRedirects, public_url
 
@@ -200,23 +201,56 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                         repair['finished_at_utc']=now();save(path,child)
                 captures={r.get('url'):r.get('page') or {} for r in bundle.get('failed_captures',[])}
                 captures.update(bundle.get('pages',{}))
+                child.setdefault('pdf_diagnostics',{})
+                from ForecastAgent.readers.capture_status import capture_status
+                from ForecastAgent.readers.pdf_diagnostics import diagnose_pdf
+                for url,page in captures.items():
+                    if len(child['pdf_diagnostics'])>=8:break
+                    if url in child['pdf_diagnostics']:continue
+                    if not page.get('parse_failure') or not (page.get('content_type')=='application/pdf' or url.lower().endswith('.pdf')):continue
+                    if not capture_status({},page)['saved_raw_available']:continue
+                    try:
+                        decoded,_=decode_response(base64.b64decode(page['raw_response_base64']),page.get('response_headers'))
+                        diagnostic=diagnose_pdf(decoded,page.get('content_type',''),page.get('parse_failure'))
+                    except ValueError:
+                        diagnostic={'schema':'pdf_diagnosis_v1','state':'transport_decoding_failure','network_calls':0,'ocr_performed':False}
+                    child['pdf_diagnostics'][url]={'parent_capture_sha256':page['sha256'],**diagnostic}
                 candidates=[r for r in plan['failed_fetches'] if r['task_id']==ident]
+                from ForecastAgent.supplement.discovery import discover
+                child['discovery']=discover(bundle,candidates)
+                proposals=[];seen_urls={r['url'] for r in candidates}
+                for gap in child['discovery']['gaps']:
+                    for candidate in gap['candidates']:
+                        if candidate['url'] in seen_urls:continue
+                        seen_urls.add(candidate['url'])
+                        proposals.append({'url':candidate['url'],'category':'transport_or_unknown',
+                            'proposed_route':'bounded_discovered_public_source','saved_raw_available':False,
+                            'discovery_provenance':candidate,'kind':'discovered_source','task_id':ident})
+                proposals.sort(key=lambda r:(-r['discovery_provenance']['score'],r['url']))
+                candidates=proposals+candidates
+                save(path,child)
                 for row in candidates:
                     url=row['url'];category=row['category'];page=captures.get(url,{})
                     if category=='already_recovered' or any(a['url']==url for a in child['attempts']):continue
-                    method=None
-                    if page.get('raw_response_base64') and category in {'format_or_parser_gap','encoding_gap'}:method='reparse'
-                    elif network and bundle.get('mode')!='historical_strict' and category=='javascript_shell':method='browser'
-                    elif network and bundle.get('mode')!='historical_strict' and category in {'format_or_parser_gap','size_limit','service_failure','transport_or_unknown'}:method='http'
+                    from ForecastAgent.readers.capture_status import repair_route
+                    decision=repair_route(row,child['attempts'],url,network=network,
+                        historical=(bundle.get('mode') or bundle.get('request',{}).get('mode'))=='historical_strict')
+                    method=decision['method']
                     if method is None:continue
                     cap=browser_limit if method=='browser' else http_limit if method=='http' else 8
                     if sum(a['method']==method for a in child['attempts'])>=cap:continue
-                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved'}
+                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved','route_reason':decision['reason']}
+                    if row.get('discovery_provenance'):attempt['discovery_provenance']=row['discovery_provenance']
                     child['attempts'].append(attempt);save(path,child)
                     try:
                         result=parse_saved(page) if method=='reparse' else render_page(url,retrieved_at=now()) if method=='browser' else fetch_document(url)
                         key=hashlib.sha256((method+url).encode()).hexdigest()
                         result['supplement_provenance']={'parent_bundle_sha256':child['parent_bundle_sha256'],'task_id':ident,'method':method}
+                        if row.get('discovery_provenance'):result['supplement_provenance']['discovery']=row['discovery_provenance']
+                        from ForecastAgent.readers.capture_status import capture_status
+                        observed=capture_status({},result)
+                        result['capture_status']=observed
+                        result.setdefault('body_diagnostics',{}).update(state=observed['body_state'],usable_text=observed['usable_text'])
                         save(folder/'captures'/f'{key}.json',result)
                         attempt.update(status='captured' if result.get('body_diagnostics',{}).get('usable_text') else 'unreadable',
                             capture_file=f'captures/{key}.json',capture_json_sha256=digest(result),
@@ -239,7 +273,9 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                 save(path,child)
                 summary.append({'task_id':ident,'attempts':len(child['attempts']),
                     'new_readable_captures':sum(v['readable'] for v in child['captures'].values()),
-                    'remaining_failed_source_gaps':len(child['remaining_gaps'])})
+                    'remaining_failed_source_gaps':len(child['remaining_gaps']),
+                    'original_source_gaps':sum(r.get('kind')!='discovered_source' for r in child['remaining_gaps']),
+                    'discovered_candidate_gaps':sum(r.get('kind')=='discovered_source' for r in child['remaining_gaps'])})
         save(output/'summary.json',{'schema':'supplement_summary_v1','tasks':summary,
             'provider_calls':{'models':0,'tavily':0,'exa':0},'forecast_submissions':False})
         return summary

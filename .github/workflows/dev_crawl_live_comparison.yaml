@@ -1,0 +1,71 @@
+name: Dev crawl live comparison
+on:
+  push:
+    branches: [dev_crawl]
+    paths: [.github/workflows/dev_crawl_live_comparison.yaml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: dev-crawl-live-comparison
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: current
+      - uses: actions/checkout@v4
+        with:
+          ref: 4751ba624c7d68cb8e9e52bb48b1fc3ce0da17ea
+          path: baseline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r current/ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: '36948699455'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent
+      - name: Freeze parent and independent experiment budgets
+        run: |
+          python - <<'PY'
+          import shutil, json, pathlib, hashlib
+          shutil.make_archive('parent', 'zip', 'parent')
+          pathlib.Path('results').mkdir()
+          manifest={'schema':'dev_crawl_live_comparison_v1','ids':['43259','43682','43708','43283','40967'],'baseline':'4751ba624c7d68cb8e9e52bb48b1fc3ce0da17ea','current_commit':'${{ github.sha }}','parent_run':36948699455,'parent_zip_sha256':hashlib.sha256(pathlib.Path('parent.zip').read_bytes()).hexdigest(),'per_arm_per_task':{'browser':1,'http':1,'local_reparse':8},'original_ledgers_immutable':True,'independent_experiment':True,'models':0,'searches':0,'forecast_submissions':False}
+          pathlib.Path('results/manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Baseline repair
+        working-directory: baseline
+        env:
+          SUPPLEMENT_SOURCE_RUN_ID: '36948699455'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from ForecastAgent.supplement.stage import run
+          run(Path('../parent.zip'),Path('../results/baseline'),['43259','43682','43708','43283','40967'],network=True,browser_limit=1,http_limit=1)
+          PY
+      - name: Current repair
+        if: always()
+        working-directory: current
+        env:
+          SUPPLEMENT_SOURCE_RUN_ID: '36948699455'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from ForecastAgent.supplement.stage import run
+          run(Path('../parent.zip'),Path('../results/current'),['43259','43682','43708','43283','40967'],network=True,browser_limit=1,http_limit=1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-crawl-live-comparison
+          path: results/
+          retention-days: 90
