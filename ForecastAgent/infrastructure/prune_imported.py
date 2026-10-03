@@ -48,10 +48,10 @@ def run(root, repo, gh, *, execute=False):
     recovery_names = {'futureeval-official-state', 'futureeval-official-control',
         'futureeval-monitor-state', 'futureeval-monitor-health', 'futureeval-collection-state'}
     protected = {a['id'] for name, group in groups.items() if name in recovery_names
-        for a in sorted(group, key=lambda x: x['id'], reverse=True)[:3]}
+        for a in sorted(group, key=lambda x: (x['created_at'], x['id']), reverse=True)[:3]}
     # Recent monitor scans can still be referenced by a delayed workflow_run event.
     scans = [a for a in artifacts if a['name'].startswith('futureeval-questions-') and not a['expired']]
-    protected.update(a['id'] for a in sorted(scans, key=lambda x: x['id'], reverse=True)[:3])
+    protected.update(a['id'] for a in sorted(scans, key=lambda x: (x['created_at'], x['id']), reverse=True)[:3])
     # Do not remove inputs/state used by active workers, even with a local backup.
     active = []
     for status in ('in_progress', 'queued', 'waiting', 'pending', 'requested'):

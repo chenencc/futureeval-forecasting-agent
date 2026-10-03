@@ -160,7 +160,7 @@ jobs:
             if(!current || current.name!=='futureeval-official-state') throw new Error('Uploaded checkpoint not confirmed');
             for(const name of ['futureeval-official-state','futureeval-official-control']) {
               const checkpoints=artifacts.filter(a=>a.name===name&&!a.expired)
-                .sort((a,b)=>b.id-a.id);
+                .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||b.id-a.id);
               for(const artifact of checkpoints.slice(3,13))
                 await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
             }
