@@ -1,11 +1,33 @@
 name: Enhanced supplement offline acceptance
 on:
+  workflow_call:
+    inputs:
+      experiment:
+        type: string
+        default: offline
+      resume_run:
+        type: string
+        default: ''
   workflow_dispatch:
+    inputs:
+      experiment:
+        description: Offline replay or fresh expanded-budget full collection pilot
+        type: choice
+        options: [offline, solid_collection]
+        default: offline
+      resume_run:
+        description: Restore all five exact artifacts; empty starts an authorized fresh experiment
+        required: false
+        default: ''
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: enhanced-solid-collection
+  cancel-in-progress: false
 jobs:
   acceptance:
+    if: inputs.experiment != 'solid_collection'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -27,3 +49,55 @@ jobs:
         with:
           name: enhanced-supplement-offline-acceptance
           path: snapshots/enhanced-acceptance
+  solid:
+    if: inputs.experiment == 'solid_collection'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        case: [1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_solid_collection ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_acquisition_quality
+      - name: Require exact parent state on job reruns
+        run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
+        env:
+          RESUME_RUN: ${{ inputs.resume_run }}
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: solid-collection-case-${{ matrix.case }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/solid
+      - name: Fresh collection then independent repair and raw quality inventory
+        run: |
+          EXPERIMENT_ID="solid-collection-$GITHUB_RUN_ID"
+          if [ -n "$RESUME_RUN" ]; then
+            EXPERIMENT_ID=$(python -c 'import json; print(json.load(open("snapshots/solid/manifest.json"))["experiment_id"])')
+          fi
+          python -u -m ForecastAgent.experiments.solid_collection --case "$CASE" --output snapshots/solid --experiment-id "$EXPERIMENT_ID"
+        env:
+          CASE: ${{ matrix.case }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: solid-collection-case-${{ matrix.case }}
+          path: snapshots/solid
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90

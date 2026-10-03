@@ -17,8 +17,9 @@ def model_observer(task, secrets=(), dispatch_limit=None, failure_limit=None):
                 raise RuntimeError('Model transport failure allowance exhausted; preserve state for later recovery')
             if dispatch_limit is not None and len(attempts)-starting_attempts >= dispatch_limit:
                 raise RuntimeError('Physical model HTTP dispatch budget exhausted')
-            if len(attempts) >= MAX_MODEL_ATTEMPTS:
-                raise RuntimeError('Lifetime model attempt budget exhausted (72)')
+            lifetime_limit = task.bundle.get('capacity', {}).get('model_http_lifetime', MAX_MODEL_ATTEMPTS)
+            if len(attempts) >= lifetime_limit:
+                raise RuntimeError(f'Lifetime model attempt budget exhausted ({lifetime_limit})')
             token = len(attempts)
             attempts.append({'id': token + 1, 'status': 'reserved',
                              'started_at_utc': record['started_at_utc'],

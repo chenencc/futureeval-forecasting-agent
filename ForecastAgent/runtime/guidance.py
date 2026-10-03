@@ -17,6 +17,16 @@ def collection_system(task, skills):
     from pathlib import Path
     filename = 'raw_recall.md' if getattr(task,'raw_recall',False) else 'collection.md'
     template = (Path(__file__).parents[1] / 'prompts' / filename).read_text(encoding='utf-8')
-    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({'tavily_basic_lifetime':task.search_limit,
-        'exa_lifetime':task.exa_limit, 'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional'), 'initial_shared_http':8, 'extract_batches':1,
-        'model_decisions_per_dispatch':12, 'transport_failures_per_dispatch':4, 'model_http_per_dispatch':16, 'model_http_lifetime':72})+'\nAvailable skill catalog: '+json.dumps(skills)
+    from ForecastAgent.runtime.capacity import limits, DEFAULT
+    capacity = limits(task)
+    if capacity != DEFAULT:
+        template = template.replace('Up to THREE actual Tavily attempts and ONE actual Exa attempt',
+            f"Up to {task.search_limit} actual Tavily attempts and {task.exa_limit} actual Exa attempts")
+        template = template.replace('Within EIGHT shared source HTTP attempts',
+            f"Within {capacity['initial_http']} shared source HTTP attempts")
+        template = template.replace('at most ONE Tavily BASIC Extract rescue batch',
+            f"at most {capacity['extract_batches']} Tavily BASIC Extract rescue batches")
+        template = template.replace('the single required Exa attempt', 'at least one required complementary Exa attempt')
+    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({**capacity,
+        'tavily_basic_lifetime':task.search_limit, 'exa_lifetime':task.exa_limit,
+        'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional')})+'\nAvailable skill catalog: '+json.dumps(skills)

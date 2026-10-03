@@ -1,0 +1,29 @@
+"""Program-owned frozen acquisition capacities, isolated from provider quotas."""
+DEFAULT = {'tavily_basic': 3, 'exa_search': 1, 'initial_http': 8,
+           'extract_batches': 1, 'model_decisions': 12, 'model_failures': 4,
+           'model_http_dispatch': 16, 'model_http_lifetime': 72, 'dispatch_seconds': 900}
+SOLID = {**DEFAULT, 'tavily_basic': 6, 'exa_search': 2, 'initial_http': 32,
+         'extract_batches': 2, 'model_decisions': 24, 'model_failures': 6,
+         'model_http_dispatch': 30, 'model_http_lifetime': 90, 'dispatch_seconds': 1500}
+
+
+def freeze(bundle, request, existing):
+    profile = request.get('budget_profile', 'default')
+    if profile not in {'default', 'solid_v1'}:
+        raise ValueError('Unknown program-owned budget profile')
+    if profile == 'solid_v1' and (not request.get('experiment_id') or
+                                 request.get('pipeline') != 'collection'):
+        raise ValueError('Expanded budgets require an explicit collection experiment')
+    expected = dict(SOLID if profile == 'solid_v1' else DEFAULT)
+    if profile == 'default':
+        expected['tavily_basic'] = 5 if request.get('acquisition_profile') == 'collection_v2' else 3
+    if 'capacity' in bundle and bundle['capacity'] != expected:
+        raise ValueError('Frozen capacity changed; create a separately authorized experiment')
+    if existing and profile == 'solid_v1' and 'capacity' not in bundle:
+        raise ValueError('Cannot enlarge an existing unfrozen ledger')
+    bundle.setdefault('capacity', expected)
+    return bundle['capacity']
+
+
+def limits(task):
+    return getattr(task, 'bundle', {}).get('capacity', DEFAULT)

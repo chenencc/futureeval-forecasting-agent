@@ -80,8 +80,8 @@ def checkpoint(task):
             'selected_unread_count': len(unread), 'selected_unread_urls': unread[:12],
             'captured_link_count': sum(row.get('origin') == 'page_link' for row in b['source_leads'].values()),
             'channel_decisions': decisions, 'suggested_next_steps': todo,
-            'http_plan':{'estimated_attempts':planned,'initial_attempt_cap':8,
-                         'over_initial_cap':planned>8,'archive_requires_two_remaining':True},
+            'http_plan':{'estimated_attempts':planned,'initial_attempt_cap':getattr(task,'capacity',{}).get('initial_http',8),
+                         'over_initial_cap':planned>getattr(task,'capacity',{}).get('initial_http',8),'archive_requires_two_remaining':True},
             'limits': 'Suggestions grant no extra calls. Empty search results do not establish absence. No truth verification.'}
 
 

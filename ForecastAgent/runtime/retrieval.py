@@ -179,13 +179,14 @@ class RetrievalTask:
         if self.bundle["pipeline"] not in {"collection", "legacy"}:
             raise ValueError("Invalid acquisition pipeline")
         self.bundle.setdefault("channel_catalog", channel_catalog())
-        self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else
-            5 if request.get('acquisition_profile') == 'collection_v2' else 3})
+        from ForecastAgent.runtime.capacity import freeze
+        self.capacity = freeze(self.bundle, request, existing)
+        self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else self.capacity['tavily_basic']})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
-        self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else int(bool(os.environ.get('EXA_API_KEY'))))
+        self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else self.capacity['exa_search'] if os.environ.get('EXA_API_KEY') else 0)
         self.exa_limit = self.bundle['acquisition_limits']['exa_search']
-        if type(self.exa_limit) is not int or self.exa_limit not in {0,1}:
-            raise ValueError('Exa budget must be frozen at zero or one')
+        if type(self.exa_limit) is not int or not 0 <= self.exa_limit <= self.capacity['exa_search']:
+            raise ValueError('Exa budget exceeds frozen task capacity')
         self.bundle.setdefault('exa_searches', [])
         search_policy.freeze(self.bundle, request, existing)
         self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
@@ -285,10 +286,10 @@ class RetrievalTask:
     def budget(self):
         return {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
                 'exa_search_remaining': self.exa_limit - len(self.bundle['exa_searches']),
-                "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
+                "page_fetch_remaining": self.capacity['initial_http'] - len(self.bundle["fetch_attempts"]),
                 'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
                 'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
-                "basic_extract_batches_remaining": MAX_EXTRACT_BATCHES - len(self.bundle["extract_attempts"])}
+                "basic_extract_batches_remaining": self.capacity['extract_batches'] - len(self.bundle["extract_attempts"])}
 
     def store_page(self, url, page):
         """Keep old raw versions so previously recorded coordinates remain usable."""
@@ -329,7 +330,7 @@ class RetrievalTask:
         if canonical in self.bundle['pages']:
             return {**self.page_view(self.bundle['pages'][canonical]), 'cached': True}
         attempt = {'url': url, 'channel': 'official', 'need_ids': args['need_ids'], 'status': 'reserved', 'at': utc_now()}
-        reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+        reserve(self.bundle, 'fetch_attempts', attempt, self.capacity['initial_http'], self.save)
         try:
             page = fetch_official(dataset, query, page_number, fetch_public_page,**date_args)
             page['temporal_status'] = 'live_capture'
@@ -351,7 +352,7 @@ class RetrievalTask:
             if '@' not in agent or '\n' in agent or '\r' in agent:
                 raise ValueError('Configure SEC_USER_AGENT with a real contact email; no request sent')
         attempt={'url':url,'channel':'dated_data_or_archive','status':'reserved','at':utc_now()}
-        reserve(self.bundle,'fetch_attempts',attempt,MAX_FETCHES,self.save)
+        reserve(self.bundle,'fetch_attempts',attempt,self.capacity['initial_http'],self.save)
         try:
             page=fetch_public_page(url,**({'user_agent':agent} if agent else {}))
             self.bundle.setdefault('data_raw_responses',[]).append(page)
@@ -425,7 +426,7 @@ class RetrievalTask:
                     'pagination': snapshot['snapshot'].get('pagination')}
         attempt = {'channel': 'polymarket', 'query': query, 'page': page_number, 'need_ids': args['need_ids'],
                    'status': 'reserved', 'at': utc_now()}
-        reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+        reserve(self.bundle, 'fetch_attempts', attempt, self.capacity['initial_http'], self.save)
         try:
             snapshot = search_markets(self.bundle['request']['question'], query=query, page=page_number)
             ident = 'M' + str(len(self.bundle['market_snapshots']) + 1)
@@ -459,7 +460,7 @@ class RetrievalTask:
                 if self.bundle.get('result') and not self.bundle['result'].get('incomplete'):
                     reserve_update(self.bundle, attempt, self.save)
                 else:
-                    reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+                    reserve(self.bundle, 'fetch_attempts', attempt, self.capacity['initial_http'], self.save)
                 official = old.get('official_request')
                 retained=old.get('response_headers',{})
                 validators={header:retained[key] for header,key in [('If-None-Match','ETag'),('If-Modified-Since','Last-Modified')]
@@ -926,10 +927,10 @@ class RetrievalTask:
                     raise ValueError("No verified pre-cutoff snapshot available; current web fetch forbidden")
                 if any(canonical_url(a.get('url',''))==canonical_url(url) and a.get('status') in {'failed','reserved'} for a in b['fetch_attempts']):
                     raise ValueError('Prior failed or reserved capture exists for this URL; use its saved-response repair route or another discovered source')
-                if len(b["fetch_attempts"]) >= MAX_FETCHES:
+                if len(b["fetch_attempts"]) >= self.capacity['initial_http']:
                     raise ValueError("Page fetch budget exhausted")
                 attempt = {"url": url, "status": "reserved", "at": utc_now()}
-                reserve(b, "fetch_attempts", attempt, MAX_FETCHES, self.save)
+                reserve(b, "fetch_attempts", attempt, self.capacity['initial_http'], self.save)
                 try:
                     fetcher = (lambda source: fetch_public_page(source,preserve_raw_on_failure=True)) if self.raw_recall else fetch_public_page
                     page = fetch_structured(url, self.cutoff, fetcher) or fetcher(url)
@@ -983,7 +984,7 @@ class RetrievalTask:
             self.needs(args)
             if b["mode"] == "historical_strict":
                 raise ValueError("Historical strict forbids current Extract")
-            if len(b["extract_attempts"]) >= MAX_EXTRACT_BATCHES:
+            if len(b["extract_attempts"]) >= self.capacity['extract_batches']:
                 raise ValueError("Basic Extract batch budget exhausted; persists across restarts")
             urls = args.get("urls")
             if not isinstance(urls, list) or not 1 <= len(urls) <= 5 or not args.get("reason"):
@@ -998,7 +999,7 @@ class RetrievalTask:
                 raise ValueError("Historical financial data must use cutoff-aware adapter; current Extract cannot replace failed vintage/data fetch")
             attempt = {"urls": urls, "need_ids": args["need_ids"], "reason": args["reason"],
                        "depth": "basic", "at": utc_now(), "status": "reserved"}
-            reserve(b, "extract_attempts", attempt, MAX_EXTRACT_BATCHES, self.save)
+            reserve(b, "extract_attempts", attempt, self.capacity['extract_batches'], self.save)
             try:
                 transport_urls = [accepted[k]['url'] for k in keys]
                 attempt['transport_urls'] = transport_urls
@@ -1143,12 +1144,16 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             # Closing/error latches belong to a dispatch. Physical attempt ledgers never reset.
             task.bundle['control'].update(consecutive_errors=0,forced_close=False,no_progress_turns=0)
         task.bundle['control']['dispatch_message_start'] = len(task.bundle['messages'])
-        deadline = time.monotonic() + MAX_RUN_SECONDS
+        capacity = task.capacity
+        dispatch_http = capacity['model_http_dispatch']
+        decision_limit = capacity['model_decisions']
+        lifetime_http = capacity['model_http_lifetime']
+        deadline = time.monotonic() + capacity['dispatch_seconds']
         secrets = (tavily_key, router_key, os.environ.get('EXA_API_KEY',''))
         dispatch_start = len(task.bundle.get('model_attempts',[]))
         collection = task.bundle['pipeline']=='collection'
-        observer = model_observer(task, secrets, dispatch_limit=COLLECTION_HTTP_PER_DISPATCH if collection else None,
-                                  failure_limit=MODEL_FAILURES_PER_DISPATCH if collection else None)
+        observer = model_observer(task, secrets, dispatch_limit=dispatch_http if collection else None,
+                                  failure_limit=capacity['model_failures'] if collection else None)
         current_session = session.begin(task, utc_now())
         task.bundle['session_state'] = 'running'
         termination_reason = None
@@ -1181,23 +1186,25 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
         if collection:
             task.bundle['control']['operating_clock_utc'] = utc_now()
-            current_session['http_attempt_limit'] = COLLECTION_HTTP_PER_DISPATCH
-            current_session['decision_limit'] = COLLECTION_MAX_TURNS
-            current_session['transport_failure_limit'] = MODEL_FAILURES_PER_DISPATCH
+            current_session['http_attempt_limit'] = dispatch_http
+            current_session['decision_limit'] = decision_limit
+            current_session['transport_failure_limit'] = capacity['model_failures']
             from ForecastAgent.runtime.guidance import collection_system
             system = collection_system(task, catalog)
             for entry in available_tools:
                 if entry['function']['name'] == 'search_tavily':
                     entry['function']['description'] = f'Primary basic discovery, at most {task.search_limit} lifetime attempts. Use concrete task entities/events, not internal IDs. Failures count.'
+                elif entry['function']['name'] == 'search_exa':
+                    entry['function']['description'] = f'Complementary discovery, at most {task.exa_limit} lifetime attempts. At least one attempt is required by the selected policy; failures count.'
         else:
             system = SYSTEM + '\nSkill catalog: '+json.dumps(catalog)
         versions = task.bundle.setdefault('execution_versions', [])
         versions.append({'started_at_utc': utc_now(), 'model': configured_model(), 'code_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
             'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
-            'collection_only': collection, 'max_model_turns_per_run': COLLECTION_MAX_TURNS if collection else MAX_TURNS,
-            'model_http_per_dispatch':COLLECTION_HTTP_PER_DISPATCH if collection else None,
-            'model_http_lifetime_limit': 72, 'run_dispatch_seconds': MAX_RUN_SECONDS})
+            'collection_only': collection, 'max_model_turns_per_run': decision_limit if collection else MAX_TURNS,
+            'model_http_per_dispatch':dispatch_http if collection else None,
+            'model_http_lifetime_limit': lifetime_http, 'run_dispatch_seconds': capacity['dispatch_seconds']})
         messages = task.bundle["messages"]
         if messages and messages[0].get("role") == "system":
             messages[0]["content"] = system
@@ -1212,7 +1219,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if call["id"] not in answered:
                     messages.append({"role": "tool", "tool_call_id": call["id"], "content": "Interrupted before tool reply; inspect durable bundle; search reservations remain consumed."})
         seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
-        turn_limit = COLLECTION_MAX_TURNS if collection else MAX_TURNS
+        turn_limit = decision_limit if collection else MAX_TURNS
         for turn in range(turn_limit):
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
@@ -1227,13 +1234,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     control['forced_close']=True
                     task.save()
                     break
-            if collection and (len(task.bundle.get('model_attempts', [])) >= 72 or
-                    len(task.bundle.get('model_attempts', []))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
-                termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
+            if collection and (len(task.bundle.get('model_attempts', [])) >= lifetime_http or
+                    len(task.bundle.get('model_attempts', []))-dispatch_start >= dispatch_http):
+                termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= lifetime_http else 'model_dispatch_budget'
                 control['forced_close'] = True
                 break
             if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
-                    (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)):
+                    (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= dispatch_http-2)):
                 control["forced_close"] = True
                 termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
                                       'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')
@@ -1378,7 +1385,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if task.bundle["result"]:
                 break
         if not task.bundle["result"]:
-            if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
+            if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= dispatch_http):
                 task.bundle['control']['forced_close'] = True
                 task.execute('finish_collection', {'gaps':['Program ended collection: '+str(termination_reason or 'program_dispatch_limit')+'; unresolved acquisition work remains.']}, tavily_key)
                 termination_reason = termination_reason or 'program_dispatch_limit'

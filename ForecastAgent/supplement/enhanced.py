@@ -147,7 +147,7 @@ def hints(bundle):
             'truth_verified': False}
 
 
-def run(bundle, folder, *, prior=(), network=False, search=None):
+def run(bundle, folder, *, prior=(), network=False, search=None, caps=None, max_link_depth=0):
     """Bounded supplemental acquisition; search(tool, query) performs one request.
 
     No search is required when saved leads suffice. Missing credentials do not
@@ -156,17 +156,26 @@ def run(bundle, folder, *, prior=(), network=False, search=None):
     from ForecastAgent.runtime.task_lock import task_lock
     folder = Path(folder); folder.mkdir(parents=True, exist_ok=True)
     with task_lock(folder):
-        return _run(bundle, folder, prior=prior, network=network, search=search)
+        selected = dict(CAPS if caps is None else caps)
+        if set(selected) != set(CAPS) or any(type(v) is not int or v < 0 for v in selected.values()):
+            raise ValueError('Invalid program-owned supplement capacity')
+        if caps is not None and not bundle.get('request', {}).get('experiment_id'):
+            raise ValueError('Expanded supplement capacity requires an explicit experiment')
+        if type(max_link_depth) is not int or not 0 <= max_link_depth <= 2:
+            raise ValueError('Link discovery depth must be zero, one or two')
+        return _run(bundle, folder, prior=prior, network=network, search=search,
+                    caps=selected, max_link_depth=max_link_depth)
 
 
-def _run(bundle, folder, *, prior, network, search):
+def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     if (bundle.get('supplement_lineage') or bundle.get('enhanced_supplement') or
         any(p.get('supplement_provenance') for p in bundle.get('pages', {}).values())) and not prior:
         raise ValueError('Prior supplement journals required for shared lifetime accounting')
     if len({digest(j) for j in prior}) != len(prior):
         raise ValueError('Duplicate prior journals would double-count lifetime usage')
     identity = {'protocol': PROTOCOL, 'parent_sha256': digest(bundle), 'prior_sha256': digest(prior),
-                'caps': CAPS, 'implementation_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                'caps': caps, 'max_link_depth': max_link_depth,
+                'implementation_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 'source_contract_sha256': hashlib.sha256(Path(__file__).with_name('source_contract.py').read_bytes()).hexdigest()}
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
@@ -174,7 +183,7 @@ def _run(bundle, folder, *, prior, network, search):
     state = load(folder/'state.json') if (folder/'state.json').exists() else {'attempts': []}
     overlay = copy.deepcopy(bundle)
     def reserve(tool, url=None):
-        if usage(bundle, prior, state)[tool] >= CAPS[tool]: return None
+        if usage(bundle, prior, state)[tool] >= caps[tool]: return None
         row = {'tool': tool, 'url': url, 'status': 'reserved', 'started_at_utc': now()}
         state['attempts'].append(row); save(folder/'state.json', state)
         return row
@@ -211,12 +220,20 @@ def _run(bundle, folder, *, prior, network, search):
     save(folder/'plan.json', gap_plan)
     attempted = {(r.get('url'), r.get('tool', r.get('method'))) for j in [*prior, state] for r in j.get('attempts', [])}
     attempted.update((r.get('url'), 'http') for r in bundle.get('fetch_attempts', []))
-    for source in gap_plan['sources']:
+    prior_depths = {row['url']: row['depth'] for row in load(folder/'frontier.json')['candidates']} if (folder/'frontier.json').exists() else {}
+    frontier = [(source, prior_depths.get(source['url'], 0)) for source in gap_plan['sources']
+                if not prior_depths or source['url'] in prior_depths or source['origin'] != 'saved_link']
+    queued = {source['url'] for source, _ in frontier}
+    cursor = 0
+    while cursor < len(frontier):
+        source, depth = frontier[cursor]
+        cursor += 1
         url = source['url']
         if any(r.get('url') == url and r['status'] == 'captured' for r in state['attempts']) or (
             url in overlay['pages'] and assess(overlay['request'], url, overlay['pages'][url].get('content', ''))['coverage_status'] == 'candidate_text'):
             continue
         if not network: continue
+        row = None
         for tool in ('http', 'browser'):
             if (url, tool) in attempted: continue
             row = reserve(tool, url)
@@ -231,6 +248,17 @@ def _run(bundle, folder, *, prior, network, search):
             except Exception as exc: row.update(status='failed', error=str(exc)[:400])
             save(folder/'state.json', state)
             if row['status'] == 'captured': break
+        if max_link_depth and row and row.get('status') == 'captured':
+            captured = load(folder/row['response_file'])
+            overlay['pages'][url] = captured
+            if depth < max_link_depth:
+                for discovered in plan(overlay)['sources']:
+                    if discovered['url'] not in queued:
+                        queued.add(discovered['url'])
+                        frontier.append((discovered, depth+1))
+        save(folder/'frontier.json', {'max_link_depth': max_link_depth,
+            'candidates': [{'url': s['url'], 'depth': d, 'origin': s['origin']} for s, d in frontier],
+            'processed_count': cursor, 'unprocessed_urls': [s['url'] for s, _ in frontier[cursor:]]})
     for row in state['attempts']:
         if row['status'] == 'captured':
             page = load(folder/row['response_file']); key = row['url']
@@ -249,7 +277,7 @@ def _run(bundle, folder, *, prior, network, search):
                                      'remaining_gaps': plan(overlay)['gaps'] + [g for g in gap_plan['gaps']
                                          if g['reason'] != 'target_coverage_unknown'], 'parent_sha256': digest(bundle)}
     save(folder/'analysis-input.json', overlay); save(folder/'reading-hints.json', hints(overlay))
-    save(folder/'report.json', {'usage': usage(bundle, prior, state), 'caps': CAPS,
+    save(folder/'report.json', {'usage': usage(bundle, prior, state), 'caps': caps,
          'raw_preserved': True, 'search_callback_enabled': bool(search), 'no_forecasts_submitted': True})
     return overlay
 

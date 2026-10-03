@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40]
+        options: [legacy, enhanced_pair40, solid_collection]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -17,6 +17,13 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  solid-collection:
+    if: inputs.experiment == 'solid_collection'
+    uses: ./.github/workflows/enhanced_supplement_acceptance.yaml
+    with:
+      experiment: solid_collection
+      resume_run: ${{ inputs.resume_run }}
+    secrets: inherit
   enhanced-pair:
     if: inputs.experiment == 'enhanced_pair40'
     strategy:
@@ -61,7 +68,7 @@ jobs:
           path: snapshots/enhanced-pair
           retention-days: 90
   paired:
-    if: inputs.experiment != 'enhanced_pair40'
+    if: inputs.experiment == 'legacy'
     strategy:
       fail-fast: false
       max-parallel: 1
