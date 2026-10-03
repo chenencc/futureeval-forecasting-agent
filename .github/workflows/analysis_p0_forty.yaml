@@ -2,6 +2,11 @@ name: Matched original coverage condition bindings experiment
 on:
   workflow_dispatch:
     inputs:
+      experiment:
+        description: Frozen forty replay or twenty new binary paired cases
+        type: choice
+        options: [forty, holdout20]
+        default: forty
       pilot_only:
         description: Run only the first five binary cases before expanding
         type: boolean
@@ -20,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJSON(inputs.pilot_only && '{"include":[{"cohort":"binary","batch":1}]}' || '{"cohort":["binary","nonbinary"],"batch":[1,2,3,4]}') }}
+      matrix: ${{ fromJSON(inputs.experiment == 'holdout20' && '{"cohort":["binary"],"batch":[1,2,3,4]}' || inputs.pilot_only && '{"include":[{"cohort":"binary","batch":1}]}' || '{"cohort":["binary","nonbinary"],"batch":[1,2,3,4]}') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -44,7 +49,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/supplements
       - uses: actions/download-artifact@v4
-        if: matrix.cohort == 'binary'
+        if: matrix.cohort == 'binary' && inputs.experiment != 'holdout20'
         with:
           name: mercury-evidence-chain-twenty-batch-${{ matrix.batch }}
           run-id: 37022482053
@@ -72,24 +77,31 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PARENT_RUN: ${{ inputs.resume_run }}
-          ARTIFACT_NAME: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          ARTIFACT_NAME: ${{ inputs.experiment == 'holdout20' && 'analysis-holdout' || 'analysis-matched' }}-${{ matrix.cohort }}-batch-${{ matrix.batch }}
       - uses: actions/download-artifact@v4
         if: steps.resume_artifact.outputs.available == 'true'
         with:
-          name: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: ${{ inputs.experiment == 'holdout20' && 'analysis-holdout' || 'analysis-matched' }}-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/paired
       - name: Replay preserved collection and repair then analyze with Mercury
+        if: inputs.experiment != 'holdout20'
         run: python -m ForecastAgent.analysis.checked_snapshot_trial --cohort "$COHORT" --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --baseline snapshots/baseline --output snapshots/paired --strategy matched
         env:
           COHORT: ${{ matrix.cohort }}
           BATCH: ${{ matrix.batch }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      - name: Fresh old and condition routes on unseen binary cases
+        if: inputs.experiment == 'holdout20'
+        run: python -m ForecastAgent.analysis.holdout_twenty --batch "$BATCH" --raw snapshots/raw --supplements snapshots/supplements --output snapshots/paired
+        env:
+          BATCH: ${{ matrix.batch }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: analysis-matched-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+          name: ${{ inputs.experiment == 'holdout20' && 'analysis-holdout' || 'analysis-matched' }}-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           path: snapshots/paired
           retention-days: 90
 
