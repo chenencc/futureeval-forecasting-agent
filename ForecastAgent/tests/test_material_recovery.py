@@ -21,6 +21,24 @@ def dataset_bundle():
 
 
 class MaterialRecoveryTests(unittest.TestCase):
+    def test_empty_supplement_journal_is_durable_and_restartable(self):
+        b={'request':{'question':'A subject with no captured sources'},'pages':{},
+           'searches':[],'exa_searches':[],'fetch_attempts':[]}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(enhanced,'fetch_document') as http:
+            enhanced.run(b,tmp,network=True)
+            self.assertEqual(load(Path(tmp)/'state.json'),{'attempts':[]})
+            enhanced.run(b,tmp,network=True)
+            self.assertEqual(load(Path(tmp)/'state.json'),{'attempts':[]})
+            self.assertFalse(http.called)
+
+    def test_preferred_venue_does_not_promote_unrelated_result_children(self):
+        q={'question':'When will an LLM achieve gold on the International Math Olympiad?',
+           'resolution_criteria':'Use https://example.org/olympiad'}
+        page={'content':'International Math Olympiad gold results.','links':[]}
+        route=materials.dependency(q,'https://example.org/olympiad',page,
+            {'url':'https://example.org/participant/results','label':'Participant results'})
+        self.assertEqual(route['role'],'ordinary_detail')
+
     def test_string_relative_markdown_and_verified_labels(self):
         html=b'<a href="report.csv?date=2026-09-01&amp;station=11">Download measurements</a>'
         p={'links':['report.csv?date=2026-09-01&station=11',{'href':'notes.pdf','text':'Notes'}],

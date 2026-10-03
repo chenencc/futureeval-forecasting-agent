@@ -46,7 +46,7 @@ def dependency(question, parent, page, link, *, info=None, match=None):
     elif url in info['observed_archive_urls'] and info['state']=='directory_only': role='archive_navigation'
     elif file and focused_parent and match['entity_acceptable'] and match['quarter_observed'] and match['topic_acceptable']: role='source_attachment'
     elif same_host and len(page.get('content',''))<2500 and re.search(r'\bresults?|scores?|standings\b',label+' '+path,re.I) and (
-        match['preferred_domain'] or match_source(expected,url,label)['topic_acceptable']): role='result_summary'
+        match['topic_acceptable'] and match_source(expected,url,label)['topic_acceptable']): role='result_summary'
     return {'role':role,'parent_url':parent,'parent_body_sha256':hashlib.sha256(page.get('content','').encode()).hexdigest(),
         'parent_collection_state':info['state'],'parent_topic_matches':match['topic_matches'],
         'target_day_in_route':target_day or parent_day,'observed_route_days':seen_days,

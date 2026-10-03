@@ -27,7 +27,7 @@ on:
         default: ''
       collection_cohort:
         type: choice
-        options: [pilot5, repair3, new15]
+        options: [pilot5, repair3, repair2, new15]
         default: pilot5
       collection_batch:
         type: choice

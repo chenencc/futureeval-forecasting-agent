@@ -1,5 +1,6 @@
 """Validate model tool calls before any resource reservation or network request."""
 import re
+import copy
 from datetime import datetime
 from urllib.parse import urlsplit
 
@@ -77,6 +78,31 @@ SAVED = {'read_document', 'record_quote', 'record_excerpt', 'read_dataset_rows',
          'list_documents', 'search_saved_text', 'find_passages'}
 DISCOVERED = {'fetch_page', 'fetch_pages', 'read_sources', 'collect_archive',
               'extract_failed_pages', 'select_sources'}
+
+
+def partition_source_batch(task, args, tools):
+    """Retain valid batch children; never repair, guess or fetch rejected URLs."""
+    schema = next((t['function']['parameters'] for t in tools
+                   if t['function']['name'] == 'read_sources'), None)
+    if schema is None:
+        validate(task, 'read_sources', args, tools)
+    shape = copy.deepcopy(schema)
+    shape['properties']['urls']['items'].pop('enum', None)
+    check_schema(args, shape, required=task.optimized)
+    accepted = []; rejected = []
+    for url in args['urls']:
+        child = {**args, 'urls': [url]}
+        try:
+            validate(task, 'read_sources', child, tools)
+            accepted.append(url)
+        except ContractError as exc:
+            rejected.append({'url': url, 'ok': False, 'contract_error': exc.details,
+                             'network_attempted': False})
+    if not accepted:
+        raise ContractError('no_accepted_sources', 'urls',
+                            'No batch URL matches the exact accepted source catalog.',
+                            schema['properties']['urls']['items'].get('enum', []))
+    return {**args, 'urls': accepted}, rejected
 
 
 def validate(task, name, args, tools=None):

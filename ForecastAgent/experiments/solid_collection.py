@@ -14,7 +14,7 @@ from ForecastAgent.runtime.capacity import SOLID, SOLID_V2
 from ForecastAgent.supplement import enhanced
 
 IDS = ['40695', '44126', '45183', '26754', '45045']
-COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'],
+COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'], 'repair2':['26754','45045'],
     'new15':['43658','44431','44939','44128','43919',
              '41480','43822','44547','43844','44940',
              '43461','42630','44727','45048','44728']}
@@ -106,7 +106,7 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     save(output/'question.json', request)
     checklist=load(Path(__file__).with_name('COLLECTION_COHORTS.json'))
     save(output/'acceptance-checklist.json',{'id':ident,'cohort':cohort,
-        'required_materials':checklist.get(cohort,{}).get(ident,[]),
+        'required_materials':checklist.get('repair3' if cohort=='repair2' else cohort,{}).get(ident,[]),
         'scope':'Predeclared acquisition checklist, not resolution labels or semantic acceptance.'})
     if prepare_only:
         return manifest

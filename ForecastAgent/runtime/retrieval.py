@@ -1323,6 +1323,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if time.monotonic() >= deadline:
                         raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
+                    rejected_sources = []
+                    if collection and task.raw_recall and name == 'read_sources':
+                        from ForecastAgent.runtime.contracts import partition_source_batch
+                        args, rejected_sources = partition_source_batch(task, args, turn_tools)
+                        step['rejected_sources'] = rejected_sources
                     validate(task, name, args, turn_tools)
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
                         raise ValueError("Closing phase: audit saved facts or finish with gaps")
@@ -1343,6 +1348,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         result = load_skill(task.bundle, args["name"])
                     else:
                         result = task.execute(name, args, tavily_key)
+                    if rejected_sources:
+                        result = {**result, 'rejected_sources': rejected_sources,
+                                  'batch_validation': 'Valid children executed; rejected URLs never fetched.'}
                     session.save_local(task, local_key, result)
                     if not collection:
                         progress.delivered(task, name, args, result)

@@ -212,6 +212,9 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
     save(folder/'identity.json', identity)
     state = load(folder/'state.json') if (folder/'state.json').exists() else {'attempts': []}
+    # Zero attempts is a valid journal (all sources already captured, no leads,
+    # or exhausted shared budgets), and must be exported for downstream audits.
+    save(folder/'state.json', state)
     overlay = copy.deepcopy(bundle)
     def reserve(tool, url=None):
         if usage(bundle, prior, state)[tool] >= caps[tool]: return None

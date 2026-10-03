@@ -14,6 +14,27 @@ from ForecastAgent.analysis.pilot import load
 
 
 class MaterialContinuationTests(unittest.TestCase):
+    def test_partial_invalid_batch_preserves_valid_child_without_guessing(self):
+        from ForecastAgent.runtime.contracts import partition_source_batch,ContractError
+        with tempfile.TemporaryDirectory() as tmp:
+            task,parent=self.task(tmp)
+            tools=active_tools(task,COLLECTION_TOOLS,'read_sources')
+            # Raw acquisition removes excerpt-query requirements in the runtime.
+            for entry in tools:
+                schema=entry['function']['parameters']
+                schema['required']=[x for x in schema.get('required',[]) if x!='queries']
+                schema['properties'].pop('queries',None)
+            args,rejected=partition_source_batch(task,
+                {'urls':[parent,'https://invented.example/target.csv']},tools)
+            self.assertEqual(args['urls'],[parent])
+            self.assertEqual(len(rejected),1)
+            self.assertFalse(rejected[0]['network_attempted'])
+            self.assertEqual(task.bundle['fetch_attempts'],[])
+            with self.assertRaises(ContractError):
+                partition_source_batch(task,{'urls':['https://invented.example/target.csv']},tools)
+            with self.assertRaises(ContractError):
+                partition_source_batch(task,{'urls':[parent]*5},tools)
+
     def task(self,tmp):
         fixture=dataset_bundle(); q=fixture['request']
         q.update(mode='live',pipeline='collection',acquisition_profile='collection_v3',
