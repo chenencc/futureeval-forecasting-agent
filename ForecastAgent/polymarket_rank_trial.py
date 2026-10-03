@@ -44,9 +44,12 @@ def parse_ranking(text,size):
     return result
 
 def rank(question,rows,path,model):
-    if path.exists():return json.loads(path.read_text(encoding='utf-8'))
     prompt='Rank prediction-market contracts as research evidence for the question. Read event meaning and rules, not keyword similarity. Return ONLY a JSON array of 0..8 objects: {"i":0,"tier":"same_quantity_same_date","why":"deciding clause","differences":["condition mismatch"]}. Tiers: same_quantity_same_date (same event, threshold, dates and resolution conditions); same_quantity_other_cut (same event or measured quantity but different date/threshold); driver_or_consequence (causally informative); weak (related but weak). Reject unrelated events and padding. Participation is not winning; election announcement is not tariffs; meeting is not a phone call or insult. Closing timestamp is not the event deadline. Resolved prices are outcomes, not forecasts. An empty array is valid. Quote deciding clauses and list entity, event-stage, date, threshold and resolution-source differences. Never declare trading equivalence.\nQUESTION '+json.dumps(question,ensure_ascii=False)+'\nCANDIDATES '+json.dumps([{'i':i,'title':r['market_title'],'event':r['event_title'],'rules':str(r.get('resolution_rules') or '')[:2400],'source':r.get('resolution_source'),'end_time':r.get('market_end_time'),'state':r['original_market_state']} for i,r in enumerate(rows)],ensure_ascii=False)
     request={'model':model,'messages':[{'role':'user','content':prompt}],'temperature':0,'max_tokens':2500,'reasoning':{'enabled':False}}
+    if path.exists():
+        cached=json.loads(path.read_text(encoding='utf-8'))
+        if cached.get('request')!=request:raise ValueError('Ranking cache request identity changed')
+        return cached
     record={'status':'reserved','request':request,'prompt_sha256':hashlib.sha256(prompt.encode()).hexdigest()}
     path.write_text(json.dumps(record,indent=2),encoding='utf-8')
     try:
@@ -82,3 +85,4 @@ def run(inputs,output,model):
     (output/'report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8');print(json.dumps(report['summary']))
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--inputs',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--model',default='nvidia/nemotron-3-super-120b-a12b:free');a=p.parse_args();run(a.inputs,a.output,a.model)
+

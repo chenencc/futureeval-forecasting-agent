@@ -1,0 +1,38 @@
+name: Polymarket family coverage and direction trial
+on:
+  push:
+    branches: [dev_polymarket]
+    paths: [.github/workflows/polymarket_family_trial.yaml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: polymarket-family-v2-five
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: polymarket-rank-twenty-*
+          run-id: '37090846344'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/replay
+      - run: python -m unittest ForecastAgent.tests.test_polymarket_pool ForecastAgent.tests.test_polymarket_rank_trial ForecastAgent.tests.test_polymarket_discovery ForecastAgent.tests.test_polymarket_match
+      - name: Replay twenty pools and rank five representative questions
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+        run: python -m ForecastAgent.polymarket_family_trial --inputs ForecastAgent/fixtures/polymarket_twenty --replay snapshots/replay --output snapshots/output --rank-ids 10614,40695,42490,42630,43259
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polymarket-family-v2-five
+          path: snapshots/output/
+          retention-days: 90
