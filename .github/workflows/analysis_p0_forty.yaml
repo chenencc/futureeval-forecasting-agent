@@ -57,8 +57,24 @@ jobs:
           run-id: 37031590213
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/raw
-      - uses: actions/download-artifact@v4
+      - name: Check whether the parent run contains this batch journal
+        id: resume_artifact
         if: inputs.resume_run != ''
+        shell: bash
+        run: |
+          available=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PARENT_RUN/artifacts" --paginate --jq ".artifacts | any(.name == \"$ARTIFACT_NAME\" and .expired == false)")
+          if printf '%s\n' "$available" | grep -qx true; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No saved journal for this batch in the parent run; start its new tasks."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARENT_RUN: ${{ inputs.resume_run }}
+          ARTIFACT_NAME: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
+      - uses: actions/download-artifact@v4
+        if: steps.resume_artifact.outputs.available == 'true'
         with:
           name: analysis-conditions-${{ matrix.cohort }}-batch-${{ matrix.batch }}
           run-id: ${{ inputs.resume_run }}
