@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m unittest ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_enhanced_pair40
+      - run: python -m unittest ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_enhanced_pair40 ForecastAgent.tests.test_enhanced_pair40_resume
       - name: Require preserved journals for job reruns
         run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
         env:
@@ -43,9 +43,16 @@ jobs:
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/enhanced-pair
-      - run: python -u -m ForecastAgent.analysis.enhanced_pair40 --batch "$BATCH" --output snapshots/enhanced-pair
+      - name: Run or resume the frozen comparison
+        run: |
+          if [ -n "$RESUME_RUN" ]; then
+            python -u -m ForecastAgent.analysis.enhanced_pair40_resume --batch "$BATCH" --output snapshots/enhanced-pair --parent-run "$RESUME_RUN"
+          else
+            python -u -m ForecastAgent.analysis.enhanced_pair40 --batch "$BATCH" --output snapshots/enhanced-pair
+          fi
         env:
           BATCH: ${{ matrix.batch }}
+          RESUME_RUN: ${{ inputs.resume_run }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
       - uses: actions/upload-artifact@v4
         if: always()
