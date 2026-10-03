@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--baseline',type=Path,required=True)
     parser.add_argument('--current',type=Path,required=True)
-    parser.add_argument('--batch',type=int,choices=range(4),required=True)
+    parser.add_argument('--batch',type=int,choices=range(5),required=True)
     args=parser.parse_args()
     manifest=json.loads(Path(__file__).with_name('capture_acceptance_20.json').read_text())
     ids=manifest['task_ids'][args.batch*5:args.batch*5+5]

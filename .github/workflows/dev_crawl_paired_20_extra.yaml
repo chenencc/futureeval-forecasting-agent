@@ -1,0 +1,53 @@
+name: Dev crawl paired acceptance active-gap extension
+on:
+  push:
+    branches: [dev_crawl]
+    paths: [.github/workflows/dev_crawl_paired_20_extra.yaml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: dev-crawl-paired-20-extension
+  cancel-in-progress: false
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        batch: [4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          ref: '673c464ff7ee0c6263ba0d57f4038c8449022923'
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: '1260b4c45293237a1de91b1decf038da68b87eea'
+          path: current
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r current/ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-collection-100-v1-state
+          run-id: '36948699455'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: parent
+      - name: Run five frozen pairs with alternating arm order
+        run: python harness/ForecastAgent/experiments/capture_acceptance.py --parent parent --output results --baseline baseline --current current --batch ${{ matrix.batch }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-crawl-paired-20-batch-${{ matrix.batch }}
+          path: results/
+          retention-days: 90
+

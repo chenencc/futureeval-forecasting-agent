@@ -24,7 +24,10 @@
     "40852",
     "41561",
     "42135",
-    "44241"
+    "44241",
+    "14025",
+    "43844",
+    "45015"
   ],
   "selection": "All five PDF-gap tasks, two index-gap tasks, remaining five JS-gap tasks, and eight domain-diverse access-restricted tasks; selected without reading outcomes.",
   "independent_experimental_allowances": true,
@@ -198,6 +201,58 @@
         "current",
         "baseline"
       ]
+    },
+    "14025": {
+      "bundle_sha256": "5bf780ca0e4994b61547d8c6eae16a2208808c0d09a05bb064e7847d448563e3",
+      "question": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+      "order": [
+        "baseline",
+        "current"
+      ]
+    },
+    "43844": {
+      "bundle_sha256": "1699b0653d9ca590b4ed67122a51d43a59e8cf92882cbcc8f2b5aa88d09b3940",
+      "question": "Will Hakainde Hichilema receive at least 65% of the vote in the first round of Zambia's 2026 presidential election?",
+      "order": [
+        "current",
+        "baseline"
+      ]
+    },
+    "45015": {
+      "bundle_sha256": "0a6de8d78b2ba7b9d408f85f472f13f40551a779283a840a08f9d1cfb4250458",
+      "question": "Will Italy's Schengen suspension against Spain be lifted before August 30, 2026?",
+      "order": [
+        "baseline",
+        "current"
+      ]
     }
-  }
+  },
+  "reuse_controls": [
+    "40417",
+    "40730",
+    "41480"
+  ],
+  "design_amendment": "Three historical PDF failures are already rescued in the authoritative pages map. Retain them as no-repeat controls and add three active-gap cases; primary analysis contains twenty active-gap tasks.",
+  "primary_ids": [
+    "40967",
+    "43682",
+    "39886",
+    "43283",
+    "43259",
+    "43708",
+    "43991",
+    "44395",
+    "44512",
+    "24819",
+    "37307",
+    "38940",
+    "39992",
+    "40852",
+    "41561",
+    "42135",
+    "44241",
+    "14025",
+    "43844",
+    "45015"
+  ]
 }
