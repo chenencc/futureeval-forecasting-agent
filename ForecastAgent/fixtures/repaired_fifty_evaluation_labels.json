@@ -1,0 +1,260 @@
+{
+  "provenance": {
+    "source": "Local ForecastBench resolved Metaculus checkpoint records",
+    "file_sha256": "8de9fcf906ce162af138e840bffa8e1bd89e85f40de395e5bd2b02662881761c",
+    "label_selection": "All fifty fixed repaired tasks; labels are evaluation-only and are never loaded by inference",
+    "parent_repair_run": "37103408115"
+  },
+  "labels": [
+    {
+      "id": "14025",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "24819",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-06-21"
+    },
+    {
+      "id": "36871",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-06-21"
+    },
+    {
+      "id": "38940",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-06-21"
+    },
+    {
+      "id": "39886",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "40701",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "40967",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-06-21"
+    },
+    {
+      "id": "43333",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43343",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-05"
+    },
+    {
+      "id": "43360",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43435",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-05"
+    },
+    {
+      "id": "43437",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43491",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43492",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-08-02"
+    },
+    {
+      "id": "43494",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-08-02"
+    },
+    {
+      "id": "43496",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43501",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43505",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43615",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-05"
+    },
+    {
+      "id": "43688",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43707",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43708",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43709",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43822",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43824",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-02"
+    },
+    {
+      "id": "43844",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-02"
+    },
+    {
+      "id": "43853",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43881",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "43900",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43911",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "43984",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-05"
+    },
+    {
+      "id": "43987",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-02"
+    },
+    {
+      "id": "43991",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-05"
+    },
+    {
+      "id": "44117",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "44193",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44230",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44239",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44241",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44358",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "44363",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-07-19"
+    },
+    {
+      "id": "44395",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44406",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44512",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44513",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-30"
+    },
+    {
+      "id": "44544",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44547",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44693",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44799",
+      "resolved_to": 1.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "44801",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    },
+    {
+      "id": "45015",
+      "resolved_to": 0.0,
+      "snapshot_date": "2026-08-16"
+    }
+  ]
+}

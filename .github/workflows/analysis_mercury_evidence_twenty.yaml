@@ -2,6 +2,15 @@ name: Mercury conditional original evidence twenty comparison
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Historical twenty or newly repaired fifty'
+        type: choice
+        options: [twenty, repaired50]
+        default: twenty
+      source_run:
+        description: 'Completed free repair parent for repaired50'
+        default: '37103408115'
+        type: string
       resume_run:
         description: Prior twenty-case run whose preserved journals should be resumed
         required: false
@@ -13,6 +22,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   compare:
+    if: inputs.mode != 'repaired50'
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -62,4 +72,80 @@ jobs:
         with:
           name: mercury-evidence-chain-twenty-batch-${{ matrix.batch }}
           path: snapshots/trial
+          retention-days: 90
+  repaired-fifty:
+    if: inputs.mode == 'repaired50'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        batch: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest ForecastAgent.tests.test_mercury_evidence_chain ForecastAgent.tests.test_repaired_fifty
+      - name: Validate completed repair parent and restore policy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+          RESUME_RUN: ${{ inputs.resume_run }}
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
+          [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .conclusion)" = success ]
+          if [ "$GITHUB_RUN_ATTEMPT" != 1 ] && [ -z "$RESUME_RUN" ]; then
+            echo 'Restore preserved analysis journals before retrying.'
+            exit 1
+          fi
+          if [ -n "$RESUME_RUN" ]; then
+            [[ "$RESUME_RUN" =~ ^[0-9]+$ ]]
+            [ "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RESUME_RUN" --jq .status)" = completed ]
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: recollection-fifty-free-repair-*
+          merge-multiple: false
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/repaired-fifty-inputs
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: repaired-fifty-analysis-${{ matrix.batch }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/repaired-fifty-analysis
+      - name: Analyze preserved originals without acquisition or submission
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+        run: python -u -m ForecastAgent.analysis.repaired_fifty run --inputs snapshots/repaired-fifty-inputs --output snapshots/repaired-fifty-analysis --batch ${{ matrix.batch }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: repaired-fifty-analysis-${{ matrix.batch }}
+          path: snapshots/repaired-fifty-analysis/
+          retention-days: 90
+  evaluate-fifty:
+    if: inputs.mode == 'repaired50'
+    needs: repaired-fifty
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: repaired-fifty-analysis-*
+          merge-multiple: false
+          path: snapshots/repaired-fifty-results
+      - name: Score frozen outputs against separate evaluation labels
+        run: python -m ForecastAgent.analysis.repaired_fifty evaluate --inputs snapshots/repaired-fifty-results --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json --output snapshots/repaired-fifty-metrics
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repaired-fifty-analysis-metrics
+          path: snapshots/repaired-fifty-metrics/
           retention-days: 90
