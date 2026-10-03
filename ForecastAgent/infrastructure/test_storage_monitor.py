@@ -88,6 +88,28 @@ class Acceptance(unittest.TestCase):
             self.assertEqual(report['protected_ids'], [1, 2, 3])
             self.assertEqual(report['deleted_ids'], [])
 
+    def test_cleanup_retains_corrupt_local_zip(self):
+        import sqlite3
+        from contextlib import closing
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expected = '0' * 64
+            archive = root / 'archives' / '00' / (expected + '.zip')
+            archive.parent.mkdir(parents=True)
+            archive.write_bytes(b'corrupt')
+            with closing(sqlite3.connect(root / 'index.sqlite3')) as db:
+                db.execute('CREATE TABLE artifacts(repo TEXT, artifact_id TEXT, archive_sha256 TEXT, status TEXT)')
+                db.execute('INSERT INTO artifacts VALUES(?,?,?,?)', ('owner/repo', '1', expected, 'imported'))
+                db.commit()
+            def fake_api(gh, path, method='GET'):
+                self.assertEqual(method, 'GET', 'Unverified backups must never cause remote deletion')
+                return {'artifacts': [{'id': 1, 'name': 'research-evidence', 'expired': False,
+                    'created_at': '2026-01-01T00:00:00Z', 'size_in_bytes': 100}]} if '/actions/artifacts?' in path else {'workflow_runs': []}
+            with patch.object(prune_imported, 'api', fake_api):
+                report = prune_imported.run(root, 'owner/repo', 'unused', execute=True)
+            self.assertEqual(report['deleted_ids'], [])
+            self.assertEqual(report['retained_unverified'][0]['id'], 1)
+
 
 if __name__ == '__main__':
     unittest.main()
