@@ -17,6 +17,8 @@ existing task quotas or submits forecasts.
 
 ## Acquisition pipeline
 
+The development-only [checked collection handoff](docs/COLLECTION_HANDOFF.md) preserves the original collector, then adds deterministic body inspection and exact deduplication around independent supplementation before Mercury analysis. It is opt-in; release 1.0.1 remains unchanged.
+
 New tasks default to `collection`. The acquisition agent plans information needs, chooses tools, reads sources and stores exact excerpts. Completion exports `intelligence.json` without a fact-check, probability, verdict or fused score. Saved pages alone are valid output. Search snippets remain discovery leads.
 
 Existing ledgers without a pipeline field retain `legacy` behavior and budgets. A request may explicitly specify `"pipeline": "legacy"` for old regression experiments. Completed tasks return their saved results; upgrades do not restart searches. Existing and interrupted ledgers can be exported without a model or network call.

@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 import zipfile
 from pathlib import Path
 
@@ -108,9 +109,14 @@ def run(output, seed, batch):
                     'tasks':{ident:{'status':'acquired' if bundle.get('acquisition_complete') else 'closed_with_gaps'}}}))
                 for path in sorted((folder/'acquisition').rglob('*')):
                     if path.is_file():saved.write(path,f'tasks/{ident}/'+str(path.relative_to(folder/'acquisition')).replace('\\','/'))
-            summary=supplement(archive,folder/'supplement',[ident],network=True)
-            overlay=analysis_overlay(bundle,folder/'supplement',ident)
-            overlay['gaps']=bundle.get('result',{}).get('gaps',[])
+            if os.environ.get('FORECAST_CHECKED_HANDOFF')=='1':
+                from ForecastAgent.evidence.collection_handoff import prepare
+                overlay=prepare(bundle,folder/'checked-handoff',network=True)
+                summary=load(folder/'checked-handoff/repair/summary.json')['tasks']
+            else:
+                summary=supplement(archive,folder/'supplement',[ident],network=True)
+                overlay=analysis_overlay(bundle,folder/'supplement',ident)
+                overlay['gaps']=bundle.get('result',{}).get('gaps',[])
             save(folder/'analysis-input.json',overlay)
             stage='mercury'
             result=mercury.analyze(row,overlay,folder/'analysis')

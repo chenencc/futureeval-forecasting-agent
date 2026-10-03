@@ -23,7 +23,7 @@ def classify(attempt: dict, capture: dict | None = None) -> dict:
     status = int(match.group(1)) if match else None
     if capture.get('content') and (capture.get('body_diagnostics') or {}).get('usable_text'):
         category, route = 'already_recovered', 'reuse_existing_capture'
-    elif status in {401, 403} or diagnostic in {'access_interstitial', 'login_preview'}:
+    elif status in {401, 403} or diagnostic in {'access_interstitial', 'login_preview', 'login_shell'}:
         category, route = 'access_restricted', 'alternate_public_source_or_authorized_access'
     elif status == 404:
         category, route = 'missing_url', 'official_feed_sitemap_or_parent_discovery'
@@ -78,6 +78,24 @@ def inventory(archive: Path) -> dict:
                     'domain':urlsplit(url).hostname, 'kind':'failed_fetch',
                     'attempted_at':attempt.get('at'), **classify(attempt,capture)}
                 rows.append(row)
+            inspection=bundle.get('program_inspection')
+            if inspection:
+                if inspection.get('schema')!='collection-inspection-v1':
+                    raise ValueError('Unknown collection inspection schema')
+                for url,check in inspection['pages'].items():
+                    capture=captures.get(url,{})
+                    body=capture.get('content','')
+                    if hashlib.sha256(body.encode()).hexdigest()!=check['body_sha256']:
+                        raise ValueError('Collection inspection body changed')
+                    # Successful HTTP can still yield a navigation or login shell.
+                    # This is a quality gap, not a fictitious failed physical request.
+                    if url in seen or check['diagnostics']['body']['usable_text']:continue
+                    seen.add(url)
+                    row={'task_id':task_id,'task_state':task.get('status'),'url':url,
+                        'domain':urlsplit(url).hostname,'kind':'body_quality_gap',
+                        'attempted_at':capture.get('retrieved_at_utc'),
+                        **classify({},capture)}
+                    rows.append(row)
             quality = task.get('quality_inventory') or {}
             gaps.append({'task_id':task_id, 'task_state':task.get('status'),
                 'raw_capture_count':quality.get('raw_capture_count'),
@@ -95,7 +113,9 @@ def inventory(archive: Path) -> dict:
         'parent_input_sha256':campaign.get('input_sha256'),
         'state_distribution':dict(Counter(t.get('status') for t in campaign['tasks'].values())),
         'failed_physical_fetch_attempts':all_failed,
-        'unique_failed_task_url_pairs':len(rows),
+        'unique_failed_task_url_pairs':sum(r['kind']=='failed_fetch' for r in rows),
+        'body_quality_gap_count':sum(r['kind']=='body_quality_gap' for r in rows),
+        'unique_repair_candidate_task_url_pairs':len(rows),
         'failure_categories':dict(Counter(r['category'] for r in rows)),
         'failed_domains':dict(Counter(r['domain'] for r in rows).most_common()),
         'proposed_routes':dict(Counter(r['proposed_route'] for r in rows)),

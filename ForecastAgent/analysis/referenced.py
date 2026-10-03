@@ -94,6 +94,13 @@ def evidence_packet(bundle):
             packet['question'][key] = bundle['request'][key]
     packet['acquisition_gaps'] = bundle.get('gaps', [])
     packet['supplement_handoff'] = bundle.get('supplement_lineage')
+    if bundle.get('collection_handoff'):
+        packet['collection_inspection'] = {
+            'protocol': bundle['collection_handoff']['protocol'],
+            'source_aliases': bundle.get('source_aliases', {}),
+            'missing_evidence_is_not_negative_evidence': True,
+            'exact_copies_are_not_independent_confirmation': True,
+        }
     return packet
 
 

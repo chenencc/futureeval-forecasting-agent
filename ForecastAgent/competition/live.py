@@ -127,6 +127,9 @@ def analyze(bundle_path, folder, ident):
 
 
 def supplement_bundle(bundle, folder, ident):
+    if os.environ.get('FORECAST_CHECKED_HANDOFF')=='1':
+        from ForecastAgent.evidence.collection_handoff import prepare
+        return prepare(bundle,folder/'checked-handoff',network=True)
     from ForecastAgent.supplement.stage import run, analysis_overlay
     archive = folder / 'supplement-input.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
