@@ -16,3 +16,11 @@ class FamilyPoolTests(unittest.TestCase):
   r=annotate_direction({'direction':'inverse','target_proposition':'Iran participates','market_yes_proposition':'Iran removed','tier':'same_quantity_same_date'},{'yes_probability_display':0.3})
   self.assertEqual(r['direction'],'inverse');self.assertIsNone(r['target_yes_probability']);self.assertFalse(r['eligible_for_edge']);self.assertIn('top_tier_direction_conflict',r['direction_diagnostics'])
 if __name__=='__main__':unittest.main()
+class DirectionContractTests(unittest.TestCase):
+ def test_parser_retains_direction_fields(self):
+  from ForecastAgent.polymarket_rank_trial import parse_ranking
+  pick=parse_ranking('[{"i":0,"tier":"weak","direction":"inverse","target_proposition":"Will Iran participate?","market_yes_proposition":"Iran removed"}]',1)[0]
+  self.assertEqual(pick['direction'],'inverse');self.assertEqual(pick['market_yes_proposition'],'Iran removed')
+ def test_changed_target_is_unknown(self):
+  result=annotate_direction({'direction':'inverse','target_proposition':'Iran does not participate','market_yes_proposition':'Iran removed'}, {},target_question='Will Iran participate?')
+  self.assertEqual(result['direction'],'unknown');self.assertIn('target_proposition_not_exact_question',result['direction_diagnostics'])

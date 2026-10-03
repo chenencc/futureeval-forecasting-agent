@@ -1,0 +1,37 @@
+name: Polymarket direction contract single-case acceptance
+on:
+  push:
+    branches: [dev_polymarket]
+    paths: [.github/workflows/polymarket_direction_acceptance.yaml]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: polymarket-direction-contract-one-v2
+  cancel-in-progress: false
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: polymarket-rank-twenty-*
+          run-id: '37090846344'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/replay
+      - run: python -m unittest ForecastAgent.tests.test_polymarket_pool ForecastAgent.tests.test_polymarket_rank_trial
+      - name: Accept exact target proposition on saved Iran evidence
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+        run: python -m ForecastAgent.polymarket_family_trial --inputs ForecastAgent/fixtures/polymarket_twenty --replay snapshots/replay --output snapshots/acceptance --rank-ids 42630
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polymarket-direction-contract-one-v2
+          path: snapshots/acceptance/
+          retention-days: 90

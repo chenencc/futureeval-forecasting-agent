@@ -34,9 +34,9 @@ def run(inputs,replay,output,rank_ids=(),model='nvidia/nemotron-3-super-120b-a12
         ranking={'status':'offline_only','picks':[]}
         if ident in rank_ids and rows:
             ranking=rank({'title':case['question'],'rules':case.get('resolution_criteria'),
-                'required_direction_schema':{'direction':'same|inverse|partial|unknown','target_proposition':'exact target YES meaning','market_yes_proposition':'exact contract YES meaning'},
+                'required_direction_schema':{'direction':'same|inverse|partial|unknown','target_proposition':'Copy the exact QUESTION title verbatim, including Will and question mark','market_yes_proposition':'exact contract YES meaning'},
                 'direction_instructions':'For every selected object include direction, target_proposition and market_yes_proposition. Same means same proposition orientation, inverse means mutually exclusive complementary proposition; partial means overlapping but non-complementary. A removal contract is not automatically the exact complement of participation: eligibility, removal deadline, withdrawal and participation conditions must coincide. When incomplete use partial or unknown. Never convert probabilities. Top-tier requires same direction and all exact rule conditions.'},rows,output/f'{ident}-rank.json',model)
-        picked=[annotate_direction(p,rows[p['i']]) for p in ranking.get('picks',[])]
+        picked=[annotate_direction(p,rows[p['i']],target_question=case['question']) for p in ranking.get('picks',[])]
         result['cases'].append({'task_id':ident,'question':case['question'],'old_pool_size':old.get('pool_size'),'coverage':built['coverage'],
             'old_selected_count':len(old_ids),'old_selected_retained_in_new_pool':len(old_ids & {r['market_id'] for r in rows}),
             'ranking_status':ranking['status'],'ranked':picked,'usage':ranking.get('response',{}).get('usage')})

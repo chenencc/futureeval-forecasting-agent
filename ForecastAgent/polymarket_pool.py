@@ -59,7 +59,7 @@ def build_pool(payloads,title,*,market_cap=120,family_cap=60):
         'omitted_market_ids':[r['market_id'] for r in all_rows if r['market_id'] not in selected_ids]}
 
 
-def annotate_direction(pick,row):
+def annotate_direction(pick,row,*,target_question=None):
     """Missing evidence remains unknown; no polarity inference from keywords."""
     direction=pick.get('direction','unknown')
     target=pick.get('target_proposition');market=pick.get('market_yes_proposition')
@@ -67,8 +67,12 @@ def annotate_direction(pick,row):
     if direction not in DIRECTIONS:issues.append('invalid_direction');direction='unknown'
     if direction!='unknown' and (not isinstance(target,str) or not target.strip() or not isinstance(market,str) or not market.strip()):
         issues.append('missing_proposition_evidence');direction='unknown'
+    if target_question is not None and direction!='unknown' and target!=target_question:
+        issues.append('target_proposition_not_exact_question');direction='unknown'
     differences=pick.get('differences',[])
     if not isinstance(differences,list):differences=[];issues.append('invalid_differences')
+    if direction=='inverse' and pick.get('tier') in {'same_quantity_other_cut','driver_or_consequence','weak'}:
+        issues.append('inverse_claim_has_non_equivalent_conditions');direction='partial'
     if direction in {'inverse','partial','unknown'} and pick.get('tier')=='same_quantity_same_date':
         issues.append('top_tier_direction_conflict')
     return {**row,**pick,'direction':direction,'direction_diagnostics':issues,'differences':differences,

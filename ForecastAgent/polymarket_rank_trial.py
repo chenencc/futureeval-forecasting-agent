@@ -38,7 +38,7 @@ def parse_ranking(text,size):
         if not isinstance(row,dict):continue
         i=row.get('i')
         if type(i) is not int or not 0<=i<size or i in seen or row.get('tier') not in TIERS:continue
-        seen.add(i);result.append({'i':i,'tier':row['tier'],'why':str(row.get('why',''))[:500],'differences':row.get('differences',[])})
+        seen.add(i);result.append({'i':i,'tier':row['tier'],'why':str(row.get('why',''))[:500],'differences':row.get('differences',[]),**{key:row[key] for key in ('direction','target_proposition','market_yes_proposition') if key in row}})
         if len(result)==8:break
     if value and not result:raise ValueError('No usable ranking indices')
     return result
