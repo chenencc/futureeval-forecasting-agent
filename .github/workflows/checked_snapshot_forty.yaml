@@ -46,7 +46,7 @@ jobs:
       - run: python -u -m ForecastAgent.analysis.enhanced_pair40 --batch "$BATCH" --output snapshots/enhanced-pair
         env:
           BATCH: ${{ matrix.batch }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -109,7 +109,7 @@ jobs:
         env:
           COHORT: ${{ matrix.cohort }}
           BATCH: ${{ matrix.batch }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
