@@ -54,6 +54,8 @@ def discover(bundle, gaps, limit=3):
         source=gap['url'];host=urlsplit(source).hostname;ranked={}
         for url,label,origin,parent in observed:
             if url==safe_url(source):continue
+            # Platform policy links describe rules, not the event's primary source.
+            if urlsplit(url).hostname in {'metaculus.com','www.metaculus.com'} and re.match(r'^/(?:faq|help|accounts)(?:/|$)',urlsplit(url).path,re.I):continue
             if url in pages:
                 from ForecastAgent.readers.capture_status import capture_status
                 if capture_status({},pages[url])['usable_text']:continue

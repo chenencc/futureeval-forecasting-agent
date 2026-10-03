@@ -62,3 +62,16 @@ For supported PDFs whose layout extraction is empty, ordinary pypdf text
 extraction runs before optional OCR. The extraction method is recorded per page;
 raw PDF bytes remain authoritative for tables, spacing and number interpretation.
 The 100-page full-reader limit remains unchanged.
+
+Platform FAQ/help/account URLs are excluded from event-source ranking even when
+linked as definitions in resolution criteria. Reports separately count original
+source gaps and unacquired discovered candidates; the legacy total gap field
+includes both and must not be interpreted as physical request failures.
+
+Validation on the five preserved pilot tasks recovered 2,238 characters from
+the two-page saved government PDF with zero network calls. The resumed Linux
+pilot used four previously unspent HTTP reservations (five requests including
+one redirect), recovered a government policy HTML page, and retained all source
+restrictions. That policy page is contextual evidence, not proof of the question's
+outcome. The court PDF exceeds the 100-page full-reader limit; no full read was
+attempted and the sampled diagnostic does not imply all pages are readable.

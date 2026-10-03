@@ -28,6 +28,12 @@ class DiscoveryTests(unittest.TestCase):
         self.assertFalse(any('privacy' in c['url'] or 'other' in c['url'] for c in candidates))
         self.assertFalse(plan['urls_synthesized'])
         self.assertFalse(candidates[1]['equivalence_verified'])
+    def test_platform_definitions_are_not_primary_event_sources(self):
+        b=self.bundle()
+        b['request']['resolution_criteria']+=' According to [credible sources](https://www.metaculus.com/faq/#definitions).'
+        plan=discover(b,[{'url':'https://issuer.example/','category':'access_restricted'}])
+        self.assertFalse(any('metaculus.com/faq' in c['url'] for c in plan['gaps'][0]['candidates']))
+
     def test_private_and_already_readable_sources_excluded(self):
         b=self.bundle();b['searches'][0]['results'].append({'url':'http://127.0.0.1/acme','title':'Acme revenue'})
         b['pages']['https://issuer.example/releases/acme-2026']={'content':'Acme revenue published measurement. '*40}

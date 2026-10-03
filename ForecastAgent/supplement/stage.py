@@ -273,7 +273,9 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                 save(path,child)
                 summary.append({'task_id':ident,'attempts':len(child['attempts']),
                     'new_readable_captures':sum(v['readable'] for v in child['captures'].values()),
-                    'remaining_failed_source_gaps':len(child['remaining_gaps'])})
+                    'remaining_failed_source_gaps':len(child['remaining_gaps']),
+                    'original_source_gaps':sum(r.get('kind')!='discovered_source' for r in child['remaining_gaps']),
+                    'discovered_candidate_gaps':sum(r.get('kind')=='discovered_source' for r in child['remaining_gaps'])})
         save(output/'summary.json',{'schema':'supplement_summary_v1','tasks':summary,
             'provider_calls':{'models':0,'tavily':0,'exa':0},'forecast_submissions':False})
         return summary
