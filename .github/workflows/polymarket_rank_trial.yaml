@@ -1,0 +1,48 @@
+name: Polymarket NoStream inspired twenty trial
+on:
+  push:
+    branches: [dev_polymarket]
+    paths: [.github/workflows/polymarket_rank_trial.yaml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: polymarket-rank-twenty-v1
+  cancel-in-progress: false
+jobs:
+  rank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        batch: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze five-question shard
+        env:
+          BATCH: ${{ matrix.batch }}
+        run: |
+          python - <<'PY'
+          import json,os,pathlib,shutil
+          src=pathlib.Path('ForecastAgent/fixtures/polymarket_twenty');dst=pathlib.Path('snapshots/input');dst.mkdir(parents=True);(dst/'responses').mkdir()
+          data=json.loads((src/'report.json').read_text());start=int(os.environ['BATCH'])*5;data['cases']=data['cases'][start:start+5]
+          (dst/'report.json').write_text(json.dumps(data))
+          for case in data['cases']:
+              for p in (src/'responses').glob(case['task_id']+'-*.json'):shutil.copy2(p,dst/'responses'/p.name)
+          PY
+      - run: python -m unittest ForecastAgent.tests.test_polymarket_rank_trial ForecastAgent.tests.test_polymarket_discovery ForecastAgent.tests.test_polymarket_match
+      - name: One extra public search and one rank call per nonempty pool
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+        run: python -m ForecastAgent.polymarket_rank_trial --inputs snapshots/input --output snapshots/output
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polymarket-rank-twenty-${{ matrix.batch }}
+          path: snapshots/output/
+          retention-days: 90
