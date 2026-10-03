@@ -25,11 +25,11 @@ jobs:
           path: harness
       - uses: actions/checkout@v4
         with:
-          ref: '673c464'
+          ref: '673c464ff7ee0c6263ba0d57f4038c8449022923'
           path: baseline
       - uses: actions/checkout@v4
         with:
-          ref: '1260b4c'
+          ref: '1260b4c45293237a1de91b1decf038da68b87eea'
           path: current
       - uses: actions/setup-python@v5
         with:
@@ -50,3 +50,4 @@ jobs:
           name: dev-crawl-paired-20-batch-${{ matrix.batch }}
           path: results/
           retention-days: 90
+
