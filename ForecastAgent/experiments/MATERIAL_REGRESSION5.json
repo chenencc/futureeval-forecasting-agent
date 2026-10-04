@@ -1,0 +1,43 @@
+{
+  "schema": "material-regression-five-v1",
+  "baseline_commit": "05ea8c4",
+  "candidate_base_commit": "c5e9550",
+  "annotation_scope": "Explicit saved-passage development labels; unlabeled rows unknown. Not held-out accuracy.",
+  "cases": [
+    {
+      "id": "36871",
+      "fixture": "ForecastAgent/fixtures/material_regression5/36871.json.gz",
+      "sha256": "1e2c4eb905f28ccbadc447a13c4ebb376cc0ab5e927bd169489469fa610985b6",
+      "labels": 4,
+      "source_run": "37177466859"
+    },
+    {
+      "id": "40852",
+      "fixture": "ForecastAgent/fixtures/material_regression5/40852.json.gz",
+      "sha256": "cc9aa3fcd94c35c281a10b8af9485a93a3d59779d4394c2e7a2faf7fe89c5ab4",
+      "labels": 3,
+      "source_run": "37177466859"
+    },
+    {
+      "id": "43801",
+      "fixture": "ForecastAgent/fixtures/material_regression5/43801.json.gz",
+      "sha256": "e8c7a24fb07bbbb154334fddfdae9a531ac5b700aba98085729198cd5514503c",
+      "labels": 1,
+      "source_run": "37177466859"
+    },
+    {
+      "id": "44129",
+      "fixture": "ForecastAgent/fixtures/material_regression5/44129.json.gz",
+      "sha256": "9649300d7674c310e84d2a6f3b47741cdc32e2ea6a193030b5f6479cea64c4eb",
+      "labels": 2,
+      "source_run": "37177466859"
+    },
+    {
+      "id": "44938",
+      "fixture": "ForecastAgent/fixtures/material_regression5/44938.json.gz",
+      "sha256": "0fb7e2d943e239084ff710056282a645dc5e101b86c4ff72c670918cd154c050",
+      "labels": 2,
+      "source_run": "37177466859"
+    }
+  ]
+}

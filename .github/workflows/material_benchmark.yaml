@@ -1,0 +1,74 @@
+name: Frozen paired material benchmark
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: frozen-material-benchmark
+  cancel-in-progress: false
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660
+          path: baseline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m unittest ForecastAgent.tests.test_material_benchmark ForecastAgent.tests.test_requirement_contract
+      - run: python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --output snapshots/benchmark-regression
+      - run: python -c 'import json; assert json.load(open("snapshots/benchmark-regression/report.json"))["gate_passed"]'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-regression-five
+          path: snapshots/benchmark-regression
+          retention-days: 90
+  paired:
+    needs: regression
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        case: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660
+          path: baseline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: benchmark-regression-five
+          path: snapshots/benchmark-regression
+      - name: Single acquisition and identical-body paired review
+        run: python -u -m ForecastAgent.experiments.material_benchmark live --case "$CASE" --baseline baseline --output snapshots/benchmark-case
+        env:
+          CASE: ${{ matrix.case }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: material-benchmark-case-${{ matrix.case }}
+          path: snapshots/benchmark-case
+          if-no-files-found: error
+          retention-days: 90

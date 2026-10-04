@@ -164,5 +164,47 @@
     "dispatch_size": 5,
     "forecast_submissions": 0,
     "comparison": "Saved original bodies and initial/supplement stages; no controlled online A/B claim."
+  },
+  "benchmark10": {
+    "42491": [
+      "Dated government designation or legal notice identifying the exact Anthropic entity and status on May 1, 2026",
+      "Applicable authority, effective date and distinction between proposed, stayed and operative designation"
+    ],
+    "40849": [
+      "Tesla issuer notice or filing describing Cybertruck production/discontinuation status before April 1, 2026",
+      "Exact product identity and dated evidence distinguishing temporary production pause, trim removal and permanent discontinuation"
+    ],
+    "41206": [
+      "SEC EDGAR filing records matching the Anthropic legal issuer and S-1 form before July 1, 2026",
+      "Issuer identifiers, filing dates and explicit distinction from amended S-1, confidential draft and unrelated same-name issuers"
+    ],
+    "43491": [
+      "Official OHR or appointing-authority notice identifying the High Representative and effective status before September 2, 2026",
+      "Appointment announcement versus effective assumption of office and replacement identity"
+    ],
+    "43987": [
+      "Official USMCA withdrawal notice or dated government document through August 2026",
+      "Written transmission, recipient, notice date and distinction from renegotiation statements or threats"
+    ],
+    "43665": [
+      "First-trading-day SpaceX public equity market record, or explicit unlocated/not-yet-listed status gap",
+      "Closing price, share-count basis, currency, date and market-cap calculation inputs; private valuation is not public closing capitalization"
+    ],
+    "44731": [
+      "Official Kazakhstan legislative election result with parties obtaining seats",
+      "Election date, seat/party table, legislative chamber, threshold and provisional-versus-final status"
+    ],
+    "40417": [
+      "Louisiana v. Callais official merits opinion or disposition, preserving full judgment text or explicit absent-opinion gap",
+      "Case identifiers, decision date and distinction among district boundaries, constitutional holding, injunction and procedural disposition"
+    ],
+    "42489": [
+      "Dated source records identifying a UAE direct military strike against Iran before June 1, 2026 or explicit unlocated evidence gap",
+      "Actor, target, event date and direct strike versus interception, proxy participation or unconfirmed allegation"
+    ],
+    "28102": [
+      "Metaculus leaderboard or benchmark record describing AI forecasting performance under the question rules",
+      "Scoring definition, eligibility, measurement window, rank and comparison population; promotional accuracy alone does not fulfill the benchmark"
+    ]
   }
 }

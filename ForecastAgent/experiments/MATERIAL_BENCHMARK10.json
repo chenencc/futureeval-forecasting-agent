@@ -1,0 +1,164 @@
+{
+  "schema": "material-paired-benchmark-ten-v1",
+  "baseline_commit": "05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660",
+  "candidate_repair_commit": "c5e9550",
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
+  "model_fallback": false,
+  "acquisition_budget_profile": "solid_v2",
+  "assessment_per_arm": {
+    "logical_decisions": 1,
+    "max_http_attempts": 3,
+    "max_seconds": 180,
+    "max_output_tokens": 4096,
+    "reasoning_max_tokens": 768
+  },
+  "order_seed": "material-pair-preregistered-20261004-v1",
+  "design": "Acquire once per question; identical saved bodies, passage coverage and input packet for both review arms. Compare prompt and acceptance only, not independent live search recall.",
+  "gate": {
+    "regression_new_false_rejections": 0,
+    "expansion_requires": "Completed blinded material labels, coverage improvement, no material regression, and audited costs; no automatic expansion from job success.",
+    "max_next_cohort": 30
+  },
+  "cases": [
+    {
+      "case": 1,
+      "id": "42491",
+      "question": "Will Anthropic be a designated supply chain risk on May 1, 2026?",
+      "source_question_sha256": "87af79a059d07aba4744f72e5036c9476798250b314f99cfb2c8540757442b45",
+      "required_materials": [
+        "Dated government designation or legal notice identifying the exact Anthropic entity and status on May 1, 2026",
+        "Applicable authority, effective date and distinction between proposed, stayed and operative designation"
+      ],
+      "formats": [
+        "html",
+        "legal_notice"
+      ]
+    },
+    {
+      "case": 2,
+      "id": "40849",
+      "question": "Will Tesla discontinue the Cybertruck before April 1, 2026?",
+      "source_question_sha256": "2c4d46dc48df6f389e9e940f184c93e522143d4d4d3e3cb6efd6ac24d8ee32c7",
+      "required_materials": [
+        "Tesla issuer notice or filing describing Cybertruck production/discontinuation status before April 1, 2026",
+        "Exact product identity and dated evidence distinguishing temporary production pause, trim removal and permanent discontinuation"
+      ],
+      "formats": [
+        "html",
+        "filing"
+      ]
+    },
+    {
+      "case": 3,
+      "id": "41206",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before July 1, 2026?",
+      "source_question_sha256": "5ae0781462ea59b8b8eb1947821c168d48f3ab8378d007f0f1194e902a450201",
+      "required_materials": [
+        "SEC EDGAR filing records matching the Anthropic legal issuer and S-1 form before July 1, 2026",
+        "Issuer identifiers, filing dates and explicit distinction from amended S-1, confidential draft and unrelated same-name issuers"
+      ],
+      "formats": [
+        "json",
+        "filing"
+      ]
+    },
+    {
+      "case": 4,
+      "id": "43491",
+      "question": "Will a new High Representative for Bosnia and Herzegovina officially be in place before September 2, 2026?",
+      "source_question_sha256": "c2db0787ddeffc38ee2b055572e5650c4632e349141cf3ab7bff0281bf4bbb4b",
+      "required_materials": [
+        "Official OHR or appointing-authority notice identifying the High Representative and effective status before September 2, 2026",
+        "Appointment announcement versus effective assumption of office and replacement identity"
+      ],
+      "formats": [
+        "html",
+        "notice"
+      ]
+    },
+    {
+      "case": 5,
+      "id": "43987",
+      "question": "Will the United States provide written notices of withdrawal from the USMCA before September 2026?",
+      "source_question_sha256": "03b85b9b48c21291b9186ec797db5319bf1db1ca7853c174259e85d4f780767f",
+      "required_materials": [
+        "Official USMCA withdrawal notice or dated government document through August 2026",
+        "Written transmission, recipient, notice date and distinction from renegotiation statements or threats"
+      ],
+      "formats": [
+        "pdf",
+        "notice"
+      ]
+    },
+    {
+      "case": 6,
+      "id": "43665",
+      "question": "What will SpaceX's closing market capitalization be on its first day of trading as a public company?",
+      "source_question_sha256": "dc8f780b7d62b3a0dc21d936f5207857d7f5df310b69e11b2931ab213d932aff",
+      "required_materials": [
+        "First-trading-day SpaceX public equity market record, or explicit unlocated/not-yet-listed status gap",
+        "Closing price, share-count basis, currency, date and market-cap calculation inputs; private valuation is not public closing capitalization"
+      ],
+      "formats": [
+        "json",
+        "table"
+      ]
+    },
+    {
+      "case": 7,
+      "id": "44731",
+      "question": "How many parties will obtain representation in the 2026 Kazakh legislative election?",
+      "source_question_sha256": "c76bd26331b40b16f941a36f449a55664dd5c861a5a686a368ba9babe43ec62b",
+      "required_materials": [
+        "Official Kazakhstan legislative election result with parties obtaining seats",
+        "Election date, seat/party table, legislative chamber, threshold and provisional-versus-final status"
+      ],
+      "formats": [
+        "pdf",
+        "table"
+      ]
+    },
+    {
+      "case": 8,
+      "id": "40417",
+      "question": "In Louisiana v. Callais, will SCOTUS strike down Louisiana\u2019s two majority-Black districts, restoring a GOP-leaning map?",
+      "source_question_sha256": "adf8239b8bbec4fdd085199b03c91e2dfa1ddefe73d5ac34f9c2fc1a537e17b1",
+      "required_materials": [
+        "Louisiana v. Callais official merits opinion or disposition, preserving full judgment text or explicit absent-opinion gap",
+        "Case identifiers, decision date and distinction among district boundaries, constitutional holding, injunction and procedural disposition"
+      ],
+      "formats": [
+        "pdf",
+        "docket"
+      ]
+    },
+    {
+      "case": 9,
+      "id": "42489",
+      "question": "Will the United Arab Emirates conduct a direct military strike against Iran before June 1, 2026?",
+      "source_question_sha256": "a0b33d5890624ab280c85f5b8b501246b8a1842db491e02953f6f7c9b51b94db",
+      "required_materials": [
+        "Dated source records identifying a UAE direct military strike against Iran before June 1, 2026 or explicit unlocated evidence gap",
+        "Actor, target, event date and direct strike versus interception, proxy participation or unconfirmed allegation"
+      ],
+      "formats": [
+        "html",
+        "news"
+      ]
+    },
+    {
+      "case": 10,
+      "id": "28102",
+      "question": "When Will an AI be Amongst the Best Forecasters on Metaculus",
+      "source_question_sha256": "efb27f886d7c01699d23dd73023941cb160069a2e82609d5ee8dd67a166e9492",
+      "required_materials": [
+        "Metaculus leaderboard or benchmark record describing AI forecasting performance under the question rules",
+        "Scoring definition, eligibility, measurement window, rank and comparison population; promotional accuracy alone does not fulfill the benchmark"
+      ],
+      "formats": [
+        "html",
+        "table"
+      ]
+    }
+  ]
+}
