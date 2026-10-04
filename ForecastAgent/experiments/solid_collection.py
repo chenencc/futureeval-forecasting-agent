@@ -15,6 +15,7 @@ from ForecastAgent.supplement import enhanced
 
 IDS = ['40695', '44126', '45183', '26754', '45045']
 COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'], 'repair2':['26754','45045'],
+    'gap2':['26754','45045'],
     'new15':['43658','44431','44939','44128','43919',
              '41480','43822','44547','43844','44940',
              '43461','42630','44727','45048','44728']}
@@ -90,6 +91,7 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     profile='solid_v1' if cohort=='pilot5' else 'solid_v2'
     capacity=SOLID if profile=='solid_v1' else SOLID_V2
     request = question(ident, experiment_id, profile)
+    if cohort=='gap2': request['collection_workflow']='material-gap-v1'
     manifest = {'protocol': 'solid-raw-collection-v1', 'experiment_id': experiment_id,
         'question_id': ident, 'request_sha256': digest(request), 'capacity': capacity,
         'cohort':cohort,'frozen_cohort_ids':COHORTS[cohort],
@@ -106,14 +108,16 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     save(output/'question.json', request)
     checklist=load(Path(__file__).with_name('COLLECTION_COHORTS.json'))
     save(output/'acceptance-checklist.json',{'id':ident,'cohort':cohort,
-        'required_materials':checklist.get('repair3' if cohort=='repair2' else cohort,{}).get(ident,[]),
+        'required_materials':checklist.get('repair3' if cohort in {'repair2','gap2'} else cohort,{}).get(ident,[]),
         'scope':'Predeclared acquisition checklist, not resolution labels or semantic acceptance.'})
     if prepare_only:
         return manifest
     try:
         bundle = run_retrieval(request, output/'acquisition', os.environ['TAVILY_API_KEY'],
                                os.environ['OPENROUTER_API_KEY'])
-        overlay = enhanced.run(bundle, output/'supplement', network=True,
+        from ForecastAgent.supplement.gap_search import callback
+        search = callback(os.environ['TAVILY_API_KEY'],os.environ.get('EXA_API_KEY')) if cohort=='gap2' else None
+        overlay = enhanced.run(bundle, output/'supplement', network=True,search=search,
                                caps=REPAIR_CAPS, max_link_depth=manifest['material_max_depth'])
         # A raw acquisition deliverable retains blocked/context bodies as well.
         # Their technical diagnostics remain visible; nothing becomes evidence

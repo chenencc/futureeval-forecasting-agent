@@ -57,7 +57,7 @@ def plan(bundle):
     context = str(q.get('question', '')) + ' ' + rule
     candidates = {}; primaries = set()
     expected = contract(q)
-    def add(url, label, origin, parent_url=None, dependency=None):
+    def add(url, label, origin, parent_url=None, dependency=None, need_ids=None):
         url = safe_url(url)
         if not url or (urlsplit(url).hostname or '') == 'metaculus.com' or (urlsplit(url).hostname or '').endswith('.metaculus.com'):
             return
@@ -70,6 +70,9 @@ def plan(bundle):
                len(source_match['topic_matches'])*6 + 20*source_match['preferred_domain'],
                'source_contract': source_match}
         row['material_dependency'] = dependency or {'role':'ordinary_detail'}
+        if need_ids:
+            row['material_need_ids']=need_ids
+            row['score']+=50
         row['score'] += {'target_data_file':80, 'source_attachment':60, 'result_summary':40, 'archive_navigation':35}.get(row['material_dependency']['role'],0)
         if url not in candidates or row['score'] > candidates[url]['score']:
             candidates[url] = row
@@ -98,7 +101,7 @@ def plan(bundle):
             if origin.startswith('question_'):
                 extracted = observed_urls(url or '')
                 url = extracted[0] if extracted else None
-            add(url, str(lead.get('title', '')), 'saved_link' if origin=='page_link' else 'saved_lead', lead.get('parent_url'))
+            add(url, str(lead.get('title', '')), 'saved_link' if origin=='page_link' else origin if origin=='missing_family_search' else 'saved_lead', lead.get('parent_url'),need_ids=lead.get('need_ids'))
     gaps = [{'url': u, 'reason': a.get('reason') or ('target_data_file_missing' if a['material_requirements']['state']=='directory_only' else 'target_coverage_unknown')} for u, a in assessments.items()
             if a['coverage_status'] not in {'candidate_text','candidate_data'}]
     if not assessments:
@@ -110,6 +113,7 @@ def plan(bundle):
     period_context = [dict(c,deferred_reason='observed_other_period_context') for c in candidates.values()
                       if not c['rule_primary'] and c['source_contract']['quarter_status']=='mismatch']
     sources = [c for c in candidates.values() if c['rule_primary'] or
+               (c['origin']=='missing_family_search' and c['source_contract']['entity_acceptable']) or
                (c['material_dependency']['role']!='ordinary_detail' and c['source_contract']['quarter_status']!='mismatch') or
                (c['source_contract']['entity_acceptable'] and
                 c['source_contract']['quarter_status']!='mismatch' and
@@ -208,6 +212,11 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     identity['source_identity_sha256'] = hashlib.sha256(Path(__file__).parents[1].joinpath('evidence/source_identity.py').read_bytes()).hexdigest()
     identity['coverage_sha256'] = hashlib.sha256(Path(__file__).parents[1].joinpath('evidence/source_coverage.py').read_bytes()).hexdigest()
     identity['materials_sha256'] = hashlib.sha256(Path(materials.__file__).read_bytes()).hexdigest()
+    from ForecastAgent.supplement import need_ledger
+    gap_workflow = need_ledger.enabled(bundle)
+    if gap_workflow:
+        identity['need_ledger_sha256'] = hashlib.sha256(Path(need_ledger.__file__).read_bytes()).hexdigest()
+        identity['gap_search_available_tools']=sorted(getattr(search,'available_tools',('tavily','exa')) if search else [])
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
     save(folder/'identity.json', identity)
@@ -226,7 +235,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         if row['tool'] in ('tavily', 'exa') and row.get('response_file'):
             overlay.setdefault('source_leads', {})
             for hit in load(folder/row['response_file']).get('results', []):
-                overlay['source_leads'][hit['url']] = hit
+                overlay['source_leads'][hit['url']] = {**hit,**({'need_ids':[row['need_id']],'origin':'missing_family_search'} if row.get('need_id') else {})}
         if row['status'] == 'captured':
             page = load(folder/row['response_file'])
             if digest(page) != row['response_sha256']:
@@ -236,7 +245,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
                 key += '#repair='+digest(page)[:12]
             overlay['pages'][key] = page
     gap_plan = plan(overlay)
-    if network and search and gap_plan['gaps'] and not gap_plan['sources']:
+    if not gap_workflow and network and search and gap_plan['gaps'] and not gap_plan['sources']:
         for tool in ('tavily', 'exa'):
             if any(r['tool'] == tool for r in state['attempts']): continue
             row = reserve(tool)
@@ -279,7 +288,9 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
             children = [s for s in children if s['material_dependency']['role']!='ordinary_detail']
         admission = routing.admit(children, overlay['request'], [s for s,_ in frontier], overlay['pages'])
         deferred.extend(admission['deferred'])
+        parent_need=next((s.get('material_need_id') for s,_ in frontier if s['url']==url),None)
         for discovered in admission['accepted']:
+            if parent_need:discovered['material_need_id']=parent_need
             queued.add(discovered['url']); frontier.append((discovered,depth+1))
     def save_frontier():
         # Deduplicate diagnostics across restarts without deleting candidates.
@@ -291,8 +302,47 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
             'deferred':list(unique_deferred.values()), 'processed_count':cursor,
             'unprocessed_urls':[s['url'] for s,_ in frontier[cursor:]],
             'full_recall_verified':False})
+    def discover_missing_material():
+        """Search a missing document family even when other sources exist."""
+        nonlocal current_plan
+        counts = usage(bundle, prior, state)
+        ledger = need_ledger.build(overlay, state, counts, caps)
+        save(folder/'material-needs.json', ledger)
+        if not gap_workflow or not network or not search or counts['http']>=caps['http']:
+            return False
+        action = need_ledger.next_search(ledger, state, counts, caps,getattr(search,'available_tools',('tavily','exa')))
+        if not action: return False
+        row = reserve(action['tool'])
+        if not row: return False
+        row.update(need_id=action['need_id'],query=action['query'],
+                   search_role='gap',search_depth='basic' if action['tool']=='tavily' else None)
+        save(folder/'state.json',state)
+        try:
+            response=search(action['tool'],action['query'])
+            row['response_file']=f'search-{len(state["attempts"])}.json'
+            save(folder/row['response_file'],response)
+            row['status']='completed'
+            row['result_count']=len(response.get('results',[]))
+            for hit in response.get('results',[]):
+                overlay.setdefault('source_leads',{})[hit['url']]={**hit,'need_ids':[action['need_id']],'origin':'missing_family_search'}
+        except Exception as exc:
+            status=getattr(exc,'http_status',getattr(exc,'code',None))
+            row.update(status='failed',error=type(exc).__name__,http_status=status)
+            # Permission/account failures require action, not another provider.
+            if status in {401,402,403,429}:
+                state['provider_blocked']=True
+        save(folder/'state.json',state)
+        current_plan=plan(overlay)
+        candidates=[s for s in current_plan['sources'] if s['url'] not in queued]
+        admission=routing.admit(candidates,overlay['request'],[s for s,_ in frontier],overlay['pages'])
+        deferred.extend(admission['deferred'])
+        for source in admission['accepted']:
+            source['material_need_id']=action['need_id']
+            queued.add(source['url']);frontier.append((source,0))
+        return not state.get('provider_blocked',False)
     save_frontier()
-    while cursor < len(frontier):
+    while cursor < len(frontier) or (gap_workflow and not state.get('provider_blocked') and discover_missing_material()):
+        if cursor >= len(frontier): continue
         source, depth = frontier[cursor]
         cursor += 1
         url = source['url']
@@ -307,6 +357,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
             if (url, tool) in attempted: continue
             row = reserve(tool, url)
             if not row: continue
+            if source.get('material_need_id'):row['need_id']=source['material_need_id']
             attempted.add((url, tool))
             try:
                 page = fetch_document(url) if tool == 'http' else render_page(url, retrieved_at=now())
@@ -345,8 +396,19 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     overlay['capture_identity_inventory'] = inventory(overlay['pages'])
     overlay['enhanced_supplement']['deferred_candidates'] = load(folder/'frontier.json')['deferred']
     overlay['enhanced_supplement']['material_coverage'] = plan(overlay)['material_coverage']
+    if gap_workflow:
+        ledger=need_ledger.build(overlay,state,usage(bundle,prior,state),caps)
+        overlay['material_need_ledger']=ledger
+        reason=('provider_blocked' if state.get('provider_blocked') else
+                'discovery_capacity_exhausted' if all(usage(bundle,prior,state)[k]>=caps[k] for k in ('tavily','exa')) else
+                'source_capacity_exhausted' if usage(bundle,prior,state)['http']>=caps['http'] else
+                'offline_review' if not network else 'gap_search_unavailable' if not search else 'bounded_frontier_processed')
+        overlay['material_termination']=need_ledger.termination(ledger,reason=reason,search_available=bool(search))
+        save(folder/'material-needs.json',ledger)
+        save(folder/'termination.json',overlay['material_termination'])
     save(folder/'analysis-input.json', overlay); save(folder/'reading-hints.json', hints(overlay))
     save(folder/'report.json', {'usage': usage(bundle, prior, state), 'caps': caps,
+         **({'material_termination':overlay['material_termination']} if gap_workflow else {}),
          'raw_preserved': True, 'search_callback_enabled': bool(search), 'no_forecasts_submitted': True})
     return overlay
 

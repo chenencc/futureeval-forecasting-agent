@@ -874,7 +874,9 @@ class RetrievalTask:
                 raise ValueError("Explain which missing evidence the query addresses")
             if len(b["searches"]) >= self.search_limit:
                 raise ValueError('Frozen basic-search budget exhausted; persists across restarts')
-            if self.optimized and len(b['searches'])>=3 and args.get('search_role') not in {'recent','official_gap'}:
+            from ForecastAgent.supplement.need_ledger import enabled as material_workflow
+            allowed_extra = {'recent','official_gap','gap','crosscheck'} if material_workflow(b) else {'recent','official_gap'}
+            if self.optimized and len(b['searches'])>=3 and args.get('search_role') not in allowed_extra:
                 raise ValueError('Searches four and five require recent dynamics or a missing official source')
             options = search_options(args["query"], **{k: args[k] for k in ["topic", "include_domains", "include_domains_mode", "exact_match"] if k in args})
             attempt = {"query": args["query"], "need_ids": args["need_ids"], "reason": args["reason"],
@@ -1228,6 +1230,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if collection and task.raw_recall:
                 from ForecastAgent.runtime.collection_actions import raw_stop_reason
                 reason=raw_stop_reason(task)
+                from ForecastAgent.supplement.need_ledger import enabled as gap_workflow
+                if reason=='raw_no_progress_limit' and gap_workflow(task.bundle) and control.get('consecutive_errors'):
+                    reason='handoff_after_tool_errors'
                 if reason:
                     termination_reason=reason
                     control['raw_stop_decision']={'reason':reason,'budget_remaining':task.budget(),
@@ -1282,14 +1287,23 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             try:
                 from ForecastAgent.runtime.context import collection_context
                 from ForecastAgent.runtime.tool_selection import active_tools
-                model_messages = collection_context(task) if collection else messages
+                from ForecastAgent.supplement.need_ledger import enabled as material_workflow
+                from ForecastAgent.runtime.collection_actions import next_action
+                program_read = next_action(task) if collection and material_workflow(task.bundle) and forced=='read_sources' else None
+                model_messages = [] if program_read else collection_context(task) if collection else messages
                 turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
                 if forced=='search_exa':
                     from ForecastAgent.runtime.task_protocol import supplemental_messages
                     model_messages = supplemental_messages(task)
-                message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
-                                    observer=observer, deadline=deadline)
-                if collection:
+                if program_read and program_read.get('urls'):
+                    message={'role':'assistant','content':None,'tool_calls':[{
+                        'id':f'program-read-{current_session["id"]}-{turn}', 'type':'function',
+                        'function':{'name':'read_sources','arguments':json.dumps({'urls':program_read['urls']})}}]}
+                    current_session['program_read_batches']=current_session.get('program_read_batches',0)+1
+                else:
+                    message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
+                                        observer=observer, deadline=deadline)
+                if collection and not program_read:
                     from ForecastAgent.runtime.delivery import acknowledge
                     acknowledge(task, model_messages)
                     task.save()
@@ -1307,7 +1321,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                                       'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
                                       'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')
                 break
-            current_session['model_decisions'] = current_session.get('model_decisions', 0) + 1
+            current_session['model_decisions'] = current_session.get('model_decisions', 0) + (0 if program_read else 1)
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
             if not calls:
@@ -1315,7 +1329,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 messages.append({"role": "user", "content": "Use the retrieval tools. Finish explicitly with gaps if evidence is inadequate."})
             for call in calls:
                 name = (call.get("function") or {}).get("name")
-                step = {'tool': name, 'call_id': call.get('id'), 'started_at_utc': utc_now(), 'status': 'reserved'}
+                step = {'tool': name, 'call_id': call.get('id'), 'started_at_utc': utc_now(), 'status': 'reserved',
+                        'owner':'program' if program_read else 'agent'}
                 task.bundle.setdefault('step_attempts', []).append(step)
                 task.save()
                 step_started = time.monotonic()
@@ -1405,6 +1420,14 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
                 "coverage": task.coverage(), "gaps": ["Collection interrupted" if collection else "Retrieval did not complete its final audit"], "conflicts": [], "incomplete": True}
         if collection:
+            from ForecastAgent.supplement import need_ledger
+            if need_ledger.enabled(task.bundle):
+                ledger=need_ledger.build(task.bundle)
+                task.bundle['material_need_ledger']=ledger
+                task.bundle['result']['material_handoff']=need_ledger.termination(ledger,
+                    reason=termination_reason or 'agent_finished',search_available=True)
+                from ForecastAgent.analysis.pilot import save
+                save(task.directory/'material-needs.json',ledger)
             task.bundle['result']['exa_requirement'] = search_policy.requirement(task)
             task.bundle['result']['acquisition_checkpoint'] = checkpoint(task)
             task.bundle['result']['acquisition_complete'] = bool(task.bundle['result'].get('acquisition_complete', False))

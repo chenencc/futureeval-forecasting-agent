@@ -19,7 +19,16 @@ def checkpoint(task):
         report=capture_report(b)
         from ForecastAgent.evidence.acquisition_quality import target_period
         action=discovery_read_action(task)
+        material_status={}
+        from ForecastAgent.supplement import need_ledger
+        if need_ledger.enabled(b) and b.get('plan') is not None:
+            ledger=need_ledger.build(b)
+            material_status={'material_needs':[{
+                'id':n['id'],'family':n['family'],'candidate_status':n['status'],
+                'gap_query':n['query'] if not n['candidates'] else None,
+                'semantic_verified':False} for n in ledger['needs'] if n['priority']=='critical'][:8]}
         return {'schema':'raw_acquisition_checkpoint_v1','budget_remaining':task.budget(),
+            **material_status,
             'target_event_period':target_period(b['request']),
             'exa_requirement':requirement(task),'program_stop_reason':raw_stop_reason(task),
             'saved_body_count':report['capture_count'],'usable_saved_body_count':report['readable_body_count'],
