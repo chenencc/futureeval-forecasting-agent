@@ -72,3 +72,31 @@ forecast accuracy, or historical leakage resistance.
 
 Reader implementation hashes are part of continuation identity. Changed reader
 code cannot silently resume an old execution or reset consumed attempts.
+
+## Requirement-scoped V3 witnesses (experimental)
+
+`field_contract.py` adds an opt-in evaluator alongside the frozen V2 evaluator.
+The program supplies one `required_fields` entry per required axis, with an immutable
+field ID, an exact material requirement and optional allowed event stages. The
+reviewer returns a separate quotation, literal observed value, verdict, stage and
+structured explanation verdict for each field. Original source coordinates are
+preserved by the conservative quote binder. Missing, duplicate or unknown IDs,
+unbound quotations, values absent from their quotations and conflicting verdicts
+cannot close a need. Required stages distinguish an application or timetable from
+an approval or completed event without requiring a positive forecast outcome for
+ordinary status records. Supporting materials cannot close target-material needs.
+
+V2 observations are not silently migrated: lacking field witnesses means unresolved
+V3 review. Free-text entailment is not mechanically proven; coherent but semantically
+wrong model claims remain a limitation. The fixed regression tests cover stage
+confusion, unrelated field IDs, contradiction, missing witnesses, fabricated values,
+negative outcome records and supporting material isolation.
+
+`MATERIAL_FIELD_REGRESSION10.json` reuses the ten saved excerpts from run
+37211590352 with unchanged source windows and gold labels. These are now a repair
+regression set, not held-out examples. `material_field_regression` performs at most
+ten logical calls and fifteen physical requests, with fixed Super and a 4096-token
+output ceiling to accommodate field witnesses. This changed output shape and ceiling
+must be disclosed when comparing against old V2 responses. Provider records and
+failure state persist before additional calls. No search, fetch or submissions are
+available. Production gates and the frozen V2 trial remain unchanged.

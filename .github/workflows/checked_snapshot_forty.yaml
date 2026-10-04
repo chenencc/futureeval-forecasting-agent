@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -31,6 +31,31 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  material-field-regression:
+    if: inputs.experiment == 'material_field_regression'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_material_contract ForecastAgent.tests.test_material_contract_heldout ForecastAgent.tests.test_field_contract ForecastAgent.tests.test_field_contract_round
+      - name: Re-review saved regression excerpts with scoped field witnesses
+        run: python -u -m ForecastAgent.experiments.field_contract_round --output snapshots/material-field-regression
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: material-field-regression
+          path: snapshots/material-field-regression
+          if-no-files-found: error
+          retention-days: 90
   material-contract-heldout:
     if: inputs.experiment == 'material_contract_heldout'
     runs-on: ubuntu-latest
