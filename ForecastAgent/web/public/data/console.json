@@ -1,0 +1,2774 @@
+{
+  "schema_version": 1,
+  "release": "1.0.1",
+  "release_commit": "c9bfab44a670f4307ebc2330866479c82aec71ef",
+  "generated_at": "2026-10-04T03:52:42.497967+00:00",
+  "mode": "archived_preview",
+  "notice": "Release 1.0.1 presentation contract. Archived trial records are not live competition status.",
+  "tasks": [
+    {
+      "id": "44693",
+      "title": "Will the desktop market share of Linux exceed 8% in August 2026?",
+      "type": "binary",
+      "created_at": "2026-10-03T05:08:35.005826+00:00",
+      "rules": "This question resolves as **Yes** if, for the month of August 2026, the desktop operating system market share worldwide of Linux is greater than 8.00%, according to the [bar chart ](https://gs.statcounter.com/os-market-share/desktop/worldwide/#monthly-202607-202607-bar)information presented by Statcounter, when accessed by Metaculus after August 31, 2026.&#x20;",
+      "fine_print": "",
+      "run_id": "37106094306",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37106094306",
+      "question_url": "https://www.metaculus.com/questions/44693/",
+      "input_sha256": "53d60bf2cc1003def19622e9f463174572c0c9af3cf107fbbbe2919f44cf5537",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 4
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 4
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 3
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 2
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "statcounter_aug2026_linux_share",
+          "condition": "Linux desktop OS market share worldwide for August 2026 per Statcounter bar chart",
+          "priority": "critical",
+          "query": "Statcounter desktop OS market share Linux August 2026 worldwide bar chart"
+        },
+        {
+          "id": "statcounter_jul2026_linux_share",
+          "condition": "Linux desktop OS market share worldwide for July 2026 per Statcounter (reference point mentioned in background)",
+          "priority": "useful",
+          "query": "Statcounter desktop OS market share Linux July 2026 worldwide"
+        },
+        {
+          "id": "statcounter_methodology",
+          "condition": "Statcounter methodology for desktop OS market share measurement",
+          "priority": "useful",
+          "query": "Statcounter desktop OS market share methodology worldwide"
+        },
+        {
+          "id": "historical_trend_2025_2026",
+          "condition": "Historical monthly Linux desktop market share trend leading up to August 2026",
+          "priority": "useful",
+          "query": "Statcounter Linux desktop market share monthly 2025 2026 worldwide"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": "Statcounter desktop OS market share Linux August 2026 worldwide bar chart",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/north-america",
+              "title": "Desktop Operating System Market Share North America | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Desktop Operating Systems | Percentage Market Share |\n| Desktop Operating System Market Share in North America - August 2026 |\n| Windows | 53.68% |\n| OS X | 17.76% |\n| Linux | 16% |\n| macOS | 9.88% |\n| Chrome OS | 2.69% |\n| FreeBSD | 0% |\n\n# Desktop Operating System Market Share North America\n\nEdit Chart Data\n\n Save C"
+            },
+            {
+              "url": "https://commandlinux.com/statistics/desktop-os-market-share-by-country",
+              "title": "Desktop OS Market Share By Country Statistics 2026",
+              "snippet": "Desktop OS market share by country in 2026 shows Windows leading almost everywhere, with wide gaps beneath the surface. India tops Linux adoption, the US leads ChromeOS on the back of K-12 school deployments, and China holds one of the highest Windows shares recorded. Linux sits near 4.7% globally and is on track for about 6% by late 2026. The global averages hide these swings, which is why countr"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide",
+              "title": "Desktop Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Desktop Operating Systems | Percentage Market Share |\n| Desktop Operating System Market Share Worldwide - September 2026 |\n| Windows | 76.36% |\n| OS X | 10.68% |\n| macOS | 6.1% |\n| Linux | 4.54% |\n| Chrome OS | 2.31% |\n| FreeBSD | 0% |\n\n# Desktop Operating System Market Share Worldwide\n\nEdit Chart Data\n\n Save Chart Im"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/china",
+              "title": "Desktop Operating System Market Share China | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Desktop Operating Systems | Percentage Market Share |\n| Desktop Operating System Market Share in China - August 2026 |\n| Windows | 79.32% |\n| macOS | 13.08% |\n| OS X | 6.04% |\n| Linux | 1.56% |\n| Chrome OS | 0% |\n| OpenBSD | 0% |\n\n# Desktop Operating System Market Share China\n\nEdit Chart Data\n\n Save Chart Image (.png)"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/portugal",
+              "title": "Desktop Operating System Market Share Portugal | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Desktop Operating Systems | Percentage Market Share |\n| Desktop Operating System Market Share in Portugal - September 2026 |\n| Windows | 82.86% |\n| OS X | 7.46% |\n| macOS | 5.81% |\n| Linux | 3.32% |\n| Chrome OS | 0.55% |\n| FreeBSD | 0% |\n\n# Desktop Operating System Market Share Portugal\n\nEdit Chart Data\n\n Save Chart I"
+            },
+            {
+              "url": "https://discuss.privacyguides.net/t/linux-hits-over-7-globally-in-the-desktop-os-market-share-how-accurate-is-this-website/39551",
+              "title": "Linux hits over 7% globally in the desktop OS market share. How accurate is this website? - Off Topic - Privacy Guides Community",
+              "snippet": "# Linux hits over 7% globally in the desktop OS market share. How accurate is this website?\n\n### Desktop Operating System Market Share Worldwide | Statcounter Global Stats\n\nThis graph shows the market share of desktop operating systems worldwide based on over 3 billion monthly page views.\n\nScreenshot 2026-08-02 at 05.48.49\n\nScreenshot 2026-08-02 at 05.48.491281×274 88.8 KB\n\nScreenshot 2026-08-02 a"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/mobile/worldwide/2023",
+              "title": "Mobile Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Mobile Operating Systems | Percentage Market Share |\n| Mobile Operating System Market Share Worldwide - August 2026 |\n| Android | 67.61% |\n| iOS | 32.36% |\n| Linux | 0.01% |\n| KaiOS | 0.01% |\n| Windows | 0.01% |\n| Samsung | 0% |\n\n# Mobile Operating System Market Share Worldwide\n\nEdit Chart Data\n\n Save Chart Image (.pn"
+            },
+            {
+              "url": "https://linuxiac.com/windows-drops-under-60-in-global-desktop-os-share-for-the-first-time-in-years",
+              "title": "Windows Drops Under 60% in Global Desktop OS Share for the First Time in Years",
+              "snippet": "StatCounter’s June 2026 data puts Windows at 56.55% worldwide, while Linux reaches 4.39%.\n\nApple’s desktop platforms also remain a major part of the picture. StatCounter lists OS X at 11.89% and macOS at 4.48% for June 2026, meaning Apple’s combined desktop presence remains comfortably ahead of Linux in the global chart. Chrome OS follows with 1.21%.\n\nOf course, StatCounter’s numbers should be rea"
+            },
+            {
+              "url": "https://en.wikipedia.org/wiki/Usage_share_of_operating_systems",
+              "title": "Usage share of operating systems - Wikipedia",
+              "snippet": "Between different classes of devices:\n\n For smartphones and other mobile devices, Android has 72% share of traffic, and Apple's iOS has 28%.\n For desktop computers and laptops, Microsoft Windows has 62.16%, followed by unknown operating systems at 18.75%, Mac OS at 14.58%, desktop Linux at 3.09%, then Google's ChromeOS at 1.42%, as of June 2026.\n For tablets, Apple's iPadOS (a variant of iOS) has "
+            },
+            {
+              "url": "https://www.reddit.com/r/linux/comments/1lpepvq/linux_breaks_through_5_share_in_usa_desktop_os",
+              "title": "Linux breaks through 5% share in USA desktop OS market ...",
+              "snippet": "Overall, Linux increased worldwide market share by 0.32% (3.77% to 4.09%). Not exactly dance in the streets growth, but slow, steady growth."
+            }
+          ]
+        },
+        {
+          "channel": "Tavily basic",
+          "query": "gs.statcounter.com os-market-share desktop worldwide monthly 202608 202608 bar Linux August 2026",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/nigeria/%23monthly-202408-202508-bar",
+              "title": "Desktop Operating System Market Share Nigeria",
+              "snippet": "This graph shows the market share of desktop operating systems in Nigeria - August 2026 Windows 49.16% macOS 40.45% OS X 5.8% Linux 4.18% Chrome OS 0.41%"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/all/vanuatu/suwimlput.lol",
+              "title": "Operating System Market Share Vanuatu",
+              "snippet": "Operating Systems, Percentage Market Share. Operating System Market Share in Vanuatu - August 2026. Linux, 75.5%. Windows, 11.1%. Android, 7.96%. iOS, 3.46%."
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/saudi-arabia/%23monthly-202408-202508-bar",
+              "title": "Desktop Operating System Market Share Saudi Arabia",
+              "snippet": "Desktop Operating Systems, Percentage Market Share. Desktop Operating System Market Share in Saudi Arabia - August 2026. Windows, 55.94%. macOS, 27.92%. OS X"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/malta/monthly-202109-202209-bar",
+              "title": "Desktop Operating System Market Share Malta",
+              "snippet": "This graph shows the market share of desktop operating systems in Malta based on over 3 billion monthly page views. - August 2026 Windows 62.59% macOS 24.08%"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/tablet/guatemala/%23monthly-201609-201709-bar",
+              "title": "Tablet Operating System Market Share Guatemala",
+              "snippet": "Tablet Operating System Market Share in Guatemala - August 2026. Android, 58.98%. iOS, 40.58%. Linux, 0.44%. Tablet Operating System Market Share Guatemala"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/mobile/russian-federation/%23monthly-202408-202508-bar",
+              "title": "Mobile Operating System Market Share Russian Federation",
+              "snippet": "This graph shows the market share of mobile operating systems in Russian Federation based on over 3 billion monthly page views."
+            },
+            {
+              "url": "https://gs.statcounter.com/browser-version-partially-combined-market-share/desktop-tablet/gibraltar",
+              "title": "Desktop & Tablet Browser Version (Partially Combined) ...",
+              "snippet": "This graph shows the market share of desktop & tablet browser version (partially combined)s in Gibraltar based on over 3 billion monthly page views."
+            },
+            {
+              "url": "https://gs.statcounter.com/android-version-market-share/mobile-tablet/marshall-islands/366800010.xyz",
+              "title": "Mobile & Tablet Android Version Market Share Marshall ...",
+              "snippet": "This graph shows the market share of mobile & tablet android versions in Marshall Islands based on over 3 billion monthly page views. Statcounter Global"
+            }
+          ]
+        },
+        {
+          "channel": "Tavily basic",
+          "query": "Statcounter desktop OS market share Linux August 2026 worldwide bar chart monthly",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/south-korea",
+              "title": "Desktop Operating System Market Share Republic Of Korea | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Desktop Operating Systems | Percentage Market Share |\n| Desktop Operating System Market Share in Republic Of Korea - August 2026 |\n| Windows | 88.98% |\n| macOS | 5.08% |\n| OS X | 3.58% |\n| Linux | 2.26% |\n| Chrome OS | 0.11% |\n| SunOS | 0% |\n\n# Desktop Operating System Market Share Republic Of Korea\n\nEdit Chart Data\n\n"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/all/china",
+              "title": "Operating System Market Share China | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Operating Systems | Percentage Market Share |\n| Operating System Market Share in China - August 2026 |\n| Android | 39.54% |\n| Windows | 34.75% |\n| iOS | 16.61% |\n| macOS | 5.73% |\n| OS X | 2.64% |\n| Linux | 0.71% |\n\n# Operating System Market Share China\n\nEdit Chart Data\n\n Save Chart Image (.png)\n Download Data (.csv)\n"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/mobile/worldwide/2024",
+              "title": "Mobile Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Mobile Operating Systems | Percentage Market Share |\n| Mobile Operating System Market Share Worldwide - August 2026 |\n| Android | 67.61% |\n| iOS | 32.36% |\n| Linux | 0.01% |\n| KaiOS | 0.01% |\n| Windows | 0.01% |\n| Samsung | 0% |\n\n# Mobile Operating System Market Share Worldwide\n\nEdit Chart Data\n\n Save Chart Image (.pn"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/mobile/united-states-of-america",
+              "title": "Mobile Operating System Market Share United States Of America | Statcounter Global Stats",
+              "snippet": "Press Releases\n FAQ\n About\n Feedback\n\nStatcounter Global Stats\n\n|  |  |\n --- |\n| Mobile Operating Systems | Percentage Market Share |\n| Mobile Operating System Market Share in United States Of America - August 2026 |\n| iOS | 60.68% |\n| Android | 39.29% |\n| KaiOS | 0.02% |\n| Windows | 0% |\n| Linux | 0% |\n| Samsung | 0% |\n\n# Mobile Operating System Market Share United States Of America\n\nEdit Chart D"
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/seychelles/13580.help",
+              "title": "Desktop Operating System Market Share Seychelles",
+              "snippet": "This graph shows the market share of desktop operating systems in Seychelles from June 2025 - June 2026. Windows has 56.09%, OS X has 29.43% and MacOS has"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "Statcounter desktop OS market share Linux August 2026 worldwide bar chart",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://gs.statcounter.com/os-market-share/linux/desktop/worldwide",
+              "title": "Linux Operating System Market Share Desktop | Statcounter Global Stats",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop",
+              "title": "Desktop Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide/worldwide",
+              "title": "Desktop Operating System Market Share Worldwide",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide/[",
+              "title": "Desktop Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/world",
+              "title": "Desktop Operating System Market Share World",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/linux/worldwide/2025",
+              "title": "Linux Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide&/2025",
+              "title": "Desktop Operating System Market Share Worldwide& | Statcounter Global Stats",
+              "snippet": ""
+            },
+            {
+              "url": "https://gs.statcounter.com/os-market-share/desktop-console/worldwide/",
+              "title": "Desktop & Console Operating System Market Share Worldwide | Statcounter Global Stats",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide",
+          "title": "gs.statcounter.com",
+          "characters": 1468,
+          "body_sha256": "90ba92837250a0f0287e75a5761084b1a77b29aff4dfe42b3927f799e26038c2",
+          "captured_at": null,
+          "excerpt": "| Desktop Operating Systems | Percentage Market Share | \n|---|---|\n| Desktop Operating System Market Share Worldwide - September 2026 | | \n| Windows | 76.36% | \n| OS X | 10.68% | \n| macOS | 6.1% | \n| Linux | 4.54% | \n| Chrome OS | 2.31% | \n| FreeBSD | 0% | \nDesktop Operating System Market Share Worldwide\nEdit Chart Data\nSorry, JavaScript is required to view Global Stats charts.\nView Operating System Version Market Share\n- [Windows Version Market Share](https://gs.statcounter.com/os-version-market-share/windows/desktop/worldwide)\n- [macOS Version Market Share](https://gs.statcounter.com/os-version-market-share/macos/desktop/worldwide)\n- [iOS Version Market Share](https://gs.statcounter.com/os-version-market-share/ios/mobile-tablet/worldwide)\n- [Android Version Market Share](https://gs.statcounter.com/os-version-market-share/android/mobile-tablet/worldwide)\nView desktop operating system market share by platform\nView desktop operating system market share by region\n[View all regions...](https://gs.statcounter.com)\n[View fewer regions...](https://gs.statcounter.com)\nView desktop operating system market share by year\n[View all years...](https://gs.statcounter.com)\n[View fewer years...](https://gs.statcounter.com)\nView all stats\nUnderstand your visitors with Statcounter\nSee why over 1,000,000 bloggers, web designers, marketing and SEO professionals and small business owners use Statcounter to grow their business.\n[Learn More](https://statcounter.com/)",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://gs.statcounter.com/os-market-share/linux/desktop/worldwide",
+          "title": "gs.statcounter.com",
+          "characters": 1232,
+          "body_sha256": "3874dc30c05c23379c1f5e53e609c04fd5b16cc0a82faeff9081d65f3321c2ab",
+          "captured_at": null,
+          "excerpt": "Linux Operating System Market Share Desktop\nEdit Chart Data\nSorry, JavaScript is required to view Global Stats charts.\nView Operating System Version Market Share\n- [Windows Version Market Share](https://gs.statcounter.com/os-version-market-share/windows/desktop/desktop/worldwide)\n- [macOS Version Market Share](https://gs.statcounter.com/os-version-market-share/macos/desktop/desktop/worldwide)\n- [iOS Version Market Share](https://gs.statcounter.com/os-version-market-share/ios/mobile-tablet/desktop/worldwide)\n- [Android Version Market Share](https://gs.statcounter.com/os-version-market-share/android/mobile-tablet/desktop/worldwide)\nView linux operating system market share by platform\nView linux operating system market share by region\n[View all regions...](https://gs.statcounter.com)\n[View fewer regions...](https://gs.statcounter.com)\nView linux operating system market share by year\n[View all years...](https://gs.statcounter.com)\n[View fewer years...](https://gs.statcounter.com)\nView all stats\nUnderstand your visitors with Statcounter\nSee why over 1,000,000 bloggers, web designers, marketing and SEO professionals and small business owners use Statcounter to grow their business.\n[Learn More](https://statcounter.com/)",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://discuss.privacyguides.net/t/linux-hits-over-7-globally-in-the-desktop-os-market-share-how-accurate-is-this-website/39551",
+          "title": "discuss.privacyguides.net",
+          "characters": 55179,
+          "body_sha256": "35d404f0b32f6b90e907b693c4daef3d8400880b17971ecccf1506684251314f",
+          "captured_at": null,
+          "excerpt": "{\"post_stream\":{\"posts\":[{\"id\":162703,\"name\":null,\"username\":\"Reincarnation\",\"avatar_template\":\"/user_avatar/discuss.privacyguides.net/reincarnation/{size}/11845_2.png\",\"created_at\":\"2026-08-01T23:47:43.235Z\",\"cooked\":\"\\u003caside class=\\\"onebox allowlistedgeneric\\\" data-onebox-src=\\\"https://gs.statcounter.com/os-market-share/desktop/worldwide/\\\"\\u003e\\n \\u003cheader class=\\\"source\\\"\\u003e\\n \\u003cimg class=\\\"site-icon\\\" alt=\\\"\\\" src=\\\"https://forum-uploads.privacyguidesusercontent.com/original/3X/a/1/a16a407675b4955413f6c886bce108599bb71695.png\\\" data-dominant-color=\\\"259DC0\\\" width=\\\"32\\\" height=\\\"32\\\"\\u003e\\n\\n \\u003ca href=\\\"https://gs.statcounter.com/os-market-share/desktop/worldwide/\\\" target=\\\"_blank\\\" rel=\\\"noopener nofollow ugc\\\"\\u003eStatCounter Global Stats\\u003c/a\\u003e\\n \\u003c/header\\u003e\\n\\n \\u003carticle class=\\\"onebox-body\\\"\\u003e\\n \\u003cimg width=\\\"690\\\" height=\\\"287\\\" class=\\\"thumbnail\\\" alt=\\\"\\\" src=\\\"https://forum-uploads.privacyguidesusercontent.com/optimized/3X/b/6/b62f7ac5af23e84770f04f5cbd0d756cb6b5058c_2_690x287.png\\\" data-dominant-color=\\\"000000\\\"\\u003e\\n\\n\\u003ch3\\u003e\\u003ca href=\\\"https://gs.statcounter.com/os-market-share/desktop/worldwide/\\\" target=\\\"_blank\\\" rel=\\\"noopener nofollow ugc\\\"\\u003eDesktop Operating System Market Share Worldwide | Statcounter Global Stats\\u003c/a\\u003e\\u003c/h3\\u003e\\n\\n \\u003cp\\u003eThis graph shows the market share of desktop operating systems worldwide based on over 3 billion monthly page views.\\u003c/p\\u003e\\n\\n\\n \\u003c/article\\u003e\\n\\n \\u003cdiv class=\\\"onebox-metadata\\\"\\u003e\\n \\n \\n \\u003c/div\\u003e\\n\\n \\u003cdiv style=\\\"clear: both\\\"\\u003e\\u003c/div\\u003e\\n\\u003c/aside\\u003e\\n\",\"post_number\":1,\"post_type\":1,\"posts_count\":21,\"updated_at\":\"2026-08-02T01:01:29.502Z\",\"reply_count\":0,\"reply_to_post_num",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://gs.statcounter.com/os-market-share/desktop/worldwide",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://gs.statcounter.com/os-market-share/linux/desktop/worldwide",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://gs.statcounter.com/os-market-share/desktop",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://discuss.privacyguides.net/t/linux-hits-over-7-globally-in-the-desktop-os-market-share-how-accurate-is-this-website/39551",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "probability_yes": 0.025957359552513163
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0007",
+            "E0008",
+            "E0009",
+            "E0044",
+            "E0045"
+          ],
+          "new_chars": 4500,
+          "second_call_required": true,
+          "diagnostics_are_not_facts": true,
+          "thresholds": {
+            "insufficient_probability": 0.4,
+            "conflict_probability": 0.5,
+            "minimum_new_chars": 900,
+            "yes_conflict_probability": 0.65,
+            "condition_refuted_probability": 0.65
+          }
+        },
+        "first_probability_yes": 0.022977371080853633,
+        "gaps": [
+          "time_window",
+          "actor_action_target",
+          "event_stage",
+          "scope_exceptions",
+          "observation_coverage",
+          "evidence_sufficiency"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 8,
+        "search_attempts": 4,
+        "fetch_attempts": 4,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "43658",
+      "title": "What will the U.S. seasonally adjusted annual rate (SAAR) of total privately-owned housing starts be for July 2026, in thousands of units?",
+      "type": "numeric",
+      "created_at": "2026-10-02T16:10:26.306040+00:00",
+      "rules": "This question resolves to the preliminary U.S. seasonally adjusted annual rate (SAAR) of total privately-owned housing starts for July 2026, expressed in thousands of units, as reported in the U.S. Census Bureau New Residential Construction press release scheduled for August 18, 2026. Use the value as initially published, not any later revision.",
+      "fine_print": "If the release is delayed, use the first official Census Bureau release provided it is published on or before September 9, 2026. Otherwise use credible sources attributing the data to the Census Bureau, or resolve N/A.",
+      "run_id": "37031590213",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37031590213",
+      "question_url": "https://www.metaculus.com/questions/43658/",
+      "input_sha256": "645fcb1b166f30c72e472994895951d64291e47f23e3cbeb2e10522b0b863db3",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 4
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 2
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 7
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 1
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "census_jul2026_release",
+          "condition": "Preliminary U.S. SAAR total privately-owned housing starts for July 2026 as initially published in Census Bureau New Residential Construction press release August 18, 2026",
+          "priority": "critical",
+          "query": "Census Bureau New Residential Construction July 2026 housing starts press release August 18 2026"
+        },
+        {
+          "id": "census_nrc_historical",
+          "condition": "Historical monthly housing starts data series for context and verification",
+          "priority": "useful",
+          "query": "Census Bureau housing starts historical data 2025 2026 monthly"
+        },
+        {
+          "id": "census_release_schedule",
+          "condition": "Confirmation of August 18, 2026 release date for July 2026 data",
+          "priority": "useful",
+          "query": "Census Bureau New Residential Construction release schedule 2026"
+        },
+        {
+          "id": "alternative_sources",
+          "condition": "Credible secondary sources attributing July 2026 housing starts to Census Bureau if primary release delayed",
+          "priority": "useful",
+          "query": "July 2026 housing starts 1.4 million Census Bureau August 2026"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": "What will the U.S. seasonally adjusted annual rate (SAAR) of total privately-owned housing starts be for July 2026, in thousands of units? This question resolves to the preliminary U.S. seasonally adjusted annual rate (SAAR) of total priva",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.energy.gov/sites/default/files/2026-02/Ex.%206%20Short%20Term%20Energy%20Outlook%20Feb%202026.pdf",
+              "title": "EXHIBIT 6",
+              "snippet": "217 181 231 197 207 164 220 184 193 162 218 174 825 775 747 SAAR = Seasonally-adjusted annual rate Table 9a. U.S. Macroeconomic Indicators and CO2 Emissions U.S. Energy Information Administration | Short-Term Energy Outlook - February 2026 2025 2026 2027 Year (a) The U.S. Bureau of Labor Statistics did not publish October 2025 data for the Civilian Unemployment Rate and the Consumer Price Index. T"
+            },
+            {
+              "url": "https://www.eia.gov/outlooks/steo/archives/Mar26.pdf",
+              "title": "Short-Term Energy Outlook",
+              "snippet": "4.1 4.2 4.3 4.5 4.5 4.6 4.6 4.5 4.5 4.4 4.3 4.3 4.3 4.5 4.4 Housing Starts (millions - SAAR) .....................................................\n1.40 1.35 1.34 1.28 1.32 1.32 1.31 1.33 1.33 1.34 1.34 1.34 1.34 1.32 1.34 Industrial Production Indices (Index, 2017=100) Total Industrial Production ........................................... [...] 217 181 232 198 203 165 219 179 189 162 217 176 827 "
+            },
+            {
+              "url": "https://thedocs.worldbank.org/en/doc/399f7262c01cf21e4918b6b22627ac19-0050012026/related/Global-Monthly-February-2026.pdf",
+              "title": "Global Monthly -- February 2026",
+              "snippet": "United States: mixed data. Growth in the United States slowed more than expected at the end of 2025, with GDP expanding 1.4 percent (q/q saar) in 2025Q4, down from 4.4 percent in the previous quarter, implying annual growth of 2.2 percent last year. Activity decelerated as government consumption fell sharply due to the federal government shutdown, while a pickup in private investment, and still so"
+            },
+            {
+              "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q1/Q126_Investor_Marketing_Presentation.pdf",
+              "title": "Investor Presentation",
+              "snippet": "1 0 10 20 30 40 50 60 70 100 150 200 250 300 350 400 450 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 Residential Sales: National (RHS) MLS HPI: Canada (LHS) MLS HPI: GTA (LHS) index, Jan-2005=100 (S.A.) units, 000s H O U S E H O L D S A V I N G S 2 -5 0 5 10 15 20 25 30 92 94 96 98 00 02 04 06 08 10 12 14 16 18 20 22 24 % of disposable income, SAAR D E L I N Q U E N C I E S 3"
+            },
+            {
+              "url": "https://www.euronext.com/sites/default/files/20171124_instruments_on_synapse_pdf.pdf",
+              "title": "ISIN",
+              "snippet": "08/10/2018 FR0011564483 FCT Ginkgo 23/09/2040 FR0011564491 FCT Ginkgo 23/09/2040 FR0011564517 FCT Ginkgo 23/09/2040 XS0953621504 MAEXIM Secured Funding Designated Activity Company 15/08/2019 US00828EBB48 African Development Bank 02/10/2018 XS0975833319 Next plc 02/10/2026 XS0975903112 Bank of Ireland Mortgage Bank 02/10/2021 XS0976044791 Banque Federative du Credit Mutuel 09/10/2018 PTDEUNOM0000 D"
+            },
+            {
+              "url": "https://www.buildwcg.com/blog-posts/us-manufacturing-construction-spending-peak-2026-chips-act-ira",
+              "title": "America's Manufacturing Construction Boom Has Peaked — Here's What the Numbers Say | Westside Construction Group",
+              "snippet": "The softening of manufacturing construction carries meaningful consequences for the overall nonresidential market. Total construction spending in March 2026 was estimated at a seasonally adjusted annual rate of $2,185.5 billion, up 1.6% year-over-year but up only 0.6% from February, according to the Census Bureau's May 7, 2026 release. Manufacturing construction, still the largest single component"
+            },
+            {
+              "url": "https://www.atlantafed.org/research-and-data/data/gdpnow",
+              "title": "GDPNow - Federal Reserve Bank of Atlanta",
+              "snippet": "| GDP (Q1 3rd estimate), Personal income and outlays, NIPA underlying detail tables, Advance Census manufacturing (M3-1) | 6/25/2026 | 8:30 AM |\n| Construction spending, ISM Manufacturing Index | 7/1/2026 | 10:00 AM |\n| International trade (Full report)\\\\ | 7/7/2026 | 10:00 AM |\n| Wholesale trade | 7/8/2026 | 10:00 AM |\n| Retail sales + inventories | 7/16/2026 | 10:00 AM |\n| Housing starts, Import"
+            },
+            {
+              "url": "https://www.missionfinancialplanners.com/blog",
+              "title": "Financial Planning Blog | Mission Financial Planners",
+              "snippet": "Weekly Market Recap: U.S. PMI rises, housing starts climb, private equity exits rebound, and tax savings on education costs. Learn how assets impact financial aid and why respecting tradition while embracing innovation matters.\n\nRead More\n\nWeekly Market Recap and Financial Insights\n\n## Weekly Market Recap and Financial Insights\n\n  Matt Donaghue, CFP®, CLU®, CLTC®, RICP®, NSSA®, AIFA®, PPC®\n\nTuesda"
+            },
+            {
+              "url": "https://hammer.ucla.edu/press-room",
+              "title": "Press Room | Hammer Museum",
+              "snippet": "Ted Sarandos, Sandra Jackson-Dumont, Zoë Ryan, Darren Star, and Betye Saar at the 2026 Gala in the Garden\n\n### Hammer Museum Honors Darren Star and Betye Saar at 21st Annual Gala in the Garden\n\nClose up view of a White woman\n\n### Hammer Museum Presents Spring Exhibitions with Arthur Jafa, Mike Cloud, and Selections from the Hammer Contemporary Collection\n\nA surreal, sometimes grotesque view of a h"
+            },
+            {
+              "url": "https://www.congress.gov/committees/video/house-foreign-affairs/hsfa00/8zRuu94x_Es",
+              "title": "House Foreign Affairs Recorded Stream: 06/10/2025 at 2 ...",
+              "snippet": "House Foreign Affairs Committee Hearings and Meetings Video"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "Census Bureau New Residential Construction July 2026 housing starts press release August 18 2026 SAAR total privately-owned",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.census.gov/construction/nrc/pdf/newresconst_202607.pdf",
+              "title": "[PDF] MONTHLY NEW RESIDENTIAL CONSTRUCTION, JULY 2026",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/current/index.html%2B",
+              "title": "New Residential Construction Press Release",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/pdf/newresconst.pdf?sec_ak_reference=18.8d2dfea5.1562626102.323cc80",
+              "title": "MONTHLY NEW RESIDENTIAL CONSTRUCTION, JULY 2026",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/",
+              "title": "New Residential Construction - U.S. Census Bureau",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/pdf/quarterly_starts_completions.pdf",
+              "title": "Table Q1. New Privately Owned Housing Units Started in the United States by Purpose and Design",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/pdf/newresconst_202608.pdf",
+              "title": "MONTHLY NEW RESIDENTIAL CONSTRUCTION, AUGUST 2026",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.census.gov/construction/nrc/starts_rates.html",
+              "title": "NRC - Starts Rates",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.energy.gov/sites/default/files/2026-02/Ex.%206%20Short%20Term%20Energy%20Outlook%20Feb%202026.pdf",
+          "title": "www.energy.gov",
+          "characters": 150000,
+          "body_sha256": "44db6f950bc2f25cb9a0fad05a5f67b75ef801b34d66cc24697d2a90e6c2c684",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nEXHIBIT 6\n[PDF page 2]\nShort -Term Energy\nOutlook\nSTEO\nFebruary 2026\n[PDF page 3]\n February 2026\nThe U.S. Energy Information Administration (EIA), the statistical and analytical agency within the\nU.S. Department of Energy (DOE), prepared this report. By law, our data, analyses, and forecasts are\nindependent of approval by any other officer or employee of the U.S. Government. The views in this\nreport do not represent those of DOE or any other federal agencies.\nU.S. Energy Information Administration | Short-Term Energy Outlook 1\n[PDF page 4]\n February 2026\nShort -Term Energy Outlook\nOverview\n U.S. energy market indicators 2025 2026 2027\n Brent crude oil spot price (dollars per barrel) $69 $58 $53\n Retail gasoline price (dollars per gallon) $3.10 $2.91 $2.93\n U.S. crude oil production (million barrels per day) 13.6 13.6 13.3\n Natural gas price at Henry Hub (dollars per million British\n thermal units) $3.53 $4.31 $4.38\n U.S. liquefied natural gas gross exports (billion cubic feet\n per day) 15 16 18\n Shares of U.S. electricity generation\n Natural gas 40% 40% 39%\n Coal 17% 16% 15%\n Nuclear 18% 18% 18%\n Conventional hydropower 6% 6% 6%\n Wind 11% 11% 12%\n Solar 7% 8% 9%\n Other energy sources 1% 1% 1%\n U.S. GDP (percentage change) 2.2% 2.4% 2.0%\n U.S. CO2 emissions (billion metric tons) 4.9 4.8 4.8\n Data source: U.S. Energy Information Administration, Short-Term Energy Outlook, February 2026\n Note: Values in this table are rounded and may not match values in other tables in this report.\n • Global oil prices. The Brent crude oil price averaged $67 per barrel (b) in January, the highest\n since September 2025, as weather-related events disrupted the global crude oil supply and\n escalating tensions with Iran put upward pressure on prices. Despite these short-term events",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://thedocs.worldbank.org/en/doc/399f7262c01cf21e4918b6b22627ac19-0050012026/related/Global-Monthly-February-2026.pdf",
+          "title": "thedocs.worldbank.org",
+          "characters": 24153,
+          "body_sha256": "b6327ea443b11ff4359c9f10e2607111bd8d192ceba6b4932a250a3679d48da9",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\n Development Economics | Prospects Group\n Global Monthly February 2026\n Overview Table of Contents\n �� Recent data suggests continued global economic resilience, Monthly Highlights ..........................................2\n despite early signs of softening in some countries. Special Focus .....................................................5\n �� Although global trade continues to hold up, forward-looking Recent Prospects Group Publications ................7\n indicators suggest mixed performance across regions.\n �� Energy and metals prices were unusually volatile, while Recent World Bank Working Papers ..................7\n artificial intelligence (AI)-related concerns drove swings in equity Recent World Bank Reports ..............................7\n markets. Table: Major Data Releases ................................7\n Gold and silver price volatility, and the U.S. dollar Chart of the Month\n �� Gold and silver price volatility surged to\n multi-decade highs in February. Gold’s 30-day\n volatility reached levels last seen during the 2008\n global financial crisis, while silver’s volatility\n returned to levels last seen in the early 1980s.\n �� Sharp price swings reflected rapid reversals\n after strong rallies due to speculative activity amid\n heightened geopolitical risks, as well as shifting\n financial market sentiment.\n Sources: Bloomberg; World Bank.\n Note: The U.S. Dollar Index (DXY) measures the dollar against six major currencies (CAD, CHF, EUR,\n GBP, JPY, and SEK). Gold and silver volatility are calculated on 30-day average daily returns,\n annualized. Last observation is February 19, 2026.\n Special Focus: Characteristics of Frontier Market Economies\n �� Frontier markets, a diverse group of economies with some access to international financial markets, ac",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://www.eia.gov/outlooks/steo/archives/Mar26.pdf",
+          "title": "www.eia.gov",
+          "characters": 150000,
+          "body_sha256": "632bb6e5b911d5266a6eb3136b71d0e6a1f51dd63296669f81a3423ba746579c",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nShort-Term Energy\nOutlook\n STEO\n March 2026\n[Extracted table]\nShort-Term Energy Outlook\nSTEO March 2026\n[PDF page 2]\n March 2026\nThe U.S. Energy Information Administration (EIA), the statistical and analytical agency within the\nU.S. Department of Energy (DOE), prepared this report. By law, our data, analyses, and forecasts are\nindependent of approval by any other officer or employee of the U.S. Government. The views in this\nreport do not represent those of DOE or any other federa l agencies.\nU.S. Energy Information Administration | Short-Term Energy Outlook 1\n[PDF page 3]\n March 2026\nShort-Term Energy Outlook\nOverview\n U.S. energy market indicators 2025 2026 2027\n Brent crude oil spot price (dollars per barrel) $69 $79 $64\n Retail gasoline price (dollars per gallon) $3.10 $3.34 $3.18\n U.S. crude oil production (million barrels per day) 13.6 13.6 13.8\n Natural gas price at Henry Hub (dollars per million British\n thermal units) $3.53 $3.76 $3.85\n U.S. liquefied natural gas gross exports (billion cubic feet\n per day) 15 17 18\n Shares of U.S. electricity generation\n Natural gas 40% 40% 39%\n Coal 17% 16% 15%\n Nuclear 18% 19% 18%\n Conventional hydropower 6% 6% 6%\n Wind 11% 11% 12%\n Solar 7% 8% 9%\n Other energy sources 1% 1% 1%\n U.S. GDP (percentage change) 2.2% 2.6% 2.1%\n U.S. CO2 emissions (billion metric tons) 4.9 4.8 4.8\n Data source: U.S. Energy Information Administration, Short-Term Energy Outlook, March 2026\n Note: Values in this table are rounded and may not match values in other tables in this report.\n • Crude oil price movements. The Brent crude oil spot price has risen sharply following the onset\n of military action in the Middle East. Brent settled at $ 94 per barrel (b) on March 9 , up about\n 50% from the beginning of the year and the highest since Se",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q1/Q126_Investor_Marketing_Presentation.pdf",
+          "title": "www.scotiabank.com",
+          "characters": 150000,
+          "body_sha256": "137b9df32fa441acaa555fcdbba0df38671a0cfc757cb8c237476611e9ff5df1",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nInvestor\nPresentation\nFebruar y 2026\n[PDF page 2]\n Caution Regarding For ward-Looking\n Statements\nForward-looking Statements From time to time, our public communications include oral or dispositions, including obtaining regulatory approvals; critical accounting estimates and the\nwritten forward-looking statements. Statements of this type are included in this document, effect of changes to accounting standards, rules and interpretations on these estimates;\nand may be included in other filings with Canadian securities regulators or the U.S. Securities global capital markets activity; the Bank’s ability to attract, develop and retain key executives;\nand Exchange Commission (SEC), or in other communications. In addition, representatives of the evolution of various types of fraud or other criminal behaviour to which the Bank is\nthe Bank may include forward -looking statements orally to analysts, investors, the media and exposed; anti-money laundering; disruptions or attacks (including cyberattacks) on the Bank’s\nothers. All such statements are made pursuant to the “safe harbor” provisions of the U.S. information technology, internet connectivity, network accessibility, or other voice or data\nPrivate Securities Litigation Reform Act of 1995 and any applicable Canadian securities communications systems or services, which may result in data breaches, unauthorized access\nlegislation. Forward-looking statements may include, but are not limited to, statements made to sensitive information, denial of service and potential incidents of identity theft; increased\nin this document, the Management’s Discussion and Analysis in the Bank’s 2025 Annual competition in the geographic and business areas in which we operate, including through\nReport under the headings “Outlook” and",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.census.gov/construction/nrc/current/index.html",
+          "title": "www.census.gov",
+          "characters": 1514,
+          "body_sha256": "7f9023d2806e3d75e61c684100afc4c586551970e53e5b09bfb0bfae6595ded0",
+          "captured_at": null,
+          "excerpt": "Building Permits\nPrivately-owned housing units authorized by building permits in August were at a seasonally adjusted annual rate of 1,394,000. This is 2.7 percent below the revised July rate of 1,433,000, but is 3.5 percent above the August 2025 rate of 1,347,000. Single-family authorizations in August were at a rate of 878,000; this is 1.8 percent below the revised July figure of 894,000. Authorizations of units in buildings with five units or more were at a rate of 467,000 in August.\nHousing Starts\nPrivately-owned housing starts in August were at a seasonally adjusted annual rate of 1,275,000. This is 2.6 percent (±12.0 percent)* below the revised July estimate of 1,309,000 and is 1.2 percent (±10.8 percent)* below the August 2025 rate of 1,291,000. Single-family housing starts in August were at a rate of 918,000; this is 7.6 percent (±14.0 percent)* above the revised July figure of 853,000. The August rate for units in buildings with five units or more was 344,000.\nHousing Completions\nPrivately-owned housing completions in August were at a seasonally adjusted annual rate of 1,128,000. This is 11.9 percent (±9.7 percent) below the revised July estimate of 1,280,000 and is 27.1 percent (±8.9 percent) below the August 2025 rate of 1,548,000. Single-family housing completions in August were at a rate of 816,000; this is 10.4 percent (±9.3 percent) below the revised July rate of 911,000. The August rate for units in buildings with five units or more was 302,000.\nAdditional Release Materials",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S006",
+          "url": "https://www.census.gov/construction/nrc/pdf/newresconst_202607.pdf",
+          "title": "www.census.gov",
+          "characters": 44739,
+          "body_sha256": "a9ea93e7475c37c33470bd0d96a4a6253dad265a9cd56321bfd4adc14ed1b6c9",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nFOR RELEASE AT 8:30 AM EDT, TUESDAY, AUGUST 18, 2026\nMONTHLY NEW RESIDENTIAL CONSTRUCTION, JULY 2026\nRelease Number: CB26-127\nAugust 18, 2026 - The U.S. Census Bureau and the U.S. Depart ment of Housing and Urban Development jointly\nannounced the following new residential co nstruction statistics for July 2026:\n NEW RESIDENTIAL New Residential Construction\n CONSTRUCTION 2,100 (Seasonally Adjusted Annual Rate)\n JULY 2026 1,800\n Building Permits: 1,443,000 1,500\n Housing Starts: 1,239,000 1,200\n Housing Completions: 1,212,000 900\n 600 Permits\n Next Release: September 17, 2026 300 Starts\n Completions\n Seasonally Adjusted Annual Rate (SAAR) 0\n Source: U.S. Census Bureau, HUD, August 18, 2026 Jul-21 Jul-22 Jul-23 Jul-24 Jul-25 Jul-26\n Source: U.S. Census Bureau, HUD, August 18, 2026\nBuilding Permits\nPrivately-owned housing units authorized by building permits in July were at a seasonally adjusted annual rate of\n1,443,000. This is 5.0 percent above the revised June ra te of 1,374,000 and is 3.1 percent above the July 2025 rate\nof 1,400,000. Single-family authorizations in July were at a rate of 894,000; this is 2.5 percent above the revised\nJune figure of 872,000. Authorizations of units in buildings with fi ve units or more were at a rate of 490,000 in July.\nHousing Starts\nPrivately-owned housing starts in July were at a seasona lly adjusted annual rate of 1,239,000. This is 12.4 percent\n(±9.5 percent) below the revised June estimate of 1,415,000 and is 13.5 percent (±11.0 pe rcent) below the July 2025\nrate of 1,432,000. Single-family housing starts in July were at a rate of 808,000; this is 9.9 percent (±10.4 percent)*\nbelow the revised June figure of 897,000. The July rate for units in buildings with five units or more was 421,000.\nHousing Completions\nPrivatel",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S007",
+          "url": "https://www.census.gov/construction/nrc/pdf/quarterly_starts_completions.pdf",
+          "title": "www.census.gov",
+          "characters": 49315,
+          "body_sha256": "50dfba2040d23534051981a1b6f48b0d9a1e7e2b13c39f81f173670ac3ed3902",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nTable Q1. New Privately Owned Housing Units Started in the United States by Purpose and Design\n[Thousands of units. Detail may not add to totals due to rounding]\nSingle-family units\n Purpose of construction Design type Square feet of floor area\n Period Total1Built for saleContractor Owner\n Total Fee simple 2 built built Detached Attached Median Average\n ANNUAL DATA:\n 2023 948 680 644 123 55 789 158 2,177 2,409\n 2024 1,013 742 713 127 51 837 176 2,150 2,367\n 2025 940 675 644 131 55 767 173 2,154 2,396\n RSE (%) 1 3 3 9 15 2 9 2 2\n QUARTERLY DATA:\n 2023: 1st quarter 188 138 131 24 11 159 29 2,256 2,464\n 2nd quarter 261 191 179 33 16 222 39 2,180 2,405\n 3rd quarter 259 192 183 35 15 217 43 2,214 2,434\n 4th quarter 239 171 162 32 12 192 47 2,145 2,365\n 2024: 1st quarter 241 188 182 24 10 199 42 2,139 2,351\n 2nd quarter 281 204 196 37 15 240 41 2,161 2,362\n 3rd quarter 260 188 179 32 16 213 47 2,142 2,362\n 4th quarter 231 168 161 35 12 186 44 2,194 2,411\n 2025: 1st quarter 229 175 168 25 10 186 43 2,187 2,407\n 2nd quarter 264 194 185 38 16 217 46 2,119 2,363\n 3rd quarter 235 165 158 35 17 189 46 2,166 2,399\n 4th quarter 212 152 145 32 14 175 37 2,179 2,432\n 2026: 1st quarter (r) 214 162 157 24 12 180 34 2,205 2,428\n 2nd quarter (p) 253 189 183 34 15 212 42 2,185 2,426\n RSE (%) 3 3 3 13 19 3 10 2 2\nUnits in buildings with 2 units or more\n Purpose of construction Number of units per building Square feet per unit\n Period TotalFor For 2 to 4 5 to 9 10 to 19 20 units\n sale3 rent units units units or more Median Average\n ANNUAL DATA:\n 2023 472 13 459 13 16 31 412 1,019 1,048\n 2024 354 23 331 18 8 23 306 1,011 1,053\n 2025 416 24 392 19 13 25 359 1,025 1,057\n RSE (%) 5 15 5 28 17 14 6 1 2\n QUARTERLY DATA:\n 2023: 1st quarter 127 4 123 4 8 6 109 1,021 1,066\n 2nd quarter 13",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.energy.gov/sites/default/files/2026-02/Ex.%206%20Short%20Term%20Energy%20Outlook%20Feb%202026.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.euronext.com/sites/default/files/20171124_instruments_on_synapse_pdf.pdf",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://thedocs.worldbank.org/en/doc/399f7262c01cf21e4918b6b22627ac19-0050012026/related/Global-Monthly-February-2026.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.eia.gov/outlooks/steo/archives/Mar26.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q1/Q126_Investor_Marketing_Presentation.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.census.gov/construction/nrc/current/index.html",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.census.gov/construction/nrc/pdf/newresconst_202607.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.census.gov/construction/nrc/pdf/quarterly_starts_completions.pdf",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "bin_probabilities": {
+          "bin_0": 0.011596219656888644,
+          "bin_1": 0.0008400277350171667,
+          "bin_2": 0.0002727170768227692,
+          "bin_3": 0.000290305817130114,
+          "bin_4": 0.0003289595875972896,
+          "bin_5": 0.004541144865817692,
+          "bin_6": 0.9806144762653555,
+          "bin_7": 0.00016541126852021512,
+          "bin_8": 0.0004786333757104005,
+          "bin_9": 0.00015538950638443755,
+          "bin_10": 4.739112188577059e-05,
+          "bin_11": 7.813475069541233e-05,
+          "bin_12": 4.739112188577059e-05,
+          "bin_13": 5.716460477261316e-05,
+          "bin_14": 3.690824283527053e-05,
+          "bin_15": 8.317400916419481e-05,
+          "bin_16": 3.0598008011312406e-05,
+          "bin_17": 0.00010032700581946962,
+          "bin_18": 5.716460477261316e-05,
+          "bin_19": 6.477598346826311e-05,
+          "above": 0.00011368539144515848
+        },
+        "cdf_knots": [
+          [
+            800.0,
+            0.0
+          ],
+          [
+            870.0,
+            0.011596219656888644
+          ],
+          [
+            940.0,
+            0.01243624739190581
+          ],
+          [
+            1010.0,
+            0.01270896446872858
+          ],
+          [
+            1080.0,
+            0.012999270285858695
+          ],
+          [
+            1150.0,
+            0.013328229873455985
+          ],
+          [
+            1220.0,
+            0.017869374739273677
+          ],
+          [
+            1290.0,
+            0.9984838510046291
+          ],
+          [
+            1360.0,
+            0.9986492622731493
+          ],
+          [
+            1430.0,
+            0.9991278956488597
+          ],
+          [
+            1500.0,
+            0.9992832851552441
+          ],
+          [
+            1570.0,
+            0.9993306762771299
+          ],
+          [
+            1640.0,
+            0.9994088110278253
+          ],
+          [
+            1710.0,
+            0.9994562021497111
+          ],
+          [
+            1780.0,
+            0.9995133667544837
+          ],
+          [
+            1850.0,
+            0.999550274997319
+          ],
+          [
+            1920.0,
+            0.9996334490064832
+          ],
+          [
+            1990.0,
+            0.9996640470144945
+          ],
+          [
+            2060.0,
+            0.999764374020314
+          ],
+          [
+            2130.0,
+            0.9998215386250866
+          ],
+          [
+            2200.0,
+            0.9998863146085548
+          ]
+        ]
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "material_conflict",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0027",
+            "E0034",
+            "E0094",
+            "E0222",
+            "E0396",
+            "E0029"
+          ],
+          "new_chars": 4373,
+          "second_required": true
+        },
+        "first_probability_yes": null,
+        "gaps": [
+          "time_window",
+          "value_units",
+          "material_conflict"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 3,
+        "search_attempts": 2,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "44939",
+      "title": "What will be the average gas price in the U.S. on August 17, 2026?",
+      "type": "numeric",
+      "created_at": "2026-10-02T16:06:46.570370+00:00",
+      "rules": "Average price of U.S. Regular Gasoline in dollars per gallon for August 17, 2026 according to the U.S. Energy Information Administration Gasoline and Diesel Fuel Update for or closest to that date.",
+      "fine_print": "",
+      "run_id": "37031590213",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37031590213",
+      "question_url": "https://www.metaculus.com/questions/44939/",
+      "input_sha256": "b6650f90fe85a08327dfde4001ffc4e763a7cb02f834a3204fb5dac7023fecd7",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 3
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 2
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 7
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 1
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "eia_weekly_gas_aug17_2026",
+          "condition": "EIA Weekly Retail Gasoline Price for August 17, 2026 (Monday release)",
+          "priority": "critical",
+          "query": "EIA Weekly Retail Gasoline Price August 17 2026 regular gasoline dollars per gallon"
+        },
+        {
+          "id": "eia_gasoline_diesel_update_aug17_2026",
+          "condition": "EIA Gasoline and Diesel Fuel Update publication for week of August 17, 2026",
+          "priority": "critical",
+          "query": "EIA Gasoline and Diesel Fuel Update August 17 2026"
+        },
+        {
+          "id": "eia_historical_weekly_data_aug2026",
+          "condition": "EIA historical weekly gasoline price data covering August 2026",
+          "priority": "critical",
+          "query": "EIA weekly retail gasoline prices historical August 2026"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": " the average gas price in the U.S. on August 17, 2026? Average price of U.S. Regular Gasoline in dollars per gallon for August 17, 2026 according to the U.",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.lendingtree.com/credit-cards/study/us-gas-prices",
+              "title": "Gas Prices Higher in Every State Than a Year Ago | LendingTree",
+              "snippet": "The U.S. average gas price was $4.15 per gallon on Sept. 8, 2026, up 29.7% from $3.20 per gallon a year earlier but down 7.3% from the recent peak of $4.48 per gallon in May.\n The average monthly gas price rose to $4.06 per gallon in August 2026, from $3.93 in July 2026 and $4.05 in June 2026.\n California had the highest average gas price at $5.87 per gallon on Sept. 8, 2026, followed by Washingto"
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm",
+              "title": "U.S. Gasoline and Diesel Retail Prices",
+              "snippet": "| |  |  |  |  |  |  |  |  |  ---  ---  ---  --- | | Show Data By: | | | | | | | | |  | | | | | | | | |  |  |  | Product |  |  |  | Area |  | |  | | | | | | | | | 08/17/26 | 08/24/26 | 08/31/26 | 09/07/26 | 09/14/26 | 09/21/26 | View History |\n| |  |  |  --- | |  | Gasoline - All Grades | | 4.182 | 4.218 | 4.207 | 4.295 | 4.455 | 4.610 | 1993-2026 |\n| |  |  |  --- | |  | All Grades - Conventional A"
+            },
+            {
+              "url": "https://www.facebook.com/wtaptelevision/posts/according-to-the-us-energy-information-administration-eia-the-national-average-r/1536482845163436",
+              "title": "4 ways to stretch your gas budget as prices rise",
+              "snippet": "the national average retail price for regular gasoline was $4.157 per gallon for the week of Sept. 7, 2026, compared with $3.192 per gallon"
+            },
+            {
+              "url": "https://www.aga.org/research-policy/resource-library/natural-gas-market-indicators-august-20-2026",
+              "title": "Natural Gas Market Indicators – August 20, 2026 - American Gas Association",
+              "snippet": "Natural gas prices remain below $3 at the U.S. benchmark hub despite warmer than normal weather and climbing natural gas demand. The September Henry Hub contract has averaged $2.74 per MMBtu since it became the prompt-month price on July 30; the contract settled at $2.81 per MMBtu on August 19 and moved modestly lower intraday on Thursday. Current pricing sentiment suggests futures prices could av"
+            },
+            {
+              "url": "https://wallethub.com/edu/gas-prices-over-time/121770",
+              "title": "Gas Prices Over Time (2026)",
+              "snippet": "| Year | Gasoline Price (Dollars per Gallon) | Gasoline Price Adjusted for Inflation (Dollars per Gallon) | Relative to Previous Year |\n ---  --- |\n| 2025 | $3.22 | $3.25 | -8.50% |\n| 2024 | $3.43 | $3.55 | -8.39% |\n| 2023 | $3.63 | $3.88 | -14.10% |\n| 2022 | $4.06 | $4.52 | 21.78% |\n| 2021 | $3.09 | $3.71 | 30.57% |\n| 2020 | $2.26 | $2.84 | -16.87% |\n| 2019 | $2.69 | $3.42 | -6.38% |\n| 2018 | $2."
+            },
+            {
+              "url": "https://x.com/EIAgov",
+              "title": "EIA (@EIAgov) / X",
+              "snippet": "August 2026 Short-Term Energy Outlook now available. bit.ly/2GTM49a EIA ... U.S. average retail prices: ⛽ Regular-grade gasoline ⛽ On-highway"
+            },
+            {
+              "url": "https://www.eia.gov/todayinenergy/prices.php",
+              "title": "Today in Energy Daily Prices -\r\n\t\tU.S. Energy Information Administration (EIA)",
+              "snippet": "| Low-Sulfur Diesel  ($/gallon) | NY Harbor | 5.02 | +0.5 |\n| Gulf Coast | 4.87 | 0.0 |\n| Los Angeles | 5.13 | +0.5 |\n| Propane  ($/gallon) | Mont Belvieu, TX | 0.90 | 0.0 |\n| Conway, KS | 0.81 | 0.0 |\n|  | | | |\n|  |  |  |  |\n ---  --- |\n| Retail Petroleum Prices (AAA), 9/30/26 ($/gallon) | | | |\n| Regular Gasoline | U.S. Average | 4.41 | -0.5 |\n| Diesel | U.S. Average | 6.39 | -0.4 |\n|  | | | |\n"
+            },
+            {
+              "url": "https://www.eia.gov/outlooks/steo",
+              "title": "Short-Term Energy Outlook - U.S. Energy Information Administration (EIA)",
+              "snippet": "| Overview | | | | |\n ---  --- \n|  | 2024 | 2025 | 2026projected | 2027projected |\n|  |  |  |  |  |\n ---  --- \n|  | | | | |\n| Brent crude oil  (dollars per barrel) | 81 | 69 | 91 | 74 |\n| Gasoline retail price  (dollars per gallon) | 3.31 | 3.10 | 3.84 | 3.35 |\n| U.S. crude oil production  (million barrels per day) | 13.3 | 13.7 | 13.8 | 14.3 |\n| Natural gas spot price  (dollars per million BTU) |"
+            },
+            {
+              "url": "https://www.boaafs.com/HOT-TOPIC-Pressure-at-the-Pump-Will-High-Gas-Prices-Shake-the-U-S--Economy.c10532.htm",
+              "title": "Pressure at the Pump: Will High Gas Prices Shake the U.S. ...",
+              "snippet": "The national average price of a gallon of unleaded gasoline increased from $2.98 in late February 2026 to more than $4.50 over the Memorial Day weekend — the"
+            },
+            {
+              "url": "https://www.eia.gov/petroleum/gasdiesel",
+              "title": "Gasoline and Diesel Fuel Update - U.S. Energy Information Administration (EIA)",
+              "snippet": "|  |  |  |  | Change from | | |\n ---  ---  --- \n|  | 09/07/26 | 09/14/26 | 09/21/26 | 2 year ago | year ago | week ago |\n| U.S. | 4.157 | 4.319 | 4.478 | 1.293 | 1.305 | 0.159 |\n| East Coast  (PADD1) | 4.031 | 4.191 | 4.285 | 1.233 | 1.255 | 0.094 |\n| New England  (PADD1A) | 4.189 | 4.294 | 4.382 | 1.304 | 1.307 | 0.088 |\n| Central Atlantic  (PADD1B) | 4.240 | 4.387 | 4.438 | 1.233 | 1.251 | 0.051"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "EIA Gasoline and Diesel Fuel Update August 17 2026 regular gasoline price",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.eia.gov/petroleum/gasdiesel/index.php",
+              "title": "Gasoline and Diesel Fuel Update - U.S. Energy Information Administration (EIA)",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/pet_pri_gnd_a_epmr_pte_dpgal_m.htm",
+              "title": "Retail Prices for Regular Gasoline",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/PET_PRI_GND_DCUS_Y44HO_W.htm",
+              "title": "Houston Gasoline and Diesel Retail Prices",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_m.htm",
+              "title": "U.S. Gasoline and Diesel Retail Prices",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/PET_PRI_GND_A_EPMPR_PTE_DPGAL_W.htm",
+              "title": "Retail Prices for Premium Gasoline - Reformulated Areas",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/PET_PRI_GND_DCUS_Y48SE_W.htm",
+              "title": "Seattle Gasoline and Diesel Retail Prices",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=EMM_EPMR_PTE_NUS_DPG&f=W&stream=top",
+              "title": "Weekly U.S. Regular All Formulations Retail Gasoline Prices (Dollars per Gallon)",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.aga.org/research-policy/resource-library/natural-gas-market-indicators-august-20-2026",
+          "title": "www.aga.org",
+          "characters": 14866,
+          "body_sha256": "e602473e2c740b494dba61985e1ec5f052975247e1a20b2f03dab29e08f89af0",
+          "captured_at": null,
+          "excerpt": "Natural Gas Market Indicators – August 20, 2026\nNatural Gas Market Summary\nThe U.S. natural gas market remains well supplied heading into the fall shoulder season, with strong production continuing to support growing global demand. A persistent heat dome across the South is supporting strong regional cooling demand and slowing the pace of storage injections, but the effect on total demand and Henry Hub prices has been muted. In the U.S. Energy Information Administration’s (EIA’s) August 2026 Short-Term Energy Outlook (STEO), the EIA lowered its forecast for the 2026 Henry Hub spot price more than 6 percent from the July STEO, from $3.67 to $3.44 per MMBtu. The annual spot price forecast has fallen more than 20 percent since the February 2026 STEO estimate of $4.31 per MMBtu, which was influenced by the sustained heating demand, record storage withdrawals, and temporary price spikes during Winter Storm Fern.\nIn the global market, tightening supply-demand balances stand in stark contrast to the bearish domestic picture. U.S. LNG feedgas demand has temporarily softened because of export-terminal maintenance—Freeport alone has removed roughly 2 Bcf per day of nominal capacity—but the EIA expects that maintenance to conclude in late August, allowing more U.S. supply to reconnect with international markets where European and Asian prices remain substantially above Henry Hub. At the same time, lower-than-normal storage inventories in the European Union (EU) are adding another layer of market tightness. According [S&P Global Energy](https://www.spglobal.com/energy/en/news-research/latest-news/electric-power/081726-eu-gas-storage-passes-60-full-but-still-lags-recent-years-gie), inventories were 60.8 percent full as of August 15 but remained below the five-year minimum for this p",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://www.facebook.com/wtaptelevision/posts/according-to-the-us-energy-information-administration-eia-the-national-average-r/1536482845163436",
+          "title": "www.facebook.com",
+          "characters": 61,
+          "body_sha256": "5bbe2fe37c2442b314aebb08a15034cf34841ea3f7d9e414501569081c8aa853",
+          "captured_at": null,
+          "excerpt": "WTAP Television - According to the U.S. Energy Information...",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://wallethub.com/edu/gas-prices-over-time/121770",
+          "title": "wallethub.com",
+          "characters": 17004,
+          "body_sha256": "83b8c96a59f21d4e0f43b12b67f1aef82eb466354047da0157ec9264fdd3b9bc",
+          "captured_at": null,
+          "excerpt": "The average consumer spends roughly $2,411 on gas each year, and the price of gas is an important economic indicator. To help people put gas prices into context, WalletHub adjusted historical prices for inflation to show the true burden on consumers over time.\nKey Gas Price Stats\n- National average for August 2026: $4.19 per gallon\n- Change from August 2025: 28.67% up\nGas Prices by Year\nNote: Yearly values were obtained by averaging weekly values\n(Source: U.S. Energy Information Administration)\n- 2012 had the highest gas price when adjusted for inflation. In 2025, gas was $1.97 below its highest price point.\n [View Raw Data](https://wallethub.com#Gas-Prices-by-Yeartoyear) \nGas Prices by Month\nNote: Monthly values were obtained by averaging weekly values\n(Source: U.S. Energy Information Administration)\n [View Raw Data](https://wallethub.com#Gas-Prices-by-month) \nRaw Data\nGas Prices by Year\n| Year | Gasoline Price (Dollars per Gallon) | Gasoline Price Adjusted for Inflation (Dollars per Gallon) | Relative to Previous Year | \n| 2025 | $3.22 | $3.25 | -8.50% | \n| 2024 | $3.43 | $3.55 | -8.39% | \n| 2023 | $3.63 | $3.88 | -14.10% | \n| 2022 | $4.06 | $4.52 | 21.78% | \n| 2021 | $3.09 | $3.71 | 30.57% | \n| 2020 | $2.26 | $2.84 | -16.87% | \n| 2019 | $2.69 | $3.42 | -6.38% | \n| 2018 | $2.82 | $3.65 | 8.69% | \n| 2017 | $2.53 | $3.36 | 10.02% | \n| 2016 | $2.25 | $3.05 | -11.48% | \n| 2015 | $2.51 | $3.45 | -27.08% | \n| 2014 | $3.44 | $4.73 | -5.32% | \n| 2013 | $3.58 | $4.99 | -4.37% | \n| 2012 | $3.69 | $5.22 | 1.00% | \n| 2011 | $3.58 | $5.17 | 22.32% | \n| 2010 | $2.83 | $4.23 | 16.43% | \n| 2009 | $2.40 | $3.63 | -27.12% | \n| 2008 | $3.31 | $4.98 | 11.68% | \n| 2007 | $2.85 | $4.46 | 5.76% | \n| 2006 | $2.62 | $4.22 | 9.64% | \n| 2005 | $2.31 | $3.85 | 18.15% | \n| 2004 | $1.89 | $3.26 | ",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://www.lendingtree.com/credit-cards/study/us-gas-prices",
+          "title": "www.lendingtree.com",
+          "characters": 15526,
+          "body_sha256": "bddd4f0b171780beb77f5318d64f6de018c6c5a0aafc4c0f1a46eac6192c5f29",
+          "captured_at": null,
+          "excerpt": "Gas Prices Higher in Every State Than a Year Ago Despite Recent Drop\nU.S. gas prices remain well above year-ago levels despite falling from their recent peak.\nThe national average reached $4.15 per gallon on Sept. 8, 2026, up 29.7% from a year earlier but 7.3% below the recent peak of $4.48 per gallon in May. Every state recorded a year-over-year increase, with all but Indiana rising by at least 20.0%.\n- The U.S. average gas price was $4.15 per gallon on Sept. 8, 2026, up 29.7% from $3.20 per gallon a year earlier but down 7.3% from the recent peak of $4.48 per gallon in May.\n- The average monthly gas price rose to $4.06 per gallon in August 2026, from $3.93 in July 2026 and $4.05 in June 2026.\n- California had the highest average gas price at $5.87 per gallon on Sept. 8, 2026, followed by Washington ($5.51) and Hawaii ($5.39).\n- Indiana had the lowest average gas price at $3.42 per gallon, followed by Texas ($3.67) and Oklahoma ($3.71).\n- Average gas prices increased in every state from Sept. 8, 2025, to Sept. 8, 2026. Wyoming recorded the largest increase (39.1%), followed by Mississippi (37.5%) and Iowa (36.3%).\n- Indiana saw the smallest price increase (8.3%), followed by Hawaii (20.7%) and Oregon (22.9%).\n- Among metros, average gas prices increased the most in Casper, Wyo. (50.3%), followed by Flagstaff, Ariz. (43.7%), and Cheyenne, Wyo. (42.5%).\n- The smallest year-over-year increases in average metro gas prices were all in Indiana. Michigan City-La Porte recorded no change (0.0%), followed by Gary (1.1%) and Lafayette (1.6%).\nHow much have gas prices increased?\nThe average U.S. gas price was $4.15 per gallon on Sept. 8, 2026, up 29.7% from $3.20 per gallon on Sept. 8, 2025, but down 7.3% from the [recent peak](https://www.lendingtree.com/research/lendingtree-mon",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm",
+          "title": "www.eia.gov",
+          "characters": 5261,
+          "body_sha256": "16661fb605e3260f56b58db9bf77d10ad47c732c5e3418ff2d122a6e4bb3753c",
+          "captured_at": null,
+          "excerpt": "| | \n| | \n| | Weekly Retail Gasoline and Diesel Prices | \n| | (Dollars per Gallon, Including Taxes) | \n| | Area: | | | | Period: | | | | | | | \n| | 08/24/26 | 08/31/26 | 09/07/26 | 09/14/26 | 09/21/26 | 09/28/26 | View History | | | | \n| | 4.218 | 4.207 | 4.295 | 4.455 | 4.610 | 4.603 | [1993-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPM0_PTE_NUS_DPG&f=W) | | | | \n| | 4.048 | 4.017 | 4.099 | 4.269 | 4.434 | 4.408 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPM0U_PTE_NUS_DPG&f=W) | | | | \n| | 4.548 | 4.576 | 4.677 | 4.816 | 4.953 | 4.981 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPM0R_PTE_NUS_DPG&f=W) | | | | \n| | 4.085 | 4.071 | 4.157 | 4.319 | 4.478 | 4.465 | [1990-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMR_PTE_NUS_DPG&f=W) | | | | \n| | 3.949 | 3.916 | 3.996 | 4.168 | 4.337 | 4.309 | [1990-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMRU_PTE_NUS_DPG&f=W) | | | | \n| | 4.375 | 4.401 | 4.500 | 4.640 | 4.778 | 4.799 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMRR_PTE_NUS_DPG&f=W) | | | | \n| | 4.680 | 4.680 | 4.778 | 4.925 | 5.061 | 5.073 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMM_PTE_NUS_DPG&f=W) | | | | \n| | 4.443 | 4.419 | 4.514 | 4.667 | 4.807 | 4.790 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMMU_PTE_NUS_DPG&f=W) | | | | \n| | 5.017 | 5.049 | 5.152 | 5.291 | 5.419 | 5.468 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMMR_PTE_NUS_DPG&f=W) | | | | \n| | 5.060 | 5.070 | 5.171 | 5.316 | 5.460 | 5.482 | [1994-2026](https://www.eia.gov/hist/LeafHandler.ashx?n=PET&s=EMM_EPMP_PTE_NUS_DPG&f=W) | | | | \n| | 4.851 | 4.833 | 4.927 | 5.083 | 5.229 | 5.226 | [1994-2026](http",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S006",
+          "url": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=EMM_EPMR_PTE_NUS_DPG&f=W&stream=top",
+          "title": "www.eia.gov",
+          "characters": 39993,
+          "body_sha256": "c6d90dd0d7f67e9ce65f1ed474a6792e676fe302562d887e17bc9059d288cc6d",
+          "captured_at": null,
+          "excerpt": "| | \n| Weekly U.S. Regular All Formulations Retail Gasoline Prices (Dollars per Gallon) | \n| | [Download Data (XLS File)](https://www.eia.gov/hist_xls/EMM_EPMR_PTE_NUS_DPGw.xls) | \n| | \n| View History: | | [Weekly](https://www.eia.gov/LeafHandler.ashx?n=pet&s=emm_epmr_pte_nus_dpg&f=w) | | [Monthly](https://www.eia.gov/LeafHandler.ashx?n=pet&s=emm_epmr_pte_nus_dpg&f=m) | | [Annual](https://www.eia.gov/LeafHandler.ashx?n=pet&s=emm_epmr_pte_nus_dpg&f=a) | \n| Year-Month | Week 1 | | Week 2 | | Week 3 | | Week 4 | | Week 5 | | | | \n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| | End Date | Value | End Date | Value | End Date | Value | End Date | Value | End Date | Value | | | \n| 1990-Aug | | | | | 08/20 | 1.191 | 08/27 | 1.245 | | | | | \n| 1990-Sep | 09/03 | 1.242 | 09/10 | 1.252 | 09/17 | 1.266 | 09/24 | 1.272 | | | | | \n| 1990-Oct | 10/01 | 1.321 | 10/08 | 1.333 | 10/15 | 1.339 | 10/22 | 1.345 | 10/29 | 1.339 | | | \n| 1990-Nov | 11/05 | 1.334 | 11/12 | 1.328 | 11/19 | 1.323 | 11/26 | 1.311 | | | | | \n| 1990-Dec | 12/03 | 1.341 | 12/10 | -- | 12/17 | -- | 12/24 | -- | 12/31 | -- | | | \n| 1991-Jan | 01/07 | -- | 01/14 | -- | 01/21 | 1.192 | 01/28 | 1.168 | | | | | \n| 1991-Feb | 02/04 | 1.139 | 02/11 | 1.106 | 02/18 | 1.078 | 02/25 | 1.054 | | | | | \n| 1991-Mar | 03/04 | 1.025 | 03/11 | 1.045 | 03/18 | 1.043 | 03/25 | 1.047 | | | | | \n| 1991-Apr | 04/01 | 1.052 | 04/08 | 1.066 | 04/15 | 1.069 | 04/22 | 1.090 | 04/29 | 1.104 | | | \n| 1991-May | 05/06 | 1.113 | 05/13 | 1.121 | 05/20 | 1.129 | 05/27 | 1.140 | | | | | \n| 1991-Jun | 06/03 | 1.138 | 06/10 | 1.135 | 06/17 | 1.126 | 06/24 | 1.114 | | | | | \n| 1991-Jul | 07/01 | 1.104 | 07/08 | 1.098 | 07/15 | 1.094 | 07/22 | 1.091 | 07/29 | 1.091 | | | \n| 1991-Aug | 08/05 | 1.099 | 08/12 | 1.112 | 08/19 | 1.124 | 08/26 | 1.",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S007",
+          "url": "https://www.eia.gov/petroleum/gasdiesel/index.php",
+          "title": "www.eia.gov",
+          "characters": 3277,
+          "body_sha256": "ef6ea46a6252874307bced6b79ae575a4c92a70b2e5e2ae6f7099f5bc694b9c6",
+          "captured_at": null,
+          "excerpt": "| U.S. Regular Gasoline Prices*(dollars per gallon) full history XLS | | | | | | | \n|---|---|---|---|---|---|---|\n| | | | | Change from | | | \n|---|---|---|---|---|---|---|\n| | 09/14/26 | 09/21/26 | 09/28/26 | 2 year ago | year ago | week ago | \n| [U.S.](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm) | 4.319 | 4.478 | 4.465 | 1.286 | 1.347 | -0.013 | \n| [East Coast (PADD1)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r10_w.htm) | 4.191 | 4.285 | 4.290 | 1.230 | 1.307 | 0.005 | \n| [New England (PADD1A)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r1x_w.htm) | 4.294 | 4.382 | 4.369 | 1.350 | 1.335 | -0.013 | \n| [Central Atlantic (PADD1B)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r1y_w.htm) | 4.387 | 4.438 | 4.411 | 1.233 | 1.264 | -0.027 | \n| [Lower Atlantic (PADD1C)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r1z_w.htm) | 4.041 | 4.163 | 4.195 | 1.200 | 1.329 | 0.032 | \n| [Midwest (PADD2)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r20_w.htm) | 4.091 | 4.386 | 4.291 | 1.186 | 1.363 | -0.095 | \n| [Gulf Coast (PADD3)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r30_w.htm) | 3.852 | 3.972 | 3.924 | 1.229 | 1.252 | -0.048 | \n| [Rocky Mountain (PADD4)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r40_w.htm) | 4.438 | 4.510 | 4.486 | 1.071 | 1.376 | -0.024 | \n| [West Coast (PADD5)](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r50_w.htm) | 5.467 | 5.600 | 5.724 | 1.682 | 1.486 | 0.124 | \n| [West Coast less California](https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_r5xca_w.htm) | 5.026 | 5.106 | 5.153 | 1.504 | 1.140 | 0.047 | \n| U.S. On-Highway Diesel Fuel Prices*(dollars per gallon) full history XLS | | | | | | | \n|---|---|---|---|---|---|---|\n| | | | | Change from | | | \n|---|---|---|---|---|---|---|\n| | 09/14/26 | 09/21/26 | 09/28/26 | 2 year ago ",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.aga.org/research-policy/resource-library/natural-gas-market-indicators-august-20-2026",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.facebook.com/wtaptelevision/posts/according-to-the-us-energy-information-administration-eia-the-national-average-r/1536482845163436",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://wallethub.com/edu/gas-prices-over-time/121770",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://x.com/EIAgov",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://www.lendingtree.com/credit-cards/study/us-gas-prices",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=EMM_EPMR_PTE_NUS_DPG&f=W&stream=top",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.eia.gov/petroleum/gasdiesel/index.php",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "bin_probabilities": {
+          "below": 0.06375471303762145,
+          "bin_0": 0.006719697316329484,
+          "bin_1": 0.0016990055533909862,
+          "bin_2": 0.0019252255145769431,
+          "bin_3": 0.0010304989591536627,
+          "bin_4": 0.0026314712786396116,
+          "bin_5": 0.002049391892434441,
+          "bin_6": 0.0015960680106481306,
+          "bin_7": 0.08186267197393927,
+          "bin_8": 0.004075702446342534,
+          "bin_9": 0.020698124893387352,
+          "bin_10": 0.16280336311469717,
+          "bin_11": 0.11910948489978769,
+          "bin_12": 0.22252581365586266,
+          "bin_13": 0.01255404734640071,
+          "bin_14": 0.013363713837236014,
+          "bin_15": 0.028290982415435675,
+          "bin_16": 0.11189300601984498,
+          "bin_17": 0.008105502169909608,
+          "bin_18": 0.0021815663136476476,
+          "bin_19": 0.004338562670329591,
+          "above": 0.12679138668038442
+        },
+        "cdf_knots": [
+          [
+            3.7,
+            0.06375471303762145
+          ],
+          [
+            3.73,
+            0.07047441035395094
+          ],
+          [
+            3.7600000000000002,
+            0.07217341590734193
+          ],
+          [
+            3.79,
+            0.07409864142191887
+          ],
+          [
+            3.8200000000000003,
+            0.07512914038107253
+          ],
+          [
+            3.85,
+            0.07776061165971214
+          ],
+          [
+            3.88,
+            0.07981000355214658
+          ],
+          [
+            3.91,
+            0.08140607156279471
+          ],
+          [
+            3.94,
+            0.16326874353673398
+          ],
+          [
+            3.97,
+            0.16734444598307652
+          ],
+          [
+            4.0,
+            0.18804257087646387
+          ],
+          [
+            4.03,
+            0.35084593399116104
+          ],
+          [
+            4.06,
+            0.4699554188909487
+          ],
+          [
+            4.09,
+            0.6924812325468114
+          ],
+          [
+            4.12,
+            0.7050352798932121
+          ],
+          [
+            4.15,
+            0.7183989937304481
+          ],
+          [
+            4.18,
+            0.7466899761458838
+          ],
+          [
+            4.21,
+            0.8585829821657288
+          ],
+          [
+            4.24,
+            0.8666884843356384
+          ],
+          [
+            4.27,
+            0.868870050649286
+          ],
+          [
+            4.3,
+            0.8732086133196156
+          ]
+        ]
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "material_conflict",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0003",
+            "E0022",
+            "E0054",
+            "E0094",
+            "E0098"
+          ],
+          "new_chars": 4379,
+          "second_required": true
+        },
+        "first_probability_yes": null,
+        "gaps": [
+          "time_window",
+          "metric_definition",
+          "value_units",
+          "scope_exceptions",
+          "observation_coverage",
+          "material_conflict",
+          "evidence_sufficiency",
+          "Failed capture raw response missing or hash mismatch"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 4,
+        "search_attempts": 2,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "43665",
+      "title": "What will SpaceX's closing market capitalization be on its first day of trading as a public company?",
+      "type": "multiple_choice",
+      "created_at": "2026-10-02T16:22:22.050573+00:00",
+      "rules": "This question resolves to the bucket containing SpaceX's market capitalization at the official closing price of its first day of trading as a public company on a major U.S. stock exchange (Nasdaq or NYSE), where market capitalization equals fully diluted shares outstanding (as disclosed in SpaceX's final prospectus or registration statement filed with the SEC) multiplied by the closing share price on that first trading day. The first trading day must occur on or after May 19, 2026 and on or before September 9, 2026. The closing price will be taken from the listing exchange's official closing print as reported by Nasdaq/NYSE or, if unavailable, from credible sources. If a value falls exactly on a bucket boundary, it resolves to the higher bucket. If SpaceX has not begun trading on a major U.S. stock exchange by the close of trading on September 9, 2026, the question resolves to \"No IPO before September 10, 2026.\"",
+      "fine_print": "Begin trading means regular-way trading commences on Nasdaq or NYSE following an IPO or direct listing; a SPAC merger or reverse merger involving SpaceX also qualifies. If first-day trading is halted or no official closing price is published on the first day, the next trading day with an official closing print will be used as the first trading day for resolution purposes. If SpaceX's final prospectus does not clearly disclose fully diluted shares outstanding, basic shares outstanding as of the closing of the IPO will be used.",
+      "run_id": "37031590213",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37031590213",
+      "question_url": "https://www.metaculus.com/questions/43665/",
+      "input_sha256": "c4961ad1aadf65b122c99104dcf8bc75879b01fec7f8ba0385141e8d79dc8009",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 5
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 2
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 5
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 1
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "ipo_date_confirmation",
+          "condition": "Confirm SpaceX IPO date and first trading day on Nasdaq/NYSE between May 19, 2026 and September 9, 2026",
+          "priority": "critical",
+          "query": "SpaceX IPO 2026 Nasdaq first trading day closing price"
+        },
+        {
+          "id": "closing_price_day1",
+          "condition": "Official closing share price on first trading day from listing exchange",
+          "priority": "critical",
+          "query": "SpaceX closing price first trading day June 2026 Nasdaq"
+        },
+        {
+          "id": "fully_diluted_shares",
+          "condition": "Fully diluted shares outstanding from final prospectus/registration statement (S-1/A, 424B4)",
+          "priority": "critical",
+          "query": "SpaceX S-1 fully diluted shares outstanding 2026 IPO"
+        },
+        {
+          "id": "market_cap_calculation",
+          "condition": "Market capitalization = fully diluted shares × closing price",
+          "priority": "critical",
+          "query": "SpaceX market cap first day trading 2026"
+        },
+        {
+          "id": "sec_filing_access",
+          "condition": "Access SpaceX SEC registration statement and prospectus for share count details",
+          "priority": "critical",
+          "query": "SpaceX CIK SEC filings 2026 IPO registration statement"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": "What will SpaceX's closing market capitalization be on its first day of trading as a public company? This question resolves to the bucket containing SpaceX's market capitalization at the official closi",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.latimes.com/business/story/2026-06-11/spacex-is-poised-to-make-history-with-record-75-billion-stock-ipo",
+              "title": "SpaceX is poised to make history with record $75-billion stock IPO - Los Angeles Times",
+              "snippet": "If the IPO holds its value on the first day of trading, SpaceX would become one of the top ten U.S. public companies by market capitalization, yet it recorded only $18.7 billion in revenue last year. Most others in that group had hundreds of billions of revenue. [...] California [...] “You’re definitely going to have people kind of wanting to capitalize on any sort of pop that occurs, so trading c"
+            },
+            {
+              "url": "https://forgeglobal.com/insights/how-to-invest-in-spacex-pre-ipo",
+              "title": "Insights: How To Invest In SpaceX Pre-IPO - Forge",
+              "snippet": "The following year, in December 2025, another tender offer took SpaceX's valuation to $800 billion, and its Forge Price jumped all the way to $421. Now, SpaceX's Forge Price is $550 as of early February 2026, up about 138% over the past year. That equates to a $1.05 trillion valuation, but it's possible the Forge Price will rise more in line with the new valuation from the combined company.25 [..."
+            },
+            {
+              "url": "https://in.investing.com/equities/spacex",
+              "title": "SpaceX Stock: IPO Date, Share Price & News - Investing.com IN",
+              "snippet": "As of 29-09-2026, the SpaceX share price is 145.47, with a previous close of 145.47. The share price has ranged from 145.36 to 150.80 today, while the 52-week range spans from 104.83 to 225.64.\n\n### What Is the SpaceX Market Cap?\n\nAs of today, SpaceX market cap is 1.97T.\n\n### What Is the SpaceX (SPCX) Share Price Target? [...] | Firm | Article | Position | Price Target | Upside / Downside | From P"
+            },
+            {
+              "url": "https://www.mufgamericas.com/sites/default/files/document/mufgamericas_com/2026-06/Mobilizing_Scale_Capital_to_Finance_the_AI_Supercycle_Final_0.pdf",
+              "title": "JUN 2026",
+              "snippet": "increasingly common (on & off-balance sheet) Systemic portfolio concentration risk rising 6 7 8 9 1 0 Mobilizing Scale Capital to Finance the AI Supercycle / JUN 2026 / page 9 $4.7 $4.2 $4.0 $2.7 $2.5 $2.2 $2.1 $1.8 $1.7 $1.4 Nvidia Alphabet Apple Microsoft Amazon TSMC SpaceX Broadcom Saudi Aramco Tesla AI-Driven Platforms Redefine Market Valuations SpaceX’s post IPO trading launched the company f"
+            },
+            {
+              "url": "https://www.latimes.com/business/story/2026-06-12/spacex-shares-rise-11-in-early-trading-during-historic-ipo",
+              "title": "SpaceX shares rise 19% in stock market debut after historic IPO - Los Angeles Times",
+              "snippet": "SpaceX, the once fledgling aerospace company that Elon Musk predicted had a slim chance of survival, reached new heights on Friday with a historic initial public offering.\n\nShares of SpaceX, trading under the ticker SPCX, closed the day at $160.95, 19% above the offering price, transforming it into one of the world’s most valuable companies with a $2.2-trillion market cap. The IPO also made the 54"
+            },
+            {
+              "url": "https://ourfinancialsecurity.org/files/first-special-circumstance-spacex-and-erisa",
+              "title": "The First Special Circumstance",
+              "snippet": "39 FTSE Russell adopted a fast-entry rule on May 26, 2026, admitting IPOs with investable market capitalization above the Russell Top 500 cutoff after five trading days, and relaxed its minimum free-float requirement; SpaceX was added to the Russell 1000 and Russell Top 200 effective after the close on June 26, 2026. Morningstar’s CRSP indexes introduced an alternative liquidity screen permitting "
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/2052053/000121390026013864/ea0275442-01_n2a.htm",
+              "title": "file",
+              "snippet": "the company at the forefront of efforts to create safe, interpretable, and broadly accessible artificial intelligence. SpaceX announced on February 2, 2026 that SpaceX has acquired xAI. [...] Further, if the trading price of our common stock\nis above the level that investors determine is reasonable for our common stock, some investors may attempt to short our common stock after\ntrading begins, whi"
+            },
+            {
+              "url": "https://www.ally.com/help/invest/trading",
+              "title": "Trading",
+              "snippet": "An Initial Public Offering, or IPO, is the traditional way a company sells its stock to the public for the first time, primarily to raise capital. In an IPO, the company will use an underwriter to issue pre-market shares to a group of brokerages who allocate them to institutional and individual investors at the offering price (before the security starts trading in the markets). On the day the secu"
+            },
+            {
+              "url": "https://www.rheinmetall.com/en/investor-relations/overview",
+              "title": "Investor Relations – Overview | Rheinmetall",
+              "snippet": "jumpToMain\n\n536\n\n# Investor Relations\n\n## Investment case: Six reasonsfor the Rheinmetall share\n\n145659\n\n#### Rheinmetall grows dynamically and organically.\n\n145658\n\n#### Rheinmetall is an international player.\n\n145656\n\n#### Rheinmetall is a trendsetter.\n\n145657\n\n#### Rheinmetall is a technology leader.\n\n145661\n\n#### Rheinmetall aims to sustainably boost cash flow and profitability.\n\n198494\n\n#### "
+            },
+            {
+              "url": "https://www.facebook.com/FastMoney/videos/final-trades/845584068292759",
+              "title": "Final trades! Here's what @grassosteve, @karenfinerman, ...",
+              "snippet": "The traders discuss their final holdings, which include $SERV Robotics, a $180 Boeing stock, a $1,000 Haliburton item from Hedger, and a $16"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "SpaceX S-1 registration statement fully diluted shares outstanding 2026 IPO SEC EDGAR",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026043288/spaceexplorationtechnologi.htm",
+              "title": "space exploration technologies corp - SEC.gov",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026052712/spacex-formsx8xresalesx8.htm",
+              "title": "Document",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026036936/0001628280-26-036936-index.htm",
+              "title": "EDGAR Filing Documents for 0001628280-26-036936 - SEC.gov",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026039276/spaceexplorationtechnologi.htm",
+              "title": "Space Exploration Technologies - S-1/A#1",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026052535/R21.htm",
+              "title": "Untitled source",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026036936/spaceexplorationtechnologi.htm?cdlcid=5e33380926f096d31d28295d",
+              "title": "Space Exploration Technologies - S-1",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026042639/spaceexplorationtechnologi.htm",
+              "title": "Space Exploration Technologies - 424(b)(4)",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026036936/exhibit51-sx1.htm",
+              "title": "Exhibit 5.1 - S-1",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026052535/a31-restatedcertificateoff.htm",
+              "title": "Document",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.latimes.com/business/story/2026-06-12/spacex-shares-rise-11-in-early-trading-during-historic-ipo",
+          "title": "www.latimes.com",
+          "characters": 10967,
+          "body_sha256": "69080c147ceca2ee910767eb2746f181d20f71f9e28444d62cb4b57bd052a420",
+          "captured_at": null,
+          "excerpt": "SpaceX shares rise 19% in stock market debut after historic IPO\n- Click here to listen to this article\n- Share via\n See more from the L.A. Times in Google Search. [Set us as preferred](https://google.com/preferences/source?q=latimes.com) \n- SpaceX shares jumped 19% in its Nasdaq debut, valuing Elon Musk’s company at $2.2 trillion.\n- The company raised $75 billion [in the record public offering](https://www.latimes.com/business/story/2026-05-20/spacex-files-for-what-is-expected-to-be-largest-ipo-in-history) after selling 555 million shares at $135 a share.\n- Proceeds will fuel SpaceX’s Starship moon-and-Mars ambitions, its Starlink network and a bold AI push, as critics question valuation and Musk’s control.\nSpaceX, the once fledgling aerospace company that Elon Musk predicted had a slim chance of survival, reached new heights on Friday with a [historic initial public offering.](https://www.latimes.com/business/story/2026-06-11/spacex-is-poised-to-make-history-with-record-75-billion-stock-ipo)\nShares of SpaceX, trading under the ticker SPCX, closed the day at $160.95, 19% above the offering price, transforming it into one of the world’s most valuable companies with a $2.2-trillion market cap. The IPO also made the 54-year-old Musk the world’s first trillionaire.\nThe IPO capped a remarkable journey for a 24-year-old company that nearly shut down after a series of failed launches until its Falcon 1 rocket in 2008 orbited the earth and clinched a crucial NASA contract.\n“It is certainly hard to believe that a little company that started in a warehouse in El Segundo is now going public with the largest IPO ever,” Musk told cheering employees at the company’s Texas headquarters.\nThe company raised $75 billion [in the offering](https://www.latimes.com/business/story/2026-05-20/",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://forgeglobal.com/insights/how-to-invest-in-spacex-pre-ipo",
+          "title": "forgeglobal.com",
+          "characters": 13988,
+          "body_sha256": "b609657bb69a56c2bf18ab0152e5c7d0e8e00f42f3a8b04339ae5f089d833953",
+          "captured_at": null,
+          "excerpt": "With high-profile rocket launches and perhaps an even higher-profile founder in Elon Musk, SpaceX has captured the attention of aerospace fans and investors alike. Not only has the company evolved significantly from a technological perspective, but its valuation has increased substantially to become the world's most valuable private company. That title started with a tender offer in December 2024 that valued the company at around $350 billion.[3](https://forgeglobal.com#footnote3) Most recently, in February 2026, SpaceX announced it acquired xAI,[4](https://forgeglobal.com#footnote4) another Musk-founded startup known for its Grok chatbot and which also owns the social media platform X. The deal is the largest merger of all time and values the combined company at $1.25 trillion, with SpaceX accounting for $1 trillion and xAI for $250 billion.[5](https://forgeglobal.com#footnote5)\nWith this deal, SpaceX will focus more on space-based AI, particularly by building out and launching data centers in space.[6](https://forgeglobal.com#footnote6)\nSpaceX could also soon conduct a [much-anticipated IPO](https://forgeglobal.com/insights/spacex-upcoming-ipo-news/) to bring the valuation even higher. The Financial Times reported in late January, shortly before the xAI acquisition was publicly announced, that SpaceX was considering an IPO in June 2026, with plans to raise up to $50 billion at approximately a $1.5 trillion valuation.[7](https://forgeglobal.com#footnote7)\nMeanwhile, accredited investors can potentially invest in SpaceX stock pre-IPO, and retail investors can potentially gain exposure through other publicly traded avenues.\nHere, we'll take a closer look at how to invest in [SpaceX stock pre-IPO](https://forgeglobal.com/spacex_stock/).\nSpaceX: Company background\nSpaceX, ",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://www.latimes.com/business/story/2026-06-11/spacex-is-poised-to-make-history-with-record-75-billion-stock-ipo",
+          "title": "www.latimes.com",
+          "characters": 9147,
+          "body_sha256": "ea790a37a88b2c9d7639b96d3215bea8786911306b2c801bc4d32e837b6e344b",
+          "captured_at": null,
+          "excerpt": "SpaceX is poised to make history with record $75-billion stock IPO\n- Click here to listen to this article\n- Share via\n See more from the L.A. Times in Google Search. [Set us as preferred](https://google.com/preferences/source?q=latimes.com) \n- SpaceX is set to shatter records with a $75-billion IPO valuing Elon Musk’s rocket and AI company at $1.77 trillion.\n- Wall Street demand is scorching, but skeptics warn the stock is “priced for perfection,” questioning SpaceX’s lofty valuation.\nSpaceX is poised to make history on Friday with a [record-setting IPO](https://www.sec.gov/Archives/edgar/data/1181412/000162828026036936/spaceexplorationtechnologi.htm) that will catapult the once fledgling aerospace startup into one of the most valuable companies on Earth.\nThe company, founded in El Segundo in 2002, is selling at least 555 million shares at $135 apiece, which could raise $75 billion or more. That could give Elon Musk’s rocket, communications and AI company a valuation of at least $1.77 trillion.\nThe IPO would be the largest on record, by far eclipsing the 2019 offering by Saudi Arabia’s state-owned oil giant Saudi Aramco, [which raised $29.4 billion](https://www.latimes.com/business/story/2019-12-06/saudi-aramco-ipo).\nIt could also make Musk — whose net worth is now pegged at [$707 billion by Bloomber](https://www.bloomberg.com/billionaires/profiles/elon-r-musk/)g — the world’s first trillionaire, given his other holdings in Tesla.\nSpaceX filed Wednesday for the an initial public offering that is expected to raise at least $75 billion and would value the company at as much as $2 trillion.\nThough it moved its headquarters from Hawthorne to Texas in 2024, SpaceX retains large operations in the South Bay city and [blasts off regularly](https://www.latimes.com/business/story",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://ourfinancialsecurity.org/files/first-special-circumstance-spacex-and-erisa",
+          "title": "ourfinancialsecurity.org",
+          "characters": 75734,
+          "body_sha256": "91f5cd8dd99f7d8349f1c7744d9f3b47f4a54ac942abf905a5d12b8e71a5ece4",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\n The First Special Circumstance\nMandatory Arbitration, Engineered Litigation Immunity, and the Prudence of Holding SpaceX\n Under ERISA\n Carl F. Engstrom\n Engstrom Lee LLC\n September 2026\n A B S T R A C T\n Fifth Third Bancorp v. Dudenhoeffer permits an ERISA fiduciary to\n rely on the market price of a publicly traded security, but only “in the\n absence of special circumstances” affecting the reliability of that price.\n A decade later, no court has identified a qualifying circumstance. This\n essay argues that SpaceX’s June 2026 initial public offering supplies\n one.\n The company went public with an architecture that independently\n disables nearly every private mechanism for surfacing and punishing\n inadequate disclosure: mandatory individual arbitration reached\n through a Texas forum-selection clause, class and collective waivers\n that apply regardless of forum, a three-percent derivative-standing\n threshold newly authorized by Texas law, narrowed inspection rights,\n and a dual-class structure vesting roughly 82.4% of the voting power in\n a single controller. Because private securities litigation—not public\n enforcement—is the principal mechanism forcing timely disclosure of\n adverse material information, that architecture degrades the\n informational conditions on which the Dudenhoeffer safe harbor\n depends. Parts I through III develop that argument: the premise beneath\n the safe harbor, the role of private litigation in forcing disclosure, and\n the provisions by which SpaceX has disabled it.\n Part IV answers the efficiency objection—that reduced litigation\n exposure leaves more value for shareholders—which fails on this\n record, because the litigation the structure suppresses is the litigation\n that tested whether the controller’s compensation was fair to\n s",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.mufgamericas.com/sites/default/files/document/mufgamericas_com/2026-06/Mobilizing_Scale_Capital_to_Finance_the_AI_Supercycle_Final_0.pdf",
+          "title": "www.mufgamericas.com",
+          "characters": 29775,
+          "body_sha256": "b19f5cabfd433afed40bcba28595e161299ee93746aaf1c121d67ac41787b1fe",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nJUN 2026\n[PDF page 2]\n \"The spirits that I called,\n I now can't send away.”\nJohann Wolfgang von Goethe, 18th century German poet, playwright and\n novelist in his poem \"The Sorcerer's Apprentice\" (1797)\n[PDF page 3]\nGlobal Corporate & Investment Bank\nCapital Markets Strategy Team\n Tom Joyce Stephanie Kendal Angela Sun\n Managing Director Director Associate\n Capital Markets Strategist Capital Markets Strategist Capital Markets Strategist\n New York, NY New York, NY New York, NY\n Tom.Joyce@mufgsecurities.com Stephanie.Kendal@mufgsecurities.com Angela.Sun@mufgsecurities.com\n (212) 405-7472 (212) 405-7443 (212) 405-6952\n Click or scan to view our\n website and access past reports,\n policy notes and more.\nMobilizing Scale Capital to Finance the AI Supercycle / JUN 2026 / AUTHORSpage 3\n[Extracted table]\nClick or scan to view our website and access past reports, policy notes and more. | \n[PDF page 4]\nContents\n 1 Inflection Point for Global Capital Markets\n 2 Debt Financed Scale Capital\n 3 Equity & Equity-Linked Scale Capital\nMobilizing Scale Capital to Finance the AI Supercycle / JUN 2026 / page 4\n[PDF page 5]\n 1\n Inflection Point for\nGlobal Capital Markets\n[PDF page 6]\nInflection Point for Global Capital Markets\nAI’s historic expansion is pushing global capital markets into a new regime where a single secular\ntheme can drive debt and equity new issue volumes to unprecedented level. SpaceX’s $86 bn IPO,\nand a litany of $20-50 bn hyperscaler debt financings, have redefined “scale capital” in terms of deal\nsize, duration, liquidity and execution.\nTotal annual debt & equity issuance, USD tn Nov 30, 2022:\n ChatGPT release 2026\n $6 (Gen AI inflection point) Annualized\n $5\n $4\n $3 2026 YTD:\n Debt:\n $2 $2.4 tn\n $1\n Equity:\n $321 bn\n $0\n 2000 2005 2010 2015 2020 20252026\nSour",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.latimes.com/business/story/2026-06-12/spacex-shares-rise-11-in-early-trading-during-historic-ipo",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://forgeglobal.com/insights/how-to-invest-in-spacex-pre-ipo",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.latimes.com/business/story/2026-06-11/spacex-is-poised-to-make-history-with-record-75-billion-stock-ipo",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://in.investing.com/equities/spacex",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://ourfinancialsecurity.org/files/first-special-circumstance-spacex-and-erisa",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.mufgamericas.com/sites/default/files/document/mufgamericas_com/2026-06/Mobilizing_Scale_Capital_to_Finance_the_AI_Supercycle_Final_0.pdf",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026042639/spaceexplorationtechnologi.htm",
+          "status": "failed",
+          "error": "ValueError"
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026039276/spaceexplorationtechnologi.htm",
+          "status": "failed",
+          "error": "ValueError"
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "probabilities": {
+          "Less than $1.5 trillion": 0.03715432408182188,
+          "$1.5 trillion to $2.0 trillion": 0.003916035080032744,
+          "$2.0 trillion to $2.5 trillion": 0.9582226474637382,
+          "$2.5 trillion to $3.0 trillion": 0.0004978679900875255,
+          "More than $3.0 trillion": 0.00011108936436100643,
+          "No IPO before September 10, 2026": 9.803601995867972e-05
+        }
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "metric_definition",
+            "scope_exceptions"
+          ],
+          "new_ids": [
+            "E0016",
+            "E0091",
+            "E0128",
+            "E0168",
+            "E0017"
+          ],
+          "new_chars": 3946,
+          "second_required": true
+        },
+        "first_probability_yes": null,
+        "gaps": [
+          "scope_exceptions",
+          "Failed capture raw response missing or hash mismatch"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 4,
+        "search_attempts": 2,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "43919",
+      "title": "What will be the rise in average hourly earnings for all employees on U.S. private nonfarm payrolls from June 2026 to July 2026?",
+      "type": "discrete",
+      "created_at": "2026-10-02T16:28:41.510301+00:00",
+      "rules": "This question resolves as the month-over-month increase in average hourly earnings for all employees on private nonfarm payrolls according to the first BLS Employment Situation release for July 2026.",
+      "fine_print": "Subtract the average hourly earnings figure for June 2026 from July 2026. This may have greater precision than the rounded BLS figure and may be preliminary.",
+      "run_id": "37031590213",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37031590213",
+      "question_url": "https://www.metaculus.com/questions/43919/",
+      "input_sha256": "1fe6ff3ea0fc20ecffbcfa43299b6c97fc2093be843248ed1bb19bfc3cf71803",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 5
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 2
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 6
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 1
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "bls_july_2026_empsit_release",
+          "condition": "First BLS Employment Situation release for July 2026 containing average hourly earnings for all employees on private nonfarm payrolls for June 2026 and July 2026",
+          "priority": "critical",
+          "query": "BLS Employment Situation July 2026 average hourly earnings private nonfarm payrolls"
+        },
+        {
+          "id": "bls_june_2026_average_hourly_earnings",
+          "condition": "Average hourly earnings figure for June 2026 from the July 2026 BLS release",
+          "priority": "critical",
+          "query": "June 2026 average hourly earnings all employees private nonfarm BLS"
+        },
+        {
+          "id": "bls_july_2026_average_hourly_earnings",
+          "condition": "Average hourly earnings figure for July 2026 from the July 2026 BLS release",
+          "priority": "critical",
+          "query": "July 2026 average hourly earnings all employees private nonfarm BLS"
+        },
+        {
+          "id": "bls_release_date_july_2026",
+          "condition": "Exact release date of the first BLS Employment Situation for July 2026",
+          "priority": "useful",
+          "query": "BLS Employment Situation release date August 2026 July 2026 data"
+        },
+        {
+          "id": "bls_ces_data_series",
+          "condition": "CES data series for average hourly earnings all employees private nonfarm (CES0500000003)",
+          "priority": "useful",
+          "query": "CES0500000003 average hourly earnings all employees private nonfarm"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": " the rise in average hourly earnings for all employees on U.S. private nonfarm payrolls from June 2026 to July 2026? This question resolves as the month-over-month increase in average hourly earnings for all employees",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://tradingeconomics.com/united-states/employment-cost-index",
+              "title": "United States Employment Cost Index QoQ",
+              "snippet": "| JOLTs Job Openings | 7271.00 | 7182.00 | Thousand | Jul 2026 |\n| Participation Rate | 61.60 | 61.40 | percent | Aug 2026 |\n| Labour Costs | 123.98 | 123.62 | points | Jun 2026 |\n| Non Farm Payrolls | 162.00 | 21.00 | Thousand | Aug 2026 |\n| Productivity | 120.02 | 119.59 | points | Jun 2026 |\n| Unemployed Persons | 7031.00 | 6916.00 | Thousand | Aug 2026 |\n| Unemployment Rate | 4.10 | 4.10 | per"
+            },
+            {
+              "url": "https://workforce.iowa.gov/media/1202/download",
+              "title": "Iowa Nonfarm Employment Newsletter - July 2026",
+              "snippet": "An increase of one hour and six minutes on average was the primary reason for the gain. Finance production workers added $3.80 per hour compared"
+            },
+            {
+              "url": "https://www.nmdfa.state.nm.us/wp-content/uploads/2026/07/Informational-Items-2.17.26.pdf",
+              "title": "STATE BOARD OF FINANCE",
+              "snippet": " The December US unemployment rate fell to 4.4% lower than the revised November reading of 4.5%. Nonfarm payrolls rose by 50,000 in December vs. a revised 56,000 in November. Average hourly earnings grew by an annual rate of 3.8% in December vs. 3.6% the previous month. The next employment report will be delayed due to the partial government shutdown.\n Oil prices fell during the month of Decembe"
+            },
+            {
+              "url": "https://chwd.org/wp-content/uploads/June-23-2026-CHWD-Board-Meeting-Agenda-Packet.pdf",
+              "title": "June-23-2026-CHWD-Board-Meeting-Agenda- ...",
+              "snippet": "Economic data released in May highlighted an ongoing stabilization in the job market, resilient consumer spending and accelerating price growth. Nonfarm payrolls advanced by a sizable 115 thousand in April, far exceeding economic forecasts while the unemployment rate held steady at 4.3%. The labor market has shown strength over the past couple of months with nonfarm payrolls averaging 76 thousand "
+            },
+            {
+              "url": "https://www.theguardian.com/business/2026/aug/07/july-jobs-report-middle-east-conflict",
+              "title": "US unexpectedly lost 23000 jobs in July as slump ...",
+              "snippet": "Hourly earnings of all employees changed little over the past year, increasing by 3.2% compared to last year. figures for June dropped 37,000,"
+            },
+            {
+              "url": "https://www.richmondfed.org/topics/employment_and_labor_markets",
+              "title": "Employment and Labor Markets | Richmond Fed",
+              "snippet": "Average hourly earnings continue to grow strongly. With inflation running high, however, real wage growth has been more muted. Inflation has even outpaced wage"
+            },
+            {
+              "url": "https://www.bls.gov/opub/ted/2026/home.htm",
+              "title": "2026 TED Archive : The Economics Daily : U.S. Bureau of Labor Statistics",
+              "snippet": "# 2026 TED Archive\n\nU.S. Bureau of Labor Statistics Logo [...] U.S. flag\n\nAn official website of the United States government\nHere is how you know\n\nDepartment of Labor Logo\nDot gov\n\nThe .gov means it's official.\n  \n Federal government websites often end in .gov or .mil. Before sharing sensitive information,\nmake sure you're on a federal government site.\n\nHttps\n\nThe site is secure.\n  \n The\n ensures"
+            },
+            {
+              "url": "https://mct.org/wp-content/uploads/2026/02/February_Board_Packet_2026.pdf",
+              "title": "AGENDA Board of Trustees Meeting ...",
+              "snippet": "driving third quarter GDP higher, underlying inflation pressures continued to move in the right direction.  The November jobs report showed a labor market that is still expanding but clearly cooling with non-farm payrolls rising 64,000—better than expected but modest by historical standards. The unemployment rate ticked up to 4.6%, the highest since 2021, reflecting softer hiring across several s"
+            },
+            {
+              "url": "https://www.bls.gov/opub/ted/regions-and-states.htm",
+              "title": "Regions and States : The Economics Daily : U.S. Bureau of Labor Statistics",
+              "snippet": "# Regions and States\n\nU.S. Bureau of Labor Statistics Logo [...] U.S. flag\n\nAn official website of the United States government\nHere is how you know\n\nDepartment of Labor Logo\nDot gov\n\nThe .gov means it's official.\n  \n Federal government websites often end in .gov or .mil. Before sharing sensitive information,\nmake sure you're on a federal government site.\n\nHttps\n\nThe site is secure.\n  \n The\n ensur"
+            },
+            {
+              "url": "https://x.com/wallstengine",
+              "title": "Wall St Engine (@wallstengine) / X",
+              "snippet": "1h\n\n  $GOOGL +3% as expectations continue to rise around Gemini 4.0\n\n  \n\n  @wallstengine\n\n  Wall St Engine\n\n  Polymarket Money\n\n  @wallstengine\n\n  4h\n\n  \n\n  Odds of $GOOGL releasing Gemini 4.0 by Oct. 15 are rising quickly [...] 42m\n\n  ELEVENLABS VALUATION DOUBLES TO $22B AI voice startup ElevenLabs is now valued at $22B after existing investors and employees sold $300M of stock in a secondary dea"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "BLS Employment Situation July 2026 average hourly earnings private nonfarm payrolls release August 2026",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.bls.gov/news.release/archives/empsit_08072026.htm",
+              "title": "Employment Situation News Release - 2026 M07 Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.Release/empsit.htm",
+              "title": "Employment Situation News Release - 2026 M07 Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.release/archives/empsit_08072026.pdf",
+              "title": "The Employment Situation - July 2026",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.release/empsit.htm?hl=en-GB",
+              "title": "Employment Situation News Release - 2026 M07 Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/web/empsit.supp.toc.htm",
+              "title": "Employment Situation - August 2026 Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.release/empsit.t19.htm",
+              "title": "Table B-3. Average hourly and weekly earnings of all ...",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.release/empsit.t19.htm?stream=top",
+              "title": "Table B-3.  Average hourly and weekly earnings of all employees on private nonfarm payrolls by industry sector, seasonally adjusted\n - 2026 M07 Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/news.release/pdf/empsit.pdf?_nhids=a5JsjD5&_nlid=Yux3kfkBdM",
+              "title": "The Employment Situation - July 2026",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/web/empsit/ceseeb8a.htm",
+              "title": "Employment and Earnings Table B-8a - Bureau of Labor Statistics",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bls.gov/opub/ted/2026/real-average-hourly-earnings-decreased-0-2-percent-from-july-2025-to-july-2026.htm",
+              "title": "Real average hourly earnings decreased 0.2 percent from July 2025 to July 2026 : The Economics Daily : U.S. Bureau of Labor Statistics",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.bls.gov/news.release/empsit.htm",
+          "title": "www.bls.gov",
+          "characters": 135936,
+          "body_sha256": "f7fc5f5516367bfd960b96cc5c76973a2a9e724fc7fd9d8cd3df10a1b0a22c0c",
+          "captured_at": null,
+          "excerpt": "An official website of the United States government\n[United States Department of Labor](https://www.dol.gov/)\nTransmission of material in this news release is embargoed until USDL-26-1549\n8:30 a.m. (ET) Friday, October 2, 2026\nTechnical information:\n Household data: (202) 691-6378 * cpsinfo@bls.gov * www.bls.gov/cps\n Establishment data: (202) 691-6555 * cesinfo@bls.gov * www.bls.gov/ces\nMedia contact: (202) 691-5902 * PressOffice@bls.gov\n THE EMPLOYMENT SITUATION - SEPTEMBER 2026\nBoth nonfarm payroll employment (+29,000) and the unemployment rate (4.2 percent) changed little in \nSeptember, the U.S. Bureau of Labor Statistics reported today. Employment in all major industries \nchanged little over the month.\nThis news release presents statistics from two monthly surveys. The household survey measures labor \nforce status, including unemployment, by demographic characteristics. The establishment survey \nmeasures nonfarm employment, hours, and earnings by industry. For more information about the \nconcepts and statistical methodology used in these two surveys, see the Technical Note.\nHousehold Survey Data\nBoth the unemployment rate, at 4.2 percent, and the number of unemployed people, at 7.1 million, \nchanged little in September. The unemployment rate has remained in a narrow range of 4.1 percent to \n4.3 percent since March. (See table A-1.)\nAmong the major worker groups, the unemployment rate for people who are Black (7.0 percent)\nincreased in September. The jobless rates for adult men (3.9 percent), adult women (3.6 percent), \nteenagers (14.5 percent), and people who are White (3.6 percent), Asian (2.9 percent), or Hispanic \n(4.7 percent) showed little change over the month. (See tables A-1, A-2, and A-3.)\nThe number of long-term unemployed (those jobless for 27 weeks or mo",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://www.theguardian.com/business/2026/aug/07/july-jobs-report-middle-east-conflict",
+          "title": "www.theguardian.com",
+          "characters": 5580,
+          "body_sha256": "0b539ed8fef54f03b44e46127bdaa9df37e31324dc201a607de6cbf36738a355",
+          "captured_at": null,
+          "excerpt": "US employers unexpectedly lost 23,000 jobs in July and gains for the previous two months were revised down sharply by a combined 103,000 jobs, painting a weaker picture of the labor market than past data indicated.\nThe unemployment rate, however, held steady at 4.1%. Economists had [projected](https://www.wsj.com/economy/jobs/private-sector-hiring-missed-expectations-in-july-adp-report-says-31f26993) an unchanged unemployment rate and 83,000 new jobs for the month.\nThe latest data from the Bureau of Labor Statistics illustrates the continued summer slump in job growth amid ongoing conflict in the Middle East. Pressure has been mounting within the US Federal Reserve to raise interest rates to combat persistently high inflation, but July’s job report and its latest revisions may cool those expectations at the central bank’s next meeting.\nJuly’s job losses were concentrated in local government education, with 50,000 jobs lost, and retail, which lost 19,000. The private sector, however, gained 30,000 jobs, with growth focused once again in healthcare.\nHourly earnings of all employees changed little over the past year, increasing by 3.2% compared to last year. Next week’s consumer pricing data will reveal whether these gains have kept pace with inflation.\nFigures for May were revised to 63,000 jobs added, down from an initially reported 129,000 jobs, while figures for June dropped 37,000, to 20,000 jobs added. In total, job figures for May and June were revised down 103,000 jobs.\nIn June, the US [added 57,000 jobs](https://www.theguardian.com/business/2026/jul/02/us-job-growth-slowed-june), about half of what economists had predicted, with most of the growth concentrated in healthcare and social assistance. The unemployment rate had also [dropped to 4.2%](https://www.theguar",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://tradingeconomics.com/united-states/employment-cost-index",
+          "title": "tradingeconomics.com",
+          "characters": 1769,
+          "body_sha256": "c91be70208ecbf3e0fb0d3d6848e87b25e516a11087496b3c915997bf666c489",
+          "captured_at": null,
+          "excerpt": "Compensation costs for civilian workers in the United States rose by 0.9% in the second quarter of 2026, the same as in the previous period, slightly above forecasts of a 0.8% rise. Wages and salaries increased 0.9% (vs 0.8% in Q1) and benefits rose at a faster pace of 1% (vs 1.2%). Compensation costs for private industry workers grew 0.9%, the same as in Q1, and for state and local government workers grew 1%, also the same as in Q1. On an annual basis, employment cost growth remained unchanged from the last period at 3.4%. source: [U.S. Bureau of Labor Statistics](http://www.bls.gov)\nEmployment Cost Index in the United States remained unchanged at 0.90 percent in the second quarter of 2026 from 0.90 percent in the first quarter of 2026. Employment Cost Index in the United States averaged 0.85 percent from 1982 until 2026, reaching an all time high of 2.00 percent in the third quarter of 1982 and a record low of 0.20 percent in the second quarter of 2015. This page provides - United States Employment Cost Index- actual values, historical data, forecast, chart, statistics, economic calendar and news. United States Employment Cost Index QoQ - data, historical chart, forecasts and calendar of releases - was last updated on October of 2026. \n Employment Cost Index in the United States remained unchanged at 0.90 percent in the second quarter of 2026 from 0.90 percent in the first quarter of 2026. Employment Cost Index in the United States is expected to be 0.60 percent by the end of this quarter, according to Trading Economics global macro models and analysts expectations. In the long-term, the United States Employment Cost Index QoQ is projected to trend around 0.50 percent in 2027 and 0.40 percent in 2028, according to our econometric models.",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://workforce.iowa.gov/media/1202/download",
+          "title": "workforce.iowa.gov",
+          "characters": 19878,
+          "body_sha256": "02bcf3304027df0d10ba467548722f27285b57f37d168236181ddfcc300398d8",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\n STATE OF IOWA\n NONFARM EMPLOYMENT\n WORKFORCE DEVELOPMENT\n AUGUST 2016\n LMR MONTHLY\n JOB GAINS SPLIT AMONG GOODS PRODUCING AND SERVICE PROVIDING SECTORS\n 1600\n 1590\n 1580\n 1570\n 1560\n 1550\n 1540\n Sep-15 to Aug-16p Sep-14 to Aug-15 Linear (Sep-15 to Aug-16p)\nFor the third consecutive month, Iowa transportation was bolstered by retail business services—down 2,900 jobs\nbusinesses expanded their payrolls trade hiring and added 1,300 jobs. versus one year ago.\nand added 4,900 jobs, raising the total Retail in Iowa has not fared well Nationally, the U.S. expanded by\nto 1,590,600. Both goods-producing recently, adding jobs in only three 151,000 jobs in August. The monthly\nand service sectors gained jobs this months in 2016. Other gains this gain was less than the previous\nmonth with private services adding the month included financial activities, twelve month average, but does follow\nmajority (2,900). Government added construction, manufacturing, and two unusually large gains in June and\njobs at the local level and is 4,800 other services. Losses were small by July. The largest gains were in\nhigher annually; however, this gain is comparison and were led by education and health care and leisure\npartially due to seasonal staff being professional and business services (- and hospitality.\nretained and brought back earlier than 600). Despite a sizable gain last\nusual this year. Compared to last month, this sector has pared jobs in\nyear, the state has added 31,200 jobs, three of the last four months. The only\na gain of 2.0 percent. other losses were small declines in\nLeisure and hospitality added the education and health services and\nmost jobs in August (1,400), with the information.\ngains evenly split between arts and Annually, construction continues to\nentertainment a",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.bls.gov/news.release/archives/empsit_08072026.htm",
+          "title": "www.bls.gov",
+          "characters": 137401,
+          "body_sha256": "c17c79112fbd968929bd15360209286e6215bb168a0daed34e12df44a7679df4",
+          "captured_at": null,
+          "excerpt": "An official website of the United States government\n[United States Department of Labor](https://www.dol.gov/)\nTransmission of material in this news release is embargoed until USDL-26-1291\n8:30 a.m. (ET) Friday, August 7, 2026\nTechnical information: \n Household data: (202) 691-6378 * cpsinfo@bls.gov * www.bls.gov/cps\n Establishment data: (202) 691-6555 * cesinfo@bls.gov * www.bls.gov/ces\nMedia contact: (202) 691-5902 * PressOffice@bls.gov\n THE EMPLOYMENT SITUATION - JULY 2026\nBoth nonfarm payroll employment (-23,000) and the unemployment rate (4.1 percent) changed little in \nJuly, the U.S. Bureau of Labor Statistics reported today. Employment declined in local government \neducation and retail trade. Employment continued to trend up in health care.\nThis news release presents statistics from two monthly surveys. The household survey measures labor \nforce status, including unemployment, by demographic characteristics. The establishment survey \nmeasures nonfarm employment, hours, and earnings by industry. For more information about the \nconcepts and statistical methodology used in these two surveys, see the Technical Note.\nHousehold Survey Data\nBoth the unemployment rate, at 4.1 percent, and the number of unemployed people, at 6.9 million, \nchanged little in July. These measures also changed little over the year. (See table A-1.)\nAmong the major worker groups, the unemployment rates for teenagers (12.1 percent) and people who \nare Hispanic (4.6 percent) declined in July. The jobless rates for adult men (3.9 percent), adult \nwomen (3.7 percent), and people who are White (3.6 percent), Black (6.3 percent), or Asian (4.0 \npercent) showed little or no change over the month. (See tables A-1, A-2, and A-3.)\nAmong the unemployed, the number of people on temporary layoff increased b",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S006",
+          "url": "https://www.bls.gov/news.release/archives/empsit_08072026.pdf",
+          "title": "www.bls.gov",
+          "characters": 150000,
+          "body_sha256": "b4b2f7563b86b2dead950c4c5aac6f11fa26b1177164e97a883d466c32587576",
+          "captured_at": null,
+          "excerpt": "[PDF page 1]\nTransmission of material in this news release is embargoed until USDL-26-1291\n8:30 a.m. (ET) Friday , August 7 , 2026\nTechnical information:\n Household data: (202) 691-6378 • cpsinfo@bls.gov • www.bls.gov/cps\n Establishment data: (202) 691-6555 • cesinfo@bls.gov • www.bls.gov/ces\nMedia contact: (202) 691-5902 • PressOffice@bls.gov\n THE EMPLOYMENT SITUATION — JULY 2026\nBoth n onfarm payroll employment (-23,000) and the unemployment rate (4.1 percent) changed little\nin July, the U.S. Bureau of Labor Statistics reported today. Employment declined in local government\neducation and retail trade. Employment continued to trend up in health care.\n Chart 1. Unemployment rate, seasonally adjusted, Chart 2. Nonfarm payroll employment over-the-month change,\n July 2024 – July 2026 seasonally adjusted, July 2024 – July 2026\n Percent Thousands\n 5.5 300\n 5.0 200\n 4.5 100\n 4.0 0\n 3.5 -100\n 3.0 -200\n Jul-24 Oct-24 Jan-25 Apr-25 Jul-25 Oct-25 Jan-26 Apr-26 Jul-26 Jul-24 Oct-24 Jan-25 Apr-25 Jul-25 Oct-25 Jan-26 Apr-26 Jul-26\n Note: Data for October 2025 were not collected due to the federal\n government shutdown.\nThis news release presents statistics from two monthly surveys. The household survey measures labor\nforce status, including unemployment, by demographic characteristics. The establishment survey\nmeasures nonfarm employment, hours, and earnings by industry. For more information about the\nconcepts and statistical methodology used in these two surveys, see the Technical Note.\nHousehold Survey Data\nBoth the unemployment rate , at 4.1 percent, and the number of unemployed people , at 6.9 million,\nchanged little in July. These measures also changed little over the year . (See table A-1.)\nAmong the major worker groups , the unemployment rates for teenagers (12.1 percent) and",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.bls.gov/news.release/empsit.htm",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.theguardian.com/business/2026/aug/07/july-jobs-report-middle-east-conflict",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://tradingeconomics.com/united-states/employment-cost-index",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://chwd.org/wp-content/uploads/June-23-2026-CHWD-Board-Meeting-Agenda-Packet.pdf",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://workforce.iowa.gov/media/1202/download",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.nmdfa.state.nm.us/wp-content/uploads/2026/07/Informational-Items-2.17.26.pdf",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bls.gov/news.release/archives/empsit_08072026.htm",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bls.gov/news.release/archives/empsit_08072026.pdf",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "bin_probabilities": {
+          "below": 0.07100348869807334,
+          "bin_0": 0.9207872516298029,
+          "bin_1": 0.0006960940414592104,
+          "bin_2": 0.0009514477464914544,
+          "bin_3": 0.00019943428194385982,
+          "bin_4": 0.00015531957494916137,
+          "bin_5": 0.0002901751680088618,
+          "bin_6": 8.849842615053946e-05,
+          "bin_7": 0.0035350572318140747,
+          "bin_8": 3.255675155681262e-05,
+          "bin_9": 7.336777219193502e-05,
+          "bin_10": 0.00016533682689485945,
+          "bin_11": 0.00015531957494916137,
+          "bin_12": 0.0003288115427476482,
+          "bin_13": 0.00012876445025625783,
+          "bin_14": 0.00015531957494916137,
+          "bin_15": 6.474683170891487e-05,
+          "bin_16": 0.000422202378188288,
+          "bin_17": 0.00012876445025625783,
+          "bin_18": 0.0001873511696308876,
+          "bin_19": 7.809958696146264e-05,
+          "above": 0.0003725922910150142
+        },
+        "cdf_knots": [
+          [
+            -0.005,
+            0.07100348869807334
+          ],
+          [
+            0.04499999999999999,
+            0.9917907403278763
+          ],
+          [
+            0.09499999999999997,
+            0.9924868343693355
+          ],
+          [
+            0.14499999999999996,
+            0.993438282115827
+          ],
+          [
+            0.19499999999999995,
+            0.9936377163977709
+          ],
+          [
+            0.24499999999999994,
+            0.9937930359727201
+          ],
+          [
+            0.29499999999999993,
+            0.994083211140729
+          ],
+          [
+            0.345,
+            0.9941717095668795
+          ],
+          [
+            0.3949999999999999,
+            0.9977067667986935
+          ],
+          [
+            0.4449999999999999,
+            0.9977393235502503
+          ],
+          [
+            0.4949999999999999,
+            0.9978126913224422
+          ],
+          [
+            0.5549999999999999,
+            0.9979780281493371
+          ],
+          [
+            0.6049999999999999,
+            0.9981333477242863
+          ],
+          [
+            0.6549999999999999,
+            0.998462159267034
+          ],
+          [
+            0.7049999999999998,
+            0.9985909237172902
+          ],
+          [
+            0.7549999999999998,
+            0.9987462432922394
+          ],
+          [
+            0.8049999999999998,
+            0.9988109901239483
+          ],
+          [
+            0.8549999999999998,
+            0.9992331925021365
+          ],
+          [
+            0.9049999999999998,
+            0.9993619569523927
+          ],
+          [
+            0.9549999999999997,
+            0.9995493081220236
+          ],
+          [
+            1.005,
+            0.9996274077089851
+          ]
+        ]
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0005",
+            "E0132",
+            "E0335",
+            "E0473",
+            "E0536",
+            "E0003",
+            "E0027"
+          ],
+          "new_chars": 4493,
+          "second_required": true
+        },
+        "first_probability_yes": null,
+        "gaps": [
+          "time_window",
+          "metric_definition",
+          "value_units",
+          "scope_exceptions",
+          "observation_coverage",
+          "evidence_sufficiency",
+          "Failed capture raw response missing or hash mismatch",
+          "Failed capture raw response missing or hash mismatch"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 3,
+        "search_attempts": 2,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "26754",
+      "title": "When will a publicly-available LLM achieve gold on the International Math Olympiad?",
+      "type": "date",
+      "created_at": "2026-10-02T16:38:26.399805+00:00",
+      "rules": "This question will resolve to the date when it is publicly announced that a general large language model system available to the public scores gold in the International Math Olympiad. If this does not happen before January 1, 2030, resolves as Not less than or equal to January 1, 2030. The model must be domain-general, publicly queryable by browser or API, and need not be open-weights. Gold threshold must be achieved on an IMO and announced by credible sources. Problems must be provided in natural language and images as applicable. Internet search during problem-solving is not allowed.",
+      "fine_print": "",
+      "run_id": "37031590213",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37031590213",
+      "question_url": "https://www.metaculus.com/questions/26754/",
+      "input_sha256": "c34f1d1768240a826dfa8470e136b93d84ae097193e7e51834e1a6e730ea7da1",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 10
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 2
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 8
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 1
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "imo-2024-results",
+          "condition": "Official IMO 2024 results, problem statements, and gold medal thresholds",
+          "priority": "critical",
+          "query": "IMO 2024 results gold medal cutoff problems official"
+        },
+        {
+          "id": "imo-2025-results",
+          "condition": "Official IMO 2025 results, problem statements, and gold medal thresholds",
+          "priority": "critical",
+          "query": "IMO 2025 results gold medal cutoff problems official"
+        },
+        {
+          "id": "imo-2026-results",
+          "condition": "Official IMO 2026 results, problem statements, and gold medal thresholds (if completed)",
+          "priority": "critical",
+          "query": "IMO 2026 results gold medal cutoff problems official"
+        },
+        {
+          "id": "deepmind-imo-announcements",
+          "condition": "Google DeepMind announcements about AlphaGeometry, AlphaProof, or other systems achieving IMO-level performance",
+          "priority": "critical",
+          "query": "DeepMind AlphaGeometry AlphaProof IMO gold medal announcement 2024 2025 2026"
+        },
+        {
+          "id": "openai-math-announcements",
+          "condition": "OpenAI announcements about o1, o3, or other models achieving IMO gold-level performance on math olympiad problems",
+          "priority": "critical",
+          "query": "OpenAI o1 o3 IMO International Math Olympiad gold performance 2024 2025 2026"
+        },
+        {
+          "id": "anthropic-math-announcements",
+          "condition": "Anthropic announcements about Claude models achieving IMO gold-level performance",
+          "priority": "useful",
+          "query": "Anthropic Claude IMO International Math Olympiad math reasoning 2024 2025 2026"
+        },
+        {
+          "id": "public-model-imo-benchmarks",
+          "condition": "Independent benchmarking of publicly available LLMs (GPT-4o, Claude 3.5 Sonnet, Gemini, etc.) on IMO 2024/2025/2026 problems",
+          "priority": "critical",
+          "query": "LLM benchmark IMO 2024 2025 problems GPT-4o Claude Gemini public model"
+        },
+        {
+          "id": "imo-grand-challenge",
+          "condition": "IMO Grand Challenge official status and any announcements about AI systems achieving gold",
+          "priority": "critical",
+          "query": "IMO Grand Challenge AI gold medal 2024 2025 2026"
+        },
+        {
+          "id": "credible-media-announcements",
+          "condition": "Credible media reports (Nature, Science, Quanta, major tech journalism) announcing first public LLM to achieve IMO gold",
+          "priority": "useful",
+          "query": "AI achieves gold medal International Math Olympiad first public LLM 2024 2025 2026"
+        },
+        {
+          "id": "model-availability-verification",
+          "condition": "Verification that any claimed gold-achieving model is publicly queryable via browser or API (not just internal research system)",
+          "priority": "critical",
+          "query": "public API browser access Gemini AlphaProof AlphaGeometry o1 o3 Claude math model"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": " a publicly-available LLM achieve gold on the International Math Olympiad? This question will resolve to the date when it is publicly announced that a general large language m",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.alphaxiv.org/@thang-luong",
+              "title": "Thang Luong | alphaXiv",
+              "snippet": "29 Jan 2026\n\n699views\n\n### LEAP: Supercharging LLMs for Formal Mathematics with Agentic Frameworks\n\nPo-Nien KungPo-Nien KungLinfeng SongLinfeng SongDawsen HwangJinsung YoonJinsung Yoon+9 [...] competition for undergraduate students in North America, LEAP solves all 12 problems, matching recent breakthroughs by frontier formal mathematical models. On Lean-IMO-Bench, LEAP boosts the one-shot formal "
+            },
+            {
+              "url": "https://en.wikipedia.org/wiki/Noam_Shazeer",
+              "title": "Noam Shazeer - Wikipedia",
+              "snippet": "+ Batchnorm  Activation   + Softmax   + Sigmoid   + Rectifier \"Rectifier (neural networks)\")  Gating  Weight initialization  Regularization \"Regularization (mathematics)\")  Datasets   + Augmentation  Prompt engineering  Reinforcement learning   + Q-learning   + SARSA   + Imitation   + Policy gradient  Diffusion  Latent diffusion model  Autoregression  Adversary  RAG  Uncanny valley  LLM post-train"
+            },
+            {
+              "url": "https://cs.kaust.edu.sa/topics/artificial-intelligence",
+              "title": "artificial intelligence | Computer Science",
+              "snippet": "Awards News\n\ncomputational imaging computer graphics optics artificial intelligence generative ai\n\nNajmeddine Dhieb\n\n### Najmeddine Dhieb\n\nDeep learning Generative AI and LLMs artificial intelligence Computer Vision\n\n### Mohamed Ads, King Abdullah University of Science and Technology\")\n\nIoT Telecommunications Smart Wireless Massive Systems LED Wireless Communication Systems artificial intelligence"
+            },
+            {
+              "url": "https://ai-nexus.mbzuai.ac.ae",
+              "title": "The Global AI Research & Knowledge Network",
+              "snippet": "### Bringing LLM Inference to Wafer Scale Systems\n\nLuo Mai\n\nLuo Mai\n\nAssociate Professor, University of Edinburgh\n\nDate: February 18, 2026\n\nTime: 12:00pm\n\nLocation: MBZUAI - Classroom 6\n\nDepartment Area: Computer Science\n\nHost:  Youcheng Sun [...] In this talk, I will discuss recent advances in AI for Mathematics, from AlphaGeometry and AlphaProof to the recent Gemini Deep Think, which achieved a "
+            },
+            {
+              "url": "https://www.cis.mpg.de/all-events",
+              "title": "All events | cis.mpg.de",
+              "snippet": "respectively as research internships. He received his B.Sc. at Seoul National Univ. Mathematics in 2003, and he won a gold medal in IMO(International Mathematical Olympiad) 1995. [...] Towards More Trustworthy and Efficient Systems\n\nHugo Lefeuvre | University of British Columbia (hosted by Gilles Barthe, Deepak Garg)  \n  \n2026-02-10, 10:00 - 11:00  \n…Bochum building MPI-SP  \n  \nAbstract: [...] Bo "
+            },
+            {
+              "url": "https://www.nature.com/articles/s41540-026-00656-9",
+              "title": "The future of mathematical oncology in the age of AI | npj Systems Biology and Applications",
+              "snippet": "model or an LLM, can help students build healthy skepticism and scientific rigor. This could involve reviewing AI predictions or evaluating the robustness of models. By engaging with examples of flawed science, whether from human error or model misapplication, students can develop the necessary skills for high-quality research while using AI. [...] Hu, X. et al. Nova: An iterative planning and sea"
+            },
+            {
+              "url": "https://www.inhea.org/ahen/south-africa",
+              "title": "South Africa - International Network for Higher Education in Africa",
+              "snippet": "‘It was Hectic’: Busy Magistrate and Daughter Get Their Master’s Degrees Together\n\nWell-known Cape Town magistrate, Vanya Botha, graduated as a Master of Laws (LLM) with her daughter, Anya-Larissa, at Stellenbosch University this week. According to the university, Botha had always wanted to tackle her LLM, but life “just happened”.  Read more\n\nKZN Woman Goes from Street Vendor to Graduate [...] Fe"
+            },
+            {
+              "url": "https://www.justdial.com/Jammu/Tutorials-For-Assistant-Public-Prosecutor/nct-11240259",
+              "title": "Top Tutorials For Assistant Public Prosecutor in Jammu",
+              "snippet": "Tutorials For Assistant Public Prosecutor in Jammu. Average Rating 4.9. (157 Ratings & Reviews as on 02/10/2026). Latest"
+            },
+            {
+              "url": "https://www.linkedin.com/in/amistrate",
+              "title": "Ana-Maria Istrate",
+              "snippet": "# Ana-Maria Istrate\nChan Zuckerberg Initiative\nSan Francisco Bay Area, US  \n500 connections, 1798 followers\n\n## About\nI’m a Staff Research Scientist in AI/ML at the Chan Zuckerberg Initiative, working at the…\n\n## Experience\nN/A\n\n## Education\nN/A\n\n## Publications\nN/A\n\n## Honors & Awards\nIESO (2011) — Bronze\n- • September 2011\n\nMendeleev International Chemistry Olympiad (2011) — Bronze\n- • April 201"
+            },
+            {
+              "url": "https://www.justdial.com/Hyderabad/Home-Tutors-For-Telugu-Language-in-Himayat-Nagar/nct-10837770",
+              "title": "Top Home Tutors For Telugu in Himayat Nagar, Hyderabad",
+              "snippet": "Find expert home tutors to boost your language skills! Maths, Physics Algebra, Olympiad Home Tutors"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "IMO 2026 results gold medal cutoff problems official International Mathematical Olympiad",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.imo-official.org/results/individual/year/2026/",
+              "title": "67th IMO 2026 – Individual Results",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/results/",
+              "title": "Results - International Mathematical Olympiad",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/editions/2026/",
+              "title": "67th IMO 2026 - International Mathematical Olympiad",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/problems/2026/",
+              "title": "IMO 2026 Problems - International Mathematical Olympiad",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/results/team/year/2026/",
+              "title": "Team Results IMO 2026 - International Mathematical Olympiad",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/problems/",
+              "title": "Problems - International Mathematical Olympiad",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/assets/documents/problems/2026/2026_eng.pdf",
+              "title": "Wednesday, 15. July 2026 Problem 1. There are integers greater than written on a blackboard, not necessarily dif ferent. In a move, Confucius chooses two integers and from different places on the blackboard and replaces these two integers with",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/news/imo-2026-concludes-in-shanghai/",
+              "title": "IMO 2026 Concludes in Shanghai",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/documents/AnnualRegulationsIMO.pdf",
+              "title": "IMO 2026 – Annual Regulations",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.imo-official.org/",
+              "title": "International Mathematical Olympiad: IMO",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.alphaxiv.org/@thang-luong",
+          "title": "www.alphaxiv.org",
+          "characters": 14665,
+          "body_sha256": "bef9f31632eac1cac6ce7e45937af54f59750e349f72272cbb2504738cd5c0ac",
+          "captured_at": null,
+          "excerpt": "Thang Luong\nPrincipal Scientist & Director of Research at [Google DeepMind](https://www.alphaxiv.org/organizations/google-deepmind)\nPreviously NLP PhD Student at [Stanford University](https://www.alphaxiv.org/organizations/stanford)\nAbout\nThang Luong co-developed Gemini, a family of multimodal LLMs designed for reasoning across text, images, audio, and video. He is a Principal Scientist and Director of Research at Google DeepMind, where he works on deep learning and NLP. Luong's earlier work on Effective approaches to attention-based neural machine translation introduced the global and local attention mechanisms used in sequence-to-sequence architectures. He also contributed to AlphaGeometry, a system that solves Olympiad-level geometry problems by combining neural language models with symbolic deduction. His other research includes Electra, a discriminative pre-training approach for text encoders, and methods for unsupervised data augmentation. Luong completed his PhD at Stanford University, where he focused on neural machine translation and word representations.\nExperience\nPrincipal Scientist & Director of Research\n2022 – Present\nSince 2024, leads the Superhuman Reasoning team.\n2022 – Present\nSenior Staff Research Scientist & Senior Manager\nSep 2018 – Oct 2022\nFocused on learning from large volumes of unlabeled data.\nSep 2018 – Oct 2022\nSenior Research Scientist\nSep 2016 – Aug 2018\nCo-founded Project Meena and co-led multimodal development for Bard, the precursor to Gemini.\nSep 2016 – Aug 2018\nCo-Founder\n2018 – Present\nNew Turing Institute\nCo-founded a nonprofit organization that aims to nurture AI talent in Southeast Asia and beyond; formerly VietAI.\n2018 – Present\nNLP PhD Student\nSep 2011 – May 2016\nWorked in the Stanford NLP group with Christopher Manning on neural",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://cs.kaust.edu.sa/topics/artificial-intelligence",
+          "title": "cs.kaust.edu.sa",
+          "characters": 17660,
+          "body_sha256": "b4eaf69ceb6e4652c7003581e7f77f7a76e4d2eb7344e3c717cdb39552c904a0",
+          "captured_at": null,
+          "excerpt": "News\nartificial intelligence LLM Diffusion Models machine learning\nB5 R5209; Zoom Meeting 95703397179\nOptimization for Machine Learning AI artificial intelligence machine learning Optimization design and machine learning\nartificial intelligence EEG Signals Modeling graph machine learning Continual Learning\nB4 R5220; Zoom Meeting 98132861421\ndecision making Trustworthy AI privacy-preserving AI Data Privacy machine learning artificial intelligence AI\nSir Bashir M. Al-Hashimi, Vice President, Research & Innovation, King’s College London (KCL); Distinguished Professor, Department of Engineering, Faculty of Natural, Mathematical & Engineering Sciences, King’s College London (KCL)\nB9 R2325\nAI artificial intelligence LLM scientific research scientific knowledge Assistive Technology\nartificial intelligence machine learning information security privacy preserving techniques\nB3 R5220\nAI artificial intelligence nanophotonics computational imaging deep learning Computer Vision hyperspectral imaging intelligent systems\nartificial intelligence medical image analysis machine learning LLM Large Language Models\nNews Clip News Press Releases\nartificial intelligence generative ai Computer Vision Sports\nNews Clip News\nmachine learning artificial intelligence AI\nB9 L2 R2325\nanomaly detection multivariate statistics artificial intelligence AI\nAwards News\noptimization machine learning communication efficiency artificial intelligence big data algorithm\nKAUST Campus\nAI artificial intelligence\nComputer Vision machine learning Computational Neuroscience Electroencephalograms artificial intelligence\nB9 L2 R2325\nAI artificial intelligence Fusion simulation\nNews Clip News Press Releases\nartificial intelligence AI UAV communications remote sensing Signal processing\nNews Clip News Press Releases\nAI ar",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://en.wikipedia.org/wiki/Noam_Shazeer",
+          "title": "en.wikipedia.org",
+          "characters": 17348,
+          "body_sha256": "0d5498ba4d1de4763295a23388d5f5ffa21f001e3f7241305d1c17d66f093bd8",
+          "captured_at": null,
+          "excerpt": "Noam Shazeer\n| Noam Shazeer | | \n|---|---|\n| Born | 1976 (age 49–50) [Philadelphia](https://en.wikipedia.org/wiki/Philadelphia) ,[Pennsylvania](https://en.wikipedia.org/wiki/Pennsylvania) , U.S. | \n| Education | [Duke University](https://en.wikipedia.org/wiki/Duke_University) (BS) | \n| Known for | [Transformer](<https://en.wikipedia.org/wiki/Transformer_(deep_learning)>) | \n| Spouse | Yael Shacham | \n| Children | 3 | \n| Scientific career | | \n| Fields | | \n| Workplaces | | \n| Website | [noamshazeer](http://noamshazeer.com) | \nNoam Shazeer (born 1975 or 1976)[\\[1\\]](https://en.wikipedia.org#cite_note-WSJ_-_Google_Paid_$2.7_Billion_to_Bring_Back_an_AI_Genius_Who_Quit_in_Frustration-1) is an American [software engineer](https://en.wikipedia.org/wiki/Software_Engineer) and [entrepreneur](https://en.wikipedia.org/wiki/Entrepreneurship) known for his contributions to the field of [artificial intelligence](https://en.wikipedia.org/wiki/Artificial_intelligence) and [deep learning](https://en.wikipedia.org/wiki/Deep_learning), particularly in the development of [transformer](<https://en.wikipedia.org/wiki/Transformer_(deep_learning_architecture)>) models and [natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing). He lives in [Palo Alto, California](https://en.wikipedia.org/wiki/Palo_Alto,_California).[\\[2\\]](https://en.wikipedia.org#cite_note-Wellman-2024-2)\nEarly life and education\n[\n[edit](https://en.wikipedia.org/w/index.php?title=Noam_Shazeer&action=edit§ion=1)]\nShazeer's grandparents emigrated from the Soviet Union to Israel, eventually emigrating to the USA.[\\[2\\]](https://en.wikipedia.org#cite_note-Wellman-2024-2) His father, Dov Shazeer, was a math teacher who became an engineer[\\[2\\]](https://en.wikipedia.org#cite_note-Wellman-2024-2) a",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://www.cis.mpg.de/all-events",
+          "title": "www.cis.mpg.de",
+          "characters": 150000,
+          "body_sha256": "f313f3f4eaa61854e651dcf2eef6fd378abc0d33a893220dd16a5738e0e7b9d0",
+          "captured_at": null,
+          "excerpt": "Upcoming Events\nNo upcoming events\nRecent Events\n2026-09-21, 10:00 - 11:00\n…Saarbrücken building E1 5, room 029\nAbstract:\nI will present comprehensive SMT-based deductive verification of a deployable, high-performance, real-world Ethernet driver written in the Pancake language. I discuss a Viper frontend for Pancake that largely retains Viper’s annotation syntax, and report on key elements of the verification that achieved an efficient and modular verification process. I will report on the verification experience and discuss our future plans.\nSpeaker's bio:\n-\n2026-06-01, 10:00 - 11:00\n…Saarbrücken building E1 5, room 029\nAbstract:\nSoftware is what turns quantum hardware into technology everyone can use. In this talk we focus on the quantum communication networks, with the first metropolitan scale quantum networks being built and the technologies to connect them over long distances advancing. We begin with the first operating system for quantum networks (QNodeOS), allowing applications to be programmed and executed on arbitrary quantum processors connected to a quantum network. Demonstrated on two different types of quantum hardware, QNodeOS now provides a framework for experimenting with software systems for quantum networks. We then turn to a specific kind of quantum network application, in which entanglement is harnessed for coordination between distant parties. We explore this through a recent example in radio spectrum allocation, opening the door to a new domain of quantum network applications.\nSpeaker's bio:\nStephanie is Antoni van Leeuwenhoek Professor at Delft University of \nTechnology, and co-founder and director of the European Quantum Internet \nAlliance (QIA), joining over 50 partners in the ambition to create a global \nquantum internet made in Europe. Her goa",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.imo-official.org/results/individual/year/2026",
+          "title": "www.imo-official.org",
+          "characters": 132491,
+          "body_sha256": "b87be7e7bb8bd3012cff82fc3ed97069a3dd5019e5069b607e3b3d2fd42ec8dc",
+          "captured_at": null,
+          "excerpt": "| [Leyan Deng](https://www.imo-official.org/results/contestant/35092/) | [People's Republic of ChinaCHN](https://www.imo-official.org/results/individual/country/CHN/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Che Liu](https://www.imo-official.org/results/contestant/35751/) | [People's Republic of ChinaCHN](https://www.imo-official.org/results/individual/country/CHN/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Bolun Zhang](https://www.imo-official.org/results/contestant/35747/) | [People's Republic of ChinaCHN](https://www.imo-official.org/results/individual/country/CHN/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Hyeonjun Lee](https://www.imo-official.org/results/contestant/35414/) | [Republic of KoreaKOR](https://www.imo-official.org/results/individual/country/KOR/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Alex Chui](https://www.imo-official.org/results/contestant/30257/) | [United KingdomUNK](https://www.imo-official.org/results/individual/country/UNK/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Liam Reddy](https://www.imo-official.org/results/contestant/36000/) | [United States of AmericaUSA](https://www.imo-official.org/results/individual/country/USA/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Alexander Wang](https://www.imo-official.org/results/contestant/33503/) | [United States of AmericaUSA](https://www.imo-official.org/results/individual/country/USA/) | 1 | G | 42 | 7 | 7 | 7 | 7 | 7 | 7 | \n | [Arina Prokudina](https://www.imo-official.org/results/contestant/36274/) | [Russian FederationRUS](https://www.imo-official.org/results/individual/country/RUS/) | 8 | G | 41 | 7 | 7 | 6 | 7 | 7 | 7 | \n | [Andrey Shishko](https://www.imo-official.org/results/contestant/36275/) | [Russian FederationRUS](https://www.imo-official.org/results/individual/country/RUS/",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S006",
+          "url": "https://www.imo-official.org/problems/2026",
+          "title": "www.imo-official.org",
+          "characters": 966,
+          "body_sha256": "960ced4c76123113fd9c428cbb0011313f971de16c3d869c324865bb661ef180",
+          "captured_at": null,
+          "excerpt": "IMO 2026 Problems\n67th International Mathematical Olympiad\nDay 1\nProblem 1\nThere are \n- Prove that, regardless of the choices of Confucius, after finitely many moves, exactly one integer on the blackboard is greater than .\n- Prove that the value of does not depend on the choices of Confucius.\n(Note that \nProposed by Luxembourg\nProblem 2\nLet \nProposed by Ukraine\nProblem 3\nLet \nFor each \nProposed by Russian Federation\nDay 2\nProblem 4\nShan-Yu and Mulan are playing a game. Let \n- If has at least one angle measuring exactly , then the game stops and Mulan wins.\n- Otherwise, Mulan chooses a point on the perimeter of , different from its three vertices. She then makes a straight cut from to the opposite vertex of , splitting it into two triangles.\n- Shan-Yu discards one of the two triangles. The remaining triangle becomes the new .\nFor which real values of \nProposed by Switzerland\nProblem 5\nLet \nProposed by Latvia\nProblem 6\nLet \n(Note that \nProposed by Taiwan",
+          "excerpt_truncated": false,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S007",
+          "url": "https://ai-nexus.mbzuai.ac.ae",
+          "title": "ai-nexus.mbzuai.ac.ae",
+          "characters": 150000,
+          "body_sha256": "5c21cd6e3f8143af7d0dca5d836c6592f55006acb78d997bed9b8ab2bbcf064e",
+          "captured_at": null,
+          "excerpt": "Hedging a derivative under trading costs is a sequential decision problem with no closed-form solution, and deep hedging solves it with reinforcement learning: an agent trades over time to minimise the risk of its final profit and loss. In current methods the risk preference is fixed before training and built into what the agent learns, so changing the preference means training again. Yet in practice one position is judged under several risk criteria at once.\nThis talk takes a distributional reinforcement learning view of the problem. Instead of a single risk-adjusted value, the critic learns the full distribution of the profit and loss, represented by its quantiles, and the risk preference becomes a set of weights applied afterwards. One learned distribution then serves a whole family of risk measures. We discuss which preferences are compatible with a learned distribution, why expected shortfall is the natural building block, and how the widely used entropic utility fits in the same framework. We then present two algorithms that follow from this view, a policy search through a market simulator and a distributional actor-critic in which the preference enters only as a vector of weights, and discuss what makes training the critic hard in this setting.\nDifferential Equation Models For Deep Neural Networks: Learning Theory, Calculus Of Variations And Optimal Control\nPeter Markovich\nForeign Member of the Austrian Academy of Sciences and of the (Italian) Accademia Nazionale dei Lincei\nWe propose a partial differential-integral equation (PDE) framework for deep neural networks (DNNs) and their associated learning problem by taking the continuum limits of both network width and depth. The proposed model captures the complex interactions among hidden nodes, overcoming limitati",
+          "excerpt_truncated": true,
+          "supplemented": true,
+          "truth_verified": false
+        },
+        {
+          "id": "S008",
+          "url": "https://www.nature.com/articles/s41540-026-00656-9",
+          "title": "www.nature.com",
+          "characters": 51978,
+          "body_sha256": "8dcdd7fe77981f3ea6fdd28138c86f55c4b81865389bfc3adef21846979cefc0",
+          "captured_at": null,
+          "excerpt": "Abstract\nThis perspective article discusses emerging advances at the interface of mechanistic modeling and data-driven machine learning, highlighting opportunities for AI to accelerate discovery, improve predictive modeling, and enhance clinical decision-making. We address critical limitations of current AI approaches and propose a perspective on a future where AI augments mechanistic rigor, clinical relevance, and human creativity under the umbrella of a redefined understanding of Mathematical Oncology.\nSimilar content being viewed by others\nIntroduction\nIn May 2025, early-career researchers and established investigators in Mathematical Oncology and artificial intelligence (AI) met to discuss the current and future impact of AI technologies on the field. The focus of the meeting was on immersive learning, spirited debate, and collaborative visioning, moving away from a typical lecture-heavy format. The two-day meeting was held in Siracusa, Sicily, and was structured to help engagement and dialogue, with each day beginning with presentations led by early-career researchers focused on a specific topic, followed by group discussions. Several themes emerged from the discussions that form the basis of this perspective on the future of Mathematical Oncology in the age of AI.\nAI and the future of scientific discovery\nA central question was whether AI could eventually outpace human researchers in generating new knowledge and ideas. Several scenarios included whether AI could design viable molecules that don’t exist in nature, or discover new physical laws or mathematical conjectures. While some viewed this as speculative, others among us pointed to real-world examples where AI has already begun to do exactly that.\nAI-driven discovery\nFor instance, in drug discovery, a generati",
+          "excerpt_truncated": true,
+          "supplemented": true,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.alphaxiv.org/@thang-luong",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://cs.kaust.edu.sa/topics/artificial-intelligence",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Noam_Shazeer",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.cis.mpg.de/all-events",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://ai-nexus.mbzuai.ac.ae",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://www.nature.com/articles/s41540-026-00656-9",
+          "status": "failed",
+          "error": ""
+        },
+        {
+          "url": "https://www.imo-official.org/results/individual/year/2026/",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.imo-official.org/problems/2026/",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "bin_probabilities": {
+          "below": 0.015999531391877236,
+          "bin_0": 0.0075576434890526996,
+          "bin_1": 0.003150494528856637,
+          "bin_2": 0.005194287342950316,
+          "bin_3": 0.001088781775217206,
+          "bin_4": 0.0023049510362224026,
+          "bin_5": 0.0040453150501875935,
+          "bin_6": 0.0014881882400254371,
+          "bin_7": 0.017031412511935663,
+          "bin_8": 0.005885898667448747,
+          "bin_9": 0.03387100822239912,
+          "bin_10": 0.021868766547419004,
+          "bin_11": 0.01929911874144289,
+          "bin_12": 0.05944547071666214,
+          "bin_13": 0.005529290094597783,
+          "bin_14": 0.0075576434890526996,
+          "bin_15": 0.0014881882400254371,
+          "bin_16": 0.0048795813819742274,
+          "bin_17": 0.00123375138431473,
+          "bin_18": 0.0017950976719512532,
+          "bin_19": 0.00123375138431473,
+          "bin_20": 0.05246044378013761,
+          "bin_21": 0.6390987347812533,
+          "above": 0.08649264953068111
+        },
+        "cdf_knots": [
+          [
+            946684800.0,
+            0.015999531391877236
+          ],
+          [
+            1704067200.0,
+            0.023557174880929937
+          ],
+          [
+            1711929600.0,
+            0.026707669409786573
+          ],
+          [
+            1719792000.0,
+            0.03190195675273689
+          ],
+          [
+            1727740800.0,
+            0.032990738527954096
+          ],
+          [
+            1735689600.0,
+            0.035295689564176495
+          ],
+          [
+            1743465600.0,
+            0.039341004614364086
+          ],
+          [
+            1751328000.0,
+            0.040829192854389525
+          ],
+          [
+            1759276800.0,
+            0.05786060536632519
+          ],
+          [
+            1767225600.0,
+            0.06374650403377394
+          ],
+          [
+            1775001600.0,
+            0.09761751225617306
+          ],
+          [
+            1782864000.0,
+            0.11948627880359206
+          ],
+          [
+            1790812800.0,
+            0.13878539754503494
+          ],
+          [
+            1798761600.0,
+            0.19823086826169709
+          ],
+          [
+            1806537600.0,
+            0.20376015835629488
+          ],
+          [
+            1814400000.0,
+            0.21131780184534757
+          ],
+          [
+            1822348800.0,
+            0.21280599008537301
+          ],
+          [
+            1830297600.0,
+            0.21768557146734724
+          ],
+          [
+            1838160000.0,
+            0.21891932285166196
+          ],
+          [
+            1846022400.0,
+            0.2207144205236132
+          ],
+          [
+            1853971200.0,
+            0.22194817190792793
+          ],
+          [
+            1893456000.0,
+            0.2744086156880655
+          ],
+          [
+            4102444800.0,
+            0.9135073504693189
+          ]
+        ]
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0143",
+            "E0199",
+            "E0237",
+            "E0244",
+            "E0369",
+            "E0448"
+          ],
+          "new_chars": 4424,
+          "second_required": true
+        },
+        "first_probability_yes": null,
+        "gaps": [
+          "time_window",
+          "metric_definition",
+          "value_units",
+          "scope_exceptions",
+          "observation_coverage",
+          "evidence_sufficiency",
+          "Failed capture raw response missing or hash mismatch"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 4,
+        "search_attempts": 2,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    }
+  ]
+}

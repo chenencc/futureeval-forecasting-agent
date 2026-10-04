@@ -1,0 +1,30 @@
+name: Research console checks
+on:
+  push:
+    branches: [dev_web]
+    paths: ['ForecastAgent/web/**', 'ForecastAgent/web_export/**', 'ForecastAgent/tests/test_web_export.py', '.github/workflows/web_console.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest ForecastAgent.tests.test_web_export
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ForecastAgent/web/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: ForecastAgent/web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forecastagent-web-preview
+          path: ForecastAgent/web/dist
+          retention-days: 14
