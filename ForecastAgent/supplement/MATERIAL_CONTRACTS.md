@@ -115,3 +115,17 @@ original text, never a repaired model paraphrase. No fuzzy text matching is adde
 A known publisher mismatch or a required-field mismatch stays decisive even when
 another role is unknown. This preserves conservative rejection without weakening
 acceptance checks. Field semantics and stage classification remain model claims.
+
+### Regression evidence (2026-10-04)
+
+The initial text-quotation profile, run 37212525319 on 88eb324, returned 10
+responses: 5 exact status matches, no false acceptance and 3 false rejections.
+It consumed 10 HTTP requests and 34,124 known tokens. The indexed-span profile,
+run 37212968117 on 76a8742, returned 10 responses: 9 exact status matches, no
+false acceptance and no false rejection of the five usable materials. One invalid
+7-ID selection remains uncertain rather than being silently trimmed to its 3-ID
+limit. It consumed 10 HTTP requests and 45,909 known tokens. No search, fetch or
+forecast submission occurred. All original windows and the old V2 responses are
+preserved. These are repair regression results, not an independent held-out trial;
+prompt, schema and output allowance changes prevent a gate-only causal claim.
+Production adoption requires a separately frozen unseen-material validation.
