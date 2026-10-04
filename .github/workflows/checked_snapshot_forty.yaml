@@ -30,6 +30,8 @@ jobs:
   material-benchmark:
     if: inputs.experiment == 'material_benchmark'
     uses: ./.github/workflows/material_benchmark.yaml
+    with:
+      resume_run: ${{ inputs.resume_run }}
     secrets: inherit
   heldout-select:
     if: inputs.experiment == 'material_heldout_ten'

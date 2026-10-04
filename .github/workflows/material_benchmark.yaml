@@ -2,6 +2,10 @@ name: Frozen paired material benchmark
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      resume_run:
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: read
@@ -56,7 +60,15 @@ jobs:
         with:
           name: benchmark-regression-five
           path: snapshots/benchmark-regression
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: material-benchmark-case-${{ matrix.case }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/benchmark-case
       - name: Single acquisition and identical-body paired review
+        if: inputs.resume_run == ''
         run: python -u -m ForecastAgent.experiments.material_benchmark live --case "$CASE" --baseline baseline --output snapshots/benchmark-case
         env:
           CASE: ${{ matrix.case }}
@@ -64,6 +76,15 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - name: Resume missing review arms with frozen bodies and preserved journals
+        if: inputs.resume_run != ''
+        run: python -u -m ForecastAgent.experiments.material_benchmark resume --case "$CASE" --baseline baseline --output snapshots/benchmark-case --parent-run "$PARENT_RUN"
+        env:
+          CASE: ${{ matrix.case }}
+          PARENT_RUN: ${{ inputs.resume_run }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
           FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
           FORECAST_MODEL_FALLBACK_SUPER: '0'
       - uses: actions/upload-artifact@v4

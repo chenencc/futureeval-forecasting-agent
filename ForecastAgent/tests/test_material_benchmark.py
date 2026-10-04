@@ -1,9 +1,34 @@
 """Frozen corpus identity, held-out isolation and pairing invariants."""
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from ForecastAgent.experiments import material_benchmark as benchmark,solid_collection
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_resume_retains_failed_arm_and_writes_both_masked_results(self):
+        manifest=benchmark.read(benchmark.HERE.with_name('MATERIAL_BENCHMARK10.json'))
+        selected=manifest['cases'][0]
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            benchmark.write(out/'shared-input.json',{'payload':{'question':{},'passages':[]}})
+            failure={'status':'failed','error':'source_batch_too_large','needs':[]}
+            benchmark.write(out/'private/baseline/result.json',failure)
+            original=(out/'private/baseline/result.json').read_bytes()
+            def fake_invoke(repo,mode,input_path,result_path):
+                self.assertEqual(result_path.parent.name,'candidate')
+                benchmark.write(result_path,{'status':'completed','needs':[]})
+            with patch.object(benchmark,'invoke',side_effect=fake_invoke) as calls:
+                benchmark.complete_pair(selected,manifest,Path('baseline'),out,resume=True)
+                self.assertEqual(calls.call_count,1)
+            self.assertEqual((out/'private/baseline/result.json').read_bytes(),original)
+            self.assertTrue((out/'blind/R1.json').exists())
+            self.assertTrue((out/'blind/R2.json').exists())
+            with patch.object(benchmark,'invoke') as calls:
+                benchmark.complete_pair(selected,manifest,Path('baseline'),out,resume=True)
+                calls.assert_not_called()
+
     def test_five_regression_fixtures_are_hash_verified_and_labeled(self):
         manifest=benchmark.read(benchmark.HERE.with_name('MATERIAL_REGRESSION5.json'))
         self.assertEqual(len(manifest['cases']),5)

@@ -108,25 +108,68 @@ def live(case,baseline,output):
     write(output/'blind/corpus.json',{'question':payload['question'],'checklist':selected['required_materials'],
         'pages':{u:{'content':p.get('content',''),'body_sha256':hashlib.sha256(p.get('content','').encode()).hexdigest()}
                  for u,p in b['pages'].items()}, 'same_delivered_passages':payload['passages']})
+    complete_pair(selected,manifest,baseline,output,resume=False)
+
+
+def resume(case,baseline,output,parent_run):
+    """Finish missing arms using frozen inputs; never repeat an attempted arm."""
+    output=Path(output);manifest=read(HERE.with_name('MATERIAL_BENCHMARK10.json'))
+    selected=manifest['cases'][case-1]
+    shared=read(output/'shared-input.json')
+    raw=(output/'collection/intelligence-bundle.json').read_bytes()
+    if hashlib.sha256(raw).hexdigest()!=shared['assessment']['assessment_parent_sha256']:
+        raise ValueError('Acquisition bundle changed')
+    if str(json.loads(raw)['request']['id'])!=selected['id'] or read(output/'checklist.json')!=selected:
+        raise ValueError('Frozen case identity or checklist changed')
+    corpus=read(output/'blind/corpus.json')
+    if shared['payload']['passages']!=corpus['same_delivered_passages']:
+        raise ValueError('Frozen passage coverage changed')
+    for url,page in shared['assessment']['pages'].items():
+        if hashlib.sha256(page.get('content','').encode()).hexdigest()!=corpus['pages'][url]['body_sha256']:
+            raise ValueError('Frozen body changed')
+    before={str(p.relative_to(output)):hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in (output/'collection').rglob('*') if p.is_file()}
+    complete_pair(selected,manifest,baseline,output,resume=True)
+    after={str(p.relative_to(output)):hashlib.sha256(p.read_bytes()).hexdigest()
+           for p in (output/'collection').rglob('*') if p.is_file()}
+    if before!=after:raise ValueError('Acquisition journals changed during review')
+    write(output/'continuation.json',{'parent_run':parent_run,'case':case,
+        'acquisition_files_unchanged':True,'acquisition_file_hashes':before,
+        'shared_input_sha256':hashlib.sha256((output/'shared-input.json').read_bytes()).hexdigest(),
+        'quota_reset':False,'repeated_attempted_arms':False})
+
+
+def complete_pair(selected,manifest,baseline,output,resume):
+    """Export masked packets after retaining each existing terminal result."""
+    payload=read(output/'shared-input.json')['payload']
     swap=int(hashlib.sha256((manifest['order_seed']+selected['id']).encode()).hexdigest(),16)%2
     arms=[('baseline',baseline),('candidate',REPO)]
     if swap:arms.reverse()
     mapping={}
     for index,(name,repo) in enumerate(arms):
         label='R'+str(index+1);mapping[label]=name
-        invoke(repo,'live',output/'shared-input.json',output/'private'/name/'result.json')
-        result=read(output/'private'/name/'result.json')
-        write(output/'blind'/label+'.json',{'question':payload['question'],'checklist':selected['required_materials'],
+        result_path=output/'private'/name/'result.json'
+        if result_path.exists():
+            if not resume:raise ValueError('Existing arm cannot be restarted')
+        else:
+            folder=result_path.parent
+            if folder.exists() and any(folder.iterdir()):
+                raise ValueError('Nonterminal arm journals require explicit recovery, not a new allowance')
+            invoke(repo,'live',output/'shared-input.json',result_path)
+        result=read(result_path)
+        write(output/'blind'/(label+'.json'),{'question':payload['question'],'checklist':selected['required_materials'],
             'status':result['status'],'needs':[{k:n.get(k) for k in ['id','condition','target_material_captured','material_bindings','blocked_material_bindings']} for n in result['needs']]})
     write(output/'private/arm-map.json',mapping)
+    if (output/'review-form.json').exists():return
     write(output/'review-form.json',{'id':selected['id'],'labels':{r:{'core_material_coverage':None,'false_closures':None,'false_rejections':None,'notes':None,
         'checklist_rows':[{'requirement':n,'captured':None,'applicable':None,'witness_url':None,'witness_quote':None,'body_sha256':None} for n in selected['required_materials']]} for r in mapping},
         'promotion_allowed':False,'review_scope':'Unlabeled outcomes remain pending. These arms share the exact same body spans; acquisition was performed once.'})
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['regression','live','worker']);p.add_argument('--baseline');p.add_argument('--output',required=True)
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['regression','live','resume','worker']);p.add_argument('--baseline');p.add_argument('--output',required=True);p.add_argument('--parent-run')
     p.add_argument('--case',type=int);p.add_argument('--repo');p.add_argument('--mode');p.add_argument('--input');a=p.parse_args()
     if a.command=='worker':worker(a.repo,a.mode,a.input,a.output)
     elif a.command=='regression':regression(a.baseline,a.output)
+    elif a.command=='resume':resume(a.case,a.baseline,a.output,a.parent_run)
     else:live(a.case,a.baseline,a.output)
