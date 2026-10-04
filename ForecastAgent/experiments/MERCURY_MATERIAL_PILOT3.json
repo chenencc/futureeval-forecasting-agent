@@ -1,0 +1,1023 @@
+{
+  "trial_id": "mercury-material-pilot3-20261005-v1",
+  "schema": "mercury-material-pilot3-v1",
+  "scope": "Fresh independent three-case paired interface experiment, fixed saved Super-generated needs and identical original reading. Compare free Mercury finite decisions with free Super V2 annotations. No replanning, collection, final probabilities or submissions. Repaired regressions, not unseen generalization or model-only comparison.",
+  "frozen_code_sha256": {
+    "ForecastAgent/supplement/mercury_material.py": "cee9681bcd32646abff1e5c6985de5d8b91c5f6eaa3c2342d5bf44e02aa49318",
+    "ForecastAgent/experiments/mercury_material_pilot.py": "2f3d463722d38560506151b43fb2e24da88e89802347bb3f76c9bee5d6366e0d",
+    "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0",
+    "ForecastAgent/supplement/acquisition_ids.py": "0f7980f80115631fd602f97698b7a22be62117cd1d76062dac7c295200d8438f",
+    "ForecastAgent/providers/decisions.py": "f72564842eecec5b3801b888187c42a97da810f2b67aa90986d0fe1dc161d579"
+  },
+  "limits": {
+    "logical": 6,
+    "http": 8,
+    "http_per_arm": 4,
+    "decision_request_bytes": 90000
+  },
+  "prior_experiments": [
+    {
+      "run_id": "37220371858",
+      "logical": 16,
+      "http": 16,
+      "known_tokens": 67728
+    },
+    {
+      "run_id": "37244250484",
+      "cumulative_logical": 19,
+      "cumulative_http": 19,
+      "cumulative_known_tokens": 89122,
+      "remaining_original_logical": 1,
+      "unchanged": true
+    }
+  ],
+  "preregistered_checks": [
+    "All requested typed answers are returned and valid; no invented reference IDs.",
+    "Original reading and needs match across arms; no capture or forecast.",
+    "Rule-defined thresholds remain distinguished from external facts.",
+    "A dated announcement alone does not establish non-rescission through a later deadline.",
+    "Out-of-window Close records cannot establish in-window Adjusted Close price/date conditions.",
+    "Source identity alone does not establish incident user count, outage duration, institution count, or ransom.",
+    "All original material remains available even when no reference is selected.",
+    "Independent-head contradictions remain visible; no automatic condition closure."
+  ],
+  "cases": [
+    {
+      "id": "unseen-01",
+      "question_id": "43494",
+      "domain": "energy_infrastructure",
+      "bundle": {
+        "request": {
+          "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\nLarge-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://gov.texas.gov/uploads/files/press/Thomas_Gleeson_Pablo_Vegas_Data_Centers_Directive_Letter_to_PUCT_ERCOT_August_2026_.pdf": {
+            "content": "[PDF page 1]\n August 3, 2026\n Mr. Thomas Gleeson\n Chairman\n Public Utility Commission of Texas\n P.O. Box 13326\n Austin, Texas 78711-3326\n Mr. Pablo Vegas\n President and Chief Executive Officer\n Electric Reliability Council of Texas\n 8000 Metropolis Drive, Building E, Suite 100\n Austin, Texas 78744\n Dear Chairman Gleeson and Chief Executive Officer Vegas:\n Our top priority is to protect Texans\u2019 safety and quality of life. That includes providing affordable\n energy, maintaining a reliable electric grid, preserving water for our communities, and\n championing Texas values. Those priorities can, and must, be achieved while also creating the\n jobs and providing the economic opportunity that comes with our national leadership in\n technological innovation and investment.\n The Electric Reliability Council of Texas (ERCOT) is currently considering approximately 474\n gigawatts of requests to connect to the Texas grid. That is more than five times Texas\u2019 record peak\n electricity demand for ERCOT. Approximately 90 percent of the new power requests are data\n centers. That unprecedented load growth could endanger the reliability and stability of the Texas\n electric grid.\n To keep the grid stable and reliable, I am issuing the following directive:\n The Public Utility Commission of Texas (PUC) and ERCOT must conduct a comprehensive\n verification and audit of all data centers advancing through ERCOT\u2019s interconnection process\n before any additional data centers are approved to move forward. Any project that fails to comply\n with the requirements set forth by the PUC and ERCOT, and by state law, must be denied\n connection to the Texas grid.\n The failure of some data centers to comply with the PUC\u2019s survey measuring water and power\n usage under the General Appropriations Act makes this necessary. Failure to fully comply with\n that law hinders your ability to make fully informed decisions.\n[PDF page 2]\nChairman Gleeson and Chief Executive Officer Vegas\nAugust 3, 2026\nPage 2\nAdditionally, recent legislative hearings and public meetings raised important questions regarding\nthe impact of data centers on the grid and on the local communities in which they operate or seek\nto operate.\nAlong those lines, in my June 10th letter I noted I would work with the legislature to address\nTexans\u2019 concerns about data centers. To inform these efforts, the PUC and ERCOT must also\nobtain the following information from each data center project:\n\u2022 Information detailing the extent to which data centers are paying their own way or depending\n on the state for financial assistance. That would include all state and local tax incentives,\n grants, abatements, or other public financial assistance received or expected to be received;\n and\n\u2022 The extent to which data centers are providing their own power or depending on the ERCOT\n grid for that power. Details should include projected annual and peak electricity consumption;\n and any effort and progress to construct or procure on-site electric generation, including\n generation type, or other measures to reduce demand on the ERCOT grid; and\n\u2022 The extent to which data centers are bringing their own water and reusing their own water as\n opposed to using water needed by local communities. The details should include projected\n annual and peak water consumption and anticipated sources of water supply. You must also\n obtain information about the cooling technology that will be utilized, including whether the\n facility will employ air-cooled, closed-loop, or another water-efficient cooling system; and\n\u2022 The extent to which data centers are using measures to reduce impacts on neighboring property\n owners and communities, including noise mitigation, light controls, setbacks, traffic\n improvements, emergency response coordination, and other community protection measures,\n understanding that each community is unique; and\n\u2022 Information detailing the ownership and controlling interests in the project.\nAny data center project that fails to comply with the verification and audit process to protect the\nreliability and resilience of the Texas electric grid must be denied. Simply put, Texans must come\nfirst.\nThank you for your continued efforts to protect the Texas electric grid and the interests of the\npeople of our state.\nSincerely,\nGreg Abbott\nGovernor"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-01",
+        "raw_bundle_sha256": "91a37bb40960ca951399a8d3e65ed120343275e8618ed711e64bc39252290094",
+        "saved_excerpt_sha256": "b56fcd431dd1502a478340aeffa06313a2d54acd1aff31b0eb573466f3514eb0",
+        "original_capture_offset": 0
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "need1",
+            "condition": "A U.S. state or EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "U.S. state or EU member state",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need2",
+            "condition": "The restriction is not officially reversed or rescinded before September 1, 2026.",
+            "critical": true,
+            "dimension": "effective_time",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "effective_time": {
+                "value": "September 1, 2026",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need3",
+            "condition": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-5b9b9c887609cfb5"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 427,
+                "end": 537,
+                "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-5b9b9c887609cfb5"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "50 MW",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 427,
+                    "end": 537,
+                    "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-5b9b9c887609cfb5"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 111,
+            "text": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+            "field_sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+            "rule_id": "R-a25ed39e20fc7e6e"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 427,
+            "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-64fba5779618af19"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 427,
+            "end": 537,
+            "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-5b9b9c887609cfb5"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "super",
+        "mercury"
+      ]
+    },
+    {
+      "id": "unseen-04",
+      "question_id": "43501",
+      "domain": "cybersecurity",
+      "bundle": {
+        "request": {
+          "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\nAll conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. An attacker's public claim alone will not be sufficient.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.instructure.com/incident-update/students-and-families": {
+            "content": "We understand the disruption to Canvas during what we know is an especially busy time of year, caused challenges for the students and families who rely on us. First and foremost, we\u2019re sorry for how this has impacted your learning. The end of the semester can be a stressful time, and the last thing we would ever want is to make that pressure worse. We know you rely on Canvas to keep up with your classes, and we\u2019re committed to doing better in the future.\nWe\u2019ve collected the FAQs and resources below to support you as we continue to respond to this incident. If you have any further questions, please contact your institution. They are best equipped to contact us directly.\nYes. Canvas is fully back online and available for use. Our external forensic partner has reviewed the known indicators and found no evidence that the threat actor currently has access to the platform.\nWe\u2019re also in conversations with government leaders, technology and integration partners, and institutions about how we can collectively build something stronger, together. As part of that, we are organizing an Advisory Board focused on security and resilience, led by our Chief Academic Officer, Melissa Loble.\nWas any of my personal data involved in this incident?\nOur comprehensive review of the data involved is ongoing, but none of the data fields we understand to be involved are designed to store information like passwords, dates of birth, healthcare information, social security numbers, financial information, student grades or disciplinary records.\nWas any of my coursework, including correspondence with my teachers, involved in this incident?\nOur investigation so far indicates that the data fields involved include information like usernames, email addresses, course names, enrollment information and messages. Our investigation has not identified any core learning data (course content, submissions, credentials) as involved.\nWill this incident further impact my ability to study for final exams or submit final assignments for this semester?\nCanvas is fully back online and available for use. We apologize for the disruption this incident has already caused and are here to support as you finish your semester.\nWho at my institution should I be in touch with to discuss this further?\nYour IT or Teaching & Learning professionals at your school are the best people to contact to discuss this further."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-04",
+        "raw_bundle_sha256": "6cc6a69589110dcbd65cf7ef29c3003842ba54a8a395a8222ea1cfe67914148a",
+        "saved_excerpt_sha256": "03fe4149177cb3bf0be6246cab9f0bd7ea29d37487fd561b1fd18345cbf2f8af",
+        "original_capture_offset": 0
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "N1",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident resulting in unauthorized acquisition of personal data of at least 10,000 users before September 1, 2026.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-489bc4cec69b3c0f"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 339,
+                "end": 530,
+                "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-489bc4cec69b3c0f"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Instructure",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 339,
+                    "end": 530,
+                    "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-489bc4cec69b3c0f"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N2",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident causing substantial unavailability to at least 100 institutional customers for a continuous period of at least 4 hours before September 1, 2026.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-04a3a53a95d68aea"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 530,
+                "end": 754,
+                "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-04a3a53a95d68aea"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "100 institutional customers",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 530,
+                    "end": 754,
+                    "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-04a3a53a95d68aea"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N3",
+            "condition": "A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure before September 1, 2026.",
+            "critical": true,
+            "dimension": "artifact",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-0f4aa76caf99d7c1"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 754,
+                "end": 908,
+                "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-0f4aa76caf99d7c1"
+              }
+            ],
+            "targets": {
+              "artifact": {
+                "value": "ransom or extortion demand",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 754,
+                    "end": 908,
+                    "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-0f4aa76caf99d7c1"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N4",
+            "condition": "Confirmation of the incident is obtained from Instructure official communications, credible news reporting, or government disclosures before September 1, 2026.",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-b851219695e1a418",
+              "R-77bf8eae3030b30d"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 908,
+                "end": 1069,
+                "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-b851219695e1a418"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 1069,
+                "end": 1125,
+                "text": "An attacker's public claim alone will not be sufficient.",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-77bf8eae3030b30d"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Instructure official communications, credible news reporting, or government disclosures",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 908,
+                    "end": 1069,
+                    "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-b851219695e1a418"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 1069,
+                    "end": 1125,
+                    "text": "An attacker's public claim alone will not be sufficient.",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-77bf8eae3030b30d"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 75,
+            "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+            "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+            "rule_id": "R-f1bcb090005481ae"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 339,
+            "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-2b571ba23fedbe73"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 339,
+            "end": 530,
+            "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-489bc4cec69b3c0f"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 530,
+            "end": 754,
+            "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-04a3a53a95d68aea"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 754,
+            "end": 908,
+            "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-0f4aa76caf99d7c1"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 908,
+            "end": 1069,
+            "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-b851219695e1a418"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 1069,
+            "end": 1125,
+            "text": "An attacker's public claim alone will not be sufficient.",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-77bf8eae3030b30d"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "mercury",
+        "super"
+      ]
+    },
+    {
+      "id": "unseen-07",
+      "question_id": "43824",
+      "domain": "financial_series",
+      "bundle": {
+        "request": {
+          "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://finance.yahoo.com/quote/ILS": {
+            "content": "Yahoo Finance daily history: ILS; cutoff 2026-10-03T05:21:31.455941+00:00\nDaily closes conservatively exclude the cutoff UTC day. Current-vintage/adjustment revisions remain possible; not a verified historical capture.\n{\"close\": 20.389999389648438, \"conservative_available_at\": \"2026-09-16T23:59:59+00:00\", \"date\": \"2026-09-16\"}\n{\"close\": 20.399999618530273, \"conservative_available_at\": \"2026-09-17T23:59:59+00:00\", \"date\": \"2026-09-17\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-21T23:59:59+00:00\", \"date\": \"2026-09-21\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-22T23:59:59+00:00\", \"date\": \"2026-09-22\"}\n{\"close\": 20.030000686645508, \"conservative_available_at\": \"2026-09-23T23:59:59+00:00\", \"date\": \"2026-09-23\"}\n{\"close\": 20.079999923706055, \"conservative_available_at\": \"2026-09-25T23:59:59+00:00\", \"date\": \"2026-09-25\"}"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-07",
+        "raw_bundle_sha256": "d7094f1e131780854b1df82c81feb62c181a0ee712518c1a8dc4a960ef766b83",
+        "saved_excerpt_sha256": "2b9e19e7fae76b55e4f3f3d7499d425d536eec6131f72f6b108574b82849df7b",
+        "original_capture_offset": 0
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Adjusted Close price of Brookmont Catastrophic Bond ETF (ILS) on a trading day after June 15, 2026 and before September 1, 2026",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Adjusted Close price",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "Adjusted Close price of ILS on the most recent trading day at least two calendar days earlier than the trading day in condition n1",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Adjusted Close price",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "Date of observation for the trading day in condition n1",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "trading day date",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "Date of observation for the prior trading day (at least two calendar days earlier) in condition n2",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "prior trading day date",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n5",
+            "condition": "Source authority for the Adjusted Close price data",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Yahoo Finance",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n6",
+            "condition": "Threshold price drop amount",
+            "critical": true,
+            "dimension": "unit",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "unit": {
+                "value": "$0.25",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n7",
+            "condition": "Ticker symbol for the ETF",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "ILS",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 99,
+            "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+            "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+            "rule_id": "R-fdfd94e8e09685ed"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 377,
+            "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+            "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+            "rule_id": "R-aae7e3f905b14141"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "super",
+        "mercury"
+      ]
+    }
+  ]
+}
