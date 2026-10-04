@@ -233,10 +233,15 @@ freeze and the latest cumulative state, not the original parent allowances.
 
 `supplement/acquisition_provenance.py` separates model-declared `source_fact`,
 `rule_constant`, `derived`, `inference`, and `unknown`. Explicit source facts
-require a uniquely aligned original passage witness; rule constants require a
-rule witness instead of a page citation. Derived values and interval inferences
+require a uniquely aligned original passage witness for literal observation;
+rule constants require a rule witness instead of a page citation. Derived values and interval inferences
 retain premise references but cannot become direct source observations. Invalid
-rows are quarantined independently, with their original content retained.
+reference/shape rows are quarantined independently, with originals retained.
+Valid source references with an unaligned witness survive as
+`unanchored_interpretation`, and cause a partial-review gate. Additional rule or
+source references are context only; they do not change the witness's origin.
+Unknown assessments can preserve relevant context without asserting a value.
+An empty scalar on a bound rule definition is not silently filled from a target.
 
 Coverage describes field evidence, rule definitions, interpretations, and gaps.
 Every compound condition remains `unverified`: literal entity/value matching
@@ -275,3 +280,29 @@ pipeline and frozen V1/V2 implementations are unchanged.
    version-hidden audit. Do not expand if useful evidence is lost or condition
    claims remain unsupported. Full rule-plan completeness and OR/exclusion
    extraction need a separate assessment, since the paired review freezes plans.
+
+### First V3 paired attempt and offline repair
+
+Run [37244250484](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37244250484)
+on `6705aa5` failed its application gate. It consumed three new logical/HTTP
+attempts and 21,394 tokens, bringing cumulative usage to 19/19 attempts and
+89,122 tokens. The first case completed both arms, but the strict V3 binder
+rejected source facts with contextual rule references, a contextual unknown,
+and a rule definition lacking a scalar. The second case returned a serialized
+annotations string containing malformed JSON; its baseline arm never ran.
+Original replies and parent records remain unchanged. This is not a completed
+paired quality comparison, and production must not be promoted from it.
+
+The subsequent offline binder revision keeps context references separate from
+witness origin. Replaying the unchanged first-case reply retains one rule
+definition, one explicit gap and one unanchored source interpretation. The
+source quotation does not align exactly, so its claim remains pending review
+and cannot pass the complete-review gate. No quotation paraphrase or damaged
+JSON is repaired into evidence. All 63 targeted tests pass with zero additional
+provider calls. The frozen paired manifest still describes the original tested
+code; it is deliberately not repinned to this later revision.
+
+Only one logical call remains in that trial. Do not retry the whole pair or
+silently reset its budget. A future independent frozen trial must explicitly
+record its cohort, code, model, input hashes and budget, and preserve this failed
+trial as evidence. Separate protocol compatibility from semantic improvement.

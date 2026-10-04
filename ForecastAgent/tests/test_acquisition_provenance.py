@@ -49,14 +49,46 @@ class Provenance(unittest.TestCase):
 
     def test_rule_witness_cannot_be_cited_as_page_fact(self):
         _, review = self.review(observation='50 MW', witness='Large facilities mean 50 MW or more.')
-        self.assertEqual(review['rejected_annotations'][0]['reason'], 'witness_not_uniquely_bound')
+        self.assertEqual(review['annotations'][0]['witness_issue'], 'witness_not_uniquely_bound')
+        self.assertEqual(review['annotations'][0]['field_state'], 'unanchored_interpretation')
+        self.assertFalse(review['annotations'][0]['value_literal_in_witness'])
         self.assertEqual(review['raw_annotations'][0]['observation'], '50 MW')
 
-    def test_rule_constant_cannot_mix_source_reference(self):
+    def test_rule_constant_cannot_use_source_as_witness(self):
         _, plan, pages, packet, row = self.fixture()
         row.update(origin='rule_constant', rule_ids=[plan['rule_catalog'][0]['rule_id']])
         r = v3.bind_review(plan, packet, [row], pages)
-        self.assertEqual(r['rejected_annotations'][0]['reason'], 'rule_constant_requires_rules_only')
+        self.assertEqual(r['annotations'][0]['witness_issue'], 'witness_not_uniquely_bound')
+
+    def test_bad_witness_preserves_valid_body_but_does_not_pass_review_gate(self):
+        request, plan, pages, _, row = self.fixture()
+        row['witness'] = 'This sentence never appeared in the original text.'
+        result = v3.review_saved({'request': request, 'pages': pages}, plan,
+            lambda *args: {'annotations': [row]}, lambda value: None)
+        self.assertEqual(result['application_status'], 'partial_review')
+        self.assertEqual(result['coverage'][0]['state'], 'unanchored_interpretation')
+        self.assertTrue(result['review']['annotations'][0]['bindings'])
+
+    def test_contextual_rule_reference_does_not_reject_valid_source_fact(self):
+        _, plan, pages, packet, row = self.fixture()
+        row['rule_ids'] = [plan['rule_catalog'][0]['rule_id']]
+        review = v3.bind_review(plan, packet, [row], pages)
+        self.assertEqual(len(review['annotations']), 1)
+        self.assertEqual(review['annotations'][0]['witness_origin'], 'source')
+
+    def test_unknown_can_retain_relevant_context_without_asserting_fact(self):
+        _, review = self.review(origin='unknown', observation='', witness='', fit='unknown', relation='background')
+        self.assertEqual(len(review['uncovered_assessments']), 1)
+        self.assertTrue(review['uncovered_assessments'][0]['bindings'])
+
+    def test_rule_definition_without_scalar_value_is_preserved(self):
+        _, plan, pages, packet, row = self.fixture()
+        rule = next(r for r in plan['rule_catalog'] if '50 MW' in r['text'])
+        row.update(origin='rule_constant', rule_ids=[rule['rule_id']], observation='',
+                   witness='Large facilities mean 50 MW or more.')
+        review = v3.bind_review(plan, packet, [row], pages)
+        self.assertEqual(v3.coverage(plan, review)[0]['state'], 'rule_defined')
+        self.assertFalse(review['annotations'][0]['value_literal_in_witness'])
 
     def test_silence_across_interval_remains_inference(self):
         plan, review = self.review(origin='inference', observation='Not rescinded through September 1', witness='',

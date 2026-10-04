@@ -1,0 +1,39 @@
+{
+  "schema": "acquisition-provenance-pair2-result-summary",
+  "run_id": "37244250484",
+  "tested_commit": "6705aa5",
+  "parent_run_id": "37220371858",
+  "application_gate_passed": false,
+  "paired_semantic_comparison_completed": false,
+  "new_logical_decisions": 3,
+  "new_http_attempts": 3,
+  "new_prompt_tokens": 17602,
+  "new_completion_tokens": 3792,
+  "new_total_tokens": 21394,
+  "cumulative_logical_decisions": 19,
+  "cumulative_http_attempts": 19,
+  "cumulative_total_tokens": 89122,
+  "remaining_original_logical_calls": 1,
+  "unknown_usage_attempts": 0,
+  "preserved_parent_files": 62,
+  "audit_errors": [],
+  "artifact_id": "11318447644",
+  "archive_sha256": "786d79bfb531c89d081f0c339eb4aed02e08e7a8d90b34e0dd60417506c79c3a",
+  "failures": {
+    "43494": "V3 originally rejected contextual rule references, a contextual unknown and an empty rule scalar. Source witness does not align exactly.",
+    "43824": "V3 annotations were serialized as malformed inner JSON. Baseline arm was not executed."
+  },
+  "subsequent_offline_revision": {
+    "provider_calls": 0,
+    "tests_passed": 63,
+    "43494_retained_annotations": 2,
+    "43494_retained_unknown_assessments": 1,
+    "43494_rejected_reference_records": 0,
+    "43494_unanchored_interpretations": 1,
+    "compound_conditions_verified": 0,
+    "original_reply_unchanged": true,
+    "production_changed": false
+  },
+  "report_path": "E:/metaculus_data/reports/acquisition-provenance-pair-audit-37244250484.json",
+  "conclusion": "Engineering repair only; incomplete paired trial does not demonstrate semantic improvement. Preserve original freeze and budget. Validate protocol compatibility before an independent unseen ten-case paired audit."
+}

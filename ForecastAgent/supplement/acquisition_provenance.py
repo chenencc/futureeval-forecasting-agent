@@ -15,10 +15,11 @@ means defined by question rules; derived means calculated from cited premises;
 inference means an interpretation beyond explicit reporting; unknown means no
 answer. Copy a unique sentence or continuous fragment of at least 12 characters
 into witness for source_fact or rule_constant, from the corresponding source or
-rule. Use empty witness for derived/inference/unknown. Rule constants reference
-rule_ids only, never attribute them to source pages. Source facts reference
-passage_ids only. Derived/inference may reference both. Unknown uses no references
-and empty observation. relation: support, counterevidence, background, unknown.
+rule. Use empty witness for derived/inference/unknown. For rule constants the
+witness must bind to rule_ids, never source pages; for source facts it must bind
+to passage_ids. Additional references are context only. Unknown may cite relevant
+context but must have empty observation and witness, and unknown fit. relation:
+support, counterevidence, background, unknown.
 fit: applicable, inapplicable, unknown. Keep background and negative evidence.
 Do not copy a target date/threshold into a source observation. Silence in one
 document cannot establish non-occurrence across an interval. Report such a claim
@@ -68,16 +69,14 @@ def bind_review(plan, packet, rows, pages):
                     raise ValueError('unknown_or_duplicate_' + key)
             origin = row['origin']
             if origin == 'unknown':
-                if row['passage_ids'] or row['rule_ids'] or row['observation'] or row['witness'] or row['fit'] != 'unknown' or row['relation'] != 'unknown':
+                if row['observation'] or row['witness'] or row['fit'] != 'unknown' or row['relation'] not in ('unknown', 'background'):
                     raise ValueError('unknown_with_assertion')
-                gaps.append(row)
-                continue
-            if not row['observation'].strip():
+            if origin in ('source_fact', 'derived', 'inference') and not row['observation'].strip():
                 raise ValueError('empty_nonunknown_observation')
-            if origin == 'source_fact' and (not row['passage_ids'] or row['rule_ids']):
-                raise ValueError('source_fact_requires_source_only')
-            if origin == 'rule_constant' and (not row['rule_ids'] or row['passage_ids']):
-                raise ValueError('rule_constant_requires_rules_only')
+            if origin == 'source_fact' and not row['passage_ids']:
+                raise ValueError('source_fact_requires_source_witness')
+            if origin == 'rule_constant' and not row['rule_ids']:
+                raise ValueError('rule_constant_requires_rule_witness')
             if origin in ('derived', 'inference') and (row['witness'] or not (row['rule_ids'] or row['passage_ids'])):
                 raise ValueError('interpretation_requires_premises_without_literal_witness')
             bindings = []
@@ -85,7 +84,7 @@ def bind_review(plan, packet, rows, pages):
             if row['passage_ids']:
                 converted = {'need_id': row['need_id'], 'passage_ids': row['passage_ids'],
                     'relation': row['relation'], 'fit': row['fit'], 'explanation': row['explanation'],
-                    'observations': {need_map[row['need_id']]['dimension']: row['observation']}}
+                    'observations': {need_map[row['need_id']]['dimension']: row['observation']} if row['observation'].strip() else {}}
                 result = base.bind_annotations(plan['needs'], packet, [converted], pages)
                 if result['rejected_annotations']:
                     raise ValueError(result['rejected_annotations'][0]['reason'])
@@ -98,7 +97,12 @@ def bind_review(plan, packet, rows, pages):
                 source_fit = result['annotations'][0]['source_requirement_met']
                 row['fit'] = result['annotations'][0]['fit']
             rule_bindings = [rule_map[r] for r in row['rule_ids']]
+            if origin == 'unknown':
+                gaps.append({**row, 'bindings': bindings, 'rule_bindings': rule_bindings,
+                             'context_does_not_establish_condition': True})
+                continue
             witnesses = []
+            witness_issue = None
             if origin in ('source_fact', 'rule_constant'):
                 candidates = ([(p['passage_id'], p) for p in bindings] if origin == 'source_fact'
                     else [(r['rule_id'], r) for r in rule_bindings])
@@ -108,13 +112,17 @@ def bind_review(plan, packet, rows, pages):
                         if bound['bound']:
                             witnesses.append({'reference_id': ref, 'field': text.get('field'), **bound})
                 if len(witnesses) != 1:
-                    raise ValueError('witness_not_uniquely_bound')
-            literal_value = bool(witnesses) and row['observation'].strip() in ''.join(
+                    witness_issue = 'witness_not_uniquely_bound'
+                    witnesses = []
+            literal_value = bool(row['observation'].strip()) and bool(witnesses) and row['observation'].strip() in ''.join(
                 span['text'] for w in witnesses for span in w['spans'])
             accepted.append({**row, 'bindings': bindings, 'rule_bindings': rule_bindings,
                 'witness_bindings': witnesses, 'source_requirement_met': source_fit,
+                'witness_issue': witness_issue,
+                'witness_origin': 'source' if origin == 'source_fact' else 'rule' if origin == 'rule_constant' else None,
                 'value_literal_in_witness': literal_value,
-                'field_state': ('rule_defined' if origin == 'rule_constant' else
+                'field_state': ('unanchored_interpretation' if witness_issue else
+                    'rule_defined' if origin == 'rule_constant' else
                     'field_literal_observed' if origin == 'source_fact' and literal_value else
                     'source_interpretation' if origin == 'source_fact' else 'interpretation_only'),
                 'condition_coverage': 'unverified', 'provenance_classification_verified': False,
@@ -134,8 +142,9 @@ def coverage(plan, review):
         useful = [r for r in rows if r['fit'] == 'applicable' and r['relation'] in ('support', 'counterevidence')]
         source = [r for r in useful if r['origin'] == 'source_fact']
         state = ('field_literal_observed' if any(r['value_literal_in_witness'] for r in source)
-                 else 'source_interpretation' if source else
-                 'rule_defined' if any(r['origin'] == 'rule_constant' for r in rows) else
+                 else 'source_interpretation' if any(not r['witness_issue'] for r in source) else
+                 'rule_defined' if any(r['origin'] == 'rule_constant' and not r['witness_issue'] for r in rows) else
+                 'unanchored_interpretation' if any(r['witness_issue'] for r in rows) else
                  'interpretation_only' if any(r['origin'] in ('derived', 'inference') for r in rows) else
                  'context_only' if rows else 'reviewed_uncovered' if gaps else 'unreviewed')
         result.append({'need_id': need['id'], 'critical': need['critical'], 'state': state,
@@ -161,6 +170,9 @@ def review_saved(bundle, plan, execute, checkpoint, *, max_chars=60000):
               'compatibility_repairs': repairs, 'semantic_completeness_verified': False,
               'interpretation_pending': True}
     result['application_status'] = ids.application_status(result)
+    if (result['application_status'] == 'reviewed_with_gaps' and
+            any(r['witness_issue'] for r in review['annotations'])):
+        result['application_status'] = 'partial_review'
     # Assessment is handed to analysis; semantic uncertainty is not an unlimited
     # acquisition retry instruction. Invalid or unreviewed rows remain gaps.
     result['action_plan'] = {'reserves_or_executes_tools': False, 'actions': [
