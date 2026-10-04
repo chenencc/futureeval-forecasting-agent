@@ -248,6 +248,7 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'Return review_material only; never probabilities or resolution outcomes.'},
                 {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}], api_key,
                 tools=[schema], forced_tool='review_material', observer=observer,
+                independent_model_retries=True,
                 max_output_tokens=GENERATION['max_output_tokens'],reasoning=GENERATION['reasoning'],deadline=deadline)
             result=decode(response,payload,attempts[-1].get('finish_reason') if attempts else None)
             reviews[-1]['status'] = 'received'

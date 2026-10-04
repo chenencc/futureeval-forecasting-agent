@@ -87,7 +87,7 @@ def fetch_public_page(url: str, *, user_agent=None, validators=None, previous_pa
                          preserve_raw_on_failure=preserve_raw_on_failure)
 
 
-def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None, max_output_tokens=3000, reasoning=None, require_tool=False, tool_selector=None) -> dict:
+def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, tools: list | None = None, forced_tool: str | None = None, observer=None, deadline=None, model_route=None, max_output_tokens=3000, reasoning=None, require_tool=False, tool_selector=None, independent_model_retries=False) -> dict:
     if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 12000:
         raise ValueError('Invalid output token budget')
     payload_request = {
@@ -106,11 +106,17 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             "HTTP-Referer": "https://github.com/chenencc/futureeval-forecasting-agent",
             "X-Title": "ForecastAgent information acquisition",
         }
-    for attempt in range(3):
+    retry_counts = {}
+    for attempt in range(6 if independent_model_retries and model_route else 3):
         if deadline is not None and time.monotonic() >= deadline:
             raise RuntimeError('Model run deadline exhausted')
         started = time.monotonic()
         payload_request['model'] = model_route.model() if model_route else configured_model()
+        model_attempt = retry_counts.get(payload_request['model'],0)
+        if model_attempt >= 3:
+            raise RuntimeError('Model transport retry allowance exhausted')
+        retry_counts[payload_request['model']] = model_attempt+1
+        retry_available = model_attempt < 2 if independent_model_retries else attempt < 2
         if tool_selector is not None:
             selected = tool_selector()
             payload_request['tool_choice'] = ({'type': 'function', 'function': {'name': selected}}
@@ -122,6 +128,7 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
                 raise ValueError('Selected terminal tool is not available')
         request = Request(OPENROUTER_URL, data=json.dumps(payload_request).encode('utf-8'), headers=headers, method='POST')
         record = {'started_at_utc': utc_now(), 'retry_index': attempt,
+                  'model_retry_index':model_attempt,
                   'request': json.loads(request.data), 'status': 'reserved'}
         if model_route:
             record['model_routing'] = {'primary':configured_model(), 'fallback_active':model_route.fallback,
@@ -149,8 +156,8 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
             if observer:
                 observer('complete', record, token)
             # Daily quota exhaustion cannot be repaired by short retries.
-            if attempt < 2 and retryable and "free-models-per-day" not in detail:
-                delay = 10 * (2 ** attempt)
+            if retry_available and retryable and "free-models-per-day" not in detail:
+                delay = 10 * (2 ** (model_attempt if independent_model_retries else attempt))
                 if deadline is not None and time.monotonic() + delay >= deadline:
                     raise RuntimeError('Model retry deadline exhausted') from exc
                 time.sleep(delay)
@@ -161,8 +168,8 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
                           duration_seconds=time.monotonic() - started)
             if observer:
                 observer('complete', record, token)
-            if model_route and isinstance(exc, (OSError, TimeoutError, json.JSONDecodeError)) and model_route.observe(record) and attempt < 2:
-                delay = 10 * (2 ** attempt)
+            if model_route and isinstance(exc, (OSError, TimeoutError, json.JSONDecodeError)) and model_route.observe(record) and retry_available:
+                delay = 10 * (2 ** (model_attempt if independent_model_retries else attempt))
                 if deadline is not None and time.monotonic() + delay >= deadline:
                     raise RuntimeError('Model retry deadline exhausted') from exc
                 time.sleep(delay)
@@ -172,8 +179,8 @@ def ask_ultra(messages: list[dict], api_key: str, *, first_turn: bool = False, t
         if isinstance(choices, list) and choices and isinstance(choices[0], dict) and isinstance(choices[0].get("message"), dict):
             return choices[0]["message"]
         error = payload.get("error") if isinstance(payload, dict) else None
-        if attempt < 2:
-            delay = 10 * (2 ** attempt)
+        if retry_available:
+            delay = 10 * (2 ** (model_attempt if independent_model_retries else attempt))
             if deadline is not None and time.monotonic() + delay >= deadline:
                 raise RuntimeError('Model retry deadline exhausted')
             time.sleep(delay)

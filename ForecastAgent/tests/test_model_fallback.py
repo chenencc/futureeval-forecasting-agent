@@ -13,6 +13,19 @@ def bad(code):
 
 
 class ModelFallbackTests(TestCase):
+    @patch('ForecastAgent.providers.ultra.time.sleep')
+    @patch('ForecastAgent.providers.ultra.urlopen')
+    def test_opt_in_fallback_receives_three_independent_transport_attempts(self, opener, sleep):
+        opener.side_effect=[bad(502),bad(502),bad(503),bad(503),BytesIO(b'{"choices":[{"message":{"content":"ok"}}]}')]
+        attempts=[]
+        def observer(stage,record,token=None):
+            if stage=='reserve':attempts.append(record.copy())
+        result=ask_ultra([], 'test',tools=[],model_route=ModelRoute(),observer=observer,independent_model_retries=True)
+        self.assertEqual(result['content'],'ok')
+        self.assertEqual([r['request']['model'] for r in attempts],[ULTRA_MODEL]*2+[SUPER_MODEL]*3)
+        self.assertEqual([r['model_retry_index'] for r in attempts],[0,1,0,1,2])
+        self.assertEqual([c.args[0] for c in sleep.call_args_list],[10,20,10,20])
+
     @patch('ForecastAgent.runtime.batch_health.transport_records')
     def test_successful_fallback_does_not_pause_campaign(self, records):
         from ForecastAgent.collection_campaign import unavailable
