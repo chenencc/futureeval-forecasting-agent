@@ -5,6 +5,7 @@ Saved pages are untrusted data. Decisions cannot grant budgets or invent URLs.
 """
 import hashlib
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,7 @@ from ForecastAgent.analysis.pilot import digest, save
 from ForecastAgent.supplement.discovery import tokens
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.supplement import binding_guard
+from ForecastAgent.readers.material_passages import spans
 
 AXES = ('entity', 'material_type', 'metric', 'period')
 GENERATION = {'max_output_tokens':4096, 'reasoning':{'max_tokens':768}}
@@ -32,19 +34,39 @@ def packet(bundle, ledger, sources):
         body = page.get('content', '')
         if not body_diagnostics(body)['usable_text']:
             continue
-        windows = [(i, body[i:i+1200]) for i in range(0, len(body), 1000)]
-        ranked = sorted(windows, key=lambda w: (-len(tokens(w[1]) & terms), w[0]))[:3]
-        for start, text in ranked:
-            passages.append({'url': url, 'start': start, 'end': start+len(text), 'text': text,
+        windows = spans(body)
+        ranked = sorted(windows, key=lambda w: (-len(tokens(w['text']) & terms), w['start']))[:3]
+        for window in ranked:
+            passages.append({'url': url, **window,
                 'body_sha256': hashlib.sha256(body.encode()).hexdigest()})
     passages.sort(key=lambda p: (-len(tokens(p['text']) & terms), p['url'], p['start']))
-    delivered = passages[:24]
+    delivered = []
+    size = 0
+    for p in passages:
+        if len(delivered) >= 24:
+            break
+        if size + len(p['text']) <= 60000:
+            delivered.append(p)
+            size += len(p['text'])
+    # Split tables carry exact header spans separately, never stitched quotations.
+    for p in list(delivered):
+        header = p['reading'].get('header_span')
+        if header and header[0] < p['start'] and len(delivered) < 24:
+            if not any(q['url']==p['url'] and q['start']==header[0] for q in delivered):
+                text = bundle['pages'][p['url']]['content'][header[0]:header[1]]
+                if size + len(text) <= 60000:
+                    delivered.append({'url':p['url'],'start':header[0],'end':header[1],
+                        'text':text,'body_sha256':p['body_sha256'],
+                        'reading':{'kind':'table_header','complete_lines':True,
+                            'complete_saved_table':False,'upstream_completeness_verified':False}})
+                    size += len(text)
     for p in delivered:
         p['passage_id'] = 'P-'+digest([p['url'],p['body_sha256'],p['start'],p['end']])[:12]
     return {'question': {k: bundle['request'].get(k, '') for k in
                 ('question', 'resolution_criteria', 'fine_print')},
             'needs': [{**{k:n[k] for k in ('id','condition','family','priority','acquisition_state','target_material_captured')},
-                       'source_requirement':binding_guard.source_requirement(n)}
+                       'source_requirement':binding_guard.source_requirement(n),
+                       'required_axes':binding_guard.required_axes(n)}
                       for n in ledger['needs']], 'passages': delivered,
             'sources': [{'source_id':'S-'+digest(s['url'])[:12],
                          **{k: s.get(k) for k in ('url', 'label', 'rule_primary', 'material_need_ids')}}
@@ -80,23 +102,41 @@ def decode(message, payload, finish_reason=None):
         if not isinstance(result['bindings'],list) or len(result['bindings'])>6:
             raise ReviewError('binding_batch_too_large')
         bindings=[]
+        rejected=[]
         for row in result['bindings']:
             if not isinstance(row,dict) or set(row) != {'need_id','passage_id','axes'}:
-                raise ReviewError('invalid_binding_shape')
+                rejected.append({'record':row,'reason':'invalid_binding_shape'})
+                continue
+            if not isinstance(row['passage_id'],str) or row['passage_id'] not in passage_map:
+                rejected.append({'record':row,'reason':'unknown_passage_reference'})
+                continue
             p=passage_map[row['passage_id']]
             bindings.append({'need_id':row['need_id'],'url':p['url'],'quote':p['text'],'axes':row['axes']})
         priorities=result['priority_source_ids']; deferred=result['deferred_source_ids']
         if not isinstance(priorities,list) or not isinstance(deferred,list) or len(priorities)>6 or len(deferred)>6:
             raise ReviewError('source_batch_too_large')
-        return {'bindings':bindings,'priority_urls':[source_map[i] for i in priorities],
-                'deferred_urls':[{'url':source_map[r['source_id']],'reason':r['reason']} for r in deferred],
+        selected=[]; deferrals=[]
+        for item in priorities:
+            if isinstance(item,str) and item in source_map:
+                selected.append(source_map[item])
+            else:
+                rejected.append({'record':item,'reason':'unknown_source_reference'})
+        for row in deferred:
+            if isinstance(row,dict) and isinstance(row.get('source_id'),str) and row['source_id'] in source_map and isinstance(row.get('reason'),str) and row['reason'].strip():
+                deferrals.append({'url':source_map[row['source_id']],'reason':row['reason']})
+            else:
+                rejected.append({'record':row,'reason':'invalid_deferral'})
+        if rejected and not bindings and not selected and not deferrals and result['next_search'] is None:
+            raise ReviewError('unknown_or_invalid_reference')
+        return {'bindings':bindings,'priority_urls':selected,
+                'deferred_urls':deferrals, 'rejected_records':rejected,
                 'next_search':result['next_search']}
     except (KeyError,TypeError):
         raise ReviewError('unknown_or_invalid_reference') from None
 
 
 def bind(bundle, payload, decision):
-    """Reject a whole invalid batch; only exact delivered quotations can bind."""
+    """Isolate source-action contradictions while preserving independent records."""
     if not isinstance(decision, dict):
         raise ValueError('Material decision must be an object')
     allowed = {n['id'] for n in payload['needs']}
@@ -107,11 +147,13 @@ def bind(bundle, payload, decision):
     deferred = decision.get('deferred_urls', [])
     if not isinstance(deferred, list) or any(not isinstance(r, dict) or
             r.get('url') not in {s['url'] for s in payload['sources']} or
-            not isinstance(r.get('reason'), str) or not r['reason'].strip() or
-            r['url'] in selected for r in deferred):
-        raise ValueError('Deferrals need an observed URL and reason, disjoint from priorities')
+            not isinstance(r.get('reason'), str) or not r['reason'].strip() for r in deferred):
+        raise ValueError('Deferrals need an observed URL and reason')
+    conflicts = sorted(set(selected) & {r['url'] for r in deferred})
+    selected = [u for u in selected if u not in conflicts]
     bindings = []
-    for row in decision.get('bindings', []):
+    rejected = list(decision.get('rejected_records', []))
+    def validate_binding(row):
         if row.get('need_id') not in allowed or not isinstance(row.get('axes'), dict):
             raise ValueError('Unknown material need or missing fit axes')
         if set(row['axes']) != set(AXES) or any(type(v) is not bool for v in row['axes'].values()):
@@ -126,18 +168,47 @@ def bind(bundle, payload, decision):
         if hashlib.sha256(body.encode()).hexdigest() != window['body_sha256']:
             raise ValueError('Saved source changed during review')
         offset = window['start'] + window['text'].index(quote)
+        reading_issues = []
+        has_table = bool(re.search(r'(?m)^\s*\|[^\n]*\|',quote))
+        end = offset + len(quote)
+        first_line = body[body.rfind('\n',0,offset)+1:body.find('\n',offset) if '\n' in body[offset:] else len(body)]
+        last_line = body[body.rfind('\n',0,end)+1:body.find('\n',end) if '\n' in body[end:] else len(body)]
+        cut_first = offset > 0 and body[offset-1] != '\n' and first_line.lstrip().startswith('|')
+        cut_last = end < len(body) and body[end] != '\n' and not quote.endswith('\n') and last_line.lstrip().startswith('|')
+        if cut_first or cut_last:
+            reading_issues.append('table_line_boundary_incomplete')
         need = next(n for n in payload['needs'] if n['id']==row['need_id'])
+        if has_table and re.search(r'\b(?:each trading day|daily|full table|all rows)\b',need['condition'],re.I):
+            full = next((p for p in spans(body) if p['reading']['kind']=='table' and
+                         p['start'] <= offset and p['end'] >= offset+len(quote)),None)
+            if not full or offset != full['start'] or offset+len(quote) != full['end'] or not full['reading']['complete_saved_table']:
+                reading_issues.append('requested_table_range_not_fully_delivered')
+        row = {**row,'reading_issues':reading_issues}
         guard = binding_guard.assess({**need,'required_source_domains':need.get('source_requirement',{}).get('domains',[])
                                       if need.get('source_requirement',{}).get('required') else []},
                                     row, {r['url'] for r in deferred})
-        bindings.append({k:row[k] for k in ('need_id','url','quote','axes')} | {'start': offset, 'end': offset+len(quote),
+        return ({k:row[k] for k in ('need_id','url','quote','axes')} | {'start': offset, 'end': offset+len(quote),
             'body_sha256': window['body_sha256'], 'quote_bound': True, 'closure_guard':guard,
-            'truth_verified': False})
+            'required_axes':binding_guard.required_axes(need),
+            'axis_applicability':{a:'required' if a in binding_guard.required_axes(need) else 'not_required'
+                                  for a in AXES},
+            'reading_issues':reading_issues, 'truth_verified': False})
+    for row in decision.get('bindings', []):
+        try:
+            bindings.append(validate_binding(row))
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            rejected.append({'record':row, 'reason':str(exc)})
+    if rejected and not bindings and not selected and not deferred and decision.get('next_search') is None:
+        raise ValueError(rejected[-1]['reason'])
     query = decision.get('next_search')
-    if query is not None and (query.get('need_id') not in allowed or
+    if query is not None and (not isinstance(query,dict) or query.get('need_id') not in allowed or
             not isinstance(query.get('query'), str) or not 3 <= len(query['query']) <= 350):
-        raise ValueError('Search recommendation requires an existing need and bounded query')
+        if not bindings and not selected and not deferred:
+            raise ValueError('Search recommendation requires an existing need and bounded query')
+        rejected.append({'record':query,'reason':'invalid_search_recommendation'})
+        query = None
     return {'bindings': bindings, 'priority_urls': selected, 'deferred_urls':deferred, 'next_search': query,
+            'conflicted_urls':conflicts, 'rejected_records':rejected,
             'truth_verified': False}
 
 
@@ -238,6 +309,9 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'For each useful document, select an exact delivered passage_id and existing need_id. '
                 'Do not copy quotations or URLs: the program binds the saved passage text and source hashes. '
                 'Return at most six bindings and six priority/deferred source IDs. Entity must be the same subject; '
+                'required_axes are program-owned; mark optional axes false when no observation applies. '
+                'A partial table does not establish full-period coverage; HTML is not a downloaded CSV. '
+                'Source origin and reporting about that origin are different roles. '
                 'material_type must match the requested document (benchmark report is not public-access notice); '
                 'metric and period must match or be explicitly not required. Negative access notices are useful '
                 'materials too: do not infer event truth. Never mark all axes true from keyword overlap. '

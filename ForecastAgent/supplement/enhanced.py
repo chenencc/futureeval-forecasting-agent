@@ -221,6 +221,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         identity['need_ledger_sha256'] = hashlib.sha256(Path(need_ledger.__file__).read_bytes()).hexdigest()
         identity['material_review_sha256'] = hashlib.sha256(Path(material_review.__file__).read_bytes()).hexdigest()
         identity['binding_guard_sha256'] = hashlib.sha256(Path(binding_guard.__file__).read_bytes()).hexdigest()
+        from ForecastAgent.readers import material_passages
+        identity['material_passages_sha256'] = hashlib.sha256(Path(material_passages.__file__).read_bytes()).hexdigest()
         identity['publisher_catalog_sha256'] = digest(channels.PUBLISHERS)
         identity['material_agent_enabled'] = bool(material_agent)
         identity['gap_search_available_tools']=sorted(getattr(search,'available_tools',('tavily','exa')) if search else [])

@@ -8,6 +8,10 @@ release or change the official worker's checked-out code.
 
 ## Pipeline
 
+The `dev_formal` material-review experiment adds [saved table reading and
+record-level review contracts](supplement/MATERIAL_CONTRACTS.md). It does not
+change the immutable competition release.
+
 ```text
 Question and resolution criteria
   -> Acquisition agent and on-demand skills

@@ -99,7 +99,7 @@ def build(bundle, journal=None, usage=None, caps=None):
                         binding.get('body_sha256') == hashlib.sha256(body.encode()).hexdigest() and
                         body[binding.get('start', 0):binding.get('end', 0)] == binding.get('quote') and
                         body_diagnostics(body)['usable_text'] and
-                        all(binding.get('axes', {}).get(axis) is True for axis in ('entity','material_type','metric','period'))):
+                        all(binding.get('axes', {}).get(axis) is True for axis in binding_guard.required_axes(n))):
                     bindings.append(binding)
         # Structured measurement records can be checked without model reasoning.
         exact_data = []
@@ -141,6 +141,7 @@ def build(bundle, journal=None, usage=None, caps=None):
                      'target_material_captured':target_captured, 'material_bindings':bindings,
                      'blocked_material_bindings':blocked_bindings,
                      'source_requirement':binding_guard.source_requirement(n),
+                     'required_axes':binding_guard.required_axes(n),
                      'deterministic_data_bindings':exact_data,
                      'next_action':None if target_captured else 'review_candidate_fit' if candidates else 'discover_missing_document_family',
                      'semantic_verified':False})
