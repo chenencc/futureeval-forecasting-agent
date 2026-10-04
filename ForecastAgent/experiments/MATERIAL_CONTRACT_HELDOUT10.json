@@ -1,0 +1,633 @@
+{
+  "schema": "material-contract-heldout10-v1",
+  "freeze_commit": "758db98",
+  "frozen_git_blob_sha256": {
+    "ForecastAgent/supplement/material_contract.py": "c98da65878d311f78ee5002ece864b803ba1731cf55fd30559b07eb5c077632e",
+    "ForecastAgent/supplement/quote_alignment.py": "eba72fcc0727d0ef5084f5befe674f1e41ff8f3b433fa91a68c5597ee2089bc3",
+    "ForecastAgent/supplement/binding_guard.py": "dbee13357629d8616a3a96792e5ade2602ac88eb826d7889748526cd500762bf",
+    "ForecastAgent/experiments/material_contract_round.py": "1da008d51e8a72c8c521e3fa78f33ecf3fe519d3706653bfef29e0859b9fd769"
+  },
+  "excluded_question_ids": [
+    "26754",
+    "28102",
+    "36871",
+    "40417",
+    "40695",
+    "40849",
+    "40852",
+    "41206",
+    "41480",
+    "42489",
+    "42491",
+    "42540",
+    "42630",
+    "43091",
+    "43171",
+    "43461",
+    "43491",
+    "43658",
+    "43665",
+    "43682",
+    "43688",
+    "43801",
+    "43822",
+    "43844",
+    "43919",
+    "43987",
+    "44126",
+    "44128",
+    "44129",
+    "44431",
+    "44547",
+    "44727",
+    "44728",
+    "44731",
+    "44938",
+    "44939",
+    "44940",
+    "45045",
+    "45048",
+    "45183"
+  ],
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
+  "budget": {
+    "logical": 20,
+    "http": 30,
+    "output_tokens": 1800
+  },
+  "annotation_scope": "Single-reviewer, preregistered material fit labels; no event resolutions read. Balanced diagnostic challenge set, not a representative random sample.",
+  "scope": "Previously unrepaired question materials, identical saved text per arm. Diagnostic material-fit only, not collection recall or forecasting accuracy.",
+  "limitations": [
+    "Existing historical bodies may contain later information; not a leakage-free backtest.",
+    "One reviewer labeled cases before provider calls; semantic labels are not independently adjudicated.",
+    "HTML and PDF-extracted text plus a flattened leaderboard; no CSV or JSON coverage.",
+    "Excerpt windows are frozen; this does not test full-document navigation."
+  ],
+  "cases": [
+    {
+      "id": "heldout-01",
+      "question_id": "43492",
+      "domain": "food_regulation",
+      "legacy_need": {
+        "id": "material-01",
+        "condition": "Record that Hoxton Farms cultivated pork fat has received regulatory approval for commercial sale, rather than an application or projected future approval.",
+        "required_source_domains": []
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": false,
+        "publisher_domains": [],
+        "required_axes": [
+          "entity",
+          "metric"
+        ],
+        "purpose": "Record that Hoxton Farms cultivated pork fat has received regulatory approval for commercial sale, rather than an application or projected future approval.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.greenqueen.com.hk/hoxton-farms-lab-grown-meat-cultivated-pork-fat-singapore-approval",
+        "text": "Exclusive: Hoxton Farms Files for Singapore Approval of Cultivated Pork Fat\nBritish cultivated meat startup Hoxton Farms has submitted a regulatory dossier to the Singapore Food Agency, with filings in the UK, North America and other Asian countries to follow soon.\nAmid [a wave of regulatory successes](https://www.greenqueen.com.hk/believer-meats-usda-approval-lab-grown-cultivated-chicken/) for cultivated meat, UK startup Hoxton Farms is getting in on the act with an application in Singapore, the first of several submissions planned globally.\nThe London-based food tech firm filed a dossier for its cultivated pork fat with the Singapore Food Agency (SFA), which has already doled out approvals to three startups in the space. It expects to receive the green light between late 2026 to early 2027.\nHoxton Farms’s submission was overseen by CSO Vitor Espírito Santo, who played a key role in helping Eat Just’s Good Meat division achieve the industry’s first regulatory approval back in 2020, also from the SFA.\n“The SFA remains a world leader in regulation for cultivated products. While the team has evolved, their commitment to safety, transparency and collaboration hasn’t changed,” co-founder and CEO Max Jamilly tells Green Queen when asked about how the regulatory landscape has evolved in the five years since.\n“We also benefit from clearer guidance and more precedent today, which makes the process more predictable and improves our chances of success,” he tells Green Queen.\nJamilly first teased the Singapore filing in an interview with this publication earlier this year, when Hoxton Farms set its stall out in Asia through manufacturing and commercialisation partnerships with Japan’s [Sumitomo Corporation](https://www.greenqueen.com.hk/hoxton-farms-sumitomo-lab-grown-pork-fat-cultivated-meat-japan/) and [Mitsui Chemicals](https://www.greenqueen.com.hk/hoxton-farms-lab-grown-cultivated-meat-mitsui-chemicals-asia-biomanufacturing/).\nHoxton Farms to build commercial-scale cultivated meat facility\nFounded in 2020 by Jamilly and COO Ed Steele, Hoxton Farms leverages cell biology and machine learning to grow fat from pig cells in modular bioreactors. The ingredient is a drop-in replacement for animal fats and plant-based oils, and can be mixed with plant proteins to create products like soups, sauces, and hybrid pork.\n“We start with stem cells from a pig, specifically mesenchymal stem cells, grow them in proprietary cell culture media (made of proteins, vitamins and sugars, much like you would feed a conventional pig), and differentiate them into real pork fat, or adipocytes,” explains Jamilly.\n“Not only are we making real fat tissue – not biomass – but our proprietary cell lines, optimised bioprocess and patented bioreactors are all designed for cost efficiency and scale. Using AI to fine-tune growth and differentiation, we can produce delicious, high-quality fat at low cost – real animal fat made for food manufacturing.”\nThat said, Jamilly notes that its current costs are high due to limited scale. “But our technology is designed to bring these costs down rapidly. At industrial volumes, our process and reactor design allow us to reach a cost in use competitive with conventional pork fat while maintaining excellent quality, so food manufacturers can make delicious products,” he highlights.\nHoxton Farms currently operates a 14,000 sq ft pilot facility in London, running 500-litre bioreactors. “Our next facility, in the 10kL range, will be built next year and commissioned in early 2027,” the CEO reveals. “This expansion will enable us to move from pilot to early commercial scale and meet the huge demand we have from major food manufacturers.”\nCultivated fat more efficient to grow than muscle\nHoxton Farms is one of several companies spotlighting fat as a [more viable way](https://www.greenqueen.com.hk/blended-hybrid-meat-investors-startups-funding/) to bring cultivated meat to market. This includes [Mission Barns](https://www.greenqueen.com.hk/exclusive-mission-barns-launches-cultivated-pork-in-world-first-dinner/) (which has [begun selling its hybrid pork products](https://www.greenqueen.com.hk/mission-barns-lab-grown-meat-cultivated-pork-supermarket-berkeley-bowl/) in the US), [Mosa Meat](https://www.greenqueen.com.hk/mosa-meat-lab-grown-meat-cultivated-burger-crowdfunding/) (which is [seeking approval for beef fat in multiple markets](https://www.greenqueen.com.hk/mosa-meat-lab-grown-meat-cultivated-beef-fat-uk-fsa-approved/)), [St",
+        "body_sha256": "558ca630325c4d7c9787f3b4ec72707b75ff674b19250cedce0a9a6b2d8138af",
+        "start": 0,
+        "end": 4500
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/43492/raw-bundle.json",
+        "bundle_sha256": "fb9bb2f2b92d3a56bb6bd3090e59b146cd09aaae1fbee747825357cfc0dc069b",
+        "content_type": "text/html",
+        "full_body_chars": 9428,
+        "window_sha256": "ae1bf525e9f13e5e6852eae45dc0405da38de959386276cde9fd8ffae7989966"
+      },
+      "observation": {
+        "document_role": "forecast_reporting",
+        "fit_axes": {
+          "entity": true,
+          "material_type": false,
+          "metric": false,
+          "period": true
+        },
+        "evidence_relation": "neutral",
+        "quote": "Exclusive: Hoxton Farms Files for Singapore Approval of Cultivated Pork Fat\nBritish cultivated meat startup Hoxton Farms has submitted a regulatory dossier to the Singapore Food Agency, with filings in the UK, North America and other Asian countries to follow soon.\nAmid [a wave of regulatory success"
+      },
+      "expected": "mismatched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-02",
+      "question_id": "44363",
+      "domain": "political_finance",
+      "legacy_need": {
+        "id": "material-02",
+        "condition": "Washington Post donor leaderboard for the 2026 election cycle as of August 1, 2026, not the 2024 election cycle.",
+        "required_source_domains": [
+          "washingtonpost.com"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "benchmark_rows",
+          "historical_snapshot"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "washingtonpost.com"
+        ],
+        "required_axes": [
+          "entity",
+          "metric",
+          "period"
+        ],
+        "purpose": "Washington Post donor leaderboard for the 2026 election cycle as of August 1, 2026, not the 2024 election cycle.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.washingtonpost.com/elections/interactive/2024/biggest-campaign-donors-election-2024",
+        "text": "Meet the megadonors pumping over $2.5 billion into the election\nThe 50 biggest donors this cycle have collectively donated over $2.5 billion into political committees and other groups competing in the election, according to a Washington Post analysis of Federal Election Commission data.\nThese megadonors skew Republican, though they affiliate with Democrats and third parties as well.\nDonations by top 50 individuals and organizations to committees that are mostly ...\nRepublican-leaning\nDemocrat-leaning\nsupportive of both parties\nCryptocurrency and realtor groups were the only donors to both major parties\nThe vast majority of money from top donors has gone to super PACs, which can accept unlimited sums from individuals and often work closely with campaigns despite rules against coordinating their advertising.\nTop individual donors\nFrom billionaire investors to shipping magnates, here’s who they are and their top donations.\n1\nTimothy Mellon Republican\nRailroad magnate and heir\nTotal large donations: $197M\n0\nTop donor: $197M\nTop donations\nMAKE AMERICA GREAT AGAIN INC.\n$150M\nSupports Donald Trump’s presidential campaign\nAMERICAN VALUES 2024\n$25M\nSupports Robert F. Kennedy Jr.’s presidential campaign\nCONGRESSIONAL LEADERSHIP FUND\n$15M\nSupports Republican House candidates\nThe [reclusive Wyoming-based businessman](https://www.washingtonpost.com/politics/2024/07/17/timothy-mellon-donor-trump-rfk/) is the scion of former Treasury secretary and banking tycoon Andrew Mellon.\n2\nRichard & Elizabeth Uihlein Republican\nShipping magnates\nTotal large donations: $139M\n0\nTop donor: $197M\nTop donations\nRESTORATION PAC\n$76.2M\nOpposes Senate campaign of Tammy Baldwin (D-Wis.)\nCLUB FOR GROWTH ACTION\n$19M\nRight-leaning super PAC\nMAKE AMERICA GREAT AGAIN INC.\n$10M\nSupports Donald Trump’s presidential campaign\nThe couple founded Uline, a Wisconsin-based shipping and packaging materials company. They give to causes outside the GOP’s mainstream, helping to push the party further to the right.\n3\nMiriam Adelson Republican\nPhysician and widow of businessman Sheldon Adelson\nTotal large donations: $136M\n0\nTop donor: $197M\nTop donations\nPRESERVE AMERICA PAC\n$100M\nSupports Donald Trump’s presidential campaign\nSENATE LEADERSHIP FUND\n$15M\nSupports Republican Senate candidates\nCONGRESSIONAL LEADERSHIP FUND\n$9M\nSupports Republican House candidates\nAdelson, a doctor who has focused on addiction, is the widow of businessman Sheldon Adelson and the majority shareholder of Las Vegas Sands.\n4\nElon Musk Republican\nBillionaire technology executive\nTotal large donations: $132.2M\n0\nTop donor: $197M\nTop donations\nAMERICA PAC\n$118.6M\nSupports Donald Trump’s presidential campaign\nSENATE LEADERSHIP FUND\n$10M\nSupports Republican Senate candidates\nTHE SENTINEL ACTION FUND\n$2.3M\nSupports Republican Senate candidates\nMusk, one of the world’s richest men, co-founded electric car company Tesla. After endorsing Trump on X this summer, he has posted extensively on the platform, which he owns, in support of the former president.\n5\nKenneth Griffin Republican\nHedge fund manager\nTotal large donations: $103.7M\n0\nTop donor: $197M\nTop donations\nSENATE LEADERSHIP FUND\n$30M\nSupports Republican Senate candidates\nCONGRESSIONAL LEADERSHIP FUND\n$17M\nSupports Republican House candidates\nKEYSTONE RENEWAL PAC\n$15M\nSupports Senate campaign for Republican Dave McCormick (Pa.)\nThe billionaire is founder and CEO of the hedge fund Citadel.\n6\nJeff & Janine Yass Republican\nFinancier and education advocate\nTotal large donations: $96.2M\n0\nTop donor: $197M\nTop donations\nCLUB FOR GROWTH ACTION\n$35M\nRight-leaning super PAC\nPROTECT FREEDOM POLITICAL ACTION COMMITTEE\n$19M\nConservative PAC funded by Jeff Yass’s company\nCONGRESSIONAL LEADERSHIP FUND\n$10M\nSupports Republican House candidates\nJeff is co-founder of the Pennsylvania-based investment company Susquehanna International Group. His wife, Janine, founded a charter school and is an advocate for school choice.\n7\nPaul Singer Republican\nHedge fund manager and activist investor\nTotal large donations: $63.4M\n0\nTop donor: $197M\nTop donations\nSENATE LEADERSHIP FUND\n$27M\nSupports Republican Senate candidates\nCONGRESSIONAL LEADERSHIP FUND\n$14.5M\nSupports Republican House candidates\nMAKE AMERICA GREAT AGAIN INC.\n$5M\nSupports Donald Trump’s presidential campaign\nThe billionaire is founder and co-CEO of Elliott Management.\n8\nMichael Bloomberg Democrat\nFormer mayor of New York City\nTotal large donations: $47.4M\n0\nTop donor: $197M\nTop donations\nFF PAC\n$19M\nSupports K",
+        "body_sha256": "66847193629d20ebfe4a4f24e7b27a85e68ddaa8301f169d09718a62f2e86b56",
+        "start": 0,
+        "end": 4500
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/44363/raw-bundle.json",
+        "bundle_sha256": "88be441a1456b12c1cd1f87bb45f8ddcbfc67decd757a6fa0e2a058be4184a76",
+        "content_type": "text/html",
+        "full_body_chars": 10806,
+        "window_sha256": "2331b2c9397f20f6327b426026e730c32802d52b231161d874034b2fd74dd708"
+      },
+      "observation": {
+        "document_role": "benchmark_rows",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": false
+        },
+        "evidence_relation": "neutral",
+        "quote": "Meet the megadonors pumping over $2.5 billion into the election\nThe 50 biggest donors this cycle have collectively donated over $2.5 billion into political committees and other groups competing in the election, according to a Washington Post analysis of Federal Election Commission data.\nThese megado"
+      },
+      "expected": "mismatched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-03",
+      "question_id": "43333",
+      "domain": "energy",
+      "legacy_need": {
+        "id": "material-03",
+        "condition": "Official OPEC+ record identifying the participating countries in the March 1, 2026 meeting; supporting membership context, not proof that nobody later withdrew.",
+        "required_source_domains": [
+          "opec.org"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "opec.org"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Official OPEC+ record identifying the participating countries in the March 1, 2026 meeting; supporting membership context, not proof that nobody later withdrew.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "supporting_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.opec.org/pr-detail/1619593-1-march-2026.html",
+        "text": "The eight OPEC+ countries, which previously announced additional voluntary adjustments in April and November 2023, namely Saudi Arabia, Russia, Iraq, UAE, Kuwait, Kazakhstan, Algeria, and Oman met virtually on 1 March 2026, to review global market conditions and outlook.\nIn view of a steady global economic outlook and current healthy market fundamentals, as reflected in the low oil inventories, the eight participating countries decided to resume the unwinding of the 1.65 million barrels per day of additional voluntary adjustments announced in April 2023 and agreed on a production adjustment of 206 thousand barrels per day. This adjustment will be implemented in April 2026 as detailed in the table below. The 1.65 million barrels per day may be returned in part or in full subject to evolving market conditions and in a gradual manner. The countries will continue to closely monitor and assess market conditions, and in their continuous efforts to support market stability, they reaffirmed the importance of adopting a cautious approach and retaining full flexibility to increase, pause or reverse the phase out of the voluntary production adjustments, including reversing the previously implemented voluntary adjustments of the 2.2 million barrels per day announced in November 2023.\nThe eight OPEC+ countries also noted that this measure will provide an opportunity for the participating countries to accelerate their compensation. The eight countries reiterated their collective commitment to achieve full conformity with the Declaration of Cooperation, including the additional voluntary production adjustments that will be monitored by the Joint Ministerial Monitoring Committee (JMMC).\nThey also confirmed their intention to fully compensate for any overproduced volume since January 2024. The eight OPEC+ countries will hold monthly meetings to review market conditions, conformity, and compensation. The eight countries will meet on 5 April 2026.",
+        "body_sha256": "5425c03748d561e2a0ea69403cf6f59f3af2b21cbe99a1033824fb0f283bae06",
+        "start": 0,
+        "end": 1962
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/43333/raw-bundle.json",
+        "bundle_sha256": "1a586a9631ad5078e83cf58e0cf14cf7ed7c0ba2c32ad6b0475782afb0fbf1d2",
+        "content_type": "text/html",
+        "full_body_chars": 1962,
+        "window_sha256": "5425c03748d561e2a0ea69403cf6f59f3af2b21cbe99a1033824fb0f283bae06"
+      },
+      "observation": {
+        "document_role": "status_record",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "neutral",
+        "quote": "The eight OPEC+ countries, which previously announced additional voluntary adjustments in April and November 2023, namely Saudi Arabia, Russia, Iraq, UAE, Kuwait, Kazakhstan, Algeria, and Oman met virtually on 1 March 2026, to review global market conditions and outlook.\nIn view of a steady global e"
+      },
+      "expected": "matched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-04",
+      "question_id": "44117",
+      "domain": "legal_appointment",
+      "legacy_need": {
+        "id": "material-04",
+        "condition": "Original DOJ record of Jamie (James M.) McDonald assuming the United States Attorney role in SDNY; distinguish appointment from merely being a deputy or proposed nominee.",
+        "required_source_domains": [
+          "justice.gov"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "justice.gov"
+        ],
+        "required_axes": [
+          "entity",
+          "metric"
+        ],
+        "purpose": "Original DOJ record of Jamie (James M.) McDonald assuming the United States Attorney role in SDNY; distinguish appointment from merely being a deputy or proposed nominee.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.justice.gov/usao-sdny/pr/jamie-mcdonald-assumes-role-united-states-attorney-southern-district-new-york",
+        "text": "Related Content\nPress Release\nJamie McDonald has assumed the role of United States Attorney for the Southern District of New York. Earlier today, Judge Laura Taylor Swain, Chief District Judge for the Southern District of New York, informed the Office that the Court has appointed Mr. McDonald to serve as United States Attorney for the Southern District of New York, pursuant to 28 U.S.C. § 546(d), upon U.S. Attorney Jay Clayton’s resignation. Yesterday, Mr. Clayton was confirmed by the Senate to serve as Director of National Intelligence. Mr. Clayton tendered his resignation as U.S. Attorney, effective earlier today. Mr. McDonald was sworn in as the U.S. Attorney by Chief Judge Swain.\nSean S. Buckley will continue in his role as Deputy United States Attorney, Amanda Houle will continue in her role as Chief of the Criminal Division, and Jeff Oestericher will continue in his role as Chief of the Civil Division as contemplated in the [transition announcement](https://www.justice.gov/usao-sdny/pr/us-attorney-jay-clayton-announces-appointment-james-mcdonald-deputy-united-states) of July 8, 2026.\nMr. McDonald previously served in the Office as an Assistant United States Attorney in the Criminal Division until 2017.  In that role, Mr. McDonald participated in significant organized crime, white collar, and violent crimes prosecutions, including those of [senior members of the Genovese Organized Crime Family](https://www.justice.gov/usao-sdny/pr/genovese-organized-crime-family-members-and-associates-charged-manhattan-federal-court); the sitting [New York State Assembly Speaker, Sheldon Silver](https://www.justice.gov/usao-sdny/pr/new-york-state-assembly-speaker-sheldon-silver-arrested-corruption-charges); and a [48-defendant rival street gangs case](https://www.justice.gov/usao-sdny/pr/48-members-and-associates-2-rival-bronx-street-gangs-charged-federal-court-racketeering).\nFrom 2017 to 2020, Mr. McDonald served as the Director of Enforcement at the U.S. Commodity Futures Trading Commission (CFTC), where he had overall responsibility for all aspects of the CFTC’s enforcement program, including its investigations, litigations, and market surveillance activities. Under his leadership, the agency prioritized cases involving market manipulation, other forms of market abuse, and fraud, as well as the pursuit of parallel actions with the Department of Justice. Notably, during the last year of Mr. McDonald’s time at the CFTC, the agency brought an unprecedented number of enforcement actions.\nFollowing his tenure at the Southern District of New York and the CFTC, Mr. McDonald served as a Partner at Sullivan & Cromwell LLP where he was Co-Head of both the firm’s Securities & Commodities Investigations Practice and its Commodities, Futures and Derivatives Group. While at Sullivan & Cromwell, Mr. McDonald also served as an Adviser to the American Law Institute’s Principles of Compliance, Risk Management, and Enforcement. Mr. McDonald previously served as a Visiting Scholar at Harvard Business School and as a Senior Fellow at New York University Law School’s Program on Corporate Compliance and Enforcement.\nEarlier in his career, Mr. McDonald served as a law clerk to Chief Justice John G. Roberts, Jr., of the U.S. Supreme Court and Judge Jeffrey S. Sutton, Jr., of the U.S. Court of Appeals for the Sixth Circuit. From 2008 to 2009, Mr. McDonald served as a Deputy Associate Counsel in the Office of the White House Counsel.\nOriginally from Oklahoma, Mr. McDonald graduated from the University of Virginia School of Law and from Harvard College.\nNicholas Biase, Shelby Wratchford\n(212) 637-2600",
+        "body_sha256": "91ed2e85cc81e8529f689c05a12c23e609b8b7a7d67880e0a9802832459c2ae3",
+        "start": 0,
+        "end": 3631
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/44117/raw-bundle.json",
+        "bundle_sha256": "094ce472b7c44f7ca70908e09277f05df15ab983e99ce1adeefe970238b82756",
+        "content_type": "text/html",
+        "full_body_chars": 3631,
+        "window_sha256": "91ed2e85cc81e8529f689c05a12c23e609b8b7a7d67880e0a9802832459c2ae3"
+      },
+      "observation": {
+        "document_role": "status_record",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "supports_event",
+        "quote": "Related Content\nPress Release\nJamie McDonald has assumed the role of United States Attorney for the Southern District of New York. Earlier today, Judge Laura Taylor Swain, Chief District Judge for the Southern District of New York, informed the Office that the Court has appointed Mr. McDonald to ser"
+      },
+      "expected": "matched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-05",
+      "question_id": "44241",
+      "domain": "infrastructure",
+      "legacy_need": {
+        "id": "material-05",
+        "condition": "Official NPS access and closure document for the Lincoln Memorial Reflecting Pool in August 2026; supporting closure context, not certification of completed repairs.",
+        "required_source_domains": [
+          "nps.gov"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "access_document",
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "nps.gov"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Official NPS access and closure document for the Lincoln Memorial Reflecting Pool in August 2026; supporting closure context, not certification of completed repairs.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "supporting_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.nps.gov/nama/learn/management/rod-lincoln-reflecting-pool-closure.htm",
+        "text": "| Pursuant to 36 C.F.R. § 1.5, continuing from the July 9, 2026, Record of Decision (ROD), the National Park Service (NPS) will continue to impose temporary closures to the public of certain designated parklands at the National Mall and Memorial Parks until Saturday, September 10, 2026. The extent of these closures are limited temporally and geographically as much as possible while still providing for the safety and security of the resource and to ensure public safety while work is undertaken. Additionally, this closure should be uncontroversial as it is required to safely complete work needed to secure and protect NPS resources. The specific locations and duration of these temporary closures are described below, delineated in the map below, and further delineated by fencing or other physical barriers on-site (see figure 1 below). The closures will be lifted or reduced as soon as it is no longer necessary, restoring access to the public as soon as practicable. Violation is prohibited. Unless otherwise noted, it is anticipated that USPP personnel will restrict access at the following location and times—all times are local. Lincoln Memorial Reflecting Pool The following areas will continue to be closed to visitor access until Thursday, September 10, 2026, at 11:59 p.m. (all times local). These temporary and partial closures are not of a nature, magnitude and duration that will result in a “significant alteration in the public use pattern.” Further, the closures will not adversely affect the parks’ natural, aesthetic or cultural values, are not of a highly controversial nature, and do not require long-term or significant modification in the resource-management objectives of any affected park. Rather, these closures are limited temporally and geographically as much as possible while still providing for the safety and security of the resource and to ensure public safety while work is undertaken (for instance, maintaining access to memorials and restrooms around the reflecting pool wherever possible). Additionally, these closures should be uncontroversial as they are required to safely complete work needed to secure and protect NPS resources. Closures such as these are commonplace when there are safety or security concerns related to visitor access and impacts on resources and while the NPS is performing work with equipment that could pose a hazard to members of the public. Accordingly, the National Park Service determines publication as rulemaking in the Federal Register is unwarranted under 36 C.F.R. § 1.5(b). This is consistent with hundreds of earlier partial and temporary park closures or public use limitations, the legal opinion of the Office of the Solicitor, and judicial adjudications. Mahoney v. Norton, No. 02-1715 (D.D.C. August 29, 2002), plaintiff’s emergency motion for injunction pending appeal denied Mahoney v. Norton, No. 02- 5275 (D.C. Cir. September 9, 2002) (per curiam); Picciotto v. United States, No. 99-2113 (D.D.C. August 6, 1999); Picciotto v. United States, No. 94-1935 (D.D.C. September 9, 1994); Picciotto v. Lujan, No. 90-1261 (D.D.C. May 30, 1990); Picciotto v. Hodel, No. 87-3290 (D.D.C. January 26, 1988); Spiegel v. Babbitt, 855 F. Supp. 402 (D.D.C. 1994), aff'd in part w/o op. 56 F.3d 1531 (D.C. Cir. 1995), reported in full, 1995 US App. Lexis 15200 (D.C. Cir. May 31, 1995). Pursuant to 36 C.F.R. § 1.7, notice of this temporary and partial closure and public use limit will be made through media advisories, maps, fencing, and by posting at conspicuous locations in the affected park areas. Finally, pursuant to 36 C.F.R. § 1.5(c), this determination is available to the public upon request. Mike Commisso /s/ 8/6/2026 Deputy Superintendent | \nLast updated: August 6, 2026",
+        "body_sha256": "bafea24bae52d8ac847ddc06d21220b46e4148159a3610bc05a035e6788350d2",
+        "start": 0,
+        "end": 3755
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/44241/raw-bundle.json",
+        "bundle_sha256": "5e2fb37e4c8c60fa6168a3a36f6d8b417d5f197245c2bcb95d779235f9a77e8d",
+        "content_type": "text/html",
+        "full_body_chars": 3755,
+        "window_sha256": "bafea24bae52d8ac847ddc06d21220b46e4148159a3610bc05a035e6788350d2"
+      },
+      "observation": {
+        "document_role": "access_document",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "neutral",
+        "quote": "| Pursuant to 36 C.F.R. § 1.5, continuing from the July 9, 2026, Record of Decision (ROD), the National Park Service (NPS) will continue to impose temporary closures to the public of certain designated parklands at the National Mall and Memorial Parks until Saturday, September 10, 2026. The extent o"
+      },
+      "expected": "matched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-06",
+      "question_id": "24819",
+      "domain": "trade",
+      "legacy_need": {
+        "id": "material-06",
+        "condition": "Official USTR record of the July 1, 2026 USMCA joint review and renewal status, including a decision not to renew.",
+        "required_source_domains": [
+          "ustr.gov"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "ustr.gov"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Official USTR record of the July 1, 2026 USMCA joint review and renewal status, including a decision not to renew.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://ustr.gov/about/policy-offices/press-office/press-releases/2026/july/ambassador-greer-issues-statement-usmca-joint-review",
+        "text": "WASHINGTON – The Agreement between the United States of America, the United Mexican States, and Canada (USMCA or “Agreement”) requires the USMCA Free Trade Commission, composed of government representatives of each Party, to conduct a joint review of the Agreement on July 1, 2026. In accordance with the Agreement, the United States, Mexico, and Canada met virtually today to discuss the operation of the USMCA. The United States did not agree to renew the USMCA in its current form. As a result, the USMCA is not renewed. The United States will continue to engage with Mexico and Canada to address the Agreement’s shortcomings and our trade deficits with these countries. However, the Agreement remains in force pending resolution of these issues or until the Agreement’s termination. As previously announced, the United States will meet with Mexico the week of July 20 for a third round of bilateral negotiations related to the USMCA joint review.\n###",
+        "body_sha256": "5e6f2abfc2bc813de7b2f839ddaaece143f7b7709d3c9d7eb43b3941e7473ca4",
+        "start": 0,
+        "end": 954
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/24819/raw-bundle.json",
+        "bundle_sha256": "934c7cc1b8980107bf0b570b4c1e7727cd3a9ee706d741fabfe801f0541d0633",
+        "content_type": "text/html",
+        "full_body_chars": 954,
+        "window_sha256": "5e6f2abfc2bc813de7b2f839ddaaece143f7b7709d3c9d7eb43b3941e7473ca4"
+      },
+      "observation": {
+        "document_role": "status_record",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "counterevidence",
+        "quote": "WASHINGTON – The Agreement between the United States of America, the United Mexican States, and Canada (USMCA or “Agreement”) requires the USMCA Free Trade Commission, composed of government representatives of each Party, to conduct a joint review of the Agreement on July 1, 2026. In accordance with"
+      },
+      "expected": "matched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-07",
+      "question_id": "43360",
+      "domain": "security",
+      "legacy_need": {
+        "id": "material-07",
+        "condition": "Official UK national terrorism threat-level observation on April 30, 2026, including SEVERE as counterevidence to a reduction.",
+        "required_source_domains": [
+          "gov.uk"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "gov.uk"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Official UK national terrorism threat-level observation on April 30, 2026, including SEVERE as counterevidence to a reduction.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "supporting_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.gov.uk/government/news/uk-national-threat-level-raised-to-severe",
+        "text": "UK National Threat Level raised to SEVERE\nThe UK National Threat Level has been raised to SEVERE, meaning an attack is highly likely.\nThe Joint Terrorism Analysis Centre (JTAC) yesterday (30 April 2026) raised the UK National Threat Level from SUBSTANTIAL, meaning an attack is likely, to SEVERE, meaning an attack is highly likely.\nThe increase in threat comes following the stabbing in Golders Green in North London, but it is not solely a result of that attack. The terrorist threat level in the UK has been rising for some time, driven by an increase in the broader Islamist and Extreme Right Wing terrorist threat from individuals and small groups based in the UK.\nWhile the UK National Threat Level set independently by JTAC reflects the terrorist threat in the UK, it comes against a backdrop of increased state-linked physical threats which is encouraging acts of violence, including against the Jewish community. This is an independent, systematic, and rigorous process, based on the very latest intelligence and analysis of internal and external factors which drive the threat.\nFor the public, this means remaining alert but not alarmed.  If you see anything that doesn’t feel right report it via the [ACT Action Counters Terrorism website](https://act.campaign.gov.uk/). In an emergency always call 999.",
+        "body_sha256": "db21cc522d428c53f3afea974b90cde9012458771d5ab372f852294c517e839b",
+        "start": 0,
+        "end": 1314
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/43360/raw-bundle.json",
+        "bundle_sha256": "9e6cf86f1d31ab527d2b4803bab966d7f440850f7a060b25f9be2d421426acec",
+        "content_type": "text/html",
+        "full_body_chars": 1314,
+        "window_sha256": "db21cc522d428c53f3afea974b90cde9012458771d5ab372f852294c517e839b"
+      },
+      "observation": {
+        "document_role": "status_record",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "counterevidence",
+        "quote": "UK National Threat Level raised to SEVERE\nThe UK National Threat Level has been raised to SEVERE, meaning an attack is highly likely.\nThe Joint Terrorism Analysis Centre (JTAC) yesterday (30 April 2026) raised the UK National Threat Level from SUBSTANTIAL, meaning an attack is likely, to SEVERE, mea"
+      },
+      "expected": "matched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-08",
+      "question_id": "39886",
+      "domain": "diplomacy",
+      "legacy_need": {
+        "id": "material-08",
+        "condition": "Official communique recording a Russia-India-China trilateral meeting during 2026 before September 1; earlier historical meetings are supporting context only.",
+        "required_source_domains": [
+          "mid.ru"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "mid.ru"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Official communique recording a Russia-India-China trilateral meeting during 2026 before September 1; earlier historical meetings are supporting context only.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.mid.ru/upload/archive/76f69b547264e245bbb004daeff3304b.pdf",
+        "text": "[PDF page 1]\nJoint Communique of the 16th Meeting of the Foreign Ministers of\n the Russian Federation, the Republic of India and\n the People’ s Republic of China\n Zhejiang, 27 February, 2019\n1. We, the Foreign Ministers of the Russian Federation, the\nRepublic of India and the People’s Republic of China held our\n16th meeting in Zhejiang, China on 27 February 2019 and\ndiscussed international and regional issues of common concern.\n2. The Ministers recalled that the Russia- India-China (RIC)\nInformal Summit in Buenos Aires in November 2018 was an\nimportant milestone, during which the three leaders agreed to\nstrengthen coordination, build consensus, enhance cooperation and\npromote world peace, stability and development. The Informal\nSummit imparted fresh impetus into the trilateral cooperation. The\nMinisters reiterated their commitment to work together to further\ntheir cooperation on important issues discussed at the Informal\nSummit and take the trilateral cooperation to a new level.\n 1\n[PDF page 2]\n3. The Ministers reiterated the importance they attached to the\nRussia-India-China trilateral format as a platform to foster closer\ndialogue and practical cooperation in identified areas. As countries\nwith significant international and regional influence, the three\ncountries stand ready to expand mutual consultations and\ncooperation on international and regional issues of mutual interest\nin the spirit of mutual respect, respect for sovereignty, non-\ninterference in internal affairs, unity, mutual understanding and\ntrust. The co mmon development and close cooperation of the three\ncountries is conducive for world peace and stability and promoting\nglobal growth.\n4. The Ministers reiterated their firm commitment to\nmultilateralism and the purposes and principles enshrined in the\nCharter of the United Nations. The Ministers recognized the need\nfor reform of multilateral institutions. They recalled the 2005\nWorld Summit Outcome document and reaffirmed the need for a\ncomprehensive reform of the UN, including its Security Council,\nwith a view to making it more representative, effective and\nefficient, and to increase the representation of the developing\ncountries so that it can adequately respond to global challenges.\nForeign Ministers of China and Russia reiterate the importance\n 2\n[PDF page 3]\nthey attach to the status of India in international affairs and support\nits aspiration to play a greater role in the United Nations.\n5. The Ministers supported the G20’s leading role in global\neconomic governance and international economic cooperation.\nThey expressed their readiness to enhance communication and\ncooperation including through G20 Foreign Ministers’ Meeting\nand other means, through consultations and mutual support in areas\nof respective interest. They looked forward to positive outcomes\nfrom this year’s Osaka Summit.\n6. The Ministers reiterated the importance of BRICS cooperation\nand commended the fruitful results of the Johannesburg Summit.\nThe three countries will work actively to implement the outcomes\nof the successive BRICS summits, deepen BRICS strategic\npartnership, strengthen cooperation in the three pillar areas of\neconomy, political and security cooperation, and people- to-people\nexchanges.\n7. The Ministers underlined that the Shanghai Cooperation\nOrganization (SCO) is an important, effective mechanism in\npromoting multilateral political, security, economic and people-to-\n 3\n[PDF page 4]\npeople exchanges in the region, plays an important role in\nmaintaining regional peace and stability and promoting prosperity\nand development of its member states. The Ministers welcomed\nthe outcomes of the Qingdao Summit held in June 2018, which\nemphasized inter alia, the principle of “Shanghai Spirit”. The\nMinisters reiterated necessity to expand cooperation between SCO\nmember states, observers and dialogue partners. They called for\nbroadening contacts and interactions between SCO and\ninternational and regional organizations especially with United\nNations Organization and its specialized bodies, as well as with\nASEAN and others.\n8. The Ministers reaffirmed their commitment to equal, indivisible\ncommon, comprehensive, cooperative and sustainable security.\nThe Ministers reiterated the importance of the role and the need for\ncloser cooperation and consultations in various regional fora and\norganizations such as the East Asia Summit (EAS), ASEAN\nRegional Forum (ARF), ASEAN Defence Ministers Meeting Plus\n(ADMM-Plus), Asia- Europe Meeting (AS",
+        "body_sha256": "d8fe4304f10ff98ba75c554f0f592db7041d81edeafb400663b7a6da20a59782",
+        "start": 0,
+        "end": 4500
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/39886/raw-bundle.json",
+        "bundle_sha256": "e0f0f6eda75214df2495c0d1b01b16bfc24a375b1aa326425e0a754e6d2c56ee",
+        "content_type": "application/pdf",
+        "full_body_chars": 23434,
+        "window_sha256": "c68d6efb50bb3d4476c94f924373f8c85025df20d4554d258bc9ec39820d8e6e"
+      },
+      "observation": {
+        "document_role": "status_record",
+        "fit_axes": {
+          "entity": true,
+          "material_type": true,
+          "metric": true,
+          "period": false
+        },
+        "evidence_relation": "neutral",
+        "quote": "[PDF page 1]\nJoint Communique of the 16th Meeting of the Foreign Ministers of\n the Russian Federation, the Republic of India and\n the People’ s Republic of China\n Zhejiang, 27 February, 2019\n1. We, the Foreign Ministers of the Russian Federation, the\nRepublic of India and the People’s Republic of Ch"
+      },
+      "expected": "mismatched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-09",
+      "question_id": "43496",
+      "domain": "elections",
+      "legacy_need": {
+        "id": "material-09",
+        "condition": "Record of a presidential first-round vote actually held in Haiti in 2026, rather than a scheduled future election or revised timetable.",
+        "required_source_domains": []
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": false,
+        "publisher_domains": [],
+        "required_axes": [
+          "entity",
+          "metric"
+        ],
+        "purpose": "Record of a presidential first-round vote actually held in Haiti in 2026, rather than a scheduled future election or revised timetable.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://haitiantimes.com/2026/07/28/haiti-elections-set-dec-13-first-round",
+        "text": "Overview:\nHaiti's Provisional Electoral Council has released a revised electoral calendar scheduling the first round of presidential and legislative elections for Dec. 13, 2026, and a runoff and local elections for Feb. 21, 2027. The announcement follows weeks of criticism over the absence of an official timeline and comes as authorities warn that insecurity and funding remain the biggest obstacles to holding Haiti's first national election in a decade.\nPORT-AU-PRINCE — Haiti’s Provisional Electoral Council (CEP) has released the country’s long-awaited election calendar, setting Dec. 13 for the first round of presidential and legislative elections and Feb. 21, 2027, for the runoff, after months of uncertainty over when the country’s first national vote in a decade would take place.\nThe calendar ends weeks of criticism from political parties and civil society organizations that accused election officials of advancing preparations without publishing a clear timetable.\n“The first round includes presidential and legislative elections as well as a popular vote on proposed constitutional reforms,” the Provisional Electoral Council (CEP) said in a [press release](https://scontent-mia3-3.xx.fbcdn.net/v/t39.99422-6/758765182_1736657107763520_857549993868425895_n.png?stp=dst-jpg_tt6&cstp=mx1080x1301&ctp=s1080x1301&_nc_cat=109&ccb=1-7&_nc_sid=127cfc&_nc_ohc=PrCLfF8ytGUQ7kNvwFCdtqu&_nc_oc=AdpMWiQxp1y-7jjcIJhzOmBdfmK7c6yk-wAwriXxZxQ6BUtT9kxI5CO6GDWzEjXbQng&_nc_zt=14&_nc_ht=scontent-mia3-3.xx&_nc_gid=xv2WFgHgnLh_aaTfzo_76g&_nc_ss=7b2a8&oh=00_AQCHb8C1Mhmdk5Bk4wH94cHk5NgM3v_Mxg9Qax9DIkV1uA&oe=6A6DD802). \nIf held as planned, the vote would be Haiti’s first national election in a decade following the disputed 2015-2016 electoral cycle. The February second round is for local elections and possible presidential and legislative runoffs.\nThe [revised calendar](https://m.facebook.com/story.php?story_fbid=pfbid02q3YEmJRnyove8PqcDpoooG1brQnt8EYFVgzFCoJsAckeFMfRYGXeU3W2ugRur6psl&id=100064819145779&mibextid=wwXIfr), published July 27 after being submitted to the government four days earlier, replaces a previous timetable that had scheduled [the first round for Aug. 30 and the runoff for Dec. 6](https://haitiantimes.com/2026/01/06/haiti-cep-maintains-elections-august-30-2026/).\nThe CEP [withdrew that calendar in April](https://haitiantimes.com/2026/04/09/haiti-delays-voter-and-candidate-registration-amplifying-doubts-about-long-stalled-electoral-process/) at the government’s request while officials revised the country’s electoral framework to align it with a [National Pact for Security and the Organization of Elections](https://haitiantimes.com/2026/02/24/haitian-political-actors-signed-a-pact/), signed with political actors, and constitutional reform plans.\nPolitical organizations have long argued that the absence of an official calendar undermined confidence in the electoral process.\nIn a July 20 [memorandum](https://drive.google.com/file/d/1npCSCieOqEVOBGWIrnOJtbly6dIbDtTE/view?usp=drivesdk), the coalition Forces Politiques et Sociales de l’Opposition Progressiste — French for “Political and Social Forces of the Progressive Opposition” — which includes dozens of political parties, accused the CEP of advancing isolated electoral steps without presenting a comprehensive roadmap.\n“Without a serious electoral calendar, logistical planning, voter registration, the acquisition of sensitive materials, and the training of polling station staff become impossible,” the coalition wrote. “The absence of a precise timeline fuels skepticism among the population and opposition actors.”\nUnder the new schedule, final election results are expected by March 7, with newly elected officials taking office by March 12, 2027.\nSecurity and funding remain major obstacles as critics say calendar should have come sooner\nDespite setting new dates, the CEP warned that elections can proceed only if several conditions are met.\nThe council said the government must restore security nationwide to allow voters, candidates, election workers and materials to move safely. It also stressed the need to secure the funding necessary to organize the elections.\n“These prerequisites are essential to meeting the proposed timeline and organizing credible, inclusive and transparent elections,” the CEP said.\nEarlier this month, the CEP and government agreed on [a proposed $120 million election budget](https://haitiantimes.com/2026/07/07/haiti-120m-electoral-budget/), but it has yet to recei",
+        "body_sha256": "0f8bd9ca6e2d31953c5251aac29a3fbe8f16cadab2e1af06be24ff321b705662",
+        "start": 0,
+        "end": 4500
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/43496/raw-bundle.json",
+        "bundle_sha256": "f9ac1ef89503a71406b9e6abace19eab223c555edffc7d23a424f836313ebd7e",
+        "content_type": "text/html",
+        "full_body_chars": 6632,
+        "window_sha256": "d505d494539c5d93cbe13b88fa5d066afe887ec720721ca3f7472ab30377a1b3"
+      },
+      "observation": {
+        "document_role": "forecast_reporting",
+        "fit_axes": {
+          "entity": true,
+          "material_type": false,
+          "metric": false,
+          "period": true
+        },
+        "evidence_relation": "neutral",
+        "quote": "Overview:\nHaiti's Provisional Electoral Council has released a revised electoral calendar scheduling the first round of presidential and legislative elections for Dec. 13, 2026, and a runoff and local elections for Feb. 21, 2027. The announcement follows weeks of criticism over the absence of an off"
+      },
+      "expected": "mismatched",
+      "model_eligible": true
+    },
+    {
+      "id": "heldout-10",
+      "question_id": "43708",
+      "domain": "satellite_access",
+      "legacy_need": {
+        "id": "material-10",
+        "condition": "Original Starlink website record of South Africa service availability in 2026; third-party regulatory reporting cannot replace the rule-specified original publisher.",
+        "required_source_domains": [
+          "starlink.com"
+        ]
+      },
+      "contract": {
+        "allowed_document_roles": [
+          "status_record"
+        ],
+        "publisher_required": true,
+        "publisher_domains": [
+          "starlink.com"
+        ],
+        "required_axes": [
+          "entity",
+          "period"
+        ],
+        "purpose": "Original Starlink website record of South Africa service availability in 2026; third-party regulatory reporting cannot replace the rule-specified original publisher.",
+        "publisher_provenance": "Pinned original publisher from saved URL and explicit material requirement; no model domain inference.",
+        "closure_scope": "target_material",
+        "evidence_relation_scope": "Local material observation only, not whole-event resolution."
+      },
+      "source": {
+        "url": "https://www.advanced-television.com/2026/04/21/starlink-struggling-for-approval-on-south-africa-india",
+        "text": "Starlink struggling for approval on South Africa, India\nApril 21, 2026\nElon Musk, despite being born and raised in South Africa, is still stymied in the country as far as his Starlink broadband service is concerned.\nSpaceX first applied for permission many years ago. Indeed, it was considered such a routine move that Starlink kit was being imported into the nation and some 5,000 users registered in the 2+ year period to 2025. They were subsequently cancelled in June 2025 while “routine” permissions were awaited.\nSpaceX is held back by South Africa’s BEE (Black Economic Empowerment) regulations, which – in essence – require any foreign business to have a 30 ‘black’ ownership. Musk has frequently offered about cash to deliver free high-speed internet to 5,000 rural schools in South Africa. This move was in response to a comment by South Africa’s president Cyril Ramaphosa having said that if Musk doesn’t want to comply with BEE requirements, there are alternative pathways—such as investing in education.\nStarlink is reported to have offered up to 2 million Rand (€96m) to expand broadband access in the Southern African Development Community region, according to The Africa Report.\nA research study by the World Bank showed that every 10 per cent increase in broadband penetration can raise GDP growth by 1.21 per cent in countries such as South Africa.\nWhile urban residents in cities and towns can access broadband by fibre and wireless, rural communities are being held back. South African farmers and rural communities are asking the government to approve Starlink. In many remote areas, there is no internet at all.\nJust days ago, Musk issued a stinging attack on South Africa’s race-based ownership laws, claiming they have prevented Starlink from operating in the country. In a series of posts on X, Musk described the regulations as “openly racist” and alleged that officials had suggested installing a nominal Black executive to secure approval, an offer he said he refused on principle.\n“South Africa won’t allow Starlink to be licensed, even though I was born there, simply because I am not Black,” Musk wrote, adding that such policies were “evil” and should face international sanctions.\nIn related news, Starlink first applied for permission to operate over India in November 2021 and is still waiting for approval. The latest reports suggest that its Foreign Direct Investment (FDI) application has “been put on hold” by the Indian government with reports saying that Starlink is a threat to national security concerns.\nOne report from an independent observer said: “India doesn’t want to approve Starlink. They just don’t want to spit out formally. Their delay tactics are a decoy; powerful people control their communications, influencing the government. I doubt Starlink will ever be approved there.”\nAnother comment from an anonymous contributor on India’s Economic Times website stated: “People aware of the details said the foreign direct investment (FDI) application of Starlink is currently on hold and can even be rejected if the government’s queries aren’t satisfactorily addressed. There are questions around cross holding in parent SpaceX and some other technical parameters.”\nA few weeks ago, senior executives from SpaceX met Indian Telecom Minister Jyotiraditya Scindia as the company advanced plans to launch satellite internet services in India. The delegation included SpaceX president/COO Gwynne Shotwell and VP/Global Business Lauren Dreyer, who discussed the company’s India strategy with the minister.\nSeparately, SpaceX signed an agreement with the Government of Meghalaya to pilot Starlink high-speed satellite internet services in the state.",
+        "body_sha256": "039d24a0043175cc9af1e57673b4cc2b1debf1e768223feb20c58cee8e13c6fa",
+        "start": 0,
+        "end": 3693
+      },
+      "provenance": {
+        "parent_run": 37101299893,
+        "local_bundle": ".tmp/recollection-progress-37101299893/handoffs/43708/raw-bundle.json",
+        "bundle_sha256": "1ad5c80d82eacd66bba18460b966638f9f04440428228d8a72707a50e2e046d3",
+        "content_type": "text/html",
+        "full_body_chars": 3693,
+        "window_sha256": "039d24a0043175cc9af1e57673b4cc2b1debf1e768223feb20c58cee8e13c6fa"
+      },
+      "observation": {
+        "document_role": "forecast_reporting",
+        "fit_axes": {
+          "entity": true,
+          "material_type": false,
+          "metric": true,
+          "period": true
+        },
+        "evidence_relation": "neutral",
+        "quote": "Starlink struggling for approval on South Africa, India\nApril 21, 2026\nElon Musk, despite being born and raised in South Africa, is still stymied in the country as far as his Starlink broadband service is concerned.\nSpaceX first applied for permission many years ago. Indeed, it was considered such a"
+      },
+      "expected": "mismatched",
+      "model_eligible": true
+    }
+  ]
+}

@@ -261,3 +261,24 @@ historical period. The legacy arm is a simplified diagnostic, not the full
 production workflow. Do not promote this round's selected-case success before
 evaluating unseen materials. Use --manifest to select an explicit frozen
 contract version for future runs. The production pipeline remains unchanged.
+
+## Frozen V2 unseen-material validation
+
+`MATERIAL_CONTRACT_HELDOUT10.json` preregisters ten distinct questions excluded
+from all earlier material manifests, with five accepted and five rejected
+material examples. Raw bodies come from archived run 37101299893. Each record
+preserves the full-body hash, exact excerpt offsets, window hash, publisher
+contract and pre-call annotation. No resolution or prior prediction was used.
+
+The evaluator, quotation binder, legacy gate and paired runner remain byte-identical
+to commit 758db98 (normalizing checkout line endings). Both arms receive the same
+body and metadata, while gold annotations are withheld. Super, reasoning/output
+settings, alternating arm order and the 20-decision / 30-HTTP budgets are fixed.
+Use `material_contract_heldout` in `checked_snapshot_forty.yaml` exactly once.
+
+This is a balanced diagnostic challenge set, labeled by one reviewer. It tests
+material acceptance on saved excerpts, not fresh retrieval recall, full-document
+navigation, event resolution or leak-free historical forecasting. The unchanged
+runner retains its old diagnostic `scope` string; the held-out manifest and audit
+supply the correct scope without altering the frozen implementation. Failures
+must remain in the first-pass report; any subsequent repair needs a new cohort.
