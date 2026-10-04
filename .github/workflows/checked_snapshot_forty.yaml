@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -27,6 +27,10 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  material-benchmark:
+    if: inputs.experiment == 'material_benchmark'
+    uses: ./.github/workflows/material_benchmark.yaml
+    secrets: inherit
   heldout-select:
     if: inputs.experiment == 'material_heldout_ten'
     runs-on: ubuntu-latest

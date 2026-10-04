@@ -1,6 +1,7 @@
 name: Frozen paired material benchmark
 on:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
   actions: read
