@@ -49,6 +49,10 @@ def admit(sources, question, retained=(), pages=None):
         reason = None
         if not source['rule_primary'] and re.search(NAV,path,re.I):
             reason = 'navigation_route'
+        elif (question.get('collection_workflow') == 'material-gap-v1' and not source['rule_primary'] and
+              re.search(r'/(?:about|team|careers|subscribe|newsletter|cookie|legal)(?:/|\.|$)', path, re.I) and
+              material_role == 'ordinary_detail'):
+            reason = 'background_navigation_route'
         elif not source['rule_primary'] and family in families:
             reason = 'possible_url_alias_or_already_queued'
         elif not source['rule_primary'] and family in captured:

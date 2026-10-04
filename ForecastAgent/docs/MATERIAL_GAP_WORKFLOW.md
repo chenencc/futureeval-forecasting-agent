@@ -3,6 +3,15 @@
 This development-only workflow uses `collection_workflow: material-gap-v1`, an
 explicit experiment ID, and `pipeline: collection`. Production routing is not
 changed. The `gap2` cohort runs the existing IMO and Kaub acceptance cases.
+The `material_new5` cohort freezes five distinct housing, gasoline, court,
+outbreak and case-database acquisition questions. Its ten material requirements
+and comparison limitations are preregistered in `COLLECTION_COHORTS.json`.
+It additionally freezes `collection_stage_allocation: material-reserve-v1`:
+initial acquisition gets four Tavily and one Exa attempts, 20 model decisions,
+26 model HTTP attempts and 1,200 seconds. The original totals remain six Tavily,
+two Exa, 24 model decisions, 30 dispatch HTTP attempts and 1,500 seconds.
+The remaining capacity is reserved for supplementation. Default and older
+cohorts keep their allocation unchanged; no existing ledger is upgraded.
 
 ## Flow
 
@@ -11,13 +20,19 @@ changed. The `gap2` cohort runs the existing IMO and Kaub acceptance cases.
    validated against the catalog and charged to existing HTTP capacity. These
    program batches are recorded separately from model HTTP requests and do not
    acknowledge source delivery to a model that was not called.
-3. A document need ledger identifies literal candidate coverage for each need.
-4. Independent supplementation processes existing leads, then searches missing
-   critical document families even when other readable bodies already exist.
-5. Each discovery request is reserved before HTTP. One request per need/provider
+3. A document ledger separates discovered links, readable saved bodies and
+   target-material capture. Lexical candidates never close a critical need.
+4. At inventory boundaries, a bounded model adapter reviews saved source
+   windows, ranks observed URLs and recommends one missing-material query.
+   The program binds exact quotes and source hashes before accepting fit axes
+   for entity, document type, metric and period. Negative notices remain useful
+   material; document fit never means the event occurred.
+5. Independent supplementation processes prioritized existing leads, then searches
+   missing critical document families even when other readable bodies exist.
+6. Each discovery request is reserved before HTTP. One request per need/provider
    is permitted, with no transport retries. Discovered exact URLs join the bounded
    capture frontier. Bodies and failed attempts remain auditable.
-6. Export the material ledger and termination reason for later analysis.
+7. Export the material ledger and termination reason for later analysis.
 
 ## Files and meaning
 
@@ -34,11 +49,30 @@ correct numerical value, or satisfaction of the resolution criteria. Candidate
 URLs carry body hashes and remain subject to later analysis. Future-rollout
 language alone does not count as a current-access document candidate.
 
+`acquisition_state` is authoritative for material handoff: `candidate_discovered`,
+`readable_body_saved`, `target_material_captured`, or `unlocated`. The older
+`status: candidate_captured` is retained as a lexical inventory diagnostic only.
+A target material needs quote-bound model fit on every applicable axis, or an
+exact structured measurement capture with identifier, date, unit and requested
+clock present. This is an acquisition fit assertion, not independent truth
+verification. Quote validation prevents invented citations, but cannot guarantee
+that a model's interpretation is correct; blind review remains required.
+
 Missing material is distinguished from `search_attempted`, `discovery_failed`,
 `read_failed`, and `budget_exhausted`. Timestamp conversion and condition binding
-are deferred to analysis, rather than endlessly reopening a captured document.
-Sources absent from the ledger may still be saved in the raw inventory. Lexical
-coverage is a routing proxy and requires manual review during acceptance.
+are deferred to analysis. Sources absent from the ledger may still be saved in
+the raw inventory. Unsupported fit stays missing even after all candidates were
+read. Termination distinguishes `materials_ready`, `material_unlocated`,
+`source_unreadable` and `budget_exhausted`; explicit provider/review errors and
+underlying reasons are retained. No successful search is required for a forced
+bounded exit, and a candidate body alone never establishes readiness.
+
+The frontier retains rule URLs and target data files ahead of agent choices.
+Explicitly deferred observed URLs retain their reasons. Duplicate bodies and
+context-only captures do not expand child branches. Two consecutive captures
+without relevant material on a host defer ordinary details there; primary URLs,
+material dependencies and explicit model priorities are exempt. These are
+bounded recall heuristics, not proof that deferred pages lack useful evidence.
 
 ## Shared limits
 
@@ -48,6 +82,15 @@ model/time/Extract limits. These are task lifetime totals across initial and
 supplemental stages, not separate budgets per stage. Default profiles keep their
 existing limits. Additional experimental searches accept `gap` and `crosscheck`
 roles; the old production role restrictions remain unchanged.
+
+Material review is limited to four decisions including failures, and debits the
+remaining initial dispatch model decision/physical HTTP/failure/time allowances. It uses
+the existing configurable model interface and routing policy. Requests, known
+usage, failed/interrupted reservations and validated decisions are persisted in
+`state.json` and `material-model-*.json`. A changed body invalidates its binding.
+Inventory fingerprints prevent repeat reviews on resume. Invalid decisions stop
+the review adapter and leave gaps open; bounded program discovery can continue.
+Tool descriptions, role enums and execution now share `runtime/search_contract.py`.
 
 Missing credentials disable that channel. HTTP 401/402/403/429 discovery failures
 stop further gap discovery and preserve state; they do not trigger a second

@@ -24,6 +24,21 @@
     "45048": ["Dated startup or tech job-opening source for September 2, 2026", "Employer identity, universe definition and counts or underlying rows"],
     "44728": ["Shark Percy tracker records near September 1, 2026", "Animal identity, observation time and location source"]
   },
+  "material_new5": {
+    "43658": ["Census August 18, 2026 New Residential Construction initial release covering July 2026", "Total privately-owned housing starts SAAR observation, thousands-of-units definition and initial-versus-revised label"],
+    "44939": ["EIA U.S. regular gasoline observation for August 17, 2026 or the documented closest reporting date", "National geographic scope, dollars-per-gallon unit and gasoline-grade metadata"],
+    "41480": ["Official Louisiana v. Callais docket with case identity and dated entries", "Official merits opinion if issued; otherwise preserved docket status and an explicit unlocated opinion gap"],
+    "43461": ["Public health authority MV Hondius outbreak report with publication date", "Raw case or exposure-category information distinguishing passengers and non-passengers, and relevant reporting dates"],
+    "44727": ["Damien Charlotin AI Hallucination Cases database entries dated August 16 through August 31, 2026", "Saved date-field definition and pagination or full-dataset coverage metadata"]
+  },
+  "material_new5_gate": {
+    "scope": "Held-out acquisition cases; historical questions with current retrieval, not a forecasting backtest.",
+    "material_review": "Inspect exact bodies and hashes against predeclared requirements; lexical coverage and job success cannot establish recall.",
+    "comparison": "Compare with preserved old source packets where available and initial-stage saved bodies. Old bounded passages can prove presence, but cannot establish absence. Online source changes preclude a controlled old/new claim.",
+    "required": ["All five questions have durable output or explicit failure state", "Search and model lifetime caps preserved", "No unaccounted reservations", "Every claimed target material has a saved usable body and auditable identity/date/metric fit", "Missing or unavailable material remains an explicit gap"],
+    "dispatch_size": 5,
+    "forecast_submissions": 0
+  },
   "gate": {
     "required": ["Original bytes and parsed-body hashes verified", "All three artifacts and provider journals preserved", "No quota violation or unfinished reservation", "Kaub target-data candidate actually captured", "NYT target-period metric text actually captured", "IMO evaluation and availability material manually inspected"],
     "blocked": ["Provider quota or credential failure", "Critical material still missing", "Lost state or accounting inconsistency"],

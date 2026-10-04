@@ -32,6 +32,11 @@ def collection_system(task, skills):
         'Retain issuer/period-matched primary releases and observed supporting attachments. '
         'Do not fabricate file URLs, treat a date in the URL as proof of body coverage, or repeat an already readable directory. '
         'If the target file cannot be acquired, finish with an explicit target_data_file_missing gap; never imply the observation was collected.\n')
-    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + material_policy + '\nFrozen task budget: '+json.dumps({**capacity,
+    from ForecastAgent.runtime.capacity import allocation
+    allocated=allocation(task.bundle)
+    phase_note=('\nStage allocation: initial acquisition uses at most '+json.dumps(allocated)+
+        '. Remaining shared capacity is reserved for independent supplementation; finish this stage with explicit gaps when its allowance ends.\n'
+        if task.bundle.get('request',{}).get('collection_stage_allocation') else '')
+    return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + material_policy + phase_note + '\nFrozen task budget: '+json.dumps({**capacity,
         'tavily_basic_lifetime':task.search_limit, 'exa_lifetime':task.exa_limit,
         'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional')})+'\nAvailable skill catalog: '+json.dumps(skills)

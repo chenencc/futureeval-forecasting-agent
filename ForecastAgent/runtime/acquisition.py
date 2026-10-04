@@ -25,7 +25,8 @@ def checkpoint(task):
             ledger=need_ledger.build(b)
             material_status={'material_needs':[{
                 'id':n['id'],'family':n['family'],'candidate_status':n['status'],
-                'gap_query':n['query'] if not n['candidates'] else None,
+                'acquisition_state':n['acquisition_state'],
+                'gap_query':n['query'] if not n['target_material_captured'] else None,
                 'semantic_verified':False} for n in ledger['needs'] if n['priority']=='critical'][:8]}
         return {'schema':'raw_acquisition_checkpoint_v1','budget_remaining':task.budget(),
             **material_status,

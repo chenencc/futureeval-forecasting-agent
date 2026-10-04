@@ -94,10 +94,10 @@ def plan(bundle):
             add(link['url'], link['label'], 'saved_link', url, materials.dependency(q,url,page,link,
                 info=assessments[url]['material_requirements'],match=assessments[url]['source_contract']))
     leads = bundle.get('source_leads', {})
-    for lead in (leads.values() if isinstance(leads, dict) else leads):
+    for lead_key, lead in (leads.items() if isinstance(leads, dict) else ((None, row) for row in leads)):
         if isinstance(lead, dict):
             origin = lead.get('origin','saved_lead')
-            url = lead.get('url')
+            url = lead.get('url') or lead_key
             if origin.startswith('question_'):
                 extracted = observed_urls(url or '')
                 url = extracted[0] if extracted else None
@@ -176,7 +176,7 @@ def hints(bundle):
             'truth_verified': False}
 
 
-def run(bundle, folder, *, prior=(), network=False, search=None, caps=None, max_link_depth=0):
+def run(bundle, folder, *, prior=(), network=False, search=None, caps=None, max_link_depth=0, material_agent=None):
     """Bounded supplemental acquisition; search(tool, query) performs one request.
 
     No search is required when saved leads suffice. Missing credentials do not
@@ -194,10 +194,10 @@ def run(bundle, folder, *, prior=(), network=False, search=None, caps=None, max_
         if type(max_link_depth) is not int or not 0 <= max_link_depth <= depth_limit:
             raise ValueError('Link discovery depth exceeds authorized profile')
         return _run(bundle, folder, prior=prior, network=network, search=search,
-                    caps=selected, max_link_depth=max_link_depth)
+                    caps=selected, max_link_depth=max_link_depth, material_agent=material_agent)
 
 
-def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
+def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, material_agent=None):
     from ForecastAgent.supplement import frontier as routing
     if (bundle.get('supplement_lineage') or bundle.get('enhanced_supplement') or
         any(p.get('supplement_provenance') for p in bundle.get('pages', {}).values())) and not prior:
@@ -215,12 +215,20 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     from ForecastAgent.supplement import need_ledger
     gap_workflow = need_ledger.enabled(bundle)
     if gap_workflow:
+        from ForecastAgent.supplement import material_review
         identity['need_ledger_sha256'] = hashlib.sha256(Path(need_ledger.__file__).read_bytes()).hexdigest()
+        identity['material_review_sha256'] = hashlib.sha256(Path(material_review.__file__).read_bytes()).hexdigest()
+        identity['material_agent_enabled'] = bool(material_agent)
         identity['gap_search_available_tools']=sorted(getattr(search,'available_tools',('tavily','exa')) if search else [])
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:
         raise ValueError('Frozen repair identity changed; budgets cannot restart')
     save(folder/'identity.json', identity)
     state = load(folder/'state.json') if (folder/'state.json').exists() else {'attempts': []}
+    if gap_workflow and material_agent:
+        state.setdefault('prior_material_model_attempt_count', sum(len(j.get('material_model_attempts', [])) for j in prior))
+        state.setdefault('prior_material_review_count', sum(len(j.get('material_reviews', [])) for j in prior))
+        state.setdefault('prior_material_model_failure_count', sum(a.get('status') != 'received'
+            for j in prior for a in j.get('material_model_attempts', [])))
     # Zero attempts is a valid journal (all sources already captured, no leads,
     # or exhausted shared budgets), and must be exported for downstream audits.
     save(folder/'state.json', state)
@@ -245,6 +253,37 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
                 key += '#repair='+digest(page)[:12]
             overlay['pages'][key] = page
     gap_plan = plan(overlay)
+    def review_materials():
+        if not gap_workflow or not material_agent or not network or state.get('material_agent_stopped'):
+            return
+        ledger = need_ledger.build(overlay, state, usage(bundle, prior, state), caps)
+        payload = material_review.packet(overlay, ledger, plan(overlay)['sources'])
+        fingerprint = digest({'pages': [(u,digest(p)) for u,p in overlay['pages'].items()],
+                              'sources':payload['sources']})
+        if fingerprint in state.get('reviewed_inventory', []):
+            return
+        # Reservations persist even if validation or transport fails; no loops.
+        state.setdefault('reviewed_inventory', []).append(fingerprint)
+        save(folder/'state.json', state)
+        try:
+            result = material_review.bind(overlay, payload, material_agent(payload, state, folder))
+            # Injected adapters used in tests need the same durable result contract.
+            review = next((r for r in reversed(state.get('material_reviews', [])) if r.get('input_sha256') == digest(payload)), None)
+            if review is None:
+                review = {'input_sha256':digest(payload)}
+                state.setdefault('material_reviews', []).append(review)
+            review.update(status='bound', result=result)
+            state['material_priority_urls'] = result['priority_urls']
+            state['material_deferred_urls'] = result['deferred_urls']
+            state['material_next_search'] = result['next_search']
+        except Exception as exc:
+            state['material_agent_stopped'] = True
+            state['material_agent_error'] = type(exc).__name__
+            if state.get('material_reviews'):
+                state['material_reviews'][-1].update(status='invalid_or_failed', error=type(exc).__name__)
+            # Incomplete review never closes material needs or invents bindings.
+        save(folder/'state.json', state)
+    review_materials()
     if not gap_workflow and network and search and gap_plan['gaps'] and not gap_plan['sources']:
         for tool in ('tavily', 'exa'):
             if any(r['tool'] == tool for r in state['attempts']): continue
@@ -282,6 +321,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     current_plan = gap_plan
     def expand_children(url, depth):
         if not max_link_depth or depth >= max_link_depth: return
+        if gap_workflow and url in state.get('nonexpanding_urls', []): return
         children = [s for s in current_plan['sources'] if s['url'] not in queued and s.get('parent_url') == url]
         if depth>=2:
             deferred.extend({**s,'deferred_reason':'ordinary_link_depth_ceiling'} for s in children if s['material_dependency']['role']=='ordinary_detail')
@@ -305,13 +345,21 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     def discover_missing_material():
         """Search a missing document family even when other sources exist."""
         nonlocal current_plan
+        review_materials()
         counts = usage(bundle, prior, state)
         ledger = need_ledger.build(overlay, state, counts, caps)
         save(folder/'material-needs.json', ledger)
         if not gap_workflow or not network or not search or counts['http']>=caps['http']:
             return False
+        recommendation = state.get('material_next_search')
+        if recommendation:
+            ledger['needs'].sort(key=lambda n: n['id'] != recommendation['need_id'])
         action = need_ledger.next_search(ledger, state, counts, caps,getattr(search,'available_tools',('tavily','exa')))
         if not action: return False
+        if recommendation and recommendation['need_id'] == action['need_id']:
+            proposed = recommendation['query']
+            if not any(a.get('tool') == action['tool'] and a.get('query') == proposed for a in state['attempts']):
+                action['query'] = proposed
         row = reserve(action['tool'])
         if not row: return False
         row.update(need_id=action['need_id'],query=action['query'],
@@ -333,6 +381,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
                 state['provider_blocked']=True
         save(folder/'state.json',state)
         current_plan=plan(overlay)
+        # Search metadata is new inventory: choose pages before spending fetches.
+        review_materials()
         candidates=[s for s in current_plan['sources'] if s['url'] not in queued]
         admission=routing.admit(candidates,overlay['request'],[s for s,_ in frontier],overlay['pages'])
         deferred.extend(admission['deferred'])
@@ -343,9 +393,26 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     save_frontier()
     while cursor < len(frontier) or (gap_workflow and not state.get('provider_blocked') and discover_missing_material()):
         if cursor >= len(frontier): continue
+        if gap_workflow:
+            priorities = state.get('material_priority_urls', [])
+            # Primary and exact material dependencies stay ahead of agent picks.
+            frontier[cursor:] = sorted(frontier[cursor:], key=lambda pair: (
+                not pair[0]['rule_primary'],
+                pair[0].get('material_dependency', {}).get('role') != 'target_data_file',
+                pair[0]['url'] not in priorities, -pair[0]['score'], pair[0]['url']))
         source, depth = frontier[cursor]
         cursor += 1
         url = source['url']
+        if gap_workflow and not source['rule_primary'] and source.get('material_dependency',{}).get('role') != 'target_data_file':
+            agent_deferred = next((r for r in state.get('material_deferred_urls', []) if r['url']==url), None)
+            if agent_deferred:
+                deferred.append({**source, 'deferred_reason':'agent_document_fit_deferral', 'agent_reason':agent_deferred['reason']})
+                save_frontier(); continue
+        if gap_workflow and not source['rule_primary'] and source.get('material_dependency',{}).get('role','ordinary_detail') == 'ordinary_detail':
+            host = urlsplit(url).hostname
+            if state.get('host_no_progress', {}).get(host, 0) >= 2 and url not in state.get('material_priority_urls', []):
+                deferred.append({**source,'deferred_reason':'host_material_no_progress'})
+                save_frontier(); continue
         if any(r.get('url') == url and r['status'] == 'captured' for r in state['attempts']) or (
             url in overlay['pages'] and assess(overlay['request'], url, overlay['pages'][url].get('content', ''), overlay['pages'][url])['eligible_for_evidence']):
             expand_children(url,depth)
@@ -368,11 +435,31 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
             except Exception as exc: row.update(status='failed', error=str(exc)[:400])
             save(folder/'state.json', state)
             if row['status'] == 'captured': break
-        if max_link_depth and row and row.get('status') == 'captured':
+        if row and row.get('status') == 'captured':
             captured = load(folder/row['response_file'])
+            if gap_workflow:
+                body_hash = hashlib.sha256(captured.get('content','').encode()).hexdigest()
+                duplicate = any(hashlib.sha256(p.get('content','').encode()).hexdigest() == body_hash for p in overlay['pages'].values())
+                relevant = row['assessment']['coverage_status'] == 'candidate_data' or (
+                    row['assessment']['eligible_for_evidence'] and (
+                    url in state.get('material_priority_urls', []) or source['rule_primary'] or
+                    source.get('material_dependency',{}).get('role','ordinary_detail') != 'ordinary_detail'))
+                if duplicate or not relevant:
+                    state.setdefault('nonexpanding_urls', []).append(url)
+                    host = urlsplit(url).hostname
+                    state.setdefault('host_no_progress', {})[host] = state.get('host_no_progress', {}).get(host, 0)+1
+                    row['routing_result'] = 'duplicate_body' if duplicate else 'context_only'
+                else:
+                    state.setdefault('host_no_progress', {})[urlsplit(url).hostname] = 0
+                save(folder/'state.json', state)
             overlay['pages'][url] = captured
             current_plan = plan(overlay)
             expand_children(url,depth)
+        elif gap_workflow and row:
+            host = urlsplit(url).hostname
+            state.setdefault('host_no_progress', {})[host] = state.get('host_no_progress', {}).get(host, 0)+1
+            row['routing_result'] = 'capture_failed_or_unusable'
+            save(folder/'state.json', state)
         save_frontier()
     save_frontier()
     for row in state['attempts']:
@@ -397,6 +484,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
     overlay['enhanced_supplement']['deferred_candidates'] = load(folder/'frontier.json')['deferred']
     overlay['enhanced_supplement']['material_coverage'] = plan(overlay)['material_coverage']
     if gap_workflow:
+        review_materials()
         ledger=need_ledger.build(overlay,state,usage(bundle,prior,state),caps)
         overlay['material_need_ledger']=ledger
         reason=('provider_blocked' if state.get('provider_blocked') else
@@ -406,6 +494,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth):
         overlay['material_termination']=need_ledger.termination(ledger,reason=reason,search_available=bool(search))
         save(folder/'material-needs.json',ledger)
         save(folder/'termination.json',overlay['material_termination'])
+        overlay['material_model_attempts'] = copy.deepcopy(state.get('material_model_attempts', []))
+        overlay['material_reviews'] = copy.deepcopy(state.get('material_reviews', []))
     save(folder/'analysis-input.json', overlay); save(folder/'reading-hints.json', hints(overlay))
     save(folder/'report.json', {'usage': usage(bundle, prior, state), 'caps': caps,
          **({'material_termination':overlay['material_termination']} if gap_workflow else {}),

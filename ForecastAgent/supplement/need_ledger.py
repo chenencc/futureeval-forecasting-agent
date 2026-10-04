@@ -82,6 +82,29 @@ def build(bundle, journal=None, usage=None, caps=None):
                 candidates.append({'url':url, 'body_sha256':hashlib.sha256(body.encode()).hexdigest(),
                                    'literal_terms':signals,'discovery_need_association':discovery_association,
                                    'subject_binding_verified':False,'truth_verified':False})
+        bindings = []
+        for review in (journal or {}).get('material_reviews', []):
+            for binding in review.get('result', {}).get('bindings', []):
+                page = bundle.get('pages', {}).get(binding.get('url'), {})
+                body = page.get('content', '')
+                if (binding.get('need_id') == n['id'] and binding.get('quote_bound') and
+                        binding.get('body_sha256') == hashlib.sha256(body.encode()).hexdigest() and
+                        body[binding.get('start', 0):binding.get('end', 0)] == binding.get('quote') and
+                        body_diagnostics(body)['usable_text'] and
+                        all(binding.get('axes', {}).get(axis) is True for axis in ('entity','material_type','metric','period'))):
+                    bindings.append(binding)
+        # Structured measurement records can be checked without model reasoning.
+        exact_data = []
+        if kind == 'data':
+            for c in candidates:
+                page = bundle['pages'][c['url']]
+                axes = observe(q, c['url'], page.get('content', ''), page)
+                if axes['data_capture_candidate'] and (not axes['clock']['expected'] or axes['clock']['requested_clock_observed']):
+                    exact_data.append(c)
+        target_captured = bool(bindings or exact_data)
+        leads = bundle.get('source_leads', {})
+        discovered = [u for u, lead in leads.items() if n['id'] in lead.get('need_ids', [])]
+        readable = [u for u in discovered if body_diagnostics(bundle.get('pages', {}).get(u, {}).get('content', ''))['usable_text']]
         searches = [a for a in attempts if a.get('need_id') == n['id'] and a.get('tool') in {'tavily','exa'}]
         failed_reads = [a for a in attempts if a.get('status') in {'failed','rejected'} and
                         a.get('need_id') == n['id'] and a.get('tool') in {'http','browser'}]
@@ -102,7 +125,12 @@ def build(bundle, journal=None, usage=None, caps=None):
                      'condition':text, 'status':status, 'reason':reason,
                      'query':(' '.join(query_base.split())[:240]+' '+suffix)[:350],
                      'candidates':candidates, 'search_attempts':len(searches),
-                     'next_action':None if candidates else 'discover_missing_document_family',
+                     'discovered_urls':discovered, 'readable_urls':readable,
+                     'acquisition_state':'target_material_captured' if target_captured else
+                         'readable_body_saved' if candidates or readable else 'candidate_discovered' if discovered else 'unlocated',
+                     'target_material_captured':target_captured, 'material_bindings':bindings,
+                     'deterministic_data_bindings':exact_data,
+                     'next_action':None if target_captured else 'review_candidate_fit' if candidates else 'discover_missing_document_family',
                      'semantic_verified':False})
     return {'schema':PROTOCOL, 'needs':rows, 'usage':usage, 'caps':caps,
             'candidate_coverage_only':True, 'semantic_completeness_verified':False}
@@ -110,7 +138,7 @@ def build(bundle, journal=None, usage=None, caps=None):
 
 def next_search(ledger, journal, usage, caps, available_tools=('tavily','exa')):
     """One request per need/provider; failures and reservations remain consumed."""
-    pending = [n for n in ledger['needs'] if n['priority']=='critical' and not n['candidates']]
+    pending = [n for n in ledger['needs'] if n['priority']=='critical' and not n['target_material_captured']]
     pending.sort(key=lambda n:(n['priority']!='critical', n['family']!='availability', n['id']))
     attempted = {(a.get('need_id'), a.get('tool')) for a in journal['attempts']}
     queries = {(a.get('tool'),a.get('query')) for a in journal['attempts']}
@@ -122,8 +150,13 @@ def next_search(ledger, journal, usage, caps, available_tools=('tavily','exa')):
 
 
 def termination(ledger, *, reason, search_available):
-    pending = [n['id'] for n in ledger['needs'] if n['priority']=='critical' and not n['candidates']]
+    pending = [n['id'] for n in ledger['needs'] if n['priority']=='critical' and not n['target_material_captured']]
+    complete = bool(ledger['needs']) and not pending
     return {'reason':reason, 'critical_unlocated_need_ids':pending,
+            'acquisition_outcome':'materials_ready' if complete else
+                'budget_exhausted' if 'capacity_exhausted' in reason else
+                'source_unreadable' if any(n['status']=='read_failed' for n in ledger['needs'] if n['id'] in pending) else 'material_unlocated',
+            'target_material_need_ids':[n['id'] for n in ledger['needs'] if n['target_material_captured']],
             'candidate_need_ids':[n['id'] for n in ledger['needs'] if n['candidates']],
             'search_available':search_available, 'semantic_completeness_verified':False,
             'interpretation_pending':True}

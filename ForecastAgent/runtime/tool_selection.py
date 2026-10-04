@@ -23,6 +23,12 @@ def active_tools(task, tools, forced=None):
                 bind_ids(child)
     bind_ids(tools)
     for entry in tools:
+        if entry['function']['name'] == 'search_tavily' and getattr(task, 'optimized', False):
+            from ForecastAgent.runtime.search_contract import description, extra_roles
+            entry['function']['description'] = description(task.bundle, task.search_limit)
+            if len(task.bundle.get('searches', [])) >= 3:
+                entry['function']['parameters']['properties']['search_role'] = {
+                    'type':'string', 'enum':list(extra_roles(task.bundle))}
         if entry['function']['name'] == 'load_research_skill':
             names = [name for name in task.bundle.get('skill_bank', {}) if name != 'evidence-review']
             if names:

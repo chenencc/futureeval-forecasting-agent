@@ -62,6 +62,30 @@ class SolidTests(unittest.TestCase):
             enhanced.run(source, tmp, network=True, caps=pilot.REPAIR_CAPS, max_link_depth=2)
             self.assertEqual(http.call_count, 3)
 
+    def test_heldout_material_cohort_is_frozen_separate_and_outcome_free(self):
+        self.assertFalse(set(pilot.COHORTS['material_new5']) & set(pilot.IDS))
+        self.assertEqual(pilot.case_indices('material_new5'),[1,2,3,4,5])
+        with tempfile.TemporaryDirectory() as tmp:
+            for case in range(1,6):
+                root=Path(tmp)/str(case)
+                manifest=pilot.run(case,root,'heldout-material-test',True,'material_new5')
+                request=load(root/'question.json')
+                self.assertEqual(request['collection_workflow'],'material-gap-v1')
+                self.assertEqual(manifest['capacity']['tavily_basic'],6)
+                self.assertEqual(manifest['forecast_submissions'],0)
+                self.assertEqual(len(load(root/'acceptance-checklist.json')['required_materials']),2)
+                self.assertFalse({'resolution','probability','resolved_to'} & set(request))
+                with patch.dict('os.environ',{'EXA_API_KEY':'offline'}):
+                    task=RetrievalTask(root/'acquisition',request)
+                    self.assertEqual(task.search_limit,4)
+                    self.assertEqual(task.exa_limit,1)
+                    from ForecastAgent.runtime.capacity import allocation
+                    stage=allocation(task.bundle)
+                    self.assertEqual(stage['model_decisions'],20)
+                    self.assertEqual(stage['model_http_dispatch'],26)
+                    self.assertEqual(stage['dispatch_seconds'],1200)
+                    self.assertEqual(task.capacity['tavily_basic'],6)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -16,10 +16,12 @@ from ForecastAgent.supplement import enhanced
 IDS = ['40695', '44126', '45183', '26754', '45045']
 COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'], 'repair2':['26754','45045'],
     'gap2':['26754','45045'],
+    'material_new5':['43658','44939','41480','43461','44727'],
     'new15':['43658','44431','44939','44128','43919',
              '41480','43822','44547','43844','44940',
              '43461','42630','44727','45048','44728']}
 REPAIR_CAPS = {'tavily': 6, 'exa': 2, 'http': 64, 'browser': 12}
+MATERIAL_COHORTS = {'gap2', 'material_new5'}
 FIXTURES = Path(__file__).parents[1]/'fixtures/enhanced_pair40'
 
 
@@ -60,7 +62,8 @@ def audit(bundle, overlay, state):
         raise ValueError('Combined acquisition and repair cap exceeded')
     if len(bundle.get('extract_attempts', [])) > SOLID['extract_batches']:
         raise ValueError('Extract cap exceeded')
-    if len(bundle.get('model_attempts', [])) > SOLID['model_http_lifetime']:
+    model_attempts = len(bundle.get('model_attempts', []))+len(state.get('material_model_attempts', []))
+    if model_attempts > SOLID['model_http_lifetime']:
         raise ValueError('Model lifetime cap exceeded')
     primary = [s['url'] for s in checks['sources'] if s['rule_primary']]
     missing_primary = [u for u in primary if not any(
@@ -78,6 +81,8 @@ def audit(bundle, overlay, state):
             'model_http': len(bundle.get('model_attempts', [])),
             'extract_batches': len(bundle.get('extract_attempts', []))},
         'new_supplement_attempts': len(state.get('attempts', [])),
+        'supplement_model_http':len(state.get('material_model_attempts', [])),
+        'total_model_http':model_attempts,
         'budget_violation': False, 'semantic_recall_verified': False,
         'quality_requires_blind_source_review': True,
         'scope': 'Capture integrity and observable source coverage, not forecasting accuracy.'}
@@ -91,7 +96,8 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     profile='solid_v1' if cohort=='pilot5' else 'solid_v2'
     capacity=SOLID if profile=='solid_v1' else SOLID_V2
     request = question(ident, experiment_id, profile)
-    if cohort=='gap2': request['collection_workflow']='material-gap-v1'
+    if cohort in MATERIAL_COHORTS: request['collection_workflow']='material-gap-v1'
+    if cohort=='material_new5': request['collection_stage_allocation']='material-reserve-v1'
     manifest = {'protocol': 'solid-raw-collection-v1', 'experiment_id': experiment_id,
         'question_id': ident, 'request_sha256': digest(request), 'capacity': capacity,
         'cohort':cohort,'frozen_cohort_ids':COHORTS[cohort],
@@ -116,9 +122,11 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
         bundle = run_retrieval(request, output/'acquisition', os.environ['TAVILY_API_KEY'],
                                os.environ['OPENROUTER_API_KEY'])
         from ForecastAgent.supplement.gap_search import callback
-        search = callback(os.environ['TAVILY_API_KEY'],os.environ.get('EXA_API_KEY')) if cohort=='gap2' else None
+        search = callback(os.environ['TAVILY_API_KEY'],os.environ.get('EXA_API_KEY')) if cohort in MATERIAL_COHORTS else None
+        from ForecastAgent.supplement.material_review import callback as material_callback
+        agent = material_callback(os.environ['OPENROUTER_API_KEY'], bundle) if cohort in MATERIAL_COHORTS else None
         overlay = enhanced.run(bundle, output/'supplement', network=True,search=search,
-                               caps=REPAIR_CAPS, max_link_depth=manifest['material_max_depth'])
+                               caps=REPAIR_CAPS, max_link_depth=manifest['material_max_depth'], material_agent=agent)
         # A raw acquisition deliverable retains blocked/context bodies as well.
         # Their technical diagnostics remain visible; nothing becomes evidence
         # merely because it has been restored to the raw inventory.

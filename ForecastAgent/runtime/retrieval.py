@@ -181,9 +181,11 @@ class RetrievalTask:
         self.bundle.setdefault("channel_catalog", channel_catalog())
         from ForecastAgent.runtime.capacity import freeze
         self.capacity = freeze(self.bundle, request, existing)
-        self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else self.capacity['tavily_basic']})
+        from ForecastAgent.runtime.capacity import allocation
+        stage_capacity = allocation(self.bundle)
+        self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else stage_capacity['tavily_basic']})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
-        self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else self.capacity['exa_search'] if os.environ.get('EXA_API_KEY') else 0)
+        self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else stage_capacity['exa_search'] if os.environ.get('EXA_API_KEY') else 0)
         self.exa_limit = self.bundle['acquisition_limits']['exa_search']
         if type(self.exa_limit) is not int or not 0 <= self.exa_limit <= self.capacity['exa_search']:
             raise ValueError('Exa budget exceeds frozen task capacity')
@@ -874,10 +876,10 @@ class RetrievalTask:
                 raise ValueError("Explain which missing evidence the query addresses")
             if len(b["searches"]) >= self.search_limit:
                 raise ValueError('Frozen basic-search budget exhausted; persists across restarts')
-            from ForecastAgent.supplement.need_ledger import enabled as material_workflow
-            allowed_extra = {'recent','official_gap','gap','crosscheck'} if material_workflow(b) else {'recent','official_gap'}
+            from ForecastAgent.runtime.search_contract import extra_roles
+            allowed_extra = extra_roles(b)
             if self.optimized and len(b['searches'])>=3 and args.get('search_role') not in allowed_extra:
-                raise ValueError('Searches four and five require recent dynamics or a missing official source')
+                raise ValueError('Searches four and five require search_role in: '+', '.join(allowed_extra))
             options = search_options(args["query"], **{k: args[k] for k in ["topic", "include_domains", "include_domains_mode", "exact_match"] if k in args})
             attempt = {"query": args["query"], "need_ids": args["need_ids"], "reason": args["reason"],
                        "depth": "basic", "search_options": options, "end_date": self.end_date, "attempted_at": utc_now(), "status": "reserved", "results": []}
@@ -1148,10 +1150,12 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             task.bundle['control'].update(consecutive_errors=0,forced_close=False,no_progress_turns=0)
         task.bundle['control']['dispatch_message_start'] = len(task.bundle['messages'])
         capacity = task.capacity
-        dispatch_http = capacity['model_http_dispatch']
-        decision_limit = capacity['model_decisions']
+        from ForecastAgent.runtime.capacity import allocation
+        stage_capacity = allocation(task.bundle)
+        dispatch_http = stage_capacity['model_http_dispatch']
+        decision_limit = stage_capacity['model_decisions']
         lifetime_http = capacity['model_http_lifetime']
-        deadline = time.monotonic() + capacity['dispatch_seconds']
+        deadline = time.monotonic() + stage_capacity['dispatch_seconds']
         secrets = (tavily_key, router_key, os.environ.get('EXA_API_KEY',''))
         dispatch_start = len(task.bundle.get('model_attempts',[]))
         collection = task.bundle['pipeline']=='collection'
@@ -1170,7 +1174,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 {'fetch_page','fetch_pages','record_excerpt','find_passages','search_saved_text','collection_checkpoint','collection_acceptance','select_sources','refresh_sources'}])
             for entry in available_tools:
                 if entry['function']['name']=='search_tavily':
-                    entry['function']['description']=f'Basic search within this task frozen {task.search_limit}-attempt ceiling. Additional searches above three only for recent dynamics or missing official sources.'
+                    from ForecastAgent.runtime.search_contract import description
+                    entry['function']['description']=description(task.bundle, task.search_limit)
                     entry['function']['parameters']['required'].append('search_role')
             for entry in available_tools:
                 if entry['function']['name']=='plan_channels':

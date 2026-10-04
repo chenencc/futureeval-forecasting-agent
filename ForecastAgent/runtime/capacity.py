@@ -28,3 +28,18 @@ def freeze(bundle, request, existing):
 
 def limits(task):
     return getattr(task, 'bundle', {}).get('capacity', DEFAULT)
+
+
+def allocation(bundle):
+    """Reserve supplement capacity without enlarging any frozen total."""
+    request=bundle.get('request',{})
+    policy=request.get('collection_stage_allocation')
+    capacity=bundle.get('capacity',DEFAULT)
+    if policy is None:
+        return dict(capacity)
+    if (policy!='material-reserve-v1' or request.get('collection_workflow')!='material-gap-v1' or
+            not request.get('experiment_id') or request.get('budget_profile')!='solid_v2'):
+        raise ValueError('Unknown or unauthorized collection stage allocation')
+    return {**capacity,'tavily_basic':capacity['tavily_basic']-2,'exa_search':capacity['exa_search']-1,
+            'model_decisions':capacity['model_decisions']-4,'model_http_dispatch':capacity['model_http_dispatch']-4,
+            'dispatch_seconds':capacity['dispatch_seconds']-300}
