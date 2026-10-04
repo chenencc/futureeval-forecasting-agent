@@ -1,0 +1,12 @@
+{
+  "schema": "material-applicability-regression-v1",
+  "source_run": "37190715517",
+  "scope": "Development replay of identical response and body; not independent recall or accuracy.",
+  "cases": [
+    {
+      "id": "44731",
+      "fixture": "ForecastAgent/fixtures/material_applicability/44731.json.gz",
+      "sha256": "00b132c90e898beb0c03a4fdbc661d5b543dc38ea48cefe77cc2457a02848797"
+    }
+  ]
+}

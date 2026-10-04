@@ -107,3 +107,18 @@ same new common contract fields; this is not an identical-input replay of round
 candidate must explicitly account for every need. The first live case is 7;
 only after protocol compatibility and witness quality pass should further cases
 be run. Model and per-arm limits remain unchanged. No acquisition occurs.
+# Event-date applicability follow-up
+
+The first coverage-v2 pilot (run 37190715517, case 7) accounted for all three
+needs. It exposed a program applicability error: an explicit election date was
+blocked by a numeric metric axis. Event occurrence and publication date needs
+now require entity, material type and period; numeric observations retain the
+metric axis. The common review packet publishes these same applicable axes.
+
+A publication need requires a publication-linked timestamp; the event date
+cannot establish when results were published. Replay preserves the original
+model response, quotes and body hashes. The event date and party table pass;
+the publication deadline remains unverified. The additional frozen fixture is
+`MATERIAL_REGRESSION_APPLICABILITY.json`. Across the four fixture manifests,
+32 development witness checks pass with no newly rejected positive witness.
+This is acceptance regression evidence, not independent acquisition recall.

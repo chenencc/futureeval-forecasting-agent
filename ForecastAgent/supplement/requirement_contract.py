@@ -33,6 +33,13 @@ def publication_dates(body):
             found.append({'year':int(m[3]),'month':MONTHS[m[1].lower()],'day':int(m[2]),'quote':context})
     for m in re.finditer(r'令和(\d+)年(\d+)月(\d+)日公表',body[:2000]):
         found.append({'year':2018+int(m[1]),'month':int(m[2]),'day':int(m[3]),'quote':m[0]})
+    for pattern,order in [(r'(20\d{2})-(\d{2})-(\d{2})',(1,2,3)),
+                          (r'(\d{1,2})\s+('+MONTH_PATTERN+r')\s+(20\d{2})',(3,2,1))]:
+        for m in re.finditer(pattern,body[:2000],re.I):
+            context=body[max(0,m.start()-60):m.end()+80]
+            if re.search(r'releas|publish|publication',context,re.I):
+                month=m[order[1]];month=MONTHS.get(month.lower(),int(month) if month.isdigit() else 0)
+                found.append({'year':int(m[order[0]]),'month':month,'day':int(m[order[2]]),'quote':context})
     return found
 
 
@@ -40,6 +47,13 @@ def issues(need, binding):
     text=need.get('condition',''); quote=binding.get('quote','')
     result=[]
     target=need.get('question_clock',{})
+    if re.search(r'\b(?:published|publication date|publication timestamp)\b',text,re.I):
+        dates=publication_dates(quote)+publication_dates(binding.get('document_context',''))
+        deadline=re.search(r'\bbefore\s+('+MONTH_PATTERN+r')\s+(\d{1,2}),?\s+(20\d{2})',text,re.I)
+        if not dates:
+            result.append('publication_time_witness_unverified')
+        elif deadline and not any((d['year'],d['month'],d['day']) < (int(deadline[3]),MONTHS[deadline[1].lower()],int(deadline[2])) for d in dates):
+            result.append('publication_before_deadline_unverified')
     if target.get('kind')=='release_month':
         dates=publication_dates(binding.get('document_context','') or quote)
         if not any((d['year'],d['month'])==(target['year'],target['month']) for d in dates):

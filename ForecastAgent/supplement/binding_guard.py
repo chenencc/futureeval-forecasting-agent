@@ -50,6 +50,10 @@ def required_axes(need):
         return axes
     if re.search(r'\b(?:starting lineup|line.up|participation|election date|announcement date)\b',condition,re.I):
         return ['entity','material_type','period']
+    event=re.search(r'\b(?:held|commenced|begun|published|released|announced|appointed|assumed office)\b',condition,re.I)
+    numeric=re.search(r'\b(?:number of|count|price|prices|capitalization|index|percentage|votes|score|scores|seats|market cap|measurement|amount|value)\b',condition,re.I)
+    if event and not numeric:
+        return ['entity','material_type','period']
     return ['entity','material_type','metric','period']
 
 

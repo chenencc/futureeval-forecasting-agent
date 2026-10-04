@@ -5,9 +5,20 @@ import tempfile
 from unittest.mock import patch
 from ForecastAgent.supplement import witness_contract as contract
 from ForecastAgent.supplement import material_review
+from ForecastAgent.supplement import binding_guard,requirement_contract
 
 
 class WitnessContractTests(unittest.TestCase):
+    def test_event_date_has_no_numeric_axis_but_publication_needs_its_own_clock(self):
+        event={'condition':'The election was held before September 1, 2026.'}
+        publication={'condition':'Results were known and published before September 8, 2026.'}
+        self.assertNotIn('metric',binding_guard.required_axes(event))
+        self.assertNotIn('metric',binding_guard.required_axes(publication))
+        self.assertIn('metric',binding_guard.required_axes({'condition':'Number of seats published before September 8, 2026.'}))
+        self.assertIn('publication_time_witness_unverified',requirement_contract.issues(publication,{'quote':'Election date: 23 August 2026. Five parties won seats.'}))
+        self.assertEqual(requirement_contract.issues(publication,{'quote':'Published: 2026-08-26. Five parties won seats.'}),[])
+        self.assertIn('publication_before_deadline_unverified',requirement_contract.issues(publication,{'quote':'Published: 2026-09-09. Five parties won seats.'}))
+
     def test_callback_sends_exhaustive_schema_and_decodes_all_need_states(self):
         payload={'coverage_protocol':contract.PROTOCOL,'needs':[{'id':'date'},{'id':'publication'}],
                  'passages':[{'passage_id':'P1'}],'sources':[]}

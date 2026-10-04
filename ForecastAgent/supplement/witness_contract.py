@@ -76,4 +76,5 @@ def decorate(payload):
     from ForecastAgent.supplement import binding_guard
     return {**payload, 'coverage_protocol':PROTOCOL,
             'needs':[{**n, 'witness_contract':contract(n),
+                      'required_axes':binding_guard.required_axes(n),
                       'source_requirement':binding_guard.source_requirement(n)} for n in payload['needs']]}
