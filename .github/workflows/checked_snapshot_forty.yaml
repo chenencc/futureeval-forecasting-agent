@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -27,6 +27,49 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  heldout-select:
+    if: inputs.experiment == 'material_heldout_ten'
+    runs-on: ubuntu-latest
+    outputs:
+      cases: ${{ steps.select.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - id: select
+        run: python -c 'import json; from ForecastAgent.experiments.material_heldout import MANIFEST; print("cases="+json.dumps({"include":json.load(open(MANIFEST))["cases"]}))' >> "$GITHUB_OUTPUT"
+  material-heldout-ten:
+    if: inputs.experiment == 'material_heldout_ten'
+    needs: heldout-select
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.heldout-select.outputs.cases) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_binding_guard ForecastAgent.tests.test_material_review_only ForecastAgent.tests.test_material_heldout
+      - name: Offline inventory then one bounded saved-evidence review
+        run: python -u -m ForecastAgent.experiments.material_heldout --case "$CASE" --parent snapshots/heldout-parent --output snapshots/heldout --restore-fixture
+        env:
+          CASE: ${{ matrix.case }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: material-heldout10-case-${{ matrix.case }}
+          path: snapshots/heldout
+          if-no-files-found: error
+          retention-days: 90
   material-review-only:
     if: inputs.experiment == 'material_review_only'
     strategy:

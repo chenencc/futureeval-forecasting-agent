@@ -1,0 +1,188 @@
+{
+  "schema": "material-heldout10-v1",
+  "excluded_ids": [
+    "43658",
+    "44939",
+    "41480",
+    "43461",
+    "44727",
+    "44126",
+    "26754",
+    "45045",
+    "40695",
+    "45183"
+  ],
+  "policy": "Saved evidence review only, one additional decision, preserve cumulative provider budgets; current-information historical cases, not a leakage-free backtest.",
+  "cases": [
+    {
+      "id": "44431",
+      "run": "37091334690",
+      "artifact_id": "11262244533",
+      "name": "analysis-matched-nonbinary-batch-1",
+      "path": "tasks/44431/analysis-input.json",
+      "sha256": "f63dbf8a910efe4e70bf622c32d0ba8710b2fee819f4150ce1b05c1af1b1ebbe",
+      "case": 1,
+      "domain": "commodities",
+      "required_materials": [
+        "Copper futures observations covering August 2026",
+        "Contract, price-field and trading-session definitions"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/44431.json.gz",
+      "fixture_sha256": "bc9a3cbb223fbe96755dcaaedfc9b490ef2b3719bd25be62d770bbcb5c7e6a47",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "44128",
+      "run": "37091334690",
+      "artifact_id": "11261599992",
+      "name": "analysis-matched-nonbinary-batch-2",
+      "path": "tasks/44128/handoff/raw-bundle.json",
+      "sha256": "92ac31436fff875a5dae1c8661f8717876faa448da5a062951f48e92042db4bc",
+      "case": 2,
+      "domain": "tourism",
+      "required_materials": [
+        "June 2026 official inbound air visitor statistics",
+        "Visitor-category and reporting-period definitions"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/44128.json.gz",
+      "fixture_sha256": "8921987924ef95560f71a793950bed3c9dafd6e5044c46f982b803075e682bb1",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "43919",
+      "run": "37091334690",
+      "artifact_id": "11262294707",
+      "name": "analysis-matched-nonbinary-batch-3",
+      "path": "tasks/43919/analysis-input.json",
+      "sha256": "22d74e833b4b9e6fe844d63d6d200b30d59cca6c1ad9d1035f8d17b0729cabb1",
+      "case": 3,
+      "domain": "labor_statistics",
+      "required_materials": [
+        "June and July 2026 hourly earnings observations",
+        "BLS release and units/revision metadata"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/43919.json.gz",
+      "fixture_sha256": "dc48bed2906526262d1eda71b7765dc1692a05109e9ae736d3c1a7f9f389f714",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "43822",
+      "run": "37107672169",
+      "artifact_id": "11268876262",
+      "name": "repaired-fifty-analysis-4",
+      "path": "tasks/43822/analysis-input.json",
+      "sha256": "1a3945e9c38f708f688ae3c5c0eb1f81493f9346b7c7d6d0436e661abc8209c7",
+      "case": 4,
+      "domain": "referendum",
+      "required_materials": [
+        "Iceland referendum official result or electoral notice",
+        "Ballot proposition and event date"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/43822.json.gz",
+      "fixture_sha256": "342886bb5658532849c12b9c4c93b3134a47269d0a0bb28436d1a3bf13fe49f0",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "44547",
+      "run": "37107672169",
+      "artifact_id": "11268347511",
+      "name": "repaired-fifty-analysis-9",
+      "path": "tasks/44547/analysis-input.json",
+      "sha256": "8989a886024c5ab584e1109f54ef305d01e2358db8aad76571674760f1ba361c",
+      "case": 5,
+      "domain": "legislative_votes",
+      "required_materials": [
+        "US Senate roll-call records through August 2026",
+        "Member identity and vote record dates"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/44547.json.gz",
+      "fixture_sha256": "89a25f9d31c4de8a0d6bc629edd0589d0643fc9fd0b27f7facabc308ae877092",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "43844",
+      "run": "37107672169",
+      "artifact_id": "11267684637",
+      "name": "repaired-fifty-analysis-5",
+      "path": "tasks/43844/analysis-input.json",
+      "sha256": "94b212504a4646ea599d4a4f5472b11a10d0999fb664ccd072412b73646f9e2a",
+      "case": 6,
+      "domain": "presidential_election",
+      "required_materials": [
+        "Zambia presidential election official result",
+        "Candidate identity, round and vote-share definition"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/43844.json.gz",
+      "fixture_sha256": "9d03529d21f40a3be43feee766fd40d8b81f475e696ac525331d60c6200589e8",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "44940",
+      "run": "37091334690",
+      "artifact_id": "11262294707",
+      "name": "analysis-matched-nonbinary-batch-3",
+      "path": "tasks/44940/analysis-input.json",
+      "sha256": "2779143f8e5621629059b8650af1b40e88977b9cedc468c3bfa4c5a3291676eb",
+      "case": 7,
+      "domain": "voter_turnout",
+      "required_materials": [
+        "Florida primary turnout report",
+        "Election date, turnout denominator and reporting completeness"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/44940.json.gz",
+      "fixture_sha256": "01b94da0d3178f64832f43c5debd0bf70c324bf446189e542c45eaba90a0bdbd",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "42630",
+      "run": "37091334690",
+      "artifact_id": "11262533852",
+      "name": "analysis-matched-binary-batch-3",
+      "path": "tasks/42630/handoff/raw-bundle.json",
+      "sha256": "d75e5778c591666905619ed9fde2c00dfa183914dd9d14bba244de7e9f3ca3bc",
+      "case": 8,
+      "domain": "sports",
+      "required_materials": [
+        "Official 2026 FIFA participation records",
+        "Participation status and relevant match or roster records"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/42630.json.gz",
+      "fixture_sha256": "6637e52ebb2fcb09faead229826314bf947ec7ea84278a3a41de1dc69fac507a",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "45048",
+      "run": "37091334690",
+      "artifact_id": "11262289717",
+      "name": "analysis-matched-nonbinary-batch-4",
+      "path": "tasks/45048/analysis-input.json",
+      "sha256": "2fa1ddec6b5ea88f76bacc69d7da7d40a3ee97744cf6fca2b5e2b6984e772b33",
+      "case": 9,
+      "domain": "job_openings",
+      "required_materials": [
+        "Dated startup or tech job-opening source for September 2, 2026",
+        "Employer identity, universe definition and counts or underlying rows"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/45048.json.gz",
+      "fixture_sha256": "f6e9272a4cf6a503a5c9aa0b9842a58e0c483fb361972b417585f882885b3919",
+      "snapshot_transport": "verified_local_archive_restore"
+    },
+    {
+      "id": "44728",
+      "run": "37091334690",
+      "artifact_id": "11261599992",
+      "name": "analysis-matched-nonbinary-batch-2",
+      "path": "tasks/44728/handoff/raw-bundle.json",
+      "sha256": "a8b06873723d969a23bb00641937fca1071b79fb3fd6c2f354f5e0744fde411d",
+      "case": 10,
+      "domain": "animal_tracking",
+      "required_materials": [
+        "Shark Percy tracker records near September 1, 2026",
+        "Animal identity, observation time and location source"
+      ],
+      "fixture": "ForecastAgent/fixtures/material_heldout10/44728.json.gz",
+      "fixture_sha256": "d6882a587593a28f92f7b9fab93fb3eae6c7d07d0d542b34b6345ff5127e85f5",
+      "snapshot_transport": "verified_local_archive_restore"
+    }
+  ]
+}
