@@ -8,6 +8,8 @@ PUBLISHERS = [
     {'id':'bls', 'aliases':['BLS','Bureau of Labor Statistics'], 'domains':['bls.gov']},
     {'id':'sec', 'aliases':['SEC','Securities and Exchange Commission'], 'domains':['sec.gov']},
     {'id':'who', 'aliases':['WHO','World Health Organization'], 'domains':['who.int']},
+    {'id':'newsmax', 'aliases':['Newsmax'], 'domains':['newsmax.com'],
+     'origin_policy':'explicit_official_only'},
 ]
 
 CHANNELS = [

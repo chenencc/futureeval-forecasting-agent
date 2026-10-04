@@ -8,6 +8,7 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import load, save, digest
 from ForecastAgent.supplement import enhanced, material_review, need_ledger, binding_guard
 from ForecastAgent.readers import material_passages
+from ForecastAgent.supplement import requirement_contract
 from ForecastAgent.tools.channels import PUBLISHERS
 
 
@@ -26,6 +27,7 @@ def run(parent, output, api_key, parent_run):
         'review_implementation_sha256':hashlib.sha256(Path(material_review.__file__).read_bytes()).hexdigest(),
         'closure_guard_sha256':hashlib.sha256(Path(binding_guard.__file__).read_bytes()).hexdigest(),
         'material_passages_sha256':hashlib.sha256(Path(material_passages.__file__).read_bytes()).hexdigest(),
+        'requirement_contract_sha256':hashlib.sha256(Path(requirement_contract.__file__).read_bytes()).hexdigest(),
         'publisher_catalog_sha256':digest(PUBLISHERS),
         'retry_seconds':300, 'additional_decisions':1, 'generation':material_review.GENERATION}
     if (output/'identity.json').exists():

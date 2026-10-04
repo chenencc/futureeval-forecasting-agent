@@ -10,12 +10,14 @@ def task_view(task):
     request = task.bundle['request']
     current = unrestricted(task.bundle) or task.bundle['mode'] == 'live'
     clock = task.bundle.get('control', {}).get('operating_clock_utc')
+    from ForecastAgent.supplement.requirement_contract import clock as resolution_clock
     return {
         'question': {k: request[k] for k in ('id', 'question', 'title', 'resolution_criteria',
             'fine_print', 'background') if k in request},
         'operating_mode': 'current_information' if current else task.bundle['mode'],
         'operating_clock_utc': clock if current else request.get('as_of_utc'),
         'effective_cutoff_utc': task.cutoff.isoformat() if task.cutoff else None,
+        'resolution_clock':resolution_clock(request),
         'provenance': {'original_as_of_utc': request.get('as_of_utc'),
             'original_input_mode': request.get('mode'), 'request_hash': task.bundle['request_hash']},
         'date_instruction': ('Use operating_clock_utc as now. Original dates are provenance only. '

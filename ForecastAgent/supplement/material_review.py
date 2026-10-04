@@ -14,6 +14,7 @@ from ForecastAgent.supplement.discovery import tokens
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.supplement import binding_guard
 from ForecastAgent.readers.material_passages import spans
+from ForecastAgent.supplement import requirement_contract
 
 AXES = ('entity', 'material_type', 'metric', 'period')
 GENERATION = {'max_output_tokens':4096, 'reasoning':{'max_tokens':768}}
@@ -68,6 +69,7 @@ def packet(bundle, ledger, sources):
                        'source_requirement':binding_guard.source_requirement(n),
                        'required_axes':binding_guard.required_axes(n)}
                       for n in ledger['needs']], 'passages': delivered,
+            'question_clock':requirement_contract.clock(bundle['request']),
             'sources': [{'source_id':'S-'+digest(s['url'])[:12],
                          **{k: s.get(k) for k in ('url', 'label', 'rule_primary', 'material_need_ids')}}
                         for s in sources[:24]],
@@ -113,8 +115,26 @@ def decode(message, payload, finish_reason=None):
             p=passage_map[row['passage_id']]
             bindings.append({'need_id':row['need_id'],'url':p['url'],'quote':p['text'],'axes':row['axes']})
         priorities=result['priority_source_ids']; deferred=result['deferred_source_ids']
-        if not isinstance(priorities,list) or not isinstance(deferred,list) or len(priorities)>6 or len(deferred)>6:
-            raise ReviewError('source_batch_too_large')
+        if not isinstance(priorities,list):
+            rejected.append({'record':priorities,'reason':'priority_batch_invalid_type'})
+            priorities=[]
+        if not isinstance(deferred,list):
+            rejected.append({'record':deferred,'reason':'deferral_batch_invalid_type'})
+            # Unknown deferral semantics cannot authorize any source closure.
+            rejected.extend({'source_url':u,'reason':'quarantined_deferral'} for u in source_map.values())
+            deferred=[]
+        # Oversized source-action fields are quarantined independently. Do not
+        # execute a guessed first-six subset or discard independent bindings.
+        if len(priorities)>6:
+            rejected.append({'record':priorities,'reason':'priority_batch_too_large'})
+            priorities=[]
+        if len(deferred)>6:
+            rejected.append({'record':deferred,'reason':'deferral_batch_too_large'})
+            for row in deferred:
+                if isinstance(row,dict) and isinstance(row.get('source_id'),str) and row['source_id'] in source_map:
+                    # Preserve deferral safety even when no source action runs.
+                    rejected.append({'source_url':source_map[row['source_id']], 'reason':'quarantined_deferral'})
+            deferred=[]
         selected=[]; deferrals=[]
         for item in priorities:
             if isinstance(item,str) and item in source_map:
@@ -149,7 +169,8 @@ def bind(bundle, payload, decision):
             r.get('url') not in {s['url'] for s in payload['sources']} or
             not isinstance(r.get('reason'), str) or not r['reason'].strip() for r in deferred):
         raise ValueError('Deferrals need an observed URL and reason')
-    conflicts = sorted(set(selected) & {r['url'] for r in deferred})
+    conflicts = sorted((set(selected) & {r['url'] for r in deferred}) |
+        {r['source_url'] for r in decision.get('rejected_records',[]) if r.get('reason')=='quarantined_deferral'})
     selected = [u for u in selected if u not in conflicts]
     bindings = []
     rejected = list(decision.get('rejected_records', []))
@@ -177,7 +198,7 @@ def bind(bundle, payload, decision):
         cut_last = end < len(body) and body[end] != '\n' and not quote.endswith('\n') and last_line.lstrip().startswith('|')
         if cut_first or cut_last:
             reading_issues.append('table_line_boundary_incomplete')
-        need = next(n for n in payload['needs'] if n['id']==row['need_id'])
+        need = requirement_contract.attach(bundle['request'],next(n for n in payload['needs'] if n['id']==row['need_id']))
         if has_table and re.search(r'\b(?:each trading day|daily|full table|all rows)\b',need['condition'],re.I):
             full = next((p for p in spans(body) if p['reading']['kind']=='table' and
                          p['start'] <= offset and p['end'] >= offset+len(quote)),None)
@@ -186,7 +207,8 @@ def bind(bundle, payload, decision):
         row = {**row,'reading_issues':reading_issues}
         guard = binding_guard.assess({**need,'required_source_domains':need.get('source_requirement',{}).get('domains',[])
                                       if need.get('source_requirement',{}).get('required') else []},
-                                    row, {r['url'] for r in deferred})
+                                    {**row,'document_context':body[:2000]}, {r['url'] for r in deferred} |
+                                    {r['source_url'] for r in rejected if r.get('reason')=='quarantined_deferral'})
         return ({k:row[k] for k in ('need_id','url','quote','axes')} | {'start': offset, 'end': offset+len(quote),
             'body_sha256': window['body_sha256'], 'quote_bound': True, 'closure_guard':guard,
             'required_axes':binding_guard.required_axes(need),
@@ -312,6 +334,9 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'required_axes are program-owned; mark optional axes false when no observation applies. '
                 'A partial table does not establish full-period coverage; HTML is not a downloaded CSV. '
                 'Source origin and reporting about that origin are different roles. '
+                'question_clock comes from resolution rules and overrides planner wording. '
+                'A release month is not its observation month. Cite dated publication context. '
+                'Generic policy or methodology cannot satisfy specific dated event records. '
                 'material_type must match the requested document (benchmark report is not public-access notice); '
                 'metric and period must match or be explicitly not required. Negative access notices are useful '
                 'materials too: do not infer event truth. Never mark all axes true from keyword overlap. '
@@ -333,4 +358,5 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
             raise
         finally:
             save(Path(folder)/'state.json', state)
+    review.can_review = lambda state: len(state.get('material_reviews',[]))+state.get('prior_material_review_count',0) < decisions_left
     return review

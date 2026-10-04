@@ -561,9 +561,10 @@ class RetrievalTask:
             validate_plan_cutoff(self, needs)
             from ForecastAgent.runtime.task_protocol import validate_current_plan
             validate_current_plan(self, needs)
-            b["plan"] = needs
+            from ForecastAgent.supplement.requirement_contract import attach
+            b["plan"] = [attach(b['request'],n) for n in needs]
             b["entity_card"] = args.get("entity_card", {"status": "Legacy input: identity and timing card absent"})
-            return {"plan": needs}
+            return {"plan": b["plan"]}
         if b["plan"] is None and name != 'finish_collection':
             raise ValueError("Freeze an evidence plan first")
         if name == 'collect_official':

@@ -6,6 +6,7 @@ from ForecastAgent.supplement.source_contract import contract, match_source
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.evidence.source_coverage import observe
 from ForecastAgent.supplement import binding_guard
+from ForecastAgent.supplement import requirement_contract
 
 PROTOCOL = 'material-gap-v1'
 STOP = set('verify confirm determine find documented which whether publicly available before after must model models source sources official report reports query browser public'.split())
@@ -50,6 +51,7 @@ def build(bundle, journal=None, usage=None, caps=None):
             'query':q['question']+' public launch API browser access announcement'})
     rows = []
     for n in needs:
+        n = requirement_contract.attach(q,n)
         text = n.get('condition', '')
         kind = family(text)
         pattern = next((p for name,_,p,_ in FAMILIES if name == kind), None)
@@ -88,8 +90,11 @@ def build(bundle, journal=None, usage=None, caps=None):
             for binding in review.get('result', {}).get('bindings', []):
                 if binding.get('need_id') != n['id']:
                     continue
-                guard = binding_guard.assess(n, binding,
-                    {r['url'] for r in review.get('result', {}).get('deferred_urls',[])})
+                page = bundle.get('pages', {}).get(binding.get('url'), {})
+                body = page.get('content', '')
+                guard = binding_guard.assess(n, {**binding,'document_context':body[:2000]},
+                    {r['url'] for r in review.get('result', {}).get('deferred_urls',[])} |
+                    set(review.get('result',{}).get('conflicted_urls',[])))
                 if not guard['eligible_for_material_closure']:
                     blocked_bindings.append({'url':binding.get('url'), 'guard':guard})
                     continue
@@ -133,6 +138,7 @@ def build(bundle, journal=None, usage=None, caps=None):
         rows.append({'id':n['id'], 'priority':n.get('priority','useful'), 'family':kind,
                      'required_source_domains':n.get('required_source_domains',[]),
                      'condition':text, 'status':status, 'reason':reason,
+                     'question_clock':n['question_clock'],
                      'query':(' '.join(query_base.split())[:240]+' '+suffix)[:350],
                      'candidates':candidates, 'search_attempts':len(searches),
                      'discovered_urls':discovered, 'readable_urls':readable,
@@ -171,8 +177,8 @@ def termination(ledger, *, reason, search_available):
             'critical_unverified_need_ids':pending,
             'review_errors':ledger.get('review_errors',[]),
             'legacy_unlocated_field_means_unverified':True,
-            'acquisition_outcome':'materials_ready' if complete else
-                'review_incomplete' if ledger.get('review_errors') or reason=='material_review_failed' else
+            'acquisition_outcome':'review_incomplete' if ledger.get('review_errors') or reason=='material_review_failed' else
+                'materials_ready' if complete else
                 'budget_exhausted' if 'capacity_exhausted' in reason else
                 'source_unreadable' if any(n['status']=='read_failed' for n in ledger['needs'] if n['id'] in pending) else 'material_unlocated',
             'target_material_need_ids':[n['id'] for n in ledger['needs'] if n['target_material_captured']],

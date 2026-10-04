@@ -2,6 +2,7 @@
 import re
 from urllib.parse import urlsplit
 from ForecastAgent.tools.channels import PUBLISHERS
+from ForecastAgent.supplement import requirement_contract
 
 
 def source_requirement(need):
@@ -19,6 +20,8 @@ def source_requirement(need):
         return {'required':False, 'domains':[], 'origin':'secondary_source_need', 'role':'secondary_reporting'}
     publishers = [p for p in PUBLISHERS if any(re.search(r'\b'+re.escape(a)+r'\b', text,
         0 if a.isupper() and len(a)<=5 else re.I) for a in p['aliases'])]
+    publishers = [p for p in publishers if p.get('origin_policy')!='explicit_official_only' or
+                  re.search(r'\bofficial\b|\bissuer\b|\bprimary source\b',text,re.I)]
     return {'required':bool(publishers) or bool(re.search(r'\bofficial\b|\bprimary source\b',text,re.I)),
             'domains':sorted({d for p in publishers for d in p['domains']}),
             'origin':'publisher_registry' if publishers else 'unmapped_official_requirement',
@@ -53,6 +56,7 @@ def assess(need, binding, deferred_urls=()):
     if requirement['required'] and not origin_matches:
         issues.append('required_publisher_origin_unverified')
     issues.extend(binding.get('reading_issues', []))
+    issues.extend(requirement_contract.issues(need,binding))
     return {'eligible_for_material_closure':not issues, 'issues':issues,
             'source_requirement':requirement, 'publisher_origin_observed':origin_matches,
             'truth_verified':False}

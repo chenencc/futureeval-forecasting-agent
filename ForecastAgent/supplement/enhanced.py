@@ -223,6 +223,8 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         identity['binding_guard_sha256'] = hashlib.sha256(Path(binding_guard.__file__).read_bytes()).hexdigest()
         from ForecastAgent.readers import material_passages
         identity['material_passages_sha256'] = hashlib.sha256(Path(material_passages.__file__).read_bytes()).hexdigest()
+        from ForecastAgent.supplement import requirement_contract
+        identity['requirement_contract_sha256'] = hashlib.sha256(Path(requirement_contract.__file__).read_bytes()).hexdigest()
         identity['publisher_catalog_sha256'] = digest(channels.PUBLISHERS)
         identity['material_agent_enabled'] = bool(material_agent)
         identity['gap_search_available_tools']=sorted(getattr(search,'available_tools',('tavily','exa')) if search else [])
@@ -262,6 +264,10 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
     def review_materials():
         if not gap_workflow or not material_agent or not network or state.get('material_agent_stopped'):
             return
+        if hasattr(material_agent,'can_review') and not material_agent.can_review(state):
+            state['material_review_capacity_exhausted'] = True
+            save(folder/'state.json',state)
+            return
         ledger = need_ledger.build(overlay, state, usage(bundle, prior, state), caps)
         payload = material_review.packet(overlay, ledger, plan(overlay)['sources'])
         fingerprint = digest({'pages': [(u,digest(p)) for u,p in overlay['pages'].items()],
@@ -271,6 +277,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         # Reservations persist even if validation or transport fails; no loops.
         state.setdefault('reviewed_inventory', []).append(fingerprint)
         save(folder/'state.json', state)
+        reviews_before = len(state.get('material_reviews',[]))
         try:
             result = material_review.bind(overlay, payload, material_agent(payload, state, folder))
             # Injected adapters used in tests need the same durable result contract.
@@ -286,8 +293,13 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
             state['material_agent_stopped'] = True
             state['material_agent_error'] = type(exc).__name__
             state['material_agent_error_code'] = getattr(exc,'code','invalid_binding_or_transport')
-            if state.get('material_reviews'):
-                state['material_reviews'][-1].update(status='invalid_or_failed', error=type(exc).__name__)
+            current = next((r for r in state.get('material_reviews',[])[reviews_before:]
+                            if r.get('input_sha256')==digest(payload) and r.get('status')!='bound'),None)
+            if current is None:
+                current = {'input_sha256':digest(payload)}
+                state.setdefault('material_reviews',[]).append(current)
+            current.update(status='invalid_or_failed',error=type(exc).__name__,
+                           error_code=getattr(exc,'code','invalid_binding_or_transport'))
             # Incomplete review never closes material needs or invents bindings.
         save(folder/'state.json', state)
     review_materials()

@@ -29,6 +29,25 @@ discard valid bindings. None of this grants new provider capacity.
 
 ## Roles and applicability
 
+The rule clock is now retained separately from the planner's condition text.
+An explicit release-month rule requires a publication-date witness; observing a
+value for that month does not fulfill it. First-release selection is retained in
+the contract but is not verified merely from one document. Unknown publication
+dates stay unresolved. Generic policy paragraphs cannot fulfill specific passed
+resolution or committee-report needs, and numeric needs require a quoted metric
+observation. These checks are conservative material witnesses, not event verdicts.
+
+Malformed source-action fields, including a string that looks like a list, are
+quarantined without parsing or executing the string. Oversized action arrays are
+also quarantined. Independent exact bindings survive. Invalid deferral fields
+block source closure conservatively. Review errors take precedence over ready
+status, while exhausted review capacity stops before a new reservation and never
+overwrites the prior successful review.
+
+Issuer publisher entries may use `explicit_official_only`: issuer-original needs
+require that maintained origin, while numeric evidence may still use a secondary
+report. This avoids treating syndicated reports as official issuer documents.
+
 Source requirements distinguish issuer-original documents from secondary reports
 about official results. Explicit per-need domains and the maintained publisher
 registry establish issuer origins. Unknown official publishers stay unverified;
