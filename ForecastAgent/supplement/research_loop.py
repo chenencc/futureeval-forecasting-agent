@@ -193,13 +193,21 @@ class Transport:
         finally:save(self.folder/'state.json',state)
 
 
+def model_need(need):
+    """Keep the ledger complete while excluding acquisition history from prompts."""
+    decorated=decorate({'needs':[need]})['needs'][0]
+    keys=('id','priority','family','condition','question_clock','required_source_domains',
+          'source_requirement','required_axes','witness_contract')
+    return {k:decorated[k] for k in keys if k in decorated}
+
+
 def audit_proposals(bundle,needs,state,transport):
     proposals=state['proposals'];pending=[ident for ident in proposals if ident not in state['audited']]
     if not pending:return False
     ids=pending[:3];rows=[]
     for ident in ids:
         need=next(n for n in needs if n['id']==ident);b=proposals[ident]
-        rows.append({'need':need,'binding':b,'document_start':bundle['pages'][b['url']]['content'][:2000]})
+        rows.append({'need':model_need(need),'binding':b,'document_start':bundle['pages'][b['url']]['content'][:2000]})
     tool=schema('audit_evidence',{'checks':{'type':'array','minItems':len(ids),'maxItems':len(ids),'items':{
         'type':'object','properties':{'need_id':{'type':'string','enum':ids},
         'status':{'type':'string','enum':['supported','unsupported','uncertain']},
@@ -305,13 +313,13 @@ def run(parent,prior_review,output,key,resume_loop=None):
         if not unfinished:reason='materials_accepted_or_repair_caps_reached';break
         unfinished.sort(key=lambda n:(n['priority']!='critical',n['id'] in state['assessments'],n['id']))
         active=unfinished[:3];active_ids={n['id'] for n in active}
-        query_terms=tokens(' '.join(n.get('material_to_find','')+' '+n.get('id','') for n in active))
+        query_terms=tokens(' '.join(n.get('condition','')+' '+n.get('id','') for n in active))
         visible=sorted(state['passages'].values(),key=lambda p:len(query_terms & tokens(p['text'])),reverse=True)[:12]
         chars=0;delivered=[]
         for p in visible:
             if chars+len(p['text'])<=16000:delivered.append(p);chars+=len(p['text'])
         payload={'question':{k:b['request'].get(k,'') for k in ('question','resolution_criteria','fine_print')},
-            'needs':decorate({'needs':active})['needs'],'documents':list(tools.catalog.values()),
+            'needs':[model_need(n) for n in active],'documents':list(tools.catalog.values()),
             'passages':delivered,'feedback':state['issues'],'last_tool_results':[{**x,'tools':[{'request':t['request'],**({'error':t['error']} if 'error' in t else {'returned_passage_ids':[p['passage_id'] for p in state['passages'].values() if p.get('document_id')==t['request'].get('document_id')]})} for t in x.get('tools',[])]} for x in state['steps'][-1:]],
             'remaining_decisions':LIMITS['stage_decisions']-len(state['decisions'])}
         before=(len(state['passages']),len(state['assessments']),len(state['accepted']))

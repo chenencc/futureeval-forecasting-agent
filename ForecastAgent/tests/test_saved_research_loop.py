@@ -5,11 +5,19 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from ForecastAgent.analysis.pilot import load, save
-from ForecastAgent.supplement.research_loop import SavedTools, Transport, LIMITS, run, audit_proposals
+from ForecastAgent.supplement.research_loop import SavedTools, Transport, LIMITS, run, audit_proposals, model_need
 from ForecastAgent.tests.test_material_review_only import ReviewOnlyTests
 
 
 class SavedResearchTests(unittest.TestCase):
+    def test_prompt_excludes_unbounded_acquisition_history(self):
+        projected=model_need({'id':'n','priority':'critical','condition':'Exact dated record',
+            'candidates':[{'body':'x'*50000}],'discovered_urls':['https://example.org']})
+        self.assertEqual(projected['condition'],'Exact dated record')
+        self.assertNotIn('candidates',projected)
+        self.assertNotIn('discovered_urls',projected)
+        self.assertLess(len(json.dumps(projected)),2000)
+
     def test_complete_rows_and_exact_body_ranges(self):
         body='date | value\n2026-03-01 | 1\n2026-04-01 | 2\n'
         b={'pages':{'https://example.org/data':{'content':body}},'plan':[],'request':{'id':1}}
