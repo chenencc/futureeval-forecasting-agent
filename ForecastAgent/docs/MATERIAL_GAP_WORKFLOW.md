@@ -149,3 +149,16 @@ These checks do not validate arbitrary date interpretation, revisions, values,
 or conditional fallback activation. Those limitations remain visible for later
 analysis. New guards and publisher catalog hashes are included in frozen repair
 identities; changing them never resets provider usage.
+### Model fallback allowance correction
+
+Material review uses `per-model-allowance-v1`: Ultra and authorized Super fallback
+have independent HTTP and failure ceilings. Switching activates the fallback's
+remaining allowance; returning to a model does not replenish its previous use.
+Requests persist their actual model and usage. Legacy attempts with unknown model
+identity are conservatively charged to the primary model, and migration is
+audited. Scalar legacy prior totals remain charged rather than being discarded.
+
+This corrects the older shared-failure gate that could block Super immediately
+after two Ultra service errors. Shared logical review limits and execution
+deadlines remain bounded. Search and capture allowances do not change, provider
+account limits cannot be reset, and old frozen results are not silently reopened.

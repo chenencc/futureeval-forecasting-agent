@@ -142,23 +142,26 @@ def bind(bundle, payload, decision):
 
 
 def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
-    """Reuse model routing and debit remaining initial-stage physical call limits."""
+    """Use independent model allowances; switching never erases prior records."""
+    from ForecastAgent.providers.model import configured_model, ULTRA_MODEL, SUPER_MODEL
+    primary = configured_model()
+    authorized = {primary}
+    import os
+    if primary == ULTRA_MODEL and os.environ.get('FORECAST_MODEL_FALLBACK_SUPER') == '1':
+        authorized.add(SUPER_MODEL)
     capacity = bundle.get('capacity', {})
-    initial = len(bundle.get('model_attempts', []))
     session = (bundle.get('sessions') or [{}])[-1]
-    dispatch_used = initial-session.get('attempts_before', 0)
     decision_used = session.get('model_decisions', 0)
-    limit = max(0, min(capacity.get('model_http_lifetime', 72)-initial,
-                       capacity.get('model_http_dispatch', 16)-dispatch_used))
     decisions_left = max(0, min(max_reviews, capacity.get('model_decisions', 12)-decision_used))
-    failures_left = max(0, capacity.get('model_failures', 4)-sum(
-        a.get('status') != 'received' for a in bundle.get('model_attempts', [])[session.get('attempts_before', 0):]))
+    def model_of(row):
+        # Legacy unknown-model attempts debit the primary allowance conservatively.
+        return row.get('model') or row.get('request',{}).get('model') or primary
     started = session.get('started_at')
     elapsed = max(0, (datetime.now(timezone.utc)-datetime.fromisoformat(started.replace('Z','+00:00'))).total_seconds()) if started else 0
     if review_retry_seconds is not None and not 0 < review_retry_seconds <= 300:
         raise ValueError('Review-only retry window must be at most 300 seconds')
     # An explicitly authorized review-only execution has its own short wall clock;
-    # original cumulative decision, HTTP and failure counters still apply.
+    # Original per-model counters and the logical decision cap still apply.
     deadline = time.monotonic()+(review_retry_seconds if review_retry_seconds is not None else
                                 max(0, capacity.get('dispatch_seconds', 900)-elapsed))
     schema = {'type': 'function', 'function': {'name': 'review_material',
@@ -182,14 +185,38 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
         if len(reviews)+state.get('prior_material_review_count', 0) >= decisions_left:
             raise RuntimeError('Shared model decision capacity exhausted')
         reviews.append({'input_sha256': digest(payload), 'status': 'reserved'})
+        state['model_budget_policy'] = {'version':'per-model-allowance-v1',
+            'authorized_models':sorted(authorized), 'prior_usage_erased':False,
+            'search_and_fetch_budgets_reset':False,
+            'http_dispatch_per_model':capacity.get('model_http_dispatch',16),
+            'http_lifetime_per_model':capacity.get('model_http_lifetime',72),
+            'failures_per_model':capacity.get('model_failures',4)}
         save(Path(folder)/'state.json', state)
         def observer(event, record, token=None):
             if event == 'reserve':
-                if len(attempts)+state.get('prior_material_model_attempt_count', 0) >= limit:
-                    raise RuntimeError('Shared model HTTP capacity exhausted')
-                if sum(a.get('status') != 'received' for a in attempts)+state.get('prior_material_model_failure_count', 0) >= failures_left:
-                    raise RuntimeError('Shared model failure capacity exhausted')
-                token = len(attempts); attempts.append({'status': 'reserved'})
+                model = model_of(record)
+                if model not in authorized:
+                    raise RuntimeError('Unapproved material review model')
+                restored=[]
+                for row in attempts:
+                    entry=dict(row)
+                    if not entry.get('model') and entry.get('file') and (Path(folder)/entry['file']).exists():
+                        old=json.loads((Path(folder)/entry['file']).read_text(encoding='utf-8'))
+                        entry['model']=model_of(old)
+                    restored.append(entry)
+                initial_rows=bundle.get('model_attempts',[])
+                current_initial=initial_rows[session.get('attempts_before',0):]
+                # Older scalar migration totals remain consumed by the primary.
+                prior_http=state.get('prior_material_model_attempt_count',0) if model==primary else 0
+                prior_failure=state.get('prior_material_model_failure_count',0) if model==primary else 0
+                used=sum(model_of(r)==model for r in initial_rows+restored)+prior_http
+                dispatch=sum(model_of(r)==model for r in current_initial+restored)+prior_http
+                if used >= capacity.get('model_http_lifetime',72) or dispatch >= capacity.get('model_http_dispatch',16):
+                    raise RuntimeError('Per-model HTTP capacity exhausted')
+                failed=sum(model_of(r)==model and r.get('status')!='received' for r in current_initial+restored)+prior_failure
+                if failed >= capacity.get('model_failures',4):
+                    raise RuntimeError('Per-model failure capacity exhausted')
+                token = len(attempts); attempts.append({'status': 'reserved','model':model})
             path = Path(folder)/f'material-model-{token+1:04d}.json'
             # Requests contain no authorization header; redact any echoed credential.
             text = json.dumps(record, ensure_ascii=False).replace(api_key, '[REDACTED]') if api_key else json.dumps(record)
@@ -198,6 +225,7 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
             usage = response.get('usage') if isinstance(response, dict) else None
             choices = response.get('choices') if isinstance(response,dict) else None
             attempts[token] = {'status': record['status'], 'file': path.name,
+                'model':model_of(record),
                 'sha256': hashlib.sha256(text.encode()).hexdigest(),
                 'usage': usage, 'usage_unknown':not bool(usage),
                 'finish_reason':choices[0].get('finish_reason') if choices else None}

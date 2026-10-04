@@ -213,5 +213,39 @@ class MaterialFitTests(unittest.TestCase):
             self.assertEqual(len(state['material_model_attempts']),1)
             self.assertEqual(state['material_model_attempts'][0]['finish_reason'],'tool_calls')
 
+    def test_service_fallback_gets_independent_failure_allowance_without_erasing_history(self):
+        from ForecastAgent.providers.model import ULTRA_MODEL,SUPER_MODEL
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        b['capacity']={'model_http_lifetime':3,'model_http_dispatch':3,'model_decisions':4,'model_failures':2}
+        b['model_attempts']=[{'status':'missing_choices','model':ULTRA_MODEL}]*2
+        b['sessions']=[{'attempts_before':0,'model_decisions':0}]
+        def model(messages,key,**kwargs):
+            observer=kwargs['observer']
+            message={'tool_calls':[{'function':{'name':'review_material','arguments':json.dumps(self.compact_reply(payload))}}]}
+            record={'status':'reserved','request':{'model':SUPER_MODEL}}
+            token=observer('reserve',record)
+            record.update(status='received',response={'choices':[{'message':message,'finish_reason':'tool_calls'}]})
+            observer('complete',record,token)
+            return message
+        with tempfile.TemporaryDirectory() as tmp,patch.dict('os.environ',{'FORECAST_MODEL':ULTRA_MODEL,'FORECAST_MODEL_FALLBACK_SUPER':'1'}),patch('ForecastAgent.providers.model.ask_model',side_effect=model):
+            state={};result=material_review.callback('dummy',b)(payload,state,tmp)
+            self.assertTrue(result['bindings'])
+            self.assertEqual(len(b['model_attempts']),2)
+            self.assertEqual(state['material_model_attempts'][0]['model'],SUPER_MODEL)
+            self.assertFalse(state['model_budget_policy']['prior_usage_erased'])
+
+    def test_switching_back_does_not_replenish_previously_exhausted_model(self):
+        from ForecastAgent.providers.model import ULTRA_MODEL
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        b['capacity']={'model_http_lifetime':3,'model_http_dispatch':3,'model_decisions':4,'model_failures':2}
+        b['model_attempts']=[{'status':'missing_choices','model':ULTRA_MODEL}]*2
+        def model(messages,key,**kwargs):
+            kwargs['observer']('reserve',{'status':'reserved','request':{'model':ULTRA_MODEL}})
+        with tempfile.TemporaryDirectory() as tmp,patch.dict('os.environ',{'FORECAST_MODEL':ULTRA_MODEL,'FORECAST_MODEL_FALLBACK_SUPER':'1'}),patch('ForecastAgent.providers.model.ask_model',side_effect=model):
+            state={}
+            with self.assertRaisesRegex(RuntimeError,'Per-model failure'):
+                material_review.callback('dummy',b)(payload,state,tmp)
+            self.assertEqual(state['material_model_attempts'],[])
+
 
 if __name__=='__main__':unittest.main()
