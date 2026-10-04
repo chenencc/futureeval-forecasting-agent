@@ -147,7 +147,7 @@ def resume(case,baseline,output,parent_run):
         'quota_reset':False,'repeated_attempted_arms':False})
 
 
-def compare_saved(case,baseline,parent,output,parent_run):
+def compare_saved(case,baseline,parent,output,parent_run,coverage_v2=False):
     """New authorized paired assessment; acquisition and earlier arms stay immutable."""
     parent=Path(parent);output=Path(output)
     if output.exists():raise ValueError('New assessment output already exists; no budget restart')
@@ -161,10 +161,16 @@ def compare_saved(case,baseline,parent,output,parent_run):
         if source.is_dir():shutil.copytree(source,target)
         else:
             target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,target)
+    if coverage_v2:
+        from ForecastAgent.supplement import witness_contract
+        shared['payload']=witness_contract.decorate(shared['payload'])
+        write(output/'shared-input.json',shared)
     complete_pair(selected,manifest,baseline,output,resume=False)
-    write(output/'round-provenance.json',{'parent_run':parent_run,'round':'role-stage-direction-v2',
+    write(output/'round-provenance.json',{'parent_run':parent_run,'round':'explicit-need-coverage-v3' if coverage_v2 else 'role-stage-direction-v2',
         'new_authorized_assessment_allowance':{'logical_decisions_per_arm':1,'physical_requests_per_arm':3},
         'acquisition_reset':False,'prior_assessment_records_erased':False,
+        'body_spans_unchanged':shared['payload']['passages']==read(parent/'shared-input.json')['payload']['passages'],
+        'new_common_contract_fields':coverage_v2,
         'shared_input_identical_to_parent':hashlib.sha256((output/'shared-input.json').read_bytes()).hexdigest()==hashlib.sha256((parent/'shared-input.json').read_bytes()).hexdigest()})
 
 
@@ -187,7 +193,8 @@ def complete_pair(selected,manifest,baseline,output,resume):
             invoke(repo,'live',output/'shared-input.json',result_path)
         result=read(result_path)
         write(output/'blind'/(label+'.json'),{'question':payload['question'],'checklist':selected['required_materials'],
-            'status':result['status'],'needs':[{k:n.get(k) for k in ['id','condition','target_material_captured','material_bindings','blocked_material_bindings']} for n in result['needs']]})
+            'status':result['status'],'need_assessments':result.get('result',{}).get('need_assessments',[]),
+            'needs':[{k:n.get(k) for k in ['id','condition','target_material_captured','material_bindings','blocked_material_bindings']} for n in result['needs']]})
     write(output/'private/arm-map.json',mapping)
     if (output/'review-form.json').exists():return
     write(output/'review-form.json',{'id':selected['id'],'labels':{r:{'core_material_coverage':None,'false_closures':None,'false_rejections':None,'notes':None,
@@ -197,9 +204,9 @@ def complete_pair(selected,manifest,baseline,output,resume):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('command',choices=['regression','live','resume','compare-saved','worker']);p.add_argument('--baseline');p.add_argument('--output',required=True);p.add_argument('--parent-run');p.add_argument('--parent')
-    p.add_argument('--case',type=int);p.add_argument('--repo');p.add_argument('--mode');p.add_argument('--input');p.add_argument('--manifest');a=p.parse_args()
+    p.add_argument('--case',type=int);p.add_argument('--repo');p.add_argument('--mode');p.add_argument('--input');p.add_argument('--manifest');p.add_argument('--coverage-v2',action='store_true');a=p.parse_args()
     if a.command=='worker':worker(a.repo,a.mode,a.input,a.output)
     elif a.command=='regression':regression(a.baseline,a.output,a.manifest)
     elif a.command=='resume':resume(a.case,a.baseline,a.output,a.parent_run)
-    elif a.command=='compare-saved':compare_saved(a.case,a.baseline,a.parent,a.output,a.parent_run)
+    elif a.command=='compare-saved':compare_saved(a.case,a.baseline,a.parent,a.output,a.parent_run,a.coverage_v2)
     else:live(a.case,a.baseline,a.output)

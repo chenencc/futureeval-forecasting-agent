@@ -86,3 +86,24 @@ aliases, coreference and indirect descriptions remain unverified closure while
 their raw material remains available for analysis. Counterexamples must be
 reviewed explicitly; fewer accepted needs alone is not a quality improvement.
 New independent questions are required before claiming generalization.
+
+## Round 3: explicit per-need coverage and document scope
+
+The opt-in `material-coverage-v2` protocol requires one assessment per need, with
+a proposed binding, a no-match reason referencing inspected passages, or explicit
+uncertainty. Missing needs produce a review error rather than silently implying
+that material is absent. All proposals still pass original quotation, source,
+axes and closure guards; an assessment never bypasses these checks.
+
+Document contracts distinguish the named SEC form from general IPO preparation.
+Original court documents are required only when the need explicitly says so;
+ordinary requests can use relevant secondary reporting. A report denying a stay
+remains context but does not witness an order granting a stay. Six additional
+frozen witnesses accompany the original 23 regression checks.
+
+Saved body bytes, passages and their order remain fixed. Both arms receive the
+same new common contract fields; this is not an identical-input replay of round
+2. Baseline `08b4382` keeps its original four-field output protocol, while the
+candidate must explicitly account for every need. The first live case is 7;
+only after protocol compatibility and witness quality pass should further cases
+be run. Model and per-arm limits remain unchanged. No acquisition occurs.

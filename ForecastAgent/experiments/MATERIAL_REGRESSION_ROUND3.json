@@ -1,0 +1,26 @@
+{
+  "schema": "material-regression-round3-v1",
+  "baseline_commit": "08b43827b904fb0e4c71c4f62f6507f6674d389c",
+  "source_run": "37188017851",
+  "scope": "Development witness checks; not generalization, event outcomes or overall recall.",
+  "cases": [
+    {
+      "id": "42491",
+      "fixture": "ForecastAgent/fixtures/material_round3/42491.json.gz",
+      "sha256": "4ef4920531d55eed147636e78c5e224ce4618452e72e508a39fb5d3fccfe08f6",
+      "source_case": 1
+    },
+    {
+      "id": "41206",
+      "fixture": "ForecastAgent/fixtures/material_round3/41206.json.gz",
+      "sha256": "1d310ad9222b7fd0bcd1b830d50e5ffeec101c51de06db9897f7a872227e26ec",
+      "source_case": 3
+    },
+    {
+      "id": "44731",
+      "fixture": "ForecastAgent/fixtures/material_round3/44731.json.gz",
+      "sha256": "8380809257b75805baefbe614c92f6184f721ac6fe5e51242a6b4ef05aa950dc",
+      "source_case": 7
+    }
+  ]
+}

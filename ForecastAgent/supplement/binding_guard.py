@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlsplit
 from ForecastAgent.tools.channels import PUBLISHERS
 from ForecastAgent.supplement import requirement_contract
+from ForecastAgent.supplement import witness_contract
 
 
 def source_requirement(need):
@@ -63,6 +64,7 @@ def assess(need, binding, deferred_urls=()):
         issues.append('required_publisher_origin_unverified')
     issues.extend(binding.get('reading_issues', []))
     issues.extend(requirement_contract.issues(need,binding))
+    issues.extend(witness_contract.issues(need,binding))
     return {'eligible_for_material_closure':not issues, 'issues':issues,
             'source_requirement':requirement, 'publisher_origin_observed':origin_matches,
             'truth_verified':False}

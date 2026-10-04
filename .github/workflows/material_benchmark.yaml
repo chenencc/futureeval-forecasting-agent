@@ -12,6 +12,12 @@ on:
       round2:
         type: boolean
         default: false
+      coverage_v2:
+        type: boolean
+        default: false
+      cases:
+        type: string
+        default: '[1,2,3,4,5,6,7,8,9,10]'
 permissions:
   contents: read
   actions: read
@@ -32,13 +38,20 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
       - run: test "$GITHUB_RUN_ATTEMPT" = 1
-      - run: python -m unittest ForecastAgent.tests.test_material_benchmark ForecastAgent.tests.test_requirement_contract
+      - run: python -c 'import json,os; c=json.loads(os.environ["CASES"]); assert isinstance(c,list) and 1<=len(c)<=10 and all(type(x) is int and 1<=x<=10 for x in c) and len(set(c))==len(c)'
+        env:
+          CASES: ${{ inputs.cases || '[1,2,3,4,5,6,7,8,9,10]' }}
+      - run: python -m unittest ForecastAgent.tests.test_material_benchmark ForecastAgent.tests.test_requirement_contract ForecastAgent.tests.test_witness_contract
       - run: python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --output snapshots/benchmark-regression
       - run: python -c 'import json; assert json.load(open("snapshots/benchmark-regression/report.json"))["gate_passed"]'
       - if: inputs.round2
         run: |
           python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --manifest ForecastAgent/experiments/MATERIAL_REGRESSION_ROUND2.json --output snapshots/benchmark-regression/round2
           python -c 'import json; assert json.load(open("snapshots/benchmark-regression/round2/report.json"))["gate_passed"]'
+      - if: inputs.coverage_v2
+        run: |
+          python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --manifest ForecastAgent/experiments/MATERIAL_REGRESSION_ROUND3.json --output snapshots/benchmark-regression/round3
+          python -c 'import json; assert json.load(open("snapshots/benchmark-regression/round3/report.json"))["gate_passed"]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -51,7 +64,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        case: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        case: ${{ fromJSON(inputs.cases || '[1,2,3,4,5,6,7,8,9,10]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -99,7 +112,7 @@ jobs:
           FORECAST_MODEL_FALLBACK_SUPER: '0'
       - name: New paired assessment on unchanged saved materials
         if: inputs.round2
-        run: python -u -m ForecastAgent.experiments.material_benchmark compare-saved --case "$CASE" --baseline baseline --parent snapshots/benchmark-parent --output snapshots/benchmark-case --parent-run "$PARENT_RUN"
+        run: python -u -m ForecastAgent.experiments.material_benchmark compare-saved --case "$CASE" --baseline baseline --parent snapshots/benchmark-parent --output snapshots/benchmark-case --parent-run "$PARENT_RUN" ${{ inputs.coverage_v2 && '--coverage-v2' || '' }}
         env:
           CASE: ${{ matrix.case }}
           PARENT_RUN: ${{ inputs.resume_run }}

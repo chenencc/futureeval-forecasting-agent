@@ -15,6 +15,7 @@ from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.supplement import binding_guard
 from ForecastAgent.readers.material_passages import spans
 from ForecastAgent.supplement import requirement_contract
+from ForecastAgent.supplement import witness_contract
 
 AXES = ('entity', 'material_type', 'metric', 'period')
 GENERATION = {'max_output_tokens':4096, 'reasoning':{'max_tokens':768}}
@@ -96,6 +97,8 @@ def decode(message, payload, finish_reason=None):
     except (ValueError,TypeError):
         raise ReviewError('incomplete_or_non_json_reply') from None
     required={'bindings','priority_source_ids','deferred_source_ids','next_search'}
+    exhaustive=payload.get('coverage_protocol')==witness_contract.PROTOCOL
+    if exhaustive:required.add('need_assessments')
     if not isinstance(result,dict) or set(result) != required:
         raise ReviewError('invalid_review_shape')
     source_map={s['source_id']:s['url'] for s in payload['sources']}
@@ -148,8 +151,13 @@ def decode(message, payload, finish_reason=None):
                 rejected.append({'record':row,'reason':'invalid_deferral'})
         if rejected and not bindings and not selected and not deferrals and result['next_search'] is None:
             raise ReviewError('unknown_or_invalid_reference')
+        try:
+            assessments=witness_contract.validate_coverage(payload,result['need_assessments'],result['bindings']) if exhaustive else []
+        except ValueError as exc:
+            raise ReviewError(str(exc)) from None
         return {'bindings':bindings,'priority_urls':selected,
                 'deferred_urls':deferrals, 'rejected_records':rejected,
+                'need_assessments':assessments,
                 'next_search':result['next_search']}
     except (KeyError,TypeError):
         raise ReviewError('unknown_or_invalid_reference') from None
@@ -230,6 +238,7 @@ def bind(bundle, payload, decision):
         rejected.append({'record':query,'reason':'invalid_search_recommendation'})
         query = None
     return {'bindings': bindings, 'priority_urls': selected, 'deferred_urls':deferred, 'next_search': query,
+            'need_assessments':decision.get('need_assessments',[]),
             'conflicted_urls':conflicts, 'rejected_records':rejected,
             'truth_verified': False}
 
@@ -273,6 +282,28 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'required': ['need_id', 'query']}] }}, 'required': ['bindings', 'priority_source_ids', 'deferred_source_ids', 'next_search'], 'additionalProperties':False}}}
     def review(payload, state, folder):
         from ForecastAgent.providers.model import ask_model
+        active_schema=json.loads(json.dumps(schema))
+        exhaustive=payload.get('coverage_protocol')==witness_contract.PROTOCOL
+        if exhaustive:
+            parameters=active_schema['function']['parameters']
+            parameters['properties']['need_assessments']={'type':'array','minItems':len(payload['needs']),'maxItems':len(payload['needs']),
+                'items':{'type':'object','properties':{'need_id':{'type':'string'},
+                    'status':{'type':'string','enum':['proposed_binding','no_matching_passage','uncertain']},
+                    'passage_ids':{'type':'array','maxItems':3,'items':{'type':'string'}},
+                    'reason':{'type':'string','minLength':1,'maxLength':240}},
+                    'required':['need_id','status','passage_ids','reason'],'additionalProperties':False}}
+            parameters['required'].append('need_assessments')
+        coverage_prompt=(
+            ' Assess EVERY need exactly once in need_assessments; never silently omit a need. '
+            'Use proposed_binding only with corresponding binding records and their passage IDs; '
+            'no_matching_passage must cite the closest inspected IDs and explain the missing requirement; '
+            'uncertain records explicitly report unresolved fit without declaring material absent. '
+            'A single table can support multiple needs: assess its explicit event date and counts separately '
+            'from unknown publication date. Inspect witness_contract for required form identifiers and '
+            'original court documents. IPO preparation without the named form is context; a news story '
+            'about an order is not the original document when the contract requires that original. '
+            'A denial of a stay is useful contrary context, not a witness of an order granting a stay. Keep uncertainty explicit.'
+        ) if exhaustive else ''
         attempts = state.setdefault('material_model_attempts', [])
         reviews = state.setdefault('material_reviews', [])
         if len(reviews)+state.get('prior_material_review_count', 0) >= decisions_left:
@@ -351,9 +382,9 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'Recommend at most one targeted query for a critical need still missing. Omitted previews are unknown. '
                 'Respect each need source_requirement: a secondary attribution does not fulfill a publisher-original need. '
                 'A deferred source cannot also fulfill a need. '
-                'Return review_material only; never probabilities or resolution outcomes.'},
+                'Return review_material only; never probabilities or resolution outcomes.'+coverage_prompt},
                 {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}], api_key,
-                tools=[schema], forced_tool='review_material', observer=observer,
+                tools=[active_schema], forced_tool='review_material', observer=observer,
                 independent_model_retries=True,
                 max_output_tokens=GENERATION['max_output_tokens'],reasoning=GENERATION['reasoning'],deadline=deadline)
             result=decode(response,payload,attempts[-1].get('finish_reason') if attempts else None)
