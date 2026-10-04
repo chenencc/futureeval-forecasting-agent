@@ -1,0 +1,115 @@
+{
+  "schema": "acquisition-ids-pilot-audit-v2",
+  "run_id": "37220371858",
+  "parent_run_id": "37218949703",
+  "tested_commit": "455973e",
+  "scope": "Three-case repaired rule-ID planning and flat evidence annotation using the same frozen inputs. Inherit the first pilot consumption; no quota reset, searches, fetches or forecasts. Repaired regressions, not unseen validation.",
+  "actual_http_attempts": 16,
+  "new_http_attempts": 6,
+  "logical_decisions": 16,
+  "new_logical_decisions": 6,
+  "usage": {
+    "prompt_tokens": 49323,
+    "completion_tokens": 18405,
+    "total_tokens": 67728
+  },
+  "new_usage": {
+    "prompt_tokens": 23411,
+    "completion_tokens": 6117,
+    "total_tokens": 29528
+  },
+  "unknown_usage_attempts": 0,
+  "limits_preserved": true,
+  "business_gate_passed": true,
+  "audit_errors": [],
+  "manual_quality_review": {
+    "conclusion": "Rule-ID and flat-output interface now reaches evidence annotation on all three repaired cases; semantic correctness and generalization are not established.",
+    "interface_cases_completed": 3,
+    "accepted_needs": 14,
+    "accepted_bound_annotations": 6,
+    "recorded_uncovered_assessments": 8,
+    "format_rejections": 0,
+    "compatibility_repairs": 0,
+    "findings": [
+      {
+        "question_id": "43494",
+        "assessment": "One material-backed entity observation, one unsupported interval claim and one explicit missing threshold.",
+        "issues": [
+          {
+            "need_id": "need2",
+            "type": "unsupported_temporal_continuity",
+            "detail": "An August 3 directive with no rescission text cannot establish that no rescission occurred through September 1. The reviewer copies the target date as its observation and infers absence from silence."
+          },
+          {
+            "need_id": "need3",
+            "type": "rule_constant_vs_external_witness",
+            "detail": "The rule already defines the 50 MW threshold. The acquisition need should concern applicability to qualifying facilities, not request an external redefinition of a rule constant. A directive applying to all data centres may require scope reasoning rather than a literal 50 MW mention."
+          }
+        ],
+        "positive": "A threshold-related uncertainty is retained for downstream review rather than silently assumed."
+      },
+      {
+        "question_id": "43501",
+        "assessment": "Official source identified; user-count, institutional-count/duration and ransom qualification gaps preserved.",
+        "issues": [
+          {
+            "type": "rule_planning_completeness",
+            "detail": "All three event paths are called critical independently. No explicit OR group is represented. The after-question-opening qualification and exclusion of attacker-only claims are not explicit in the generated plan."
+          }
+        ],
+        "positive": "The reviewer does not invent the 10,000-user count, 100-institution/four-hour threshold or ransom demand."
+      },
+      {
+        "question_id": "43824",
+        "assessment": "The September prices are correctly identified as outside the June-to-August observation window.",
+        "issues": [
+          {
+            "need_id": "n6",
+            "type": "observation_from_question_not_bound_material",
+            "detail": "The reviewer cites a market-data passage but sources USD0.25 from the question rules rather than that material."
+          },
+          {
+            "need_id": "n5",
+            "type": "measure_definition_assumption",
+            "detail": "The source reason calls the data Adjusted Close although saved records are labelled close. The schema has not validated adjustment provenance."
+          }
+        ],
+        "positive": "All four requested in-window price/date needs remain explicitly uncovered; source and ticker are preserved as background."
+      }
+    ],
+    "general_design_limits": [
+      "Rule IDs guarantee literal rule identity, not complete or correct requirement extraction.",
+      "An atomic target dimension can be narrower than its compound condition. Complete observation of one dimension must not establish the whole condition.",
+      "An observation needs an explicit provenance distinction between saved material, question-defined constants and inference.",
+      "Absence across an interval requires coverage evidence; silence in one document is not a complete negative witness.",
+      "Separate rule-defined constants from facts to acquire; a missing literal restatement of a rule constant is not necessarily a real material gap."
+    ],
+    "production_adoption": "not supported by this repaired three-case trial",
+    "next_validation": "Freeze these interface cases as regressions. Design general observation provenance and condition-coverage checks before broader unseen validation; avoid question-specific phrase rules."
+  },
+  "artifact": {
+    "id": "11309773555",
+    "name": "acquisition-contract-live",
+    "sha256": "aa784ab648f67879b4cb7cec49a5801f30edb88ad4148f914921ce818ff9e0a8"
+  },
+  "preserved_parent_files": 41,
+  "all_parent_files_unchanged": true,
+  "post_run_coverage_replay": {
+    "provider_calls": 0,
+    "semantic_claims_changed": false,
+    "state_counts_by_question": {
+      "43494": {
+        "covered_by_model_claim": 2,
+        "reviewed_uncovered": 1
+      },
+      "43501": {
+        "reviewed_uncovered": 3,
+        "covered_by_model_claim": 1
+      },
+      "43824": {
+        "reviewed_uncovered": 4,
+        "context_only": 3
+      }
+    }
+  }
+}

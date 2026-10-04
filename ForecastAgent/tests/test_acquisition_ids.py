@@ -79,6 +79,7 @@ class AcquisitionIDs(unittest.TestCase):
                'observation': '', 'explanation': 'No relevant delivered passage.'}
         review = ids.bind_review(plan, packet, [row], b['pages'])
         self.assertEqual(len(review['uncovered_assessments']), 1)
+        self.assertEqual(ids.coverage(plan, review)[0]['state'], 'reviewed_uncovered')
         bad = {**row, 'fit': 'applicable', 'observation': 'issued'}
         review = ids.bind_review(plan, packet, [bad], b['pages'])
         self.assertFalse(review['uncovered_assessments'])

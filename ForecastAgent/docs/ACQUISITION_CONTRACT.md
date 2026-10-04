@@ -199,3 +199,32 @@ within the original cumulative 20/30 limits. Parent request records and counters
 are preserved, and parent state/identity hashes must match before any call.
 This is repaired regression validation, not a new unseen cohort or a forecasting
 evaluation. Production remains unchanged pending actual outcome review.
+
+### V2 pilot outcome
+
+Run [37220371858](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37220371858)
+on `455973e` reached both model stages for all three cases. It made 6 new logical
+decisions and 6 new HTTP attempts, consuming 29,528 new reported tokens. The
+cumulative totals are 16 decisions, 16 HTTP attempts and 67,728 tokens, with no
+unknown usage. All 41 preserved parent data files and the previous attempt and
+decision records remained unchanged. No searches, captures or forecasts occurred.
+
+All 14 proposed needs were bound to known rule IDs. Six evidence annotations
+were bound to saved text, and eight unknown assessments were retained. There
+were no format rejections or serialized-array repairs. This demonstrates interface
+compatibility on repaired cases; it does not establish semantic correctness.
+
+Manual review identified unsupported inference of non-rescission through a
+future deadline, confusion between question-defined constants and externally
+observed facts, and an unsupported equivalence of Close and Adjusted Close.
+Atomic target dimensions can also be narrower than their compound conditions;
+source identity does not establish all qualifying event conditions. The plan
+does not independently certify that exceptions and OR relationships are complete.
+Keep these cases as regressions and preserve the unverified interpretation flags.
+
+A subsequent offline-only label repair distinguishes `reviewed_uncovered` from
+`unreviewed` for explicit unknown assessments. Its replay changes no model claim,
+source content or original artifact and consumes zero additional requests. The
+three-case manifest still pins the actual tested implementation; it is not
+silently repinned to this later change. Any further live experiment needs a new
+freeze and the latest cumulative state, not the original parent allowances.

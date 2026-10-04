@@ -155,6 +155,17 @@ def application_status(result):
     return 'reviewed_with_gaps'
 
 
+def coverage(plan, review):
+    """A recorded unknown assessment is reviewed but uncovered, not unreviewed."""
+    rows = base.coverage(plan['needs'], review)
+    gaps = {r['need_id'] for r in review['uncovered_assessments']}
+    for row in rows:
+        if row['state'] == 'unreviewed' and row['need_id'] in gaps:
+            row['state'] = 'reviewed_uncovered'
+        row['unknown_assessment_count'] = sum(r['need_id'] == row['need_id'] for r in review['uncovered_assessments'])
+    return rows
+
+
 def tools():
     def obj(properties, required):
         return {'type': 'object', 'properties': properties, 'required': required, 'additionalProperties': False}
@@ -197,7 +208,7 @@ def agent_review(bundle, execute, checkpoint, *, max_chars=60000):
         review = bind_review(plan, packet, rows, bundle.get('pages', {}))
         calls += 1
     result = {'schema': PROTOCOL, 'requirements': plan, 'reading': packet, 'review': review,
-        'coverage': base.coverage(plan['needs'], review), 'identity': identity,
+        'coverage': coverage(plan, review), 'identity': identity,
         'logical_model_decisions': calls, 'compatibility_repairs': repairs,
         'semantic_completeness_verified': False, 'interpretation_pending': True}
     result['application_status'] = application_status(result)
