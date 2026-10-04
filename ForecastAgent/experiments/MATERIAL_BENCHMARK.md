@@ -311,3 +311,23 @@ pass, including truncations, unknowns and missing decisions. Compare false
 acceptance, usable-material false rejection, uncertainty and actual usage. The
 preregistered safety requirement is no new false acceptance and no worse recall
 of usable material. Successful completion never automatically promotes production.
+
+### First-pass unseen comparison result
+
+Run 37214183512 on 6a2d5ea completed all twenty decisions with fixed Super, ten
+per arm. V2 achieved 7/10 exact material-status matches, zero false accepts and
+two usable-material false rejections; V3 achieved 6/10, zero false accepts and
+two usable-material false rejections. Both accepted three of five usable records.
+V2 used 39,225 known tokens and V3 used 47,221 (20.39% more), with ten HTTP
+attempts each and no unknown usage. No search, fetch or forecast submission occurred.
+
+V3 resolves the Texas directive PDF and Tomahawk article quotation failures but
+regresses the Vatican and Canvas usable records. Four V3 records become uncertain
+because the model selects four to eight overall span IDs beyond the three-ID
+limit; the Vatican metric also selects four IDs. Their reasons identify the
+correct event stage or applicability. The redundant overall-selection envelope
+therefore remains an operational design bottleneck. Equal aggregate safety/recall
+counts do not establish improvement: exact-status correctness is lower, per-case
+regressions remain, and usage is higher. Keep production unchanged and preserve
+this first pass without post-run repair or repeat. Any repair makes these records
+regression examples; use different materials for the next independent validation.
