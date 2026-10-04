@@ -55,6 +55,12 @@ class SavedResearchTests(unittest.TestCase):
                 self.assertEqual(result['accepted_need_ids'],[])
                 self.assertEqual(run(parent,prior,out,'dummy'),result)
                 self.assertEqual(mocked.call_count,1)
+                continued=run(parent,prior,root/'continued','dummy',resume_loop=out)
+                self.assertEqual(continued['new_http_attempts'],2)
+                self.assertEqual(continued['continuation_http_attempts'],1)
+                self.assertFalse(continued['budget_reset'])
+                self.assertEqual(load(root/'continued/state.json')['prior_http'],load(out/'state.json')['prior_http'])
+                self.assertTrue((root/'continued/agent-model-0001.json').exists())
 
     def test_critic_rejects_proposal_without_closing_need(self):
         class Critic:

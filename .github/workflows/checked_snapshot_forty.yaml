@@ -127,8 +127,15 @@ jobs:
           run-id: '37203731884'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/prior-review
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: saved-research-loop-case-${{ matrix.case }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/loop-parent
       - name: Bounded saved-document agent and independent review
-        run: python -u -m ForecastAgent.supplement.research_loop --parent snapshots/raw-parent --prior-review snapshots/prior-review --output snapshots/research-loop
+        run: python -u -m ForecastAgent.supplement.research_loop --parent snapshots/raw-parent --prior-review snapshots/prior-review --output snapshots/research-loop ${{ inputs.resume_run != '' && '--resume-loop snapshots/loop-parent' || '' }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
