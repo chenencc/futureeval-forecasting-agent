@@ -3,7 +3,7 @@ import copy
 import json
 import unittest
 from pathlib import Path
-from ForecastAgent.supplement.field_contract import evaluate
+from ForecastAgent.supplement.field_contract import evaluate, span_catalog
 
 MANIFEST = Path(__file__).resolve().parents[1] / 'experiments/MATERIAL_FIELD_REGRESSION10.json'
 
@@ -83,6 +83,30 @@ class FieldContractTests(unittest.TestCase):
         contract['required_fields'].pop()
         r = evaluate(contract, self.case['source'], self.observed())
         self.assertEqual(r['status'], 'uncertain')
+
+    def test_indexed_ranges_do_not_depend_on_model_quotes_or_values(self):
+        observed = self.observed()
+        observed.pop('quote')
+        observed['span_ids'] = ['span-001']
+        for field in observed['field_evidence']:
+            field.pop('quote')
+            field.pop('value')
+            field.update(span_ids=['span-001'], proposed_value='Unverified paraphrase for display only')
+        result = evaluate(self.case['contract'], self.case['source'], observed)
+        self.assertEqual(result['status'], 'matched')
+        for field in result['field_bindings']:
+            for span in field['quote_binding']['spans']:
+                self.assertEqual(span['text'], self.case['source']['text'][span['start']:span['end']])
+        observed['field_evidence'][0]['span_ids'] = ['invented-id']
+        self.assertEqual(evaluate(self.case['contract'], self.case['source'], observed)['status'], 'uncertain')
+
+    def test_catalog_covers_original_body_without_gaps(self):
+        for case in self.cases:
+            spans = span_catalog(case['source'])
+            self.assertEqual(''.join(s['text'] for s in spans), case['source']['text'])
+            for i, span in enumerate(spans):
+                self.assertEqual(span['start'], spans[i-1]['end'] if i else 0)
+                self.assertEqual(span['capture_start'], case['source']['start'] + span['start'])
 
 
 if __name__ == '__main__':

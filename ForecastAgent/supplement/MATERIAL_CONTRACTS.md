@@ -100,3 +100,18 @@ output ceiling to accommodate field witnesses. This changed output shape and cei
 must be disclosed when comparing against old V2 responses. Provider records and
 failure state persist before additional calls. No search, fetch or submissions are
 available. Production gates and the frozen V2 trial remain unchanged.
+
+### Indexed-span interface repair
+
+The first V3 live review (37212525319) blocked the approval false acceptance but
+introduced three safe false rejections from generated quotation/value formatting.
+Its original results remain archived. The `material_field_spans` profile therefore
+uses an exact program-generated span catalog instead of asking the model to
+retype quotations. The model selects supplied IDs for each field; the evaluator
+resolves these IDs against the same saved body and retains separate original
+ranges. Unknown, duplicate or invalid IDs cannot close a need. `proposed_value`
+is explicitly an unverified interpretation; canonical evidence is the indexed
+original text, never a repaired model paraphrase. No fuzzy text matching is added.
+A known publisher mismatch or a required-field mismatch stays decisive even when
+another role is unknown. This preserves conservative rejection without weakening
+acceptance checks. Field semantics and stage classification remain model claims.

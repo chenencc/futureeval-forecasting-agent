@@ -1,10 +1,65 @@
 """Experimental V3 requirement-scoped witnesses; never infer event outcomes."""
+import copy
 from ForecastAgent.supplement.material_contract import evaluate as evaluate_v2
 from ForecastAgent.supplement.quote_alignment import bind
 
 VERDICTS = ('matched', 'mismatched', 'unknown')
 STAGES = ('not_applicable', 'proposed', 'applied', 'scheduled', 'completed',
           'appointed', 'approved', 'denied', 'observed', 'unknown')
+
+
+def span_catalog(source):
+    """Index exact saved ranges; no generated quotation or fuzzy text repair."""
+    text = source['text']
+    spans = []
+    start = 0
+    while start < len(text):
+        end = min(start + 700, len(text))
+        if end < len(text):
+            boundary = max(text.rfind('\n', start + 350, end), text.rfind('. ', start + 350, end))
+            if boundary >= 0:
+                end = boundary + 1
+        spans.append({'id': f'span-{len(spans) + 1:03d}', 'start': start, 'end': end,
+            'capture_start': source.get('start', 0) + start,
+            'capture_end': source.get('start', 0) + end, 'text': text[start:end]})
+        start = end
+    return spans
+
+
+def resolve_spans(source, observation):
+    """Reconstruct quotes from observed IDs; preserve proposed values separately."""
+    indexed = {s['id']: s for s in span_catalog(source)}
+    result = copy.deepcopy(observation)
+    bindings = {}
+
+    def resolve(ids):
+        if (not isinstance(ids, list) or not 1 <= len(ids) <= 3 or
+                any(not isinstance(i, str) or i not in indexed for i in ids) or
+                len(set(ids)) != len(ids)):
+            raise ValueError('invalid_or_unknown_span_ids')
+        return sorted([indexed[i] for i in ids], key=lambda s: s['start'])
+
+    main = resolve(result.get('span_ids'))
+    # V2 semantic/domain checks operate on a program-selected exact range. All
+    # final binding coordinates below refer back to the original saved body.
+    result['quote'] = main[0]['text']
+    records = result.get('field_evidence')
+    if not isinstance(records, list):
+        raise ValueError('field_evidence_missing')
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError('invalid_field_witness')
+        if record.get('verdict') == 'unknown' and record.get('span_ids') == []:
+            continue
+        selected = resolve(record.get('span_ids'))
+        record['quote'] = '\n\n'.join(s['text'] for s in selected)
+        record['value'] = selected[0]['text']
+        bindings[record.get('field_id')] = {'bound': True, 'spans': [
+            {k: v for k, v in s.items() if k != 'id'} for s in selected],
+            'binding_method': 'program_indexed_span_ids'}
+    main_binding = {'bound': True, 'spans': [{k: v for k, v in s.items() if k != 'id'} for s in main],
+                    'binding_method': 'program_indexed_span_ids'}
+    return result, bindings, main_binding
 
 
 def evaluate(contract, source, observation):
@@ -15,12 +70,29 @@ def evaluate(contract, source, observation):
     free-text explanations. Missing V3 fields cannot be backfilled from V2
     booleans or from a human label.
     """
-    base = evaluate_v2(contract, source, observation)
+    bindings = {}
+    main_binding = None
+    base_source = source
+    if isinstance(observation, dict) and 'span_ids' in observation:
+        try:
+            observation, bindings, main_binding = resolve_spans(source, observation)
+            first = main_binding['spans'][0]
+            base_source = {**source, 'text': first['text'], 'start': first['capture_start']}
+        except ValueError as exc:
+            return {'status': 'uncertain', 'issues': [str(exc)], 'field_bindings': [],
+                    'eligible_for_need_closure': False, 'truth_verified': False,
+                    'closure_scope': contract.get('closure_scope', 'target_material')}
+    base = evaluate_v2(contract, base_source, observation)
+    if main_binding:
+        base['quote_binding'] = main_binding
     base['field_bindings'] = []
-    if observation is None or base['status'] != 'matched':
+    if 'publisher_origin_mismatch' in base['issues']:
+        return {**base, 'status': 'mismatched', 'eligible_for_need_closure': False}
+    unresolved_role = base['status'] == 'uncertain' and base['issues'] == ['document_role_unresolved']
+    if observation is None or (base['status'] != 'matched' and not unresolved_role):
         return base
 
-    problems = []
+    problems = list(base['issues'])
     mismatches = []
     requirements = contract.get('required_fields')
     if not isinstance(requirements, list) or not requirements:
@@ -77,7 +149,7 @@ def evaluate(contract, source, observation):
         if verdict == 'unknown':
             problems.append('field_unresolved:' + key)
             continue
-        alignment = bind(source, record.get('quote'))
+        alignment = bindings.get(key) or bind(source, record.get('quote'))
         base['field_bindings'].append({'field_id': key, 'verdict': verdict,
                                        'quote_binding': alignment})
         if not alignment['bound']:
