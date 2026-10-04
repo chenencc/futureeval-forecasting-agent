@@ -169,3 +169,33 @@ applicability or full-pipeline improvement result. Keep production unchanged.
 Original provider records and the failed planning outputs are retained in the
 `acquisition-contract-live` artifact (ID `11310135532`), whose ZIP SHA-256 is
 `609297924f87080a9576f9a0e8e71d05c35f6f57ef933165bda75a1b7e891763`.
+
+## Rule-ID interface V2
+
+The independent development module `supplement/acquisition_ids.py` leaves the
+failed V1 implementation and its original evidence unchanged. Rule references
+use program-generated IDs derived from field hashes and sentence/line ranges.
+The model never calculates offsets or copies rule quotes. Each flat need has
+one target dimension, including a separate `source` dimension; each flat review
+row has one interpreted observation. Binding and gap records retain the shared
+saved-body reader and annotation ledger.
+
+Complete serialized arrays may be decoded with an explicit compatibility log;
+incomplete JSON, fabricated rule IDs, changed rule text and unbound assertions
+are rejected. Source-domain gates are derived only from literal rule URL hosts
+selected by an explicit source requirement. Textual agency names remain model
+claims requiring later authority matching.
+
+Application states distinguish failed requirements, failed annotation, partial
+review and reviewed materials with gaps. Empty or entirely rejected requirements
+fail the business gate; so does unreadable review output for readable materials.
+An explicitly recorded unknown assessment is a gap, not verified absence.
+
+The first V2 pilot is frozen to three repaired cases: a PDF directive, a security
+incident question with multiple conditions, and a structured market record.
+It restores the exact V1 parent state (run `37218949703`) and its 10 consumed
+HTTP/logical attempts. V2 adds at most 6 logical decisions and 10 HTTP attempts,
+within the original cumulative 20/30 limits. Parent request records and counters
+are preserved, and parent state/identity hashes must match before any call.
+This is repaired regression validation, not a new unseen cohort or a forecasting
+evaluation. Production remains unchanged pending actual outcome review.

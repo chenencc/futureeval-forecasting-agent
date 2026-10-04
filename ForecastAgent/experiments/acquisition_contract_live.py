@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import time
+import shutil
 from pathlib import Path
 
 from ForecastAgent.analysis.pilot import load, save
@@ -26,9 +27,13 @@ def planning_payload(payload):
     return result
 
 
-def run(output, key, manifest=MANIFEST):
+def run(output, key, manifest=MANIFEST, *, ids_pilot=False, parent=None):
     from ForecastAgent.providers.model import ask_model
     data = load(manifest)
+    implementation = ac
+    if ids_pilot:
+        from ForecastAgent.supplement import acquisition_ids
+        implementation = acquisition_ids
     if os.environ.get('FORECAST_MODEL') != MODEL or os.environ.get('FORECAST_MODEL_FALLBACK_SUPER') != '0':
         raise ValueError('fixed_super_without_fallback_required')
     for filename, expected in data['frozen_code_sha256'].items():
@@ -38,13 +43,38 @@ def run(output, key, manifest=MANIFEST):
     output = Path(output)
     if output.exists():
         raise ValueError('existing_journal_no_implicit_reset')
+    prior = None
+    if ids_pilot:
+        if parent is None:
+            raise ValueError('exact_parent_required_no_budget_reset')
+        parent = Path(parent)
+        for filename, expected in data['parent_file_sha256'].items():
+            if hashlib.sha256((parent / filename).read_bytes()).hexdigest() != expected:
+                raise ValueError('parent_identity_or_state_changed')
+        prior = load(parent / 'state.json')
+        if (len(prior['attempts']) != data['parent_consumption']['http'] or
+                len(prior['decisions']) != data['parent_consumption']['logical'] or
+                any(a['status'] == 'reserved' for a in prior['attempts'])):
+            raise ValueError('parent_usage_mismatch_or_unresolved_reservation')
     output.mkdir(parents=True)
+    if prior is not None:
+        for file in parent.iterdir():
+            if file.is_file() and file.name not in ('state.json', 'identity.json', 'result.json'):
+                shutil.copyfile(file, output / file.name)
     deadline = time.monotonic() + LIMITS['seconds']
     identity = {'schema': 'acquisition-contract-live-v1', 'model': MODEL, 'limits': LIMITS,
         'manifest_sha256': hashlib.sha256(Path(manifest).read_bytes()).hexdigest(),
         'frozen_contract': data['frozen_code_sha256'], 'scope': data['scope']}
+    identity['profile'] = 'ids_v2' if ids_pilot else 'offsets_v1'
     save(output / 'identity.json', identity)
-    state = {'decisions': [], 'attempts': [], 'cases': [], 'blocked': False}
+    state = prior if prior is not None else {'decisions': [], 'attempts': [], 'cases': [], 'blocked': False}
+    state['blocked'] = False
+    before = {'logical': len(state['decisions']), 'http': len(state['attempts']), 'cases': len(state['cases'])}
+    if ids_pilot:
+        identity['parent_run_id'] = data['parent_run_id']
+        identity['preserved_consumption'] = before
+        identity['new_limits'] = data['new_limits']
+        save(output / 'identity.json', identity)
     active = {}
     save(output / 'state.json', state)
 
@@ -52,6 +82,8 @@ def run(output, key, manifest=MANIFEST):
         if event == 'reserve':
             if len(state['attempts']) >= LIMITS['http']:
                 raise RuntimeError('shared_http_limit_reached')
+            if ids_pilot and len(state['attempts']) - before['http'] >= data['new_limits']['http']:
+                raise RuntimeError('new_http_limit_reached')
             if record['request']['model'] != MODEL:
                 raise RuntimeError('model_changed')
             token = len(state['attempts'])
@@ -67,8 +99,10 @@ def run(output, key, manifest=MANIFEST):
     def execute(phase, prompt, payload, tool):
         if len(state['decisions']) >= LIMITS['logical']:
             raise RuntimeError('shared_logical_limit_reached')
+        if ids_pilot and len(state['decisions']) - before['logical'] >= data['new_limits']['logical']:
+            raise RuntimeError('new_logical_limit_reached')
         active['phase'] = phase
-        payload = planning_payload(payload) if phase == 'plan_needs' else payload
+        payload = planning_payload(payload) if phase == 'plan_needs' and not ids_pilot else payload
         decision = {**active, 'status': 'reserved', 'attempts_before': len(state['attempts'])}
         state['decisions'].append(decision)
         save(output / 'state.json', state)
@@ -94,22 +128,26 @@ def run(output, key, manifest=MANIFEST):
 
     for case in data['cases']:
         active.clear(); active['case_id'] = case['id']
-        row = {'case_id': case['id'], 'question_id': case['question_id'], 'status': 'started', 'checkpoints': []}
+        row = {'case_id': case['id'], 'question_id': case['question_id'], 'profile': identity['profile'],
+               'status': 'started', 'checkpoints': []}
         state['cases'].append(row)
         save(output / 'state.json', state)
 
         def checkpoint(value):
-            filename = f"{case['id']}-{value['phase']}.json"
+            filename = f"{'ids-' if ids_pilot else ''}{case['id']}-{value['phase']}.json"
             save(output / filename, value)
             row['checkpoints'].append(filename)
             save(output / 'state.json', state)
 
         try:
-            result = ac.agent_review(case['bundle'], execute, checkpoint,
-                max_chars=LIMITS['reading_chars'], remaining={})
-            filename = f"{case['id']}-ledger.json"
+            kwargs = {'max_chars': LIMITS['reading_chars']}
+            if not ids_pilot:
+                kwargs['remaining'] = {}
+            result = implementation.agent_review(case['bundle'], execute, checkpoint, **kwargs)
+            filename = f"{'ids-' if ids_pilot else ''}{case['id']}-ledger.json"
             save(output / filename, result)
-            row.update(status='completed', ledger_file=filename,
+            status = result.get('application_status', 'completed' if result['requirements']['needs'] else 'failed_requirements')
+            row.update(status=status, ledger_file=filename,
                 accepted_needs=len(result['requirements']['needs']),
                 rejected_needs=len(result['requirements']['rejected_needs']),
                 accepted_annotations=len(result['review']['annotations']),
@@ -124,12 +162,16 @@ def run(output, key, manifest=MANIFEST):
         if state['blocked']:
             break
     report = {'schema': 'acquisition-contract-live-result-v1', 'identity': identity,
-        'cases': state['cases'], 'blocked': state['blocked'], 'logical_decisions': len(state['decisions']),
+        'cases': state['cases'][before['cases']:], 'blocked': state['blocked'], 'logical_decisions': len(state['decisions']),
         'actual_http_attempts': len(state['attempts']),
+        'new_logical_decisions': len(state['decisions']) - before['logical'],
+        'new_http_attempts': len(state['attempts']) - before['http'],
         'known_tokens': sum((a.get('usage') or {}).get('total_tokens', 0) for a in state['attempts']),
         'unknown_usage_attempts': sum(not a.get('usage') for a in state['attempts']),
         'search_calls': 0, 'fetch_calls': 0, 'forecast_submissions': 0,
         'semantic_quality_requires_manual_audit': True}
+    report['business_gate_passed'] = (len(report['cases']) == len(data['cases']) and
+        all(c['status'] in ('reviewed_with_gaps', 'completed') for c in report['cases']))
     save(output / 'result.json', report)
     return report
 
@@ -137,8 +179,11 @@ def run(output, key, manifest=MANIFEST):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', required=True)
+    p.add_argument('--ids-pilot', action='store_true')
+    p.add_argument('--parent')
     args = p.parse_args()
-    report = run(args.output, os.environ['OPENROUTER_API_KEY'])
+    manifest = MANIFEST.with_name('ACQUISITION_IDS_PILOT3.json') if args.ids_pilot else MANIFEST
+    report = run(args.output, os.environ['OPENROUTER_API_KEY'], manifest, ids_pilot=args.ids_pilot, parent=args.parent)
     print(json.dumps({k: report[k] for k in ('blocked', 'logical_decisions', 'actual_http_attempts', 'known_tokens')}))
-    if report['blocked']:
+    if report['blocked'] or not report['business_gate_passed']:
         raise SystemExit(1)
