@@ -1,5 +1,6 @@
 """Experimental outcome-neutral material contracts; production gates are unchanged."""
 from urllib.parse import urlsplit
+from ForecastAgent.supplement.quote_alignment import bind as bind_quote
 
 ROLES=('status_record','forecast_reporting','court_opinion','docket_record',
        'benchmark_method','benchmark_rows','historical_snapshot','access_document',
@@ -22,7 +23,9 @@ def evaluate(contract,source,observation):
         return {**result,'status':'uncertain','issues':['invalid_evidence_relation']}
     result['evidence_relation']=observation['evidence_relation']
     quote=observation.get('quote')
-    if not isinstance(quote,str) or not quote.strip() or quote not in source.get('text',''):
+    aligned=bind_quote(source,quote)
+    result['quote_binding']=aligned
+    if not aligned['bound']:
         return {**result,'status':'uncertain','issues':['unbound_quote']}
     if contract.get('publisher_required'):
         domains=contract.get('publisher_domains',[])

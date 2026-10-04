@@ -4,6 +4,7 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import load,save,digest
 from ForecastAgent.supplement import binding_guard
 from ForecastAgent.supplement.material_contract import evaluate,ROLES,RELATIONS
+from ForecastAgent.supplement.quote_alignment import bind as bind_quote
 
 MANIFEST=Path(__file__).with_name('MATERIAL_CONTRACT_REGRESSION.json')
 BUDGET={'logical':20,'http':30,'output_tokens':1800}
@@ -12,6 +13,8 @@ MODEL='nvidia/nemotron-3-super-120b-a12b:free'
 
 def legacy(case,observation):
     if observation is None:return {'status':'unreviewed'}
+    alignment=bind_quote(case['source'],observation.get('quote'))
+    if not alignment['bound']:return {'status':'uncertain','issues':['unbound_quote']}
     guard=binding_guard.assess(case['legacy_need'],{'url':case['source']['url'],'quote':observation.get('quote','')})
     fits=all(observation.get('fit_axes',{}).get(a) is True for a in binding_guard.required_axes(case['legacy_need']))
     return {'status':'matched' if guard['eligible_for_material_closure'] and fits else 'mismatched','guard':guard}
@@ -94,6 +97,6 @@ def paired(output,manifest=MANIFEST,key=None):
     save(output/'result.json',report);return report
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['replay','paired']);p.add_argument('--output',required=True);a=p.parse_args()
-    r=replay(a.output) if a.mode=='replay' else paired(a.output,key=os.environ['OPENROUTER_API_KEY'])
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['replay','paired']);p.add_argument('--output',required=True);p.add_argument('--manifest',type=Path,default=MANIFEST);a=p.parse_args()
+    r=replay(a.output,a.manifest) if a.mode=='replay' else paired(a.output,a.manifest,key=os.environ['OPENROUTER_API_KEY'])
     print(json.dumps({k:v for k,v in r.items() if k not in ('cases','results')}))

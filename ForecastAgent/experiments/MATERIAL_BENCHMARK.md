@@ -238,3 +238,26 @@ The budget belongs to this new paired diagnostic, not to resumed collection.
 Use `material_contract_pair` in the checked snapshot workflow on dev_formal.
 Promote nothing from these repair-selected cases alone: first inspect quotes
 and false matches, then freeze the same evaluation for new held-out materials.
+
+
+### Round result and post-run program repairs
+
+Run 37210203939 on 072baa3 completed all 20 Super calls, with 52,433 known
+tokens and no unknown usage, acquisition, or submissions. The original live
+gates scored legacy-condition 7/10 and contract 4/10 on diagnostic gold labels.
+Five new-arm results were quarantined for free-text quote representation.
+
+A common conservative quote binder was then replayed on both arms: legacy 4/10,
+contract 9/10. JSON escapes and whitespace can align to unique original ranges;
+explicit separated paragraphs remain separate spans. Paraphrases and ambiguous
+matches stay unbound. A method-update date was still accepted as a leaderboard
+snapshot. V2 adds the missing score/metric requirement and scored 10/10 on the
+same saved new-arm responses. No additional model calls were made.
+
+These repairs are post-run evidence, not a replicated live comparison. Gold
+labels and source text were frozen; V2 contract changes are separately stored
+in MATERIAL_CONTRACT_REGRESSION_V2.json. Supporting data never closes an unknown
+historical period. The legacy arm is a simplified diagnostic, not the full
+production workflow. Do not promote this round's selected-case success before
+evaluating unseen materials. Use --manifest to select an explicit frozen
+contract version for future runs. The production pipeline remains unchanged.

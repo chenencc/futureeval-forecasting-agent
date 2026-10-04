@@ -14,6 +14,25 @@ class MaterialContractTests(unittest.TestCase):
             self.assertEqual(result['new_false_accepts'],0)
             self.assertEqual(result['new_false_rejects'],0)
             self.assertEqual(result['model_calls'],0)
+    def test_representation_repair_preserves_original_spans_and_rejects_paraphrase(self):
+        from ForecastAgent.supplement.quote_alignment import bind
+        source={'text':'Published 18 May 2026\n\nShare\n\nThe selected squad includes Player X.', 'start':100}
+        aligned=bind(source,'Published 18 May 2026\\n\\nThe selected squad includes Player X.')
+        self.assertTrue(aligned['bound']);self.assertTrue(aligned['discontinuous'])
+        for p in aligned['spans']:
+            self.assertEqual(p['text'],source['text'][p['start']:p['end']])
+            self.assertEqual(p['capture_start'],100+p['start'])
+        self.assertFalse(bind(source,'The selected squad excludes Player X.')['bound'])
+        self.assertFalse(bind({'text':'Same statement twice. Same statement twice.'},'Same statement twice.')['bound'])
+
+    def test_saved_method_update_cannot_satisfy_score_snapshot(self):
+        from ForecastAgent.supplement.material_contract import evaluate
+        m=load(MANIFEST.with_name('MATERIAL_CONTRACT_REGRESSION_V2.json'))
+        c=next(c for c in m['cases'] if c['id']=='gpqa_method_is_not_snapshot')
+        observed={**c['observation'],'document_role':'historical_snapshot',
+                  'fit_axes':{'entity':True,'material_type':True,'metric':False,'period':True}}
+        self.assertEqual(evaluate(c['contract'],c['source'],observed)['status'],'mismatched')
+
     def test_polarity_never_changes_fit(self):
         c=load(MANIFEST)['cases'][0]
         for relation in ('supports_event','counterevidence','neutral','unknown'):
