@@ -106,7 +106,8 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
         'material_max_depth':2 if profile=='solid_v1' else 3,
         'repair_caps': REPAIR_CAPS, 'fresh_authorized_allowance': True,
         'old_ledgers_imported': False, 'old_ledgers_deleted': False,
-        'model_policy': 'Ultra preferred; Super after two consecutive service failures',
+        'model_policy': ('Fixed Super without fallback for paired benchmark' if cohort=='benchmark10' else
+                         'Ultra preferred; Super after two consecutive service failures'),
         'secret_name': 'OPENROUTER2', 'forecast_submissions': 0,
         'implementation_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'warning': 'Current-information acquisition of historical questions; not a leakage-free backtest.'}
