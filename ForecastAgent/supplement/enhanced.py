@@ -269,7 +269,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
             save(folder/'state.json',state)
             return
         ledger = need_ledger.build(overlay, state, usage(bundle, prior, state), caps)
-        payload = material_review.packet(overlay, ledger, plan(overlay)['sources'])
+        payload = material_review.packet(overlay, ledger, plan(overlay)['sources'], coverage_v2=True)
         fingerprint = digest({'pages': [(u,digest(p)) for u,p in overlay['pages'].items()],
                               'sources':payload['sources']})
         if fingerprint in state.get('reviewed_inventory', []):
@@ -514,6 +514,9 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         overlay['material_termination']=need_ledger.termination(ledger,reason=reason,search_available=bool(search))
         save(folder/'material-needs.json',ledger)
         save(folder/'termination.json',overlay['material_termination'])
+        from ForecastAgent.supplement.delivery import build as build_delivery
+        overlay['material_delivery'] = build_delivery(ledger,state)
+        save(folder/'material-delivery.json',overlay['material_delivery'])
         overlay['material_model_attempts'] = copy.deepcopy(state.get('material_model_attempts', []))
         overlay['material_reviews'] = copy.deepcopy(state.get('material_reviews', []))
     save(folder/'analysis-input.json', overlay); save(folder/'reading-hints.json', hints(overlay))

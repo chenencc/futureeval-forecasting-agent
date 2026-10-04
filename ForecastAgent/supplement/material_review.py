@@ -28,7 +28,7 @@ class ReviewError(ValueError):
         self.code = code
 
 
-def packet(bundle, ledger, sources):
+def packet(bundle, ledger, sources, *, coverage_v2=False):
     """Expose ranked, addressable source windows rather than whole conversations."""
     terms = tokens(bundle['request'].get('question', '') + ' '.join(n['condition'] for n in ledger['needs']))
     passages = []
@@ -64,7 +64,7 @@ def packet(bundle, ledger, sources):
                     size += len(text)
     for p in delivered:
         p['passage_id'] = 'P-'+digest([p['url'],p['body_sha256'],p['start'],p['end']])[:12]
-    return {'question': {k: bundle['request'].get(k, '') for k in
+    value = {'question': {k: bundle['request'].get(k, '') for k in
                 ('question', 'resolution_criteria', 'fine_print')},
             'needs': [{**{k:n[k] for k in ('id','condition','family','priority','acquisition_state','target_material_captured')},
                        'source_requirement':binding_guard.source_requirement(n),
@@ -75,6 +75,7 @@ def packet(bundle, ledger, sources):
                          **{k: s.get(k) for k in ('url', 'label', 'rule_primary', 'material_need_ids')}}
                         for s in sources[:24]],
             'preview_only': True, 'omission_does_not_prove_absence': True}
+    return witness_contract.decorate(value) if coverage_v2 else value
 
 
 def decode(message, payload, finish_reason=None):
@@ -292,6 +293,9 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
         exhaustive=payload.get('coverage_protocol')==witness_contract.PROTOCOL
         if exhaustive:
             parameters=active_schema['function']['parameters']
+            # Required fit axes vary by need. The program validates each
+            # binding against that need; omitted optional axes stay false.
+            parameters['properties']['bindings']['items']['properties']['axes']['required']=[]
             parameters['properties']['need_assessments']={'type':'array','minItems':len(payload['needs']),'maxItems':len(payload['needs']),
                 'items':{'type':'object','properties':{'need_id':{'type':'string'},
                     'status':{'type':'string','enum':['proposed_binding','no_matching_passage','uncertain']},

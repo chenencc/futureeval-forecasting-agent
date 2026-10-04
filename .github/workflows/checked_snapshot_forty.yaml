@@ -17,7 +17,7 @@ on:
       collection_cohort:
         description: Frozen raw acquisition cohort, without analysis or submission
         type: choice
-        options: [pilot5, repair3, repair2, gap2, material_new5, material_validation5, new15]
+        options: [pilot5, repair3, repair2, gap2, material_new5, material_validation5, new15, generalization5]
         default: pilot5
       collection_batch:
         description: At most five cases per dispatch; new15 has three batches

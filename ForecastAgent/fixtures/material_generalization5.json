@@ -1,0 +1,119 @@
+{
+  "schema": "material-generalization-five-v1",
+  "scope": "Historical questions unused in this repair cycle; fresh current-information collection, not leakage-free forecasting evaluation.",
+  "excluded_repair_ids": [
+    "26754",
+    "28102",
+    "36871",
+    "40417",
+    "40695",
+    "40849",
+    "40852",
+    "41206",
+    "41480",
+    "42489",
+    "42491",
+    "42630",
+    "43461",
+    "43491",
+    "43658",
+    "43665",
+    "43801",
+    "43822",
+    "43844",
+    "43919",
+    "43987",
+    "44126",
+    "44128",
+    "44129",
+    "44431",
+    "44547",
+    "44727",
+    "44728",
+    "44731",
+    "44938",
+    "44939",
+    "44940",
+    "45045",
+    "45048",
+    "45183"
+  ],
+  "source_catalog_sha256": "e1ebf9d411039c9dd62dc248736864814ad24adbcf75bcf590dfe29e6bd6cc63",
+  "cases": [
+    {
+      "case": 1,
+      "id": "43688",
+      "request": {
+        "id": "43688",
+        "question": "Will the Federal Reserve raise the federal funds target range before July 30, 2026?",
+        "background": "CNBC May 2026: [The Fed will have to raise interest rates in July to appease ‘bond vigilantes,’ Yardeni says](https://www.cnbc.com/2026/05/18/the-fed-will-have-to-raise-interest-rates-in-july-to-appease-bond-vigilantes-yardeni-says.html)\n\n>In statements prior to taking over the chair’s position, \\[Fed Chair Kevin] [Warsh has said he believes](https://www.cnbc.com/2026/05/16/kevin-warsh-comes-into-the-fed-facing-a-big-family-fight-over-cutting-interest-rates.html) the Fed can lower its benchmark interest rate from its current targeted range of 3.5% to 3.75%. However, a [recent surge in inflation](https://www.cnbc.com/2026/05/12/cpi-inflation-april-2026-.html), triggered largely by the Iran war but also owning to other underlying factors, has led to markets repricing rate expectations. But it’s gotten more complicated with Warsh’s arrival: Not only does the market not believe the Fed will cut, but odds also are rising for a hike, with current pricing implying a 42% chance of an increase by the end of the year, according to the CME Group’s [FedWatch](https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html?redirect=/trading/interest-rates/countdown-to-fomc.html) tool. \\[Market veteran Ed] Yardeni, though, thinks it will come sooner than that. While he sees the Fed holding steady at the June meeting, he believes a rate increase of a quarter percentage point is “likely” in July.",
+        "resolution_criteria": "This question resolves as **Yes** if, before July 30, 2026, the United States Federal Reserve announces an increase in the federal funds [target range](https://www.federalreserve.gov/aboutthefed/fedexplained/accessible-version.htm) relative to 3.5%–3.75%.&#x20;"
+      },
+      "request_sha256": "321a4e1f0b099f34d3da34a6296ca72a54ae3d185cb2500a8d7c4199206ed845",
+      "required_materials": [
+        "Official FOMC statements with dated federal funds target ranges through July 29, 2026",
+        "Distinguish rate increase, decrease and unchanged range"
+      ]
+    },
+    {
+      "case": 2,
+      "id": "43091",
+      "request": {
+        "id": "43091",
+        "question": "Will any AI model achieve a score of 95% or higher on the GPQA Diamond Benchmark Leaderboard before June 1, 2026?",
+        "background": "According to VentureBeat (February 19, 2026):\n\n> Earlier today, Google released [<u>Gemini 3.1 Pro</u>](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/), an update that brings a key innovation to the company's workhorse power model: three levels of adjustable thinking that effectively turn it into a lightweight version of Google's specialized Deep Think reasoning system.\n\n> On GPQA Diamond, a scientific knowledge evaluation, 3.1 Pro reached 94.3%, outperforming all listed competitors.\n\nAs of April 2, 2026, the top scores were:\n\n| Model                          | Accuracy    | Organization    |\n| ------------------------------ | ----------- | --------------- |\n| GPT-5.4 Pro (xhigh)            | 94.6% ±1.6% | OpenAI          |\n| Gemini 3.1 Pro Preview         | 94.1% ±1.7% | Google DeepMind |\n| GPT-5.4 (xhigh)                | 93.3% ±1.8% | OpenAI          |\n| Gemini 3 Pro Preview           | 92.6% ±1.7% | Google DeepMind |\n| GPT-5.2 (xhigh)                | 91.4% ±1.8% | OpenAI          |\n| Claude Opus 4.6 (32k thinking) | 90.5% ±1.7% | Anthropic       |\n| Claude Opus 4.6 (64k thinking) | 88.8% ±1.9% | Anthropic       |\n| GPT-5.2 (high)                 | 88.2% ±1.9% | OpenAI          |\n| GPT-5.2 (medium)               | 87.9% ±1.9% | OpenAI          |\n| GLM-5                          | 87.8% ±2.3% | Z.ai (Zhipu AI) |\n| GPT-5.1 (high)                 | 87.6% ±1.9% | OpenAI          |\n\nAcording to [Epoch](https://epoch.ai/benchmarks/gpqa-diamond):\n\n> The [GPQA (Graduate-Level Google-Proof Q\\&A) dataset](https://arxiv.org/abs/2311.12022) is a collection of challenging multiple-choice questions in biology, physics, and chemistry. Questions are written by domain experts (people with or pursuing PhDs in the relevant fields), and they are designed to be very difficult for non-experts to answer, even with unrestricted internet access.\n\n> We run our evaluations on the Diamond subset of GPQA. The GPQA Diamond subset is a higher-quality, more challenging subset of the main GPQA dataset. It contains 198 questions, for which both domain expert annotators got the correct answers, but which the majority of non-domain experts answered incorrectly.\n\n> Since GPQA questions are multiple choice questions with four options, the random guessing baseline accuracy on GPQA Diamond is 25%. To compare their o1 model to humans, OpenAI recruited PhD-level experts to answer questions in GPQA Diamond, and [found](https://openai.com/index/learning-to-reason-with-llms/) that they scored 69.7%.\n\nAn example of a question is:\n\n> *A reaction of a liquid organic compound, which molecules consist of carbon and hydrogen atoms, is performed at 80 centigrade and 20 bar for 24 hours. In the proton nuclear magnetic resonance spectrum, the signals with the highest chemical shift of the reactant are replaced by a signal of the product that is observed about three to four units downfield.*\n\n> *Compounds from which position in the periodic system of the elements, which are also used in the corresponding large-scale industrial process, have been mostly likely initially added in small amounts?*\n\n> *A) A metal compound from the fifth period.*\n> *B) A metal compound from the fifth period and a non-metal compound from the third period.*\n> *C) A metal compound from the fourth period.*\n> *D) A metal compound from the fourth period and a non-metal compound from the second period.*",
+        "resolution_criteria": "This question resolves as **Yes** if, before June 1, 2026, an artificial intelligence model achieves an Accuracy score of greater than or equal to 95.0% on the GPQA Diamond test, according to [Epoch AI](https://epoch.ai/benchmarks/gpqa-diamond) on its Leaderboard."
+      },
+      "request_sha256": "210a43c94ac3898ca76982bb09df22a89e6d5660c10096c196894eb09d2c43d1",
+      "required_materials": [
+        "GPQA Diamond leaderboard or evaluation result with exact model, score, evaluation date and benchmark definition",
+        "Archived or dated entries rather than current rank alone"
+      ]
+    },
+    {
+      "case": 3,
+      "id": "43682",
+      "request": {
+        "id": "43682",
+        "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+        "background": "On April 4, 2025, Monsanto Company, a subsidiary of Bayer AG, filed a petition for a writ of certiorari with the U.S. Supreme Court in the case [Monsanto Company v. John L. Durnell](https://law.justia.com/cases/missouri/court-of-appeals/2025/ed112410.html). The case arises from a Missouri state court decision where a jury [awarded](https://blog.cvn.com/1.25m-verdict-in-zero-offer-case-breaks-monsantos-roundup-trial-winning-streak) \\$1.25 million in damages to John L. Durnell, who alleged that exposure to Monsanto's glyphosate-based herbicide, Roundup, caused his non-Hodgkin's lymphoma.\n\nMonsanto's [petition](https://content.presspage.com/uploads/2809/4203e574-9a0c-49ee-9476-8ba63ba6e424/4.4.2025monsantov.durnellcertpetition.pdf?10000) argued that the Federal Insecticide, Fungicide, and Rodenticide Act (FIFRA) preempts state-law failure-to-warn claims, especially since the U.S. Environmental Protection Agency (EPA) has approved Roundup's labeling without a cancer warning. The petition highlighted a split among federal appellate courts on this preemption issue, noting that while the Third Circuit has held that FIFRA preempts such state-law claims, the Ninth and Eleventh Circuits have reached the opposite conclusion.\n\nOn January 16, 2026, the Supreme Court [agreed to hear the case](https://www.supremecourt.gov/docket/docketfiles/html/public/24-1068.html). The Court will decide whether federal pesticide law prevents plaintiffs from bringing state-law claims that Roundup should have included a cancer warning, given that EPA did not require such a warning.\n\nMerits briefing has since been completed. The United States filed an [amicus brief supporting Monsanto](https://www.justice.gov/d9/2026-03/24-1068_monsanto_tsac.pdf), arguing that FIFRA preempts Durnell’s failure-to-warn claim, and the Court granted the Solicitor General’s request to participate in oral argument. The case was argued on April 27, 2026, with Paul Clement arguing for Monsanto, Sarah Harris for the United States, and Ashley Keller for Durnell. As of May 28, 2026, the Court has not issued a decision.",
+        "resolution_criteria": "This question will resolve as **Yes** if the U.S. Supreme Court issues a decision that reverses, vacates, or otherwise sets aside the Missouri state court judgment against Monsanto, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\nIt will resolve as **No** if the Court issues a ruling affirming the judgment against Monsanto.\n\nIf the Court does not issue a decision before August 1, 2026, or dismisses the case without reversing, vacating, remanding, affirming, or otherwise disposing of the Missouri judgment, this question will be **annulled**."
+      },
+      "request_sha256": "a40a648990bf0e63bbe7c7363dcb10d959dc3a4582d36e55d81cb4b43a396044",
+      "required_materials": [
+        "Supreme Court docket/order/opinion for Monsanto Company v. John L. Durnell",
+        "Identify case disposition, date and whether merits have been decided"
+      ]
+    },
+    {
+      "case": 4,
+      "id": "42540",
+      "request": {
+        "id": "42540",
+        "question": "Will a 1kt meteor strike take place during March or April 2026?",
+        "background": "A [meteoroid](https://science.nasa.gov/solar-system/meteors-meteorites/) is a small object in outer space, typically made out of rock and iron. When a meteoroid enters Earth's atmosphere, it becomes known as a meteor. Though they range in size from microscopic to multi-kilometre asteroids, smaller sizes are more prevalent, with larger objects being exponentially less common.\n\nSpace agencies and organisations have long attempted to track meteors entering Earth's atmosphere, with the NASA [Fireball and Bolide database ](https://cneos.jpl.nasa.gov/fireballs/)combining information from across the world.\n\nSince the 1990s, attempts to comprehensively [track space objects](https://en.wikipedia.org/wiki/List_of_near-Earth_object_observation_projects) have dramatically increased, with specific attention focused on [near-Earth objects](https://en.wikipedia.org/wiki/Near-Earth_object). Although these efforts are thought to have identified the vast majority of civilisation-threatening objects, smaller objects have been too numerous and small to properly track.\n\nThe total impact energy of a meteor is determined both by its speed relative to Earth and its size. As such, higher energy events occur far less often.",
+        "resolution_criteria": "This question will resolve as Yes if, after March 10, 2026, and before May 1, 2026, a natural meteor explodes in Earth's atmosphere with a total impact energy of ≥1 kt."
+      },
+      "request_sha256": "4c637e3f82372e518833cc14757f7dd0668eb0181789284f0ea79805cb7ad4f8",
+      "required_materials": [
+        "Observed meteor/bolide energy report for March and April 2026, with units and event timestamp",
+        "Distinguish estimated energy, impact and detection dates"
+      ]
+    },
+    {
+      "case": 5,
+      "id": "43171",
+      "request": {
+        "id": "43171",
+        "question": "Will Neymar be called up for Brazil in the 2026 FIFA World Cup?",
+        "background": "The 2026 World Cup will be hosted by the United States, Canada, and Mexico. Brazil's final squad must be submitted to FIFA before the tournament begins.\n\nAfter being left out of Carlo Ancelotti's squad for 5 consecutive call-ups, Neymar is trying to win back a spot in the Brazilian National Team for the 2026 FIFA World Cup.",
+        "resolution_criteria": "This question will resolve as Yes if Brazil's official final squad list for the 2026 FIFA World Cup includes Neymar da Silva Santos Júnior."
+      },
+      "request_sha256": "fdf6270af415639913ef8a3477e7faf5ece6754871b9604e7440cfa1f51d78f7",
+      "required_materials": [
+        "Brazil official World Cup squad announcement or named player roster",
+        "Distinguish provisional call-up, final squad and match appearance"
+      ]
+    }
+  ]
+}

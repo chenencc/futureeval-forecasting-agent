@@ -19,11 +19,12 @@ COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'], 'repair2':['26754'
     'material_new5':['43658','44939','41480','43461','44727'],
     'material_validation5':['36871','40852','43801','44129','44938'],
     'benchmark10':['42491', '40849', '41206', '43491', '43987', '43665', '44731', '40417', '42489', '28102'],
+    'generalization5':['43688','43091','43682','42540','43171'],
     'new15':['43658','44431','44939','44128','43919',
              '41480','43822','44547','43844','44940',
              '43461','42630','44727','45048','44728']}
 REPAIR_CAPS = {'tavily': 6, 'exa': 2, 'http': 64, 'browser': 12}
-MATERIAL_COHORTS = {'gap2', 'material_new5', 'material_validation5', 'benchmark10'}
+MATERIAL_COHORTS = {'gap2', 'material_new5', 'material_validation5', 'benchmark10', 'generalization5'}
 FIXTURES = Path(__file__).parents[1]/'fixtures/enhanced_pair40'
 
 
@@ -35,6 +36,17 @@ def case_indices(cohort, batch=1):
 
 
 def question(ident, experiment_id, profile='solid_v1'):
+    frozen=load(Path(__file__).parents[1]/'fixtures/material_generalization5.json')
+    for case in frozen['cases']:
+        if case['id']==ident:
+            if ident in frozen['excluded_repair_ids'] or digest(case['request'])!=case['request_sha256']:
+                raise ValueError('Frozen new-question input or exclusion changed')
+            request=copy.deepcopy(case['request'])
+            request.update(id=ident,mode='live',pipeline='collection',
+                acquisition_profile='collection_v3',acquisition_focus='raw_recall',
+                collection_temporal_policy='current_information',budget_profile=profile,
+                experiment_id=experiment_id,exa_search_policy='required')
+            return request
     manifest = load(FIXTURES/'manifest.json')
     for batch in range(1, 9):
         compressed = (FIXTURES/f'batch-{batch}.json.gz').read_bytes()
@@ -99,7 +111,7 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     capacity=SOLID if profile=='solid_v1' else SOLID_V2
     request = question(ident, experiment_id, profile)
     if cohort in MATERIAL_COHORTS: request['collection_workflow']='material-gap-v1'
-    if cohort in {'material_new5','material_validation5','benchmark10'}: request['collection_stage_allocation']='material-reserve-v1'
+    if cohort in {'material_new5','material_validation5','benchmark10','generalization5'}: request['collection_stage_allocation']='material-reserve-v1'
     manifest = {'protocol': 'solid-raw-collection-v1', 'experiment_id': experiment_id,
         'question_id': ident, 'request_sha256': digest(request), 'capacity': capacity,
         'cohort':cohort,'frozen_cohort_ids':COHORTS[cohort],

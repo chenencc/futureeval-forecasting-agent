@@ -27,7 +27,7 @@ on:
         default: ''
       collection_cohort:
         type: choice
-        options: [pilot5, repair3, repair2, gap2, material_new5, material_validation5, new15]
+        options: [pilot5, repair3, repair2, gap2, material_new5, material_validation5, new15, generalization5]
         default: pilot5
       collection_batch:
         type: choice
@@ -96,7 +96,7 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
       - run: python -m playwright install --with-deps chromium
-      - run: python -m unittest ForecastAgent.tests.test_requirement_contract ForecastAgent.tests.test_material_contracts ForecastAgent.tests.test_binding_guard ForecastAgent.tests.test_material_fit ForecastAgent.tests.test_material_gap_workflow ForecastAgent.tests.test_material_recovery ForecastAgent.tests.test_material_continuation ForecastAgent.tests.test_source_architecture ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_solid_collection ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_acquisition_quality
+      - run: python -m unittest ForecastAgent.tests.test_witness_contract ForecastAgent.tests.test_material_delivery ForecastAgent.tests.test_requirement_contract ForecastAgent.tests.test_material_contracts ForecastAgent.tests.test_binding_guard ForecastAgent.tests.test_material_fit ForecastAgent.tests.test_material_gap_workflow ForecastAgent.tests.test_material_recovery ForecastAgent.tests.test_material_continuation ForecastAgent.tests.test_source_architecture ForecastAgent.tests.test_source_contract ForecastAgent.tests.test_solid_collection ForecastAgent.tests.test_enhanced_supplement ForecastAgent.tests.test_acquisition_quality
       - name: Require exact parent state on job reruns
         run: test "$GITHUB_RUN_ATTEMPT" = 1 || test -n "$RESUME_RUN"
         env:

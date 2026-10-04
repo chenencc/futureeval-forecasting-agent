@@ -206,5 +206,27 @@
       "Metaculus leaderboard or benchmark record describing AI forecasting performance under the question rules",
       "Scoring definition, eligibility, measurement window, rank and comparison population; promotional accuracy alone does not fulfill the benchmark"
     ]
+  },
+  "generalization5": {
+    "43688": [
+      "Official FOMC statements with dated federal funds target ranges through July 29, 2026",
+      "Distinguish rate increase, decrease and unchanged range"
+    ],
+    "43091": [
+      "GPQA Diamond leaderboard or evaluation result with exact model, score, evaluation date and benchmark definition",
+      "Archived or dated entries rather than current rank alone"
+    ],
+    "43682": [
+      "Supreme Court docket/order/opinion for Monsanto Company v. John L. Durnell",
+      "Identify case disposition, date and whether merits have been decided"
+    ],
+    "42540": [
+      "Observed meteor/bolide energy report for March and April 2026, with units and event timestamp",
+      "Distinguish estimated energy, impact and detection dates"
+    ],
+    "43171": [
+      "Brazil official World Cup squad announcement or named player roster",
+      "Distinguish provisional call-up, final squad and match appearance"
+    ]
   }
 }

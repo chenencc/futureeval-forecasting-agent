@@ -109,6 +109,31 @@ only after protocol compatibility and witness quality pass should further cases
 be run. Model and per-arm limits remain unchanged. No acquisition occurs.
 # Event-date applicability follow-up
 
+## Full collection handoff and new-question validation
+
+New material-gap supplement executions request coverage-v2 directly, rather
+than only enabling it in the saved-body experiment. Legacy packets retain their
+original decoding contract. Every run exports `material-delivery.json` with one
+entry per need, accepted exact bindings, blocked records, saved candidates,
+explicit assessments and review failures. Bounded acquisition can finish with
+recorded gaps; this does not imply semantic verification or permit forecasts.
+The delivery report does not automatically repeat failed reviews or reset any
+provider budget. Persisted inventory reservations remain the recovery boundary.
+
+`generalization5` freezes five historical inputs outside this repair cohort:
+monetary policy, AI evaluation, court disposition, meteor observations and sport
+rosters. Run original acquisition followed by independent supplement and material
+review. Keep the existing solid_v2 capacity and Ultra/Super routing policy.
+No analysis or submission runs. The manual material checklists are frozen before
+collection. This prospective engineering test uses current web information and
+must not be reported as leakage-free forecast accuracy.
+
+Audit raw captures, exact passage binding, all-need export, budget compliance,
+provider failures and unsupported closure for every question. Review failures
+and evidence gaps are separate. Do not require 100 percent material closure or
+expand automatically from a green workflow. Freeze this implementation for the
+whole five-question cohort before changing prompts or rules again.
+
 The first coverage-v2 pilot (run 37190715517, case 7) accounted for all three
 needs. It exposed a program applicability error: an explicit election date was
 blocked by a numeric metric axis. Event occurrence and publication date needs
