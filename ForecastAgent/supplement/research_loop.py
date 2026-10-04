@@ -90,6 +90,10 @@ class SavedTools:
             found=[self.register(doc_id,w['start'],w['end'],w['reading']) for _,doc_id,w in ranked[:4]]
             return {'matches':found,'absence_not_established':True}
         if name=='read_document_section':
+            if not ident and request.get('passage_id') in self.state['passages']:
+                passage=self.state['passages'][request['passage_id']]
+                ident=passage.get('document_id') or next(k for k,v in self.catalog.items() if v['url']==passage['url'])
+                request={**request,'start':passage['start'],'length':min(10000,passage['end']-passage['start'])}
             return self.section(ident,request.get('start',0),request.get('length',4000))
         if name=='read_table_rows':
             if ident not in self.catalog:raise ValueError('unknown_saved_document')
@@ -191,6 +195,17 @@ class Transport:
         except Exception as exc:
             decision.update(status='failed',error=str(exc)[:240]);raise
         finally:save(self.folder/'state.json',state)
+
+
+def tool_feedback(step):
+    """Deliver discoverable IDs and bounded text previews without dropping results."""
+    def compact(value):
+        if isinstance(value,dict):
+            return {k:(v[:1200] if k in {'text','quote'} and isinstance(v,str) else compact(v))
+                    for k,v in value.items()}
+        if isinstance(value,list):return [compact(v) for v in value[:8]]
+        return value
+    return compact(step)
 
 
 def model_need(need):
@@ -320,7 +335,7 @@ def run(parent,prior_review,output,key,resume_loop=None):
             if chars+len(p['text'])<=16000:delivered.append(p);chars+=len(p['text'])
         payload={'question':{k:b['request'].get(k,'') for k in ('question','resolution_criteria','fine_print')},
             'needs':[model_need(n) for n in active],'documents':list(tools.catalog.values()),
-            'passages':delivered,'feedback':state['issues'],'last_tool_results':[{**x,'tools':[{'request':t['request'],**({'error':t['error']} if 'error' in t else {'returned_passage_ids':[p['passage_id'] for p in state['passages'].values() if p.get('document_id')==t['request'].get('document_id')]})} for t in x.get('tools',[])]} for x in state['steps'][-1:]],
+            'passages':delivered,'feedback':state['issues'],'last_tool_results':[tool_feedback(x) for x in state['steps'][-1:]],
             'remaining_decisions':LIMITS['stage_decisions']-len(state['decisions'])}
         before=(len(state['passages']),len(state['assessments']),len(state['accepted']))
         step={'active_need_ids':sorted(active_ids),'tools':[],'validation':[]}

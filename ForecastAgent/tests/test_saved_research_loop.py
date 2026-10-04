@@ -5,11 +5,21 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from ForecastAgent.analysis.pilot import load, save
-from ForecastAgent.supplement.research_loop import SavedTools, Transport, LIMITS, run, audit_proposals, model_need
+from ForecastAgent.supplement.research_loop import SavedTools, Transport, LIMITS, run, audit_proposals, model_need, tool_feedback
 from ForecastAgent.tests.test_material_review_only import ReviewOnlyTests
 
 
 class SavedResearchTests(unittest.TestCase):
+    def test_search_feedback_preserves_new_ids_and_document_coordinates(self):
+        step={'tools':[{'request':{'tool':'search_saved_text'},'result':{'matches':[
+            {'passage_id':'p','document_id':'d','start':10,'end':4010,'text':'x'*4000}]}}]}
+        result=tool_feedback(step)['tools'][0]['result']['matches'][0]
+        self.assertEqual(result['document_id'],'d')
+        self.assertEqual(result['passage_id'],'p')
+        self.assertEqual(result['start'],10)
+        self.assertEqual(len(result['text']),1200)
+        self.assertEqual(len(step['tools'][0]['result']['matches'][0]['text']),4000)
+
     def test_prompt_excludes_unbounded_acquisition_history(self):
         projected=model_need({'id':'n','priority':'critical','condition':'Exact dated record',
             'candidates':[{'body':'x'*50000}],'discovered_urls':['https://example.org']})
