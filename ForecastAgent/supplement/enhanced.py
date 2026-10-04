@@ -269,39 +269,50 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
             save(folder/'state.json',state)
             return
         ledger = need_ledger.build(overlay, state, usage(bundle, prior, state), caps)
-        payload = material_review.packet(overlay, ledger, plan(overlay)['sources'], coverage_v2=True)
-        fingerprint = digest({'pages': [(u,digest(p)) for u,p in overlay['pages'].items()],
-                              'sources':payload['sources']})
-        if fingerprint in state.get('reviewed_inventory', []):
-            return
-        # Reservations persist even if validation or transport fails; no loops.
-        state.setdefault('reviewed_inventory', []).append(fingerprint)
-        save(folder/'state.json', state)
-        reviews_before = len(state.get('material_reviews',[]))
-        try:
-            result = material_review.bind(overlay, payload, material_agent(payload, state, folder))
-            # Injected adapters used in tests need the same durable result contract.
-            review = next((r for r in reversed(state.get('material_reviews', [])) if r.get('input_sha256') == digest(payload)), None)
-            if review is None:
-                review = {'input_sha256':digest(payload)}
-                state.setdefault('material_reviews', []).append(review)
-            review.update(status='bound', result=result)
-            state['material_priority_urls'] = result['priority_urls']
-            state['material_deferred_urls'] = result['deferred_urls']
-            state['material_next_search'] = result['next_search']
-        except Exception as exc:
-            state['material_agent_stopped'] = True
-            state['material_agent_error'] = type(exc).__name__
-            state['material_agent_error_code'] = getattr(exc,'code','invalid_binding_or_transport')
-            current = next((r for r in state.get('material_reviews',[])[reviews_before:]
-                            if r.get('input_sha256')==digest(payload) and r.get('status')!='bound'),None)
-            if current is None:
-                current = {'input_sha256':digest(payload)}
-                state.setdefault('material_reviews',[]).append(current)
-            current.update(status='invalid_or_failed',error=type(exc).__name__,
-                           error_code=getattr(exc,'code','invalid_binding_or_transport'))
-            # Incomplete review never closes material needs or invents bindings.
-        save(folder/'state.json', state)
+        pending=[n for n in ledger['needs'] if not n['target_material_captured']]
+        review_sources=plan(overlay)['sources']
+        pending.sort(key=lambda n:(n['priority']!='critical',n['id']))
+        for offset in range(0,len(pending),3):
+            if state.get('material_agent_stopped'):
+                break
+            if hasattr(material_agent,'can_review') and not material_agent.can_review(state):
+                state['material_review_capacity_exhausted']=True
+                save(folder/'state.json',state)
+                break
+            needs=pending[offset:offset+3]
+            payload = material_review.packet(overlay, {**ledger,'needs':needs}, review_sources, coverage_v2=True, balanced=True)
+            fingerprint = digest({'pages': [(u,digest(p)) for u,p in overlay['pages'].items()],
+                                  'sources':payload['sources'],'need_ids':[n['id'] for n in needs]})
+            if fingerprint in state.get('reviewed_inventory', []):
+                continue
+            # Reservations persist even if validation or transport fails; no loops.
+            state.setdefault('reviewed_inventory', []).append(fingerprint)
+            save(folder/'state.json', state)
+            reviews_before = len(state.get('material_reviews',[]))
+            try:
+                result = material_review.bind(overlay, payload, material_agent(payload, state, folder))
+                # Injected adapters used in tests need the same durable result contract.
+                review = next((r for r in reversed(state.get('material_reviews', [])) if r.get('input_sha256') == digest(payload)), None)
+                if review is None:
+                    review = {'input_sha256':digest(payload)}
+                    state.setdefault('material_reviews', []).append(review)
+                review.update(status='bound', result=result)
+                state['material_priority_urls'] = result['priority_urls']
+                state['material_deferred_urls'] = result['deferred_urls']
+                state['material_next_search'] = result['next_search']
+            except Exception as exc:
+                state['material_agent_stopped'] = True
+                state['material_agent_error'] = type(exc).__name__
+                state['material_agent_error_code'] = getattr(exc,'code','invalid_binding_or_transport')
+                current = next((r for r in state.get('material_reviews',[])[reviews_before:]
+                                if r.get('input_sha256')==digest(payload) and r.get('status')!='bound'),None)
+                if current is None:
+                    current = {'input_sha256':digest(payload)}
+                    state.setdefault('material_reviews',[]).append(current)
+                current.update(status='invalid_or_failed',error=type(exc).__name__,
+                               error_code=getattr(exc,'code','invalid_binding_or_transport'))
+                # Incomplete review never closes material needs or invents bindings.
+            save(folder/'state.json', state)
     review_materials()
     if not gap_workflow and network and search and gap_plan['gaps'] and not gap_plan['sources']:
         for tool in ('tavily', 'exa'):

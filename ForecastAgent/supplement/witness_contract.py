@@ -56,7 +56,7 @@ def validate_coverage(payload, assessments, bindings):
         if row['status'] not in {'proposed_binding','no_matching_passage','uncertain'}:
             raise ValueError('need_coverage_invalid_status')
         ids = row['passage_ids']
-        if not isinstance(ids, list) or len(ids)>3 or any(not isinstance(p,str) or p not in passages for p in ids):
+        if not isinstance(ids, list) or len(ids)>24 or any(not isinstance(p,str) or p not in passages for p in ids):
             raise ValueError('need_coverage_unknown_passage')
         if not isinstance(row['reason'], str) or not 1<=len(row['reason'])<=240:
             raise ValueError('need_coverage_missing_reason')
@@ -78,3 +78,38 @@ def decorate(payload):
             'needs':[{**n, 'witness_contract':contract(n),
                       'required_axes':binding_guard.required_axes(n),
                       'source_requirement':binding_guard.source_requirement(n)} for n in payload['needs']]}
+
+
+def isolate_coverage(payload, assessments, bindings):
+    """Reject an invalid need independently; never infer an omitted assessment."""
+    allowed={n['id'] for n in payload['needs']}
+    grouped={ident:[] for ident in allowed}
+    rejected=[]
+    for row in assessments if isinstance(assessments,list) else []:
+        if (not isinstance(row,dict) or not isinstance(row.get('need_id'),str)
+                or row.get('need_id') not in allowed):
+            rejected.append({'record':row,'reason':'need_coverage_unknown_need'})
+        else:
+            grouped[row['need_id']].append(row)
+    valid=[];blocked=set()
+    for need in payload['needs']:
+        ident=need['id'];rows=grouped[ident]
+        try:
+            if len(rows)!=1:
+                raise ValueError('need_coverage_duplicate' if rows else 'need_coverage_missing')
+            row=rows[0]
+            # A closest passage can be absent when this family was not delivered.
+            if row.get('status')=='no_matching_passage' and row.get('passage_ids')==[]:
+                check={**row,'status':'uncertain'}
+            else:
+                check=row
+            validate_coverage({**payload,'needs':[need]},[check],
+                              [b for b in bindings if isinstance(b,dict) and b.get('need_id')==ident])
+            valid.append(row)
+        except (ValueError,TypeError,KeyError) as exc:
+            blocked.add(ident)
+            code=str(exc) if isinstance(exc,ValueError) else 'need_coverage_invalid_shape'
+            rejected.append({'record':{'need_id':ident,'assessment':rows},'reason':code})
+            valid.append({'need_id':ident,'status':'uncertain','passage_ids':[],
+                          'reason':'Program quarantined invalid or missing assessment: '+code})
+    return valid,blocked,rejected

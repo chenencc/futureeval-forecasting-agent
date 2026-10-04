@@ -109,6 +109,29 @@ only after protocol compatibility and witness quality pass should further cases
 be run. Model and per-arm limits remain unchanged. No acquisition occurs.
 # Event-date applicability follow-up
 
+## Saved-body reading batches
+
+The follow-up to run 37195683563 uses `material_review_batches` and restores
+all five parent artifacts. It performs no search, fetch, analysis or submission.
+Each request contains at most three material needs; at most three batches are
+allowed per question within the existing cumulative model allowance. Original
+provider records and parent file hashes are preserved, and duplicate executions
+against an existing output directory never silently repeat calls.
+
+Reading windows are selected round-robin across need-specific rankings, with
+the existing 24-span and 60,000-character limits per request. Complete saved
+lines and separate table headers remain exact, hash-bound spans. Selection is
+a relevance proxy, not verified relevance. More batches can expose more text
+and consume more tokens; this is an explicit coverage tradeoff to audit.
+
+`material-delivery.json` separates saved candidate bodies, delivered passage
+IDs and accepted need bindings. Unknown references, missing assessments and
+assessment/binding conflicts quarantine the corresponding need, while valid
+independent bindings survive. No missing assessment is inferred as successful,
+and a relevant record reporting no change can still be material for a status
+need. Historical review errors remain in the archive; a newer valid assessment
+does not inherit an unrelated old transport error as its current status.
+
 ## Full collection handoff and new-question validation
 
 New material-gap supplement executions request coverage-v2 directly, rather

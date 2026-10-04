@@ -12,7 +12,7 @@ from ForecastAgent.supplement import requirement_contract
 from ForecastAgent.tools.channels import PUBLISHERS
 
 
-def run(parent, output, api_key, parent_run):
+def run(parent, output, api_key, parent_run, *, need_batches=False):
     parent, output = Path(parent), Path(output)
     files = ['manifest.json', 'acquisition/bundle.json', 'intelligence-bundle.json', 'supplement/state.json']
     hashes = {f: hashlib.sha256((parent/f).read_bytes()).hexdigest() for f in files}
@@ -29,7 +29,9 @@ def run(parent, output, api_key, parent_run):
         'material_passages_sha256':hashlib.sha256(Path(material_passages.__file__).read_bytes()).hexdigest(),
         'requirement_contract_sha256':hashlib.sha256(Path(requirement_contract.__file__).read_bytes()).hexdigest(),
         'publisher_catalog_sha256':digest(PUBLISHERS),
-        'retry_seconds':300, 'additional_decisions':1, 'generation':material_review.GENERATION}
+        'retry_seconds':300, 'additional_decisions':3 if need_batches else 1,
+        'need_batches':need_batches, 'needs_per_batch':3 if need_batches else None,
+        'generation':material_review.GENERATION}
     if (output/'identity.json').exists():
         if load(output/'identity.json') != identity:
             raise ValueError('Review retry identity changed')
@@ -46,23 +48,43 @@ def run(parent, output, api_key, parent_run):
     caps = manifest['repair_caps']
     counts = enhanced.usage(initial, (), original)
     ledger = need_ledger.build(overlay, state, counts, caps)
-    payload = material_review.packet(overlay, ledger, enhanced.plan(overlay)['sources'])
-    save(output/'input.json', payload)
+    groups=[ledger['needs'][i:i+3] for i in range(0,len(ledger['needs']),3)] if need_batches else [ledger['needs']]
+    sources=enhanced.plan(overlay)['sources']
+    if len(groups)>3:
+        raise ValueError('Review-only execution supports at most three batches; freeze a continuation before calling providers')
     before = len(state.get('material_model_attempts', []))
     reviews_before = len(state.get('material_reviews', []))
-    try:
-        review = material_review.callback(api_key, initial, max_reviews=min(4, reviews_before+1), review_retry_seconds=300)
-        result = material_review.bind(overlay, payload, review(payload, state, output))
-        state['material_reviews'][-1].update(status='bound', result=result)
-        status = 'bound'
-    except Exception as exc:
-        result = {'error':type(exc).__name__, 'error_code':getattr(exc, 'code', 'binding_or_transport_or_budget_failure'), 'detail':str(exc)[:300]}
-        status = 'failed'
+    review = material_review.callback(api_key, initial, max_reviews=min(4,reviews_before+len(groups)), review_retry_seconds=300)
+    batches=[]
+    for index,needs in enumerate(groups):
+        payload=material_review.packet(overlay,{**ledger,'needs':needs},sources,
+                                      coverage_v2=need_batches,balanced=need_batches)
+        save(output/('input.json' if not need_batches else f'input-batch-{index+1}.json'),payload)
+        start_review=len(state.get('material_reviews',[]))
+        try:
+            if not review.can_review(state):
+                raise material_review.ReviewError('review_capacity_exhausted')
+            result=material_review.bind(overlay,payload,review(payload,state,output))
+            state['material_reviews'][-1].update(status='bound',result=result)
+            batch_status='bound'
+        except Exception as exc:
+            result={'error':type(exc).__name__,'error_code':getattr(exc,'code','binding_or_transport_or_budget_failure'),'detail':str(exc)[:300]}
+            batch_status='failed'
+            for entry in state.get('material_reviews',[])[start_review:]:
+                entry.update(status='invalid_or_failed',error_code=result['error_code'])
+        batches.append({'batch':index+1,'need_ids':[n['id'] for n in needs],
+                        'status':batch_status,'decision':result})
+        save(output/'state.json',state)
+        save(output/'batch-results.json',batches)
+    status='bound' if all(b['status']=='bound' for b in batches) else 'partial' if any(b['status']=='bound' for b in batches) else 'failed'
+    result=batches[0]['decision'] if not need_batches else {'batches':batches}
     save(output/'state.json', state)
     current = need_ledger.build(overlay, state, counts, caps)
     save(output/'material-needs.json', current)
+    from ForecastAgent.supplement.delivery import build as build_delivery
+    save(output/'material-delivery.json',build_delivery(current,state))
     report = {'schema':'material-review-only-result-v1', 'id':manifest['question_id'],
-        'status':status, 'decision':result, 'parent_run':str(parent_run),
+        'status':status, 'decision':result, 'needs_per_batch':3 if need_batches else None, 'parent_run':str(parent_run),
         'new_model_attempts':len(state.get('material_model_attempts', []))-before,
         'cumulative_model_attempts':len(initial.get('model_attempts', []))+len(state.get('material_model_attempts', [])),
         'original_provider_usage':counts, 'new_search_calls':0, 'new_fetch_calls':0,
@@ -82,5 +104,6 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--parent', required=True); p.add_argument('--output', required=True)
     p.add_argument('--parent-run', required=True)
+    p.add_argument('--need-batches',action='store_true')
     args = p.parse_args()
-    run(args.parent, args.output, os.environ['OPENROUTER_API_KEY'], args.parent_run)
+    run(args.parent, args.output, os.environ['OPENROUTER_API_KEY'], args.parent_run,need_batches=args.need_batches)

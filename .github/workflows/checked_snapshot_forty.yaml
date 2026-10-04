@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -99,12 +99,12 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   material-review-only:
-    if: inputs.experiment == 'material_review_only'
+    if: inputs.experiment == 'material_review_only' || inputs.experiment == 'material_review_batches'
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        case: [1, 2]
+        case: ${{ fromJSON(inputs.experiment == 'material_review_batches' && '[1,2,3,4,5]' || '[1,2]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -116,7 +116,7 @@ jobs:
         env:
           PARENT_RUN: ${{ inputs.resume_run }}
       - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
-      - run: python -m unittest ForecastAgent.tests.test_material_fit ForecastAgent.tests.test_material_review_only
+      - run: python -m unittest ForecastAgent.tests.test_material_fit ForecastAgent.tests.test_material_review_only ForecastAgent.tests.test_material_reading_coverage ForecastAgent.tests.test_material_delivery
       - uses: actions/download-artifact@v4
         with:
           name: solid-collection-case-${{ matrix.case }}
@@ -124,7 +124,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/review-parent
       - name: Review saved evidence without acquisition
-        run: python -u -m ForecastAgent.experiments.material_review_only --parent snapshots/review-parent --output snapshots/review-only --parent-run "$PARENT_RUN"
+        run: python -u -m ForecastAgent.experiments.material_review_only --parent snapshots/review-parent --output snapshots/review-only --parent-run "$PARENT_RUN" ${{ inputs.experiment == 'material_review_batches' && '--need-batches' || '' }}
         env:
           PARENT_RUN: ${{ inputs.resume_run }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}

@@ -28,7 +28,7 @@ class ReviewError(ValueError):
         self.code = code
 
 
-def packet(bundle, ledger, sources, *, coverage_v2=False):
+def packet(bundle, ledger, sources, *, coverage_v2=False, balanced=False):
     """Expose ranked, addressable source windows rather than whole conversations."""
     terms = tokens(bundle['request'].get('question', '') + ' '.join(n['condition'] for n in ledger['needs']))
     passages = []
@@ -37,11 +37,35 @@ def packet(bundle, ledger, sources, *, coverage_v2=False):
         if not body_diagnostics(body)['usable_text']:
             continue
         windows = spans(body)
-        ranked = sorted(windows, key=lambda w: (-len(tokens(w['text']) & terms), w['start']))[:3]
+        ranked = sorted(windows, key=lambda w: (-len(tokens(w['text']) & terms), w['start']))
+        if not balanced:
+            ranked=ranked[:3]
         for window in ranked:
             passages.append({'url': url, **window,
                 'body_sha256': hashlib.sha256(body.encode()).hexdigest()})
     passages.sort(key=lambda p: (-len(tokens(p['text']) & terms), p['url'], p['start']))
+    per_need={}
+    if balanced:
+        passage_terms={(p['url'],p['start'],p['end']):tokens(p['text']) for p in passages}
+        primary={s['url'] for s in sources if s.get('rule_primary')}
+        for n in ledger['needs']:
+            meaningful=tokens(n['condition'])-set('the of and before after official source sources document documents report reports'.split())
+            candidate_urls={c['url'] for c in n.get('candidates',[])}
+            def score(p):
+                overlap=len(passage_terms[(p['url'],p['start'],p['end'])] & meaningful)
+                return overlap*3 + (4 if p['url'] in candidate_urls else 0) + (2 if p['url'] in primary else 0)
+            per_need[n['id']]=sorted([p for p in passages if score(p)>0],
+                key=lambda p:(-score(p),p['url'],p['start']))
+        # Round-robin coverage prevents one verbose document family consuming
+        # the entire reading budget. Exact spans are never stitched or invented.
+        ordered=[];seen=set()
+        for rank in range(24):
+            for n in ledger['needs']:
+                ranked=per_need[n['id']]
+                if rank<len(ranked):
+                    p=ranked[rank];key=(p['url'],p['start'],p['end'])
+                    if key not in seen:ordered.append(p);seen.add(key)
+        passages=ordered+[p for p in passages if (p['url'],p['start'],p['end']) not in seen]
     delivered = []
     size = 0
     for p in passages:
@@ -75,6 +99,18 @@ def packet(bundle, ledger, sources, *, coverage_v2=False):
                          **{k: s.get(k) for k in ('url', 'label', 'rule_primary', 'material_need_ids')}}
                         for s in sources[:24]],
             'preview_only': True, 'omission_does_not_prove_absence': True}
+    if balanced:
+        value['reading_coverage']={n['id']:{
+            'saved_candidate_body_count':len(n.get('candidates',[])),
+            'candidate_window_count':len(per_need[n['id']]),
+            'delivered_passage_ids':[p['passage_id'] for p in delivered
+                if any((p['url'],p['start'],p['end'])==(c['url'],c['start'],c['end'])
+                       for c in per_need[n['id']])],
+            'selection_is_not_verified_relevance':True} for n in ledger['needs']}
+        value['saved_body_inventory']={'readable_body_count':sum(
+            body_diagnostics(p.get('content',''))['usable_text'] for p in bundle.get('pages',{}).values()),
+            'parsed_character_count':sum(len(p.get('content','')) for p in bundle.get('pages',{}).values()),
+            'delivered_character_count':size,'delivered_passage_count':len(delivered)}
     return witness_contract.decorate(value) if coverage_v2 else value
 
 
@@ -100,15 +136,20 @@ def decode(message, payload, finish_reason=None):
     required={'bindings','priority_source_ids','deferred_source_ids','next_search'}
     exhaustive=payload.get('coverage_protocol')==witness_contract.PROTOCOL
     if exhaustive:required.add('need_assessments')
-    if not isinstance(result,dict) or set(result) != required:
+    if not isinstance(result,dict) or (set(result) != required and not
+            (exhaustive and set(result)==required-{'need_assessments'})):
         raise ReviewError('invalid_review_shape')
     source_map={s['source_id']:s['url'] for s in payload['sources']}
     passage_map={p['passage_id']:p for p in payload['passages']}
     try:
-        if not isinstance(result['bindings'],list) or len(result['bindings'])>6:
+        if not isinstance(result['bindings'],list) or (len(result['bindings'])>6 and not exhaustive):
             raise ReviewError('binding_batch_too_large')
+        oversized_bindings=exhaustive and len(result['bindings'])>6
         bindings=[]
         rejected=[]
+        if oversized_bindings:
+            rejected.extend({'record':row,'reason':'binding_batch_too_large'} for row in result['bindings'])
+            result['bindings']=[]
         for row in result['bindings']:
             if not isinstance(row,dict) or set(row) != {'need_id','passage_id','axes'}:
                 rejected.append({'record':row,'reason':'invalid_binding_shape'})
@@ -150,12 +191,14 @@ def decode(message, payload, finish_reason=None):
                 deferrals.append({'url':source_map[row['source_id']],'reason':row['reason']})
             else:
                 rejected.append({'record':row,'reason':'invalid_deferral'})
-        if rejected and not bindings and not selected and not deferrals and result['next_search'] is None:
+        if rejected and not bindings and not selected and not deferrals and result['next_search'] is None and not exhaustive:
             raise ReviewError('unknown_or_invalid_reference')
-        try:
-            assessments=witness_contract.validate_coverage(payload,result['need_assessments'],result['bindings']) if exhaustive else []
-        except ValueError as exc:
-            raise ReviewError(str(exc)) from None
+        assessments=[]
+        if exhaustive:
+            assessments,blocked,coverage_rejections=witness_contract.isolate_coverage(
+                payload,result.get('need_assessments'),result['bindings'])
+            rejected.extend(coverage_rejections)
+            bindings=[b for b in bindings if b['need_id'] not in blocked]
         return {'bindings':bindings,'priority_urls':selected,
                 'deferred_urls':deferrals, 'rejected_records':rejected,
                 'need_assessments':assessments,
@@ -235,17 +278,20 @@ def bind(bundle, payload, decision):
             bindings.append(validate_binding(row))
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             rejected.append({'record':row, 'reason':str(exc)})
-    if rejected and not bindings and not selected and not deferred and decision.get('next_search') is None:
+    if (rejected and not bindings and not selected and not deferred and decision.get('next_search') is None
+            and payload.get('coverage_protocol')!=witness_contract.PROTOCOL):
         raise ValueError(rejected[-1]['reason'])
     query = decision.get('next_search')
     if query is not None and (not isinstance(query,dict) or query.get('need_id') not in allowed or
             not isinstance(query.get('query'), str) or not 3 <= len(query['query']) <= 350):
-        if not bindings and not selected and not deferred:
+        if not bindings and not selected and not deferred and payload.get('coverage_protocol')!=witness_contract.PROTOCOL:
             raise ValueError('Search recommendation requires an existing need and bounded query')
         rejected.append({'record':query,'reason':'invalid_search_recommendation'})
         query = None
     return {'bindings': bindings, 'priority_urls': selected, 'deferred_urls':deferred, 'next_search': query,
             'need_assessments':decision.get('need_assessments',[]),
+            'reading_coverage':payload.get('reading_coverage',{}),
+            'saved_body_inventory':payload.get('saved_body_inventory',{}),
             'conflicted_urls':conflicts, 'rejected_records':rejected,
             'truth_verified': False}
 
@@ -293,16 +339,27 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
         exhaustive=payload.get('coverage_protocol')==witness_contract.PROTOCOL
         if exhaustive:
             parameters=active_schema['function']['parameters']
+            binding_properties=parameters['properties']['bindings']['items']['properties']
+            binding_properties['need_id']['enum']=[n['id'] for n in payload['needs']]
+            if payload['passages']:
+                binding_properties['passage_id']['enum']=[p['passage_id'] for p in payload['passages']]
+            else:
+                parameters['properties']['bindings']['maxItems']=0
             # Required fit axes vary by need. The program validates each
             # binding against that need; omitted optional axes stay false.
             parameters['properties']['bindings']['items']['properties']['axes']['required']=[]
             parameters['properties']['need_assessments']={'type':'array','minItems':len(payload['needs']),'maxItems':len(payload['needs']),
                 'items':{'type':'object','properties':{'need_id':{'type':'string'},
                     'status':{'type':'string','enum':['proposed_binding','no_matching_passage','uncertain']},
-                    'passage_ids':{'type':'array','maxItems':3,'items':{'type':'string'}},
+                    'passage_ids':{'type':'array','maxItems':24,'items':{'type':'string'}},
                     'reason':{'type':'string','minLength':1,'maxLength':240}},
                     'required':['need_id','status','passage_ids','reason'],'additionalProperties':False}}
             parameters['required'].append('need_assessments')
+            parameters['properties']['need_assessments']['items']['properties']['need_id']['enum']=[n['id'] for n in payload['needs']]
+            if payload['passages']:
+                parameters['properties']['need_assessments']['items']['properties']['passage_ids']['items']['enum']=[p['passage_id'] for p in payload['passages']]
+            else:
+                parameters['properties']['need_assessments']['items']['properties']['passage_ids']['maxItems']=0
         coverage_prompt=(
             ' Assess EVERY need exactly once in need_assessments; never silently omit a need. '
             'Use proposed_binding only with corresponding binding records and their passage IDs; '
@@ -313,6 +370,9 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
             'original court documents. IPO preparation without the named form is context; a news story '
             'about an order is not the original document when the contract requires that original. '
             'A denial of a stay is useful contrary context, not a witness of an order granting a stay. Keep uncertainty explicit.'
+            ' A document reporting no change or a negative outcome can still satisfy a need for the corresponding status record; '
+            'do not confuse absence of a positive event with absence of a relevant document. '
+            'If status is uncertain or no_matching_passage, do not also bind that need. '
         ) if exhaustive else ''
         attempts = state.setdefault('material_model_attempts', [])
         reviews = state.setdefault('material_reviews', [])
