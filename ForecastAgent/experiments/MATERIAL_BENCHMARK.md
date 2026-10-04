@@ -190,3 +190,25 @@ turns stop the loop. Reservations precede requests. Interrupted outputs need an
 audit instead of a silent restart. Artifacts preserve quotes, gaps, traces,
 usage, parent hashes, and prior provider records. Historical materials may
 contain future information; this evaluates reading, not forecasting accuracy.
+
+### Five-case diagnostic result
+
+All five cases and the targeted preserved-budget retries completed. Auditing
+provider files found 70 new HTTP attempts: 16 Ultra failures without usage and
+54 Super attempts, with 1,074,876 known tokens. No new search, fetch, submission,
+or allowance reset occurred. Each case stayed within 12 decisions, 18 HTTP
+attempts and the cumulative 48-HTTP cap.
+
+Automatic material closure fell from 9/30 to 4/30. The court case accounted for
+all four closures; manual inspection found that one still confused an opinion
+PDF with a docket record. The Fed case incorrectly rejected negative-status
+records. GPQA kept searching for positive threshold evidence. Meteor evidence
+remained unclosed. Some official-source requirements had no mapped publisher
+domains and were therefore blocked by the program.
+
+This is a diagnostic experiment with recorded repairs and varying model
+exposure, not a controlled A/B. The bounded loop and preservation checks work;
+quality improvement has not been established. Do not promote it to production.
+Run links: 37206836793 (Fed), 37207433674 (GPQA), 37207071212 (court and Brazil),
+37207641733 (meteor). Post-run local checks added document line counts and
+explicit valid row ranges; no additional model experiment was launched.

@@ -45,7 +45,7 @@ class SavedTools:
             body=page.get('content','');sha=hashlib.sha256(body.encode()).hexdigest()
             ident='D-'+digest([url,sha])[:12]
             self.catalog[ident]={'document_id':ident,'url':url,'title':page.get('title',''),
-                'body_sha256':sha,'characters':len(body),
+                'body_sha256':sha,'characters':len(body),'line_count':len(body.splitlines()),
                 'readable':body_diagnostics(body)['usable_text']}
         state.setdefault('passages',{})
         self.needs={n['id']:n for n in need_ledger.build(bundle)['needs']}
@@ -100,7 +100,7 @@ class SavedTools:
             body=self.bundle['pages'][self.catalog[ident]['url']]['content'];lines=body.splitlines(keepends=True)
             first=request.get('row_start',0);last=request.get('row_end',min(30,len(lines)))
             if type(first)!=int or type(last)!=int or not 0<=first<last<=len(lines) or last-first>100:
-                raise ValueError('invalid_saved_row_range')
+                raise ValueError(f'invalid_saved_row_range: document has {len(lines)} rows; use 0 <= row_start < row_end <= {len(lines)} and at most 100 rows per call')
             start=sum(map(len,lines[:first]));end=start+sum(map(len,lines[first:last]))
             row=self.register(ident,start,end,{'kind':'table_rows','complete_lines':True,
                 'complete_saved_table':first==0 and last==len(lines),'upstream_completeness_verified':False})
@@ -289,6 +289,7 @@ def run(parent,prior_review,output,key,resume_loop=None):
         'decisions':[],'model_attempts':[],'steps':[],'proposals':{},'accepted':{},'audited':{},'issues':{},'assessments':{},'tool_count':0}
     if resume_loop:
         previous_identity=load(resume_loop/'identity.json')
+        if previous_identity['limits']!=LIMITS:raise ValueError('continuation_limits_changed')
         if previous_identity['parent_hashes']!=hashes or previous_identity['prior_review_hashes']!=old_hashes:
             raise ValueError('continuation_parent_mismatch')
         state=load(resume_loop/'state.json')
@@ -321,6 +322,12 @@ def run(parent,prior_review,output,key,resume_loop=None):
         'and document roles independently. Required conditions and IDs cannot be deleted. '
         'Essential versus supporting and alternative-source hints may guide prioritization, never override required conditions. '
         'For proposed_binding use observed passage IDs and explicit boolean fit axes; uncertainty has no binding. '
+        'search_saved_text uses query and optional document_id; it searches saved documents only, not the web. '
+        'read_document_section uses document_id, start and length (at most 10000 characters), or an observed passage_id. '
+        'read_table_rows uses document_id, row_start and exclusive row_end (at most 100 complete lines); '
+        'document line_count gives the available range. validate_binding uses need_id, passage_id and explicit axes. '
+        'After a tool error, correct parameters using the feedback; do not repeat the same failed request. '
+        'After finding a matching document, assess its material fit regardless of whether its data supports the event. '
         'Use tool requests plus assessments in research_step. Do not request network, change budgets, infer truth, '
         'or return probabilities. Finish only when needed material is accepted or remaining gaps cannot be resolved.')
     while len(state['decisions'])<LIMITS['stage_decisions']:
