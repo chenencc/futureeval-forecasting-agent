@@ -212,3 +212,29 @@ quality improvement has not been established. Do not promote it to production.
 Run links: 37206836793 (Fed), 37207433674 (GPQA), 37207071212 (court and Brazil),
 37207641733 (meteor). Post-run local checks added document line counts and
 explicit valid row ranges; no additional model experiment was launched.
+
+
+## Outcome-neutral material contract round
+
+The fixed manifest `MATERIAL_CONTRACT_REGRESSION.json` has ten saved-text cases
+from the five-question diagnostic cohort and three replay-only state checks.
+It distinguishes document role, explicit publisher domains, applicable fit
+axes and event polarity. Supporting observations do not close dated historical
+needs. Unknown publishers, unread materials and read failures remain separate.
+This is an experimental module and does not change production closure gates.
+
+Replay uses human annotated observations and therefore tests program semantics,
+not model quality. The paired run hides gold labels and observations, sends the
+identical source text and metadata to both arms, and alternates arm order.
+Only instructions and the closure evaluator differ. Contracts are manually
+specified diagnostic interpretations; they are not automatically validated
+for unseen questions. Each source has its parent body hash and exact range.
+
+Model: frozen Super without fallback. Experiment budget: 20 logical decisions,
+30 physical HTTP attempts, 1800 output tokens per decision. Provider errors
+stop the remaining experiment; existing output paths cannot silently restart.
+No search, fetch, forecast, production deployment or old allowance reset exists.
+The budget belongs to this new paired diagnostic, not to resumed collection.
+Use `material_contract_pair` in the checked snapshot workflow on dev_formal.
+Promote nothing from these repair-selected cases alone: first inspect quotes
+and false matches, then freeze the same evaluation for new held-out materials.

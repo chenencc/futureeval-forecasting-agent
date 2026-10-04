@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -96,6 +96,33 @@ jobs:
         with:
           name: material-heldout10-case-${{ matrix.case }}
           path: snapshots/heldout
+          if-no-files-found: error
+          retention-days: 90
+  material-contract-pair:
+    if: inputs.experiment == 'material_contract_pair'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_material_contract
+      - name: Replay annotated observations without provider calls
+        run: python -m ForecastAgent.experiments.material_contract_round replay --output snapshots/material-contract-replay
+      - name: Frozen identical-text paired material-fit evaluation
+        run: python -u -m ForecastAgent.experiments.material_contract_round paired --output snapshots/material-contract-pair
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: material-contract-paired
+          path: snapshots/material-contract-*
           if-no-files-found: error
           retention-days: 90
   material-research-loop:
