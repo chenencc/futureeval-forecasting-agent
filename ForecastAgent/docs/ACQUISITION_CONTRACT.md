@@ -27,8 +27,9 @@ durably save completed phases. Invalid response envelopes are saved before
 raising; automatic retries are not performed. Empty reading packets skip the
 annotation call. Logical decisions are not actual HTTP-attempt counters.
 
-This bridge has been exercised with an offline test executor. It is not yet
-wired into the production worker or validated with a live provider. Interrupted
+This bridge has been exercised with an offline test executor and a live provider
+pilot that failed before material annotation (see below). It is not wired into
+the production worker. Interrupted
 bridge execution requires the caller to use preserved phases and reservations;
 calling the bridge again from the beginning is not an automatic resume path.
 
@@ -139,3 +140,32 @@ failures and actual provider calls/tokens. Include negative evidence, partial
 coverage, ambiguous labels and multiple document formats. Retain repaired cases
 as regressions; they no longer count as unseen validation. Do not promote this
 interface on offline binding success alone.
+
+## First live pilot: application acceptance failed
+
+Run [37218949703](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37218949703)
+tested the contract frozen at `6b35064`, using fixed free Super and ten previously
+seen saved excerpts with complete original questions and resolution criteria.
+No hand-written requirements, prior answers or resolution labels were supplied.
+The caller supplied mechanical rule-span coordinates without semantic hints.
+
+All ten HTTP attempts returned model replies, with 38,200 reported tokens and
+no unknown usage. Three replies supplied malformed serialized JSON inside the
+`needs` string. The other seven replies supplied arrays containing 21 needs;
+all 21 failed exact rule-origin binding because offsets/quotes did not agree.
+No valid requirement survived, and the material annotation stage made zero
+calls. Searches, fetches and forecast submissions were all zero.
+
+The Actions run succeeded operationally. This does not pass the business gate:
+seven cases were recorded as completed with empty accepted plans and three as
+failed. Future acceptance must distinguish provider completion, valid response
+shape, usable requirements and actual evidence annotation. An entirely rejected
+plan cannot count as a successfully reviewed question.
+
+The main general design issue is asking a model to calculate character offsets.
+Program-owned rule references should replace generated coordinates; incomplete
+nested JSON must not be salvaged. This pilot provides no semantic recall,
+applicability or full-pipeline improvement result. Keep production unchanged.
+Original provider records and the failed planning outputs are retained in the
+`acquisition-contract-live` artifact (ID `11310135532`), whose ZIP SHA-256 is
+`609297924f87080a9576f9a0e8e71d05c35f6f57ef933165bda75a1b7e891763`.
