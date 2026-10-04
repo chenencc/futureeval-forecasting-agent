@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -96,6 +96,48 @@ jobs:
         with:
           name: material-heldout10-case-${{ matrix.case }}
           path: snapshots/heldout
+          if-no-files-found: error
+          retention-days: 90
+  material-research-loop:
+    if: inputs.experiment == 'material_research_loop'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        case: ${{ fromJSON(inputs.benchmark_cases || '[1]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_saved_research_loop
+      - uses: actions/download-artifact@v4
+        with:
+          name: solid-collection-case-${{ matrix.case }}
+          run-id: '37195683563'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/raw-parent
+      - uses: actions/download-artifact@v4
+        with:
+          name: material-review-only-case-${{ matrix.case }}
+          run-id: '37203731884'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/prior-review
+      - name: Bounded saved-document agent and independent review
+        run: python -u -m ForecastAgent.supplement.research_loop --parent snapshots/raw-parent --prior-review snapshots/prior-review --output snapshots/research-loop
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: saved-research-loop-case-${{ matrix.case }}
+          path: snapshots/research-loop
           if-no-files-found: error
           retention-days: 90
   material-review-only:

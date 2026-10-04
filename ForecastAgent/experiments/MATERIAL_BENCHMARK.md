@@ -170,3 +170,23 @@ the publication deadline remains unverified. The additional frozen fixture is
 `MATERIAL_REGRESSION_APPLICABILITY.json`. Across the four fixture manifests,
 32 development witness checks pass with no newly rejected positive witness.
 This is acceptance regression evidence, not independent acquisition recall.
+
+## Saved-document research loop experiment
+
+`material_research_loop` reuses cases 1-5 from run 37195683563 and preserves
+review journals from 37203731884. Start with case `[1]`, inspect stopping and
+usage, then dispatch `[2,3,4,5]` on the same commit. No acquisition, analysis,
+submission, or search/fetch quota reset is performed.
+
+The actor lists documents, searches saved text, reads complete saved lines or
+sections, and requests binding validation. A fresh-context critic checks raw
+quotations and source roles before closure. Both use authorized Ultra-to-Super
+routing. Core/supporting hints remain advisory. Critic acceptance is not proof
+of correctness and requires sampled inspection.
+
+Per case: 12 new decisions, 18 new HTTP attempts, 900 seconds; cumulative caps:
+36 decisions and 48 HTTP attempts. Two repairs per issue and two no-progress
+turns stop the loop. Reservations precede requests. Interrupted outputs need an
+audit instead of a silent restart. Artifacts preserve quotes, gaps, traces,
+usage, parent hashes, and prior provider records. Historical materials may
+contain future information; this evaluates reading, not forecasting accuracy.
