@@ -2,6 +2,8 @@
 import unittest
 import json
 import tempfile
+import gzip
+from pathlib import Path
 from unittest.mock import patch
 from ForecastAgent.supplement import witness_contract as contract
 from ForecastAgent.supplement import material_review
@@ -9,6 +11,23 @@ from ForecastAgent.supplement import binding_guard,requirement_contract
 
 
 class WitnessContractTests(unittest.TestCase):
+    def test_omitted_inapplicable_axis_is_false_but_required_axis_is_not_inferred(self):
+        path=Path(__file__).resolve().parents[1]/'fixtures/material_applicability/44731.json.gz'
+        item=json.loads(gzip.decompress(path.read_bytes()))
+        response=item['responses'][0]
+        payload=json.loads(next(m['content'] for m in response['request']['messages'] if m['role']=='user'))
+        choice=response['response']['choices'][0]
+        decision=material_review.decode(choice['message'],payload,choice.get('finish_reason'))
+        for row in decision['bindings']:
+            row['axes'].pop('metric',None)
+        result=material_review.bind(item['bundle'],payload,decision)
+        rows={b['need_id']:b for b in result['bindings']}
+        self.assertFalse(rows['need1']['axes']['metric'])
+        self.assertTrue(rows['need1']['closure_guard']['eligible_for_material_closure'])
+        self.assertIn('publication_time_witness_unverified',rows['need2']['closure_guard']['issues'])
+        self.assertNotIn('need3',rows)
+        self.assertTrue(any(r['record']['need_id']=='need3' for r in result['rejected_records']))
+
     def test_event_date_has_no_numeric_axis_but_publication_needs_its_own_clock(self):
         event={'condition':'The election was held before September 1, 2026.'}
         publication={'condition':'Results were known and published before September 8, 2026.'}

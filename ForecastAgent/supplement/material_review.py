@@ -185,8 +185,14 @@ def bind(bundle, payload, decision):
     def validate_binding(row):
         if row.get('need_id') not in allowed or not isinstance(row.get('axes'), dict):
             raise ValueError('Unknown material need or missing fit axes')
-        if set(row['axes']) != set(AXES) or any(type(v) is not bool for v in row['axes'].values()):
+        need = requirement_contract.attach(bundle['request'],next(n for n in payload['needs'] if n['id']==row['need_id']))
+        required_axes = set(binding_guard.required_axes(need))
+        if (not required_axes.issubset(row['axes']) or not set(row['axes']).issubset(AXES)
+                or any(type(v) is not bool for v in row['axes'].values())):
             raise ValueError('Fit axes require explicit booleans')
+        # Omitted inapplicable axes are not evidence of a fit. Required axes
+        # always remain explicit; preserve a stable downstream record shape.
+        row = {**row, 'axes':{axis:row['axes'].get(axis,False) for axis in AXES}}
         quote = row.get('quote', '')
         if not isinstance(quote, str) or len(quote.strip()) < 30:
             raise ValueError('Material fit needs an exact substantive quotation')
