@@ -1,0 +1,123 @@
+{
+  "schema": "acquisition-contract-structural-replay-v1",
+  "cases": [
+    {
+      "case_id": "unseen-01",
+      "source_sha256": "b56fcd431dd1502a478340aeffa06313a2d54acd1aff31b0eb573466f3514eb0",
+      "saved_chars": 4310,
+      "readable": true,
+      "delivered_chars": 4310,
+      "passage_count": 3,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-02",
+      "source_sha256": "297b9582dbc5d19d316f2ba6f37f9a1cbbf33de2c460002faaf390c40857eee8",
+      "saved_chars": 4500,
+      "readable": true,
+      "delivered_chars": 4500,
+      "passage_count": 1,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-03",
+      "source_sha256": "8304dad59847795d8c98521c6a984733811cdf61e36cf63c84e833d2a869bdd8",
+      "saved_chars": 4500,
+      "readable": true,
+      "delivered_chars": 4500,
+      "passage_count": 3,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-04",
+      "source_sha256": "03fe4149177cb3bf0be6246cab9f0bd7ea29d37487fd561b1fd18345cbf2f8af",
+      "saved_chars": 2395,
+      "readable": true,
+      "delivered_chars": 2395,
+      "passage_count": 2,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-05",
+      "source_sha256": "b172300f044c267c05c4ef760aba7635d229f4c20cc60a79f666ff1cf49c9a11",
+      "saved_chars": 2546,
+      "readable": true,
+      "delivered_chars": 2546,
+      "passage_count": 2,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-06",
+      "source_sha256": "8756806db0eba4a1f8b8e9dd15897c2949af3b89f4bcda1cbb2e9f78d2909975",
+      "saved_chars": 4500,
+      "readable": true,
+      "delivered_chars": 4500,
+      "passage_count": 3,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-07",
+      "source_sha256": "2b9e19e7fae76b55e4f3f3d7499d425d536eec6131f72f6b108574b82849df7b",
+      "saved_chars": 878,
+      "readable": true,
+      "delivered_chars": 878,
+      "passage_count": 1,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-08",
+      "source_sha256": "ce4b62614a7c3efb3b90b0740d646753e2e38d6cca9c674466bd38caf17d77c3",
+      "saved_chars": 3440,
+      "readable": true,
+      "delivered_chars": 3440,
+      "passage_count": 2,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-09",
+      "source_sha256": "30205e5b0c89ebdcd6e62dacbd4b3843cbd4c3319b043dfdcc6c0a669c36583a",
+      "saved_chars": 4488,
+      "readable": true,
+      "delivered_chars": 4488,
+      "passage_count": 3,
+      "omitted_unit_count": 0,
+      "errors": []
+    },
+    {
+      "case_id": "unseen-10",
+      "source_sha256": "2134a6fc223be736cedad1ae0c5b3642c5c2a28b96b28fa7205fa15fd40c0439",
+      "saved_chars": 791,
+      "readable": true,
+      "delivered_chars": 791,
+      "passage_count": 1,
+      "omitted_unit_count": 0,
+      "errors": []
+    }
+  ],
+  "case_count": 10,
+  "failed_cases": 0,
+  "provider_calls": 0,
+  "new_searches": 0,
+  "semantic_improvement_measured": false,
+  "scope": "Exact saved-excerpt reading and omission accounting only; no new agent decisions.",
+  "manifest_sha256": "79accf7496ae0089f6788004208290be9eb2c5a56aa5a37b2ddb4f5f12230bcb",
+  "validation_date": "2026-10-05",
+  "unit_and_compatibility_tests": {
+    "passed": 61,
+    "new_contract_tests": 24
+  },
+  "cli_ledger_and_routing_verified": true,
+  "agent_bridge": "Offline injected executor only; no live provider or production integration",
+  "implementation_sha256": {
+    "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0",
+    "ForecastAgent/experiments/acquisition_contract_replay.py": "e42e2a916cadad18c2d42d247a8724befd7d7fdab0d1cc17070694a32ab5cd93"
+  }
+}

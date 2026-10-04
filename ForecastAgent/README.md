@@ -1,5 +1,10 @@
 # ForecastAgent
 
+The development-only [general acquisition contract](docs/ACQUISITION_CONTRACT.md)
+provides atomic rule-grounded needs, a requirement-to-text ledger, structured
+saved-body reading and budget-aware gap routing. Portable prompts and tool
+schemas support a model-independent caller; production remains pinned.
+
 Development: [enhanced supplemental acquisition](supplement/ENHANCED.md) adds
 gap-driven source plans, shared lifetime budgets, body acceptance and exact
 Mercury reading priorities. It is opt-in and does not replace the pinned release.
