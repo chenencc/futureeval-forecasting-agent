@@ -12,6 +12,21 @@ from ForecastAgent.supplement import enhanced
 
 
 class SolidTests(unittest.TestCase):
+    def test_validation_cohort_excludes_repair_cases_and_uses_full_material_path(self):
+        selected=set(pilot.COHORTS['material_validation5'])
+        self.assertEqual(len(selected),5)
+        for name in ('pilot5','material_new5','new15'):
+            self.assertFalse(selected & set(pilot.COHORTS[name]))
+        with tempfile.TemporaryDirectory() as tmp:
+            for case in range(1,6):
+                root=Path(tmp)/str(case)
+                pilot.run(case,root,'validation-five-preflight',True,'material_validation5')
+                request=load(root/'question.json')
+                self.assertEqual(request['collection_workflow'],'material-gap-v1')
+                self.assertEqual(request['collection_stage_allocation'],'material-reserve-v1')
+                self.assertEqual(len(load(root/'acceptance-checklist.json')['required_materials']),2)
+                self.assertNotIn('resolution',request)
+
     def test_expanded_profile_matches_program_and_prompt_and_resume(self):
         request = pilot.question('44126', 'offline-test')
         with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'EXA_API_KEY': 'offline'}):

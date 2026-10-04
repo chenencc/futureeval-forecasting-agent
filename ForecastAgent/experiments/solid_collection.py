@@ -17,11 +17,12 @@ IDS = ['40695', '44126', '45183', '26754', '45045']
 COHORTS = {'pilot5':IDS, 'repair3':['44126','26754','45045'], 'repair2':['26754','45045'],
     'gap2':['26754','45045'],
     'material_new5':['43658','44939','41480','43461','44727'],
+    'material_validation5':['36871','40852','43801','44129','44938'],
     'new15':['43658','44431','44939','44128','43919',
              '41480','43822','44547','43844','44940',
              '43461','42630','44727','45048','44728']}
 REPAIR_CAPS = {'tavily': 6, 'exa': 2, 'http': 64, 'browser': 12}
-MATERIAL_COHORTS = {'gap2', 'material_new5'}
+MATERIAL_COHORTS = {'gap2', 'material_new5', 'material_validation5'}
 FIXTURES = Path(__file__).parents[1]/'fixtures/enhanced_pair40'
 
 
@@ -97,7 +98,7 @@ def run(case, output, experiment_id, prepare_only=False, cohort='pilot5'):
     capacity=SOLID if profile=='solid_v1' else SOLID_V2
     request = question(ident, experiment_id, profile)
     if cohort in MATERIAL_COHORTS: request['collection_workflow']='material-gap-v1'
-    if cohort=='material_new5': request['collection_stage_allocation']='material-reserve-v1'
+    if cohort in {'material_new5','material_validation5'}: request['collection_stage_allocation']='material-reserve-v1'
     manifest = {'protocol': 'solid-raw-collection-v1', 'experiment_id': experiment_id,
         'question_id': ident, 'request_sha256': digest(request), 'capacity': capacity,
         'cohort':cohort,'frozen_cohort_ids':COHORTS[cohort],
