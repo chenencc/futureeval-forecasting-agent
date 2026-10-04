@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {validKnots,quantile,formatValue} from '../src/distribution.ts';
+const k=validKnots([[0,.1],[10,.5],[20,.9]])!;
+assert.equal(quantile(k,.5),10);
+assert.equal(quantile(k,.25),3.75);
+assert.equal(quantile(k,.05),null);
+assert.equal(quantile(k,.95),null);
+assert.equal(validKnots([[0,.5],[1,.4]]),null);
+assert.equal(validKnots([[0,0],[0,1]]),null);
+assert.equal(formatValue(1704067200,'date'),'Jan 2024');
+console.log('Distribution display checks passed');

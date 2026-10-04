@@ -70,3 +70,17 @@ politics market directory. Typography uses Inter with native system fallbacks, a
 the step-by-step evidence trail. Title-based topic grouping is for browsing only.
 Missing market quotes remain explicitly unrecorded. Responsive layouts use three,
 two or one card columns without reducing reading text to tiny labels.
+
+## Reading distributions
+
+Numeric and date cards show the approximate median and central 50% probability
+range. Forecast details show interval probability bars by default, a cumulative
+view toggle, quartile markers, labeled value/date axes and explicit outside-support
+probabilities. These follow the Metaculus range-interface presentation conventions.
+Quantiles are linearly interpolated from saved CDF knots; no open-tail quantile is
+extrapolated. Coarse bins remain visible, and the UI does not invent a smooth PDF.
+Date values use UTC. Units are shown where the saved question explicitly states them.
+
+Run display conversion checks with Node 22 or newer:
+
+    node --experimental-strip-types tests/distribution.test.ts
