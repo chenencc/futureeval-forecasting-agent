@@ -131,3 +131,21 @@ the same question definitions and resource limits. This is an exploratory online
 comparison, because source/provider responses vary between runs. Inspect actual
 saved documents, requests, failures and remaining needs; job success alone is
 not material completeness. No forecasts or analysis scores are produced.
+### Deterministic material closure guards
+
+Exact quotation binding is separate from material fulfillment. A page deferred
+by the same review cannot fulfill a need. Contradictory bindings remain saved
+with `closure_guard.issues` and `blocked_material_bindings`; they do not close
+the acquisition gap or trigger a new model request automatically.
+
+Named publisher-document needs use the repository-owned publisher domain catalog
+in `tools/channels.py`. Hostnames must match exactly or be subdomains. Secondary
+attribution needs remain distinct, and unmapped official-source requirements
+remain unverified. Domain identity is not a factual reliability score. Source
+requirements and publisher metadata are exposed before the model makes its
+decision, and rechecked against older saved reviews when producing need ledgers.
+
+These checks do not validate arbitrary date interpretation, revisions, values,
+or conditional fallback activation. Those limitations remain visible for later
+analysis. New guards and publisher catalog hashes are included in frozen repair
+identities; changing them never resets provider usage.

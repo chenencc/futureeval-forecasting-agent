@@ -216,8 +216,12 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
     gap_workflow = need_ledger.enabled(bundle)
     if gap_workflow:
         from ForecastAgent.supplement import material_review
+        from ForecastAgent.supplement import binding_guard
+        from ForecastAgent.tools import channels
         identity['need_ledger_sha256'] = hashlib.sha256(Path(need_ledger.__file__).read_bytes()).hexdigest()
         identity['material_review_sha256'] = hashlib.sha256(Path(material_review.__file__).read_bytes()).hexdigest()
+        identity['binding_guard_sha256'] = hashlib.sha256(Path(binding_guard.__file__).read_bytes()).hexdigest()
+        identity['publisher_catalog_sha256'] = digest(channels.PUBLISHERS)
         identity['material_agent_enabled'] = bool(material_agent)
         identity['gap_search_available_tools']=sorted(getattr(search,'available_tools',('tavily','exa')) if search else [])
     if (folder/'identity.json').exists() and load(folder/'identity.json') != identity:

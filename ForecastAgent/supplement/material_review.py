@@ -11,6 +11,7 @@ from pathlib import Path
 from ForecastAgent.analysis.pilot import digest, save
 from ForecastAgent.supplement.discovery import tokens
 from ForecastAgent.readers.quality import body_diagnostics
+from ForecastAgent.supplement import binding_guard
 
 AXES = ('entity', 'material_type', 'metric', 'period')
 GENERATION = {'max_output_tokens':4096, 'reasoning':{'max_tokens':768}}
@@ -42,7 +43,8 @@ def packet(bundle, ledger, sources):
         p['passage_id'] = 'P-'+digest([p['url'],p['body_sha256'],p['start'],p['end']])[:12]
     return {'question': {k: bundle['request'].get(k, '') for k in
                 ('question', 'resolution_criteria', 'fine_print')},
-            'needs': [{k:n[k] for k in ('id','condition','family','priority','acquisition_state','target_material_captured')}
+            'needs': [{**{k:n[k] for k in ('id','condition','family','priority','acquisition_state','target_material_captured')},
+                       'source_requirement':binding_guard.source_requirement(n)}
                       for n in ledger['needs']], 'passages': delivered,
             'sources': [{'source_id':'S-'+digest(s['url'])[:12],
                          **{k: s.get(k) for k in ('url', 'label', 'rule_primary', 'material_need_ids')}}
@@ -124,8 +126,13 @@ def bind(bundle, payload, decision):
         if hashlib.sha256(body.encode()).hexdigest() != window['body_sha256']:
             raise ValueError('Saved source changed during review')
         offset = window['start'] + window['text'].index(quote)
+        need = next(n for n in payload['needs'] if n['id']==row['need_id'])
+        guard = binding_guard.assess({**need,'required_source_domains':need.get('source_requirement',{}).get('domains',[])
+                                      if need.get('source_requirement',{}).get('required') else []},
+                                    row, {r['url'] for r in deferred})
         bindings.append({k:row[k] for k in ('need_id','url','quote','axes')} | {'start': offset, 'end': offset+len(quote),
-            'body_sha256': window['body_sha256'], 'quote_bound': True, 'truth_verified': False})
+            'body_sha256': window['body_sha256'], 'quote_bound': True, 'closure_guard':guard,
+            'truth_verified': False})
     query = decision.get('next_search')
     if query is not None and (query.get('need_id') not in allowed or
             not isinstance(query.get('query'), str) or not 3 <= len(query['query']) <= 350):
@@ -208,6 +215,8 @@ def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
                 'materials too: do not infer event truth. Never mark all axes true from keyword overlap. '
                 'Prioritize rule sources and exact dated data/detail pages, then independent sources; avoid navigation. '
                 'Recommend at most one targeted query for a critical need still missing. Omitted previews are unknown. '
+                'Respect each need source_requirement: a secondary attribution does not fulfill a publisher-original need. '
+                'A deferred source cannot also fulfill a need. '
                 'Return review_material only; never probabilities or resolution outcomes.'},
                 {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}], api_key,
                 tools=[schema], forced_tool='review_material', observer=observer,

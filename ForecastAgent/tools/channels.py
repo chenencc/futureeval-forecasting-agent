@@ -1,5 +1,15 @@
 """Repository-owned capability catalog; availability is not a reliability score."""
 
+# Publisher identity is separate from topic relevance and factual reliability.
+# Exact domains are maintained here; model text cannot extend this registry.
+PUBLISHERS = [
+    {'id':'eia', 'aliases':['EIA','Energy Information Administration'], 'domains':['eia.gov']},
+    {'id':'census', 'aliases':['Census Bureau'], 'domains':['census.gov']},
+    {'id':'bls', 'aliases':['BLS','Bureau of Labor Statistics'], 'domains':['bls.gov']},
+    {'id':'sec', 'aliases':['SEC','Securities and Exchange Commission'], 'domains':['sec.gov']},
+    {'id':'who', 'aliases':['WHO','World Health Organization'], 'domains':['who.int']},
+]
+
 CHANNELS = [
     {'id':'exa_search','kind':'discovery','tools':['search_exa'],'formats':['search_results'],
      'cost':'Exa account credits; response estimate saved, not a billing balance',

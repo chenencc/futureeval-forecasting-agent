@@ -6,7 +6,8 @@ import os
 import shutil
 from pathlib import Path
 from ForecastAgent.analysis.pilot import load, save, digest
-from ForecastAgent.supplement import enhanced, material_review, need_ledger
+from ForecastAgent.supplement import enhanced, material_review, need_ledger, binding_guard
+from ForecastAgent.tools.channels import PUBLISHERS
 
 
 def run(parent, output, api_key, parent_run):
@@ -22,6 +23,8 @@ def run(parent, output, api_key, parent_run):
     identity = {'schema':'material-review-only-v1', 'parent_run':str(parent_run),
         'question_id':manifest['question_id'], 'parent_hashes':hashes,
         'review_implementation_sha256':hashlib.sha256(Path(material_review.__file__).read_bytes()).hexdigest(),
+        'closure_guard_sha256':hashlib.sha256(Path(binding_guard.__file__).read_bytes()).hexdigest(),
+        'publisher_catalog_sha256':digest(PUBLISHERS),
         'retry_seconds':300, 'additional_decisions':1, 'generation':material_review.GENERATION}
     if (output/'identity.json').exists():
         if load(output/'identity.json') != identity:

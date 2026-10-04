@@ -5,6 +5,7 @@ from ForecastAgent.supplement.discovery import tokens
 from ForecastAgent.supplement.source_contract import contract, match_source
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.evidence.source_coverage import observe
+from ForecastAgent.supplement import binding_guard
 
 PROTOCOL = 'material-gap-v1'
 STOP = set('verify confirm determine find documented which whether publicly available before after must model models source sources official report reports query browser public'.split())
@@ -82,9 +83,16 @@ def build(bundle, journal=None, usage=None, caps=None):
                 candidates.append({'url':url, 'body_sha256':hashlib.sha256(body.encode()).hexdigest(),
                                    'literal_terms':signals,'discovery_need_association':discovery_association,
                                    'subject_binding_verified':False,'truth_verified':False})
-        bindings = []
+        bindings = []; blocked_bindings = []
         for review in (journal or {}).get('material_reviews', []):
             for binding in review.get('result', {}).get('bindings', []):
+                if binding.get('need_id') != n['id']:
+                    continue
+                guard = binding_guard.assess(n, binding,
+                    {r['url'] for r in review.get('result', {}).get('deferred_urls',[])})
+                if not guard['eligible_for_material_closure']:
+                    blocked_bindings.append({'url':binding.get('url'), 'guard':guard})
+                    continue
                 page = bundle.get('pages', {}).get(binding.get('url'), {})
                 body = page.get('content', '')
                 if (binding.get('need_id') == n['id'] and binding.get('quote_bound') and
@@ -99,7 +107,8 @@ def build(bundle, journal=None, usage=None, caps=None):
             for c in candidates:
                 page = bundle['pages'][c['url']]
                 axes = observe(q, c['url'], page.get('content', ''), page)
-                if axes['data_capture_candidate'] and (not axes['clock']['expected'] or axes['clock']['requested_clock_observed']):
+                if (binding_guard.assess(n,c)['eligible_for_material_closure'] and
+                    axes['data_capture_candidate'] and (not axes['clock']['expected'] or axes['clock']['requested_clock_observed'])):
                     exact_data.append(c)
         target_captured = bool(bindings or exact_data)
         leads = bundle.get('source_leads', {})
@@ -122,6 +131,7 @@ def build(bundle, journal=None, usage=None, caps=None):
             status = 'budget_exhausted'; reason = 'Shared discovery lifetime capacity exhausted.'
         query_base=(q['question']+' '+text[:100]) if kind=='availability' else n.get('query') or q['question']
         rows.append({'id':n['id'], 'priority':n.get('priority','useful'), 'family':kind,
+                     'required_source_domains':n.get('required_source_domains',[]),
                      'condition':text, 'status':status, 'reason':reason,
                      'query':(' '.join(query_base.split())[:240]+' '+suffix)[:350],
                      'candidates':candidates, 'search_attempts':len(searches),
@@ -129,6 +139,8 @@ def build(bundle, journal=None, usage=None, caps=None):
                      'acquisition_state':'target_material_captured' if target_captured else
                          'readable_body_saved' if candidates or readable else 'candidate_discovered' if discovered else 'unlocated',
                      'target_material_captured':target_captured, 'material_bindings':bindings,
+                     'blocked_material_bindings':blocked_bindings,
+                     'source_requirement':binding_guard.source_requirement(n),
                      'deterministic_data_bindings':exact_data,
                      'next_action':None if target_captured else 'review_candidate_fit' if candidates else 'discover_missing_document_family',
                      'semantic_verified':False})
