@@ -134,7 +134,7 @@ def bind(bundle, payload, decision):
             'truth_verified': False}
 
 
-def callback(api_key, bundle, *, max_reviews=4):
+def callback(api_key, bundle, *, max_reviews=4, review_retry_seconds=None):
     """Reuse model routing and debit remaining initial-stage physical call limits."""
     capacity = bundle.get('capacity', {})
     initial = len(bundle.get('model_attempts', []))
@@ -148,7 +148,12 @@ def callback(api_key, bundle, *, max_reviews=4):
         a.get('status') != 'received' for a in bundle.get('model_attempts', [])[session.get('attempts_before', 0):]))
     started = session.get('started_at')
     elapsed = max(0, (datetime.now(timezone.utc)-datetime.fromisoformat(started.replace('Z','+00:00'))).total_seconds()) if started else 0
-    deadline = time.monotonic()+max(0, capacity.get('dispatch_seconds', 900)-elapsed)
+    if review_retry_seconds is not None and not 0 < review_retry_seconds <= 300:
+        raise ValueError('Review-only retry window must be at most 300 seconds')
+    # An explicitly authorized review-only execution has its own short wall clock;
+    # original cumulative decision, HTTP and failure counters still apply.
+    deadline = time.monotonic()+(review_retry_seconds if review_retry_seconds is not None else
+                                max(0, capacity.get('dispatch_seconds', 900)-elapsed))
     schema = {'type': 'function', 'function': {'name': 'review_material',
         'description': 'Report acquisition material fit with exact quotes, prioritized observed URLs and one missing-material query.',
         'parameters': {'type': 'object', 'properties': {
