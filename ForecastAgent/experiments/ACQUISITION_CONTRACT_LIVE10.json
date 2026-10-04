@@ -1,0 +1,240 @@
+{
+  "schema": "acquisition-contract-live10-v1",
+  "frozen_commit": "6b3506459f46e21be8739d84353a45486ebcda9f",
+  "frozen_code_sha256": {
+    "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0"
+  },
+  "scope": "Live automatic requirement planning and annotation of ten previously tested frozen excerpts. No hand-written material needs, gold labels, old model answers or resolved outcomes are sent. Not unseen validation, fresh acquisition or forecasting accuracy.",
+  "cases": [
+    {
+      "id": "unseen-01",
+      "question_id": "43494",
+      "domain": "energy_infrastructure",
+      "bundle": {
+        "request": {
+          "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\nLarge-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://gov.texas.gov/uploads/files/press/Thomas_Gleeson_Pablo_Vegas_Data_Centers_Directive_Letter_to_PUCT_ERCOT_August_2026_.pdf": {
+            "content": "[PDF page 1]\n August 3, 2026\n Mr. Thomas Gleeson\n Chairman\n Public Utility Commission of Texas\n P.O. Box 13326\n Austin, Texas 78711-3326\n Mr. Pablo Vegas\n President and Chief Executive Officer\n Electric Reliability Council of Texas\n 8000 Metropolis Drive, Building E, Suite 100\n Austin, Texas 78744\n Dear Chairman Gleeson and Chief Executive Officer Vegas:\n Our top priority is to protect Texans’ safety and quality of life. That includes providing affordable\n energy, maintaining a reliable electric grid, preserving water for our communities, and\n championing Texas values. Those priorities can, and must, be achieved while also creating the\n jobs and providing the economic opportunity that comes with our national leadership in\n technological innovation and investment.\n The Electric Reliability Council of Texas (ERCOT) is currently considering approximately 474\n gigawatts of requests to connect to the Texas grid. That is more than five times Texas’ record peak\n electricity demand for ERCOT. Approximately 90 percent of the new power requests are data\n centers. That unprecedented load growth could endanger the reliability and stability of the Texas\n electric grid.\n To keep the grid stable and reliable, I am issuing the following directive:\n The Public Utility Commission of Texas (PUC) and ERCOT must conduct a comprehensive\n verification and audit of all data centers advancing through ERCOT’s interconnection process\n before any additional data centers are approved to move forward. Any project that fails to comply\n with the requirements set forth by the PUC and ERCOT, and by state law, must be denied\n connection to the Texas grid.\n The failure of some data centers to comply with the PUC’s survey measuring water and power\n usage under the General Appropriations Act makes this necessary. Failure to fully comply with\n that law hinders your ability to make fully informed decisions.\n[PDF page 2]\nChairman Gleeson and Chief Executive Officer Vegas\nAugust 3, 2026\nPage 2\nAdditionally, recent legislative hearings and public meetings raised important questions regarding\nthe impact of data centers on the grid and on the local communities in which they operate or seek\nto operate.\nAlong those lines, in my June 10th letter I noted I would work with the legislature to address\nTexans’ concerns about data centers. To inform these efforts, the PUC and ERCOT must also\nobtain the following information from each data center project:\n• Information detailing the extent to which data centers are paying their own way or depending\n on the state for financial assistance. That would include all state and local tax incentives,\n grants, abatements, or other public financial assistance received or expected to be received;\n and\n• The extent to which data centers are providing their own power or depending on the ERCOT\n grid for that power. Details should include projected annual and peak electricity consumption;\n and any effort and progress to construct or procure on-site electric generation, including\n generation type, or other measures to reduce demand on the ERCOT grid; and\n• The extent to which data centers are bringing their own water and reusing their own water as\n opposed to using water needed by local communities. The details should include projected\n annual and peak water consumption and anticipated sources of water supply. You must also\n obtain information about the cooling technology that will be utilized, including whether the\n facility will employ air-cooled, closed-loop, or another water-efficient cooling system; and\n• The extent to which data centers are using measures to reduce impacts on neighboring property\n owners and communities, including noise mitigation, light controls, setbacks, traffic\n improvements, emergency response coordination, and other community protection measures,\n understanding that each community is unique; and\n• Information detailing the ownership and controlling interests in the project.\nAny data center project that fails to comply with the verification and audit process to protect the\nreliability and resilience of the Texas electric grid must be denied. Simply put, Texans must come\nfirst.\nThank you for your continued efforts to protect the Texas electric grid and the interests of the\npeople of our state.\nSincerely,\nGreg Abbott\nGovernor"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-01",
+        "raw_bundle_sha256": "91a37bb40960ca951399a8d3e65ed120343275e8618ed711e64bc39252290094",
+        "saved_excerpt_sha256": "b56fcd431dd1502a478340aeffa06313a2d54acd1aff31b0eb573466f3514eb0",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-02",
+      "question_id": "43435",
+      "domain": "religious_travel",
+      "bundle": {
+        "request": {
+          "question": "Will Pope Leo XIV visit another country other than Spain before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if Pope Leo XIV officially visits a country other than Spain or Italy after May 18, 2026 and before September 1, 2026, according to the official [Vatican calendar of events for the Pope](https://www.vatican.va/content/leo-xiv/en/events/year.dir.html/2026.html). Merely passing through a country's airspace, landing at an airport or otherwise making a transitory visit will not count towards resolution.\n\nIf Pope Leo XIV ceases to be Pope before September 2026 this question will be **annulled**.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://press.vatican.va/content/salastampa/en/bollettino/pubblico/2026/07/04/260704b.html": {
+            "content": "| | | | | | | | \n| | | | | | | | \n| | | | | | | | \n| This morning, after leaving the Vatican Apostolic Palace, the Holy Father Leo XIV traveled by car to Rome’s Ciampino “G.B. Pastine” Airport, from where, at 7:49 a.m., he departed for a pastoral visit to Lampedusa. He landed at Lampedusa Airport at 8:54 a.m. Upon his arrival, the Pope was welcomed by H.E. Archbishop Alessandro Damiano, Metropolitan Archbishop of Agrigento; the Hon. Renato Schifani, President of the Region of Sicily; Dr. Salvatore Caccamo, Prefect of Agrigento; Dr. Filippo Mannino, Mayor of Lampedusa; and Dr. Giuseppe Pendolino, President of the Free Municipal Consortium of Agrigento. Leo XIV then traveled by car to the Lampedusa Cemetery to lay a wreath and offer a moment of prayer at the graves of several migrants. Immediately afterward, the Pope went to the “Porta d’Europa,” where he briefly met with a migrant family and a child and, together with them, made his way toward the gate. Subsequently, the Holy Father traveled by car to the “Molo Favaloro” to bless the plaque naming the pier after Pope Francis and greeted a group of migrants accompanied by the Red Cross. At the conclusion of the blessing and greetings, the Holy Father traveled by open-top car to the “Arena” sports field in the Salina area. Upon his arrival, after being welcomed by the Mayor of Lampedusa, the Pope offered a few words of greeting. Then, at 10:26 a.m., Leo XIV presided over Holy Mass. Next to the altar, an image of Our Lady of Porto Salvo was displayed. After the introductory rites and the Liturgy of the Word, the Holy Father delivered his homily. At the conclusion, following words of thanks from the Metropolitan Archbishop of Agrigento, the Pontiff proceeded to City Hall, where he greeted representatives of civil and military authorities, volunteers, priests, and the sick. The Pope then traveled by car to Lampedusa Airport, where, after bidding farewell to the officials who had welcomed him upon arrival, he departed at 12:54 p.m. to return to the Vatican. The Holy Father arrived at Rome Ciampino Airport at 2:04 p.m. The following are the texts of the greeting that the Pope addressed to the Mayor of Lampedusa and the homily he delivered during Holy Mass at the “Arena” sports field: [ [AR](https://www.vatican.va/content/leo-xiv/ar/homilies/2026/documents/20260704-lampedusa-messa.html) -[DE](https://www.vatican.va/content/leo-xiv/de/homilies/2026/documents/20260704-lampedusa-messa.html) -[EN](https://www.vatican.va/content/leo-xiv/en/homilies/2026/documents/20260704-lampedusa-messa.html) -[ES](https://www.vatican.va/content/leo-xiv/es/homilies/2026/documents/20260704-lampedusa-messa.html) -[FR](https://www.vatican.va/content/leo-xiv/fr/homilies/2026/documents/20260704-lampedusa-messa.html) -[IT](https://www.vatican.va/content/leo-xiv/it/homilies/2026/documents/20260704-lampedusa-messa.html) -[PL](https://www.vatican.va/content/leo-xiv/pl/homilies/2026/documents/20260704-lampedusa-messa.html) -[PT](https://www.vatican.va/content/leo-xiv/pt/homilies/2026/documents/20260704-lampedusa-messa.html) ] [Greeting by the Holy Father in Response to the Mayor’s Greeting](https://www.vatican.va/content/leo-xiv/en/homilies/2026/documents/20260704-lampedusa-messa.html#greet) __________________________________ Mr. Mayor, Thank you, thank you! Mr. Mayor, Your Excellency, distinguished officials, dear brothers and sisters! I thank the Mayor for the greeting he extended to me on behalf of the Municipality of Lampedusa and Linosa, and I thank all of you for your warm welcome! The fact that you have chosen to name the Favaloro Pier after [Pope Francis](https://www.vatican.va/content/francesco/en.html) is a sign of the bond that[my Predecessor](https://www.vatican.va/content/francesco/en.html) forged with your community and with our migrant brothers and sisters: the Pope has been close to you during this very challenging time for you. And today I am here to tell you that the Pope continues to walk with you, to support you, and to encourage you. I have not come to give speeches, but to celebrate the Eucharist, the supreme sign of Christ’s presence among us. Jesus’ gesture of breaking bread to give of Himself gives meaning and strength to our daily acts of assistance and sharing. Yes, this is a place where actions speak louder than words. But for actions to be truly human, they need a heart. This is why we have gathered here: to draw from Christ the love that only He can give us, so that the world "
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-02",
+        "raw_bundle_sha256": "d874e9501ad71c72de507714d35a049fe322a571d2f8fa549e1f4b18e0892983",
+        "saved_excerpt_sha256": "297b9582dbc5d19d316f2ba6f37f9a1cbbf33de2c460002faaf390c40857eee8",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-03",
+      "question_id": "43343",
+      "domain": "sports",
+      "bundle": {
+        "request": {
+          "question": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+          "resolution_criteria": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-spain-match-report-highlights": {
+            "content": "France v Spain | Semi-final | FIFA World Cup 2026™ | Highlights France v Spain | Semi-final | FIFA World Cup 2026™ | Highlights\n\nWatch highlights of the match between France and Spain played at Dallas Stadium on Tuesday 14 July at 14:00 (local time).Watch highlights of the match between France and Spain played at Dallas Stadium on Tuesday 14 July at 14:00 (local time).\n\nClose Related Content\n\nClose Share\n\nGoals from Mikel Oyarzabal and Pedro Porro earned Spain a deserved 2-0 win over France at Dallas Stadium in their FIFA World Cup 2026 semi-final.\n\n## [France 0-2 Spain](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021541)[France 0-2 Spain](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021541)\n\n**Spain goals:**Oyarzabal pen (22), Porro (58)\n\n![Image 3: ARLINGTON, TEXAS - JULY 14: Pau Cubarsi #22 of Spain and teammates applaud fans after the 2-0 victory during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Maja Hitij - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/7d1e758f-a94f-4b41-8c68-f6dafd88a978/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.71,0.42&io=transform:fill,width:768&quality=75)\n\nSpain frustrated France at one end and punished them at the other to deservedly win their [FIFA World Cup 2026™](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026) semi-final at Dallas Stadium. _La Roja_ limited _Les Bleus’_ chances though some flawless defending, and scored thorough Mikel Oyarzabal and Pedro Porro.   \n  \nSpain will now face the [England-Argentina](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021540) victors at New York New Jersey Stadium on Sunday. They emerged triumphant in their only previous appearance in the fixture, Andres Iniesta sinking the Netherlands at Soccer City in 2010.   \n  \nFrance started as the slight favourites and, though Kylian Mbappe threatened on the break, Lamine Yamal gave Luis de la Fuente’s side the game’s first big chance. The winger, a day after his 19th birthday, got to the ball before Lucas Digne and was clipped inside the box. Oyarzabal struck the resulting penalty past spot-kick-saving specialist Mike Maignan.\n\n![Image 4: ARLINGTON, TEXAS - JULY 14: (EDITOR'S NOTE: Image was captured using a remote camera positioned above the field of play.) General view during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Dan Mullan - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/28e0e10e-f86d-4d56-ab93-b011d6041eff/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.49,0.41&io=transform:fill,width:768&quality=75)\n\nThe advantage was amplified when Porro played a palatial one-two with Dani Olmo, taking the return impeccably and burying the ball in the bottom corner.\n\nFrance, with Desire Doue and Rayan Cherki on, pushed to get back into a game, but goalkeeper Unai Simon acted astutely as a sweeper-keeper and Marc Cucurella made an excellent challenge on Mbappe.   \n  \nThe final whistle sparked ecstasy for the Spaniards and agony for the French. Didier Deschamps’ team will have a shot at bronze on Saturday, when Mbappe could boost his hopes for another adidas Golden Boot.\n\n* * *\n\n#### Key stats Key stats\n\n*   Mikel Oyarzabal has scored 18 goals in his last 20 games for Spain. His penalty made him the sixth man to reach 30 goals for Spain after David Silva (35), Alvaro Morata (37), Fernando Torres (38), Raul (44) and David Villa (59).\n\n![Image 5: ARLINGTON, TEXAS - JULY 14: Mikel Oyarzabal #21 of Spain celebrates with teammates after converting a penalty to score the team's first goal during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Hector Vivas - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/5fb850ff-2085-4b32-b306-5007d0d7413d/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.56,0.37&io=transform:fill,width:768&quality=75)\n\n*   Spain kept their sixth clean sheet in seven matches at this tournament. They have conceded just two goals in North America. The record for a triumphant team in a World Cup is two shared by France in 1998, Italy in 2006 and Spain themselves in 2010.\n\n* * *\n\n#### Michelob Ultra Superior Player of the Match Michelob Ultra Superior Player of the Match\n\n**Pedro P"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-03",
+        "raw_bundle_sha256": "b70601b4d65e83ef92ef8efef74304e255a1703541dec404a1d472213693b60a",
+        "saved_excerpt_sha256": "8304dad59847795d8c98521c6a984733811cdf61e36cf63c84e833d2a869bdd8",
+        "original_capture_offset": 5722
+      }
+    },
+    {
+      "id": "unseen-04",
+      "question_id": "43501",
+      "domain": "cybersecurity",
+      "bundle": {
+        "request": {
+          "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\nAll conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. An attacker's public claim alone will not be sufficient.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.instructure.com/incident-update/students-and-families": {
+            "content": "We understand the disruption to Canvas during what we know is an especially busy time of year, caused challenges for the students and families who rely on us. First and foremost, we’re sorry for how this has impacted your learning. The end of the semester can be a stressful time, and the last thing we would ever want is to make that pressure worse. We know you rely on Canvas to keep up with your classes, and we’re committed to doing better in the future.\nWe’ve collected the FAQs and resources below to support you as we continue to respond to this incident. If you have any further questions, please contact your institution. They are best equipped to contact us directly.\nYes. Canvas is fully back online and available for use. Our external forensic partner has reviewed the known indicators and found no evidence that the threat actor currently has access to the platform.\nWe’re also in conversations with government leaders, technology and integration partners, and institutions about how we can collectively build something stronger, together. As part of that, we are organizing an Advisory Board focused on security and resilience, led by our Chief Academic Officer, Melissa Loble.\nWas any of my personal data involved in this incident?\nOur comprehensive review of the data involved is ongoing, but none of the data fields we understand to be involved are designed to store information like passwords, dates of birth, healthcare information, social security numbers, financial information, student grades or disciplinary records.\nWas any of my coursework, including correspondence with my teachers, involved in this incident?\nOur investigation so far indicates that the data fields involved include information like usernames, email addresses, course names, enrollment information and messages. Our investigation has not identified any core learning data (course content, submissions, credentials) as involved.\nWill this incident further impact my ability to study for final exams or submit final assignments for this semester?\nCanvas is fully back online and available for use. We apologize for the disruption this incident has already caused and are here to support as you finish your semester.\nWho at my institution should I be in touch with to discuss this further?\nYour IT or Teaching & Learning professionals at your school are the best people to contact to discuss this further."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-04",
+        "raw_bundle_sha256": "6cc6a69589110dcbd65cf7ef29c3003842ba54a8a395a8222ea1cfe67914148a",
+        "saved_excerpt_sha256": "03fe4149177cb3bf0be6246cab9f0bd7ea29d37487fd561b1fd18345cbf2f8af",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-05",
+      "question_id": "40701",
+      "domain": "music_ai",
+      "bundle": {
+        "request": {
+          "question": "Will an AI created song chart on the Billboard Hot 100 before 2027?",
+          "resolution_criteria": "This question will resolve as Yes if a song primarily created by AI charts on the [Billboard Hot 100](https://www.billboard.com/charts/hot-100/) before 2027.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.billboard.com/music/chart-beat/bonita-4amtapes-ai-song-hot-latin-pop-songs-chart-1236167243": {
+            "content": "Trending on Billboard\n 4AMTapes’ AI-assisted reworking of Poeta Callejero’s “Bonita Bonita” is the first known AI-powered track to hit any of Billboard’s multimetric Latin songs charts. It debuts at No. 16 on the [Hot Latin Pop Songs](https://www.billboard.com/charts/hot-latin-pop-songs/) chart (dated Jan. 31), propelled primarily by streaming activity (390,000 official streams in the United States in the week ending Jan. 22, up 916%, according to Luminate).\nHot Latin Pop Songs, like its parent chart Hot Latin Songs, are both multimetric songs charts – where they blend streaming activity, radio airplay and sales data to rank its titles.\n “Bonita Bonita” — which carries an “AI-generated content” label on Deezer (indicating the release is “detected as AI-generated” by the service) — made its Billboard chart debut in December when it spent one week on the Latin Digital Song Sales chart (dated Dec. 27) with nominal sales, before re-entering the same chart this week [at No. 2](https://www.billboard.com/charts/latin-digital-song-sales/) with about 500 sold.\n “Bonita Bonita” follows such AI-assisted tracks that have [reached](https://nam02.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.billboard.com%2Flists%2Fai-artists-on-billboard-charts%2Fcain-walker%2F&data=05%7C02%7Cpamela.bustios%40billboard.com%7C93b4dd1441ed49122cd508de6059091e%7Ce950f25546e44144a778a6ff4f557492%7C0%7C0%7C639054132682188204%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=wJtXLIWWDW8YzsBNQoKThImTJlhWUdBwznAlZJy9C9E%3D&reserved=0) other Billboard charts by acts including Xania Monet, Breaking Rust, Enlly Blue, Juno Skye and Cain Walker.\n4AMTapes is the project of Dominican producer and musician Kenny Javier, who tells Billboard that he has released close to 100 AI-assisted songs since November, made with the help of the music generation platform Suno. Javier says 4AMTapes aims to “elevate the genre’s aesthetic, presenting its artists with elegance while maintaining playful and genuine lyrics.”\nThe original version of “Bonita Bonita” by Dominican reggaetón singer Poeta Callejero (real name Gerardo Gabriel Santana) was released in 2011 and was included on his 2014 album Hagan Sus Diligencias, Parte Uno. Neither the track or the album appeared on a Billboard chart.\nNext for Kenny Javier and 4AMTapes is a new EP being worked on featuring four unreleased songs, composed by LR Ley Del Rap, another key figure in the Dominican urban music movement."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-05",
+        "raw_bundle_sha256": "2251249e7df54da95d239574a03710b2e0c6efecc1b8be0bedb9ae9fd79ba544",
+        "saved_excerpt_sha256": "b172300f044c267c05c4ef760aba7635d229f4c20cc60a79f666ff1cf49c9a11",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-06",
+      "question_id": "14025",
+      "domain": "defense",
+      "bundle": {
+        "request": {
+          "question": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+          "resolution_criteria": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\nTested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.navalnews.com/naval-news/2026/07/japan-conducts-first-tomahawk-live-fire-aboard-js-chokai": {
+            "content": "Japan’s Ministry of Defense announced on July 30 that the Japan Maritime Self-Defense Force (JMSDF) had conducted its first live-fire test of a Tomahawk cruise missile aboard the Aegis guided-missile destroyer JS Chokai (DDG-176).\nThe test was carried out in the Pacific Ocean on July 29, Japan time, while Chokai was deployed to the United States as part of Japan’s Tomahawk acquisition program, with support from the U.S. Navy. The launch made Japan the third country outside the United States, after Australia and the Netherlands, to fire a Tomahawk from a surface combatant, and the fourth outside the United States overall, following the United Kingdom, which has fired the missile only from submarines.\nOfficials from Japan’s Acquisition, Technology & Logistics Agency (ATLA) said the test confirmed that the ship and its crew could successfully carry out the launch sequence, including required crew procedures. They added that the test also verified the missile’s flight to its intended target.\nATLA declined to disclose several operational details, citing coordination with the U.S. Navy and the need to protect Japan’s defense capabilities. Withheld details included the precise test location beyond the Pacific Ocean, the target type, flight range, guidance procedures, the number of missiles fired, and whether a Block IV or Block V Tomahawk was used.\nFour Months of Preparation\nThe Ministry of Defense announced in March that Chokai had acquired Tomahawk launch capability. Asked why the live-fire test took place several months later, officials said the intervening period was used to verify newly installed equipment and train the crew in launch procedures.\nChokai is expected to return to Japan around September 2026, with Sasebo identified as its homeport. Officials declined to discuss when the Tomahawk capability would enter operational service, saying such information could reveal Japan’s defense readiness.\nOfficials said the U.S. Navy provided the test range, monitored the surrounding sea and airspace, and supported test planning. They emphasized, however, that the launch itself was carried out by the Japanese crew.\nNo Further Live-Fire Tests Planned\nATLA officials said Japan currently has no plans to conduct similar live-fire tests aboard other JMSDF Aegis ships being modified to operate Tomahawks.\nOfficials said further shipboard live-fire tests are not considered necessary because the Mk 41 Vertical Launching System and Tomahawk launch equipment already have extensive operational records with the U.S. Navy. They added that the Chokai test confirmed integration between the Tomahawk system and Japan’s combat system.\nFunding approved through fiscal year 2026 includes about 113.6 billion yen(about $694 million) for adding Tomahawk launch capability to five JMSDF Aegis destroyers: Chokai, Kirishima, Haguro, Myoko, and Atago.\nModification work on Haguro and Kirishima began during fiscal year 2025. For Atago and Myoko, contracts for the required equipment have already been awarded, with modification work scheduled to begin during fiscal year 2026. Funding for the remaining three Aegis destroyers will be considered from fiscal year 2027 onward, and officials said it is too early to estimate costs.\nSeparately, Japan is also building two new Aegis System Equipped Vessels (ASEVs), scheduled to enter service in fiscal years 2027 and 2028, respectively. Although the ships are intended to operate Tomahawk missiles in the future, ministry officials said they are not expected to have Tomahawk launch capability when they enter service.\nStatus of Tomahawk procurement by Japan\nJapan plans to acquire up to 400 Tomahawk missiles through the U.S. Foreign Military Sales (FMS) program at a total cost of about 169.4 billion yen(about $1.03 billion).\nThe acquisition schedule remains unchanged: up to 200 Block IV missiles are scheduled for delivery between fiscal years 2025 and 2027, followed by up to 200 Block V missiles between fiscal years 2026 and 2027.\nDeliveries began during fiscal year 2025. Officials declined to disclose the number of missiles already delivered or the delivery schedule, citing operational security, but emphasized the program remains on schedule.\nATLA officials also said Japan has no plans to procure additional Tomahawk missiles beyond the 400 already approved. Future expansion of Japan’s stand-off strike capability is expected to rely primarily on domestically developed long-range missiles currently under development.\nOfficia"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-06",
+        "raw_bundle_sha256": "0c54c02c53d54b92a9a073c03a0c6bd95003f74afa9951dd27f89d000c6e00fa",
+        "saved_excerpt_sha256": "8756806db0eba4a1f8b8e9dd15897c2949af3b89f4bcda1cbb2e9f78d2909975",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-07",
+      "question_id": "43824",
+      "domain": "financial_series",
+      "bundle": {
+        "request": {
+          "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://finance.yahoo.com/quote/ILS": {
+            "content": "Yahoo Finance daily history: ILS; cutoff 2026-10-03T05:21:31.455941+00:00\nDaily closes conservatively exclude the cutoff UTC day. Current-vintage/adjustment revisions remain possible; not a verified historical capture.\n{\"close\": 20.389999389648438, \"conservative_available_at\": \"2026-09-16T23:59:59+00:00\", \"date\": \"2026-09-16\"}\n{\"close\": 20.399999618530273, \"conservative_available_at\": \"2026-09-17T23:59:59+00:00\", \"date\": \"2026-09-17\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-21T23:59:59+00:00\", \"date\": \"2026-09-21\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-22T23:59:59+00:00\", \"date\": \"2026-09-22\"}\n{\"close\": 20.030000686645508, \"conservative_available_at\": \"2026-09-23T23:59:59+00:00\", \"date\": \"2026-09-23\"}\n{\"close\": 20.079999923706055, \"conservative_available_at\": \"2026-09-25T23:59:59+00:00\", \"date\": \"2026-09-25\"}"
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-07",
+        "raw_bundle_sha256": "d7094f1e131780854b1df82c81feb62c181a0ee712518c1a8dc4a960ef766b83",
+        "saved_excerpt_sha256": "2b9e19e7fae76b55e4f3f3d7499d425d536eec6131f72f6b108574b82849df7b",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-08",
+      "question_id": "43911",
+      "domain": "trade",
+      "bundle": {
+        "request": {
+          "question": "Will the US and India finalise a new bilateral trade agreement before August 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. Government officials from both countries must officially announce the trade agreement.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://timesofindia.indiatimes.com/business/india-business/we-literally-have-the-paper-us-says-india-trade-deal-could-be-signed-in-months/articleshow/132557274.cms": {
+            "content": "A long-awaited India-US trade agreement could be signed within the next three to four months, with negotiations between the two countries now virtually complete, a senior US official said on Wednesday.\nSpeaking on the sidelines of the Asean Foreign Ministers' meeting in Manila, the official said the text of the agreement has effectively been finalised and that the remaining delay is linked to ongoing US trade investigations rather than unresolved issues between Washington and New Delhi.\n\"The deal... is there. We literally have the paper,\" the official told Reuters on condition of anonymity.\nAsked when the agreement could be concluded, the official said: \"Maybe another three, four months.\"\nSection 301 probes remain the final hurdle\nAccording to Reuters, the key obstacle to signing the agreement is Washington's completion of its ongoing Section 301 trade investigations, which examine alleged unfair trade practices and empower the US government to impose tariffs or other retaliatory measures.\nThe official said one of the Section 301 investigations, covering around 60 countries, is expected to conclude this week or next.\n\"Once that and other ongoing investigations are completed, we'll start seeing progress, not just in India but in other places,\" the official said, as quoted by Reuters.\nThe official stressed that the bilateral trade agreement itself is nearly complete and that the remaining delay is procedural rather than the result of differences between the two countries.\nIndia and the US have been negotiating a bilateral trade agreement aimed at expanding market access, lowering trade barriers and deepening economic ties.\nTariffs and pharma exports remain key concerns\nThe comments come even as trade tensions continue over separate US tariff measures.\nWashington has already proposed new tariffs of up to 12.5% on dozens of countries, including India, over allegations that they failed to curb trade in goods produced using forced labour.\nThe proposal is linked to the ongoing Section 301 investigations and has not yet been finalised.\nSeparately, US President Donald Trump announced on Tuesday that generic medicines imported into the United States will remain exempt from tariffs for two years beginning August 1.\nAfter that period, such imports would face tariffs of 100% for one year and 200% thereafter.\nThe move could significantly affect India's pharmaceutical sector as New Delhi is the most exposed among generic drug exporters.\nThe United States accounted for nearly $9.7 billion, or about 38%, of India's total pharmaceutical exports worth $25.8 billion in 2025.\nFramework agreement already ready\nThe latest timeline broadly aligns with statements made by Indian officials in recent weeks.\nEarlier this month, an Indian official quoted by news agency PTI had said the framework agreement between the two countries was ready and awaiting signing \"at the right time\", while negotiations on the broader Bilateral Trade Agreement (BTA) were progressing smoothly.\nThe official had also said both sides clearly understood the contents of the framework agreement and the issues being negotiated under the wider BTA, adding that there were no major differences holding up the talks.\nThe report also noted that India is seeking a tariff structure under the proposed agreement that would give it a comparative advantage over competing exporting nations while securing better market access for Indian businesses."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-08",
+        "raw_bundle_sha256": "4669e520a893be5e9ab257f0c2dca6ee18792a939fedd30e9144148fcf92613d",
+        "saved_excerpt_sha256": "ce4b62614a7c3efb3b90b0740d646753e2e38d6cca9c674466bd38caf17d77c3",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-09",
+      "question_id": "40967",
+      "domain": "politics",
+      "bundle": {
+        "request": {
+          "question": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.theguardian.com/politics/2026/may/09/british-leader-keir-starmer-under-pressure-after-heavy-election-losses": {
+            "content": "Keir Starmer, the British prime minister, is facing increasing pressure to set a date for his departure after elections across much of the country resulted in massive losses for his ruling Labour party.\nWith the bulk of results now counted after voting on Thursday, [Labour](https://www.theguardian.com/politics/labour) had lost more than 1,400 representatives from English councils, the local government structures that deliver many neighbourhood services.\nStarmer’s party also crashed to [defeat in the election for the devolved parliament of Wales](https://www.theguardian.com/uk-news/2026/may/08/plaid-cymru-biggest-party-wales-senedd-labour-reform), where it had dominated the country’s politics for a century, and [went backwards in representation in the Scottish parliament](https://www.theguardian.com/politics/2026/may/09/starmers-unpopularity-was-insurmountable-for-scottish-labour-and-a-boon-for-reform).\nAdding to the panic in Labour, the party lost to a series of challengers, including the rightwing populist Reform UK party, the leftwing Greens, and pro-independence nationalists in Wales and Scotland.\nThe elections, the biggest since Starmer won power in mid-2024, showed how the UK’s traditional two-party system of Labour and the Conservatives has been smashed, with Reform taking the most votes, and the Greens, Conservatives, Labour and the centrist Liberal Democrats bunched up behind.\nWhile Starmer does not have to face an election to the national parliament in Westminster for three years, increasing numbers of his MPs want him to announce a timetable for his departure, believing he is [too politically damaged](https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll) to turn things around.\nSpeaking on Saturday morning, Debbie Abrahams, the MP for Oldham East and Saddleworth, an area in the north of England that used to be solidly Labour but has increasingly turned to Reform, said Starmer must “put the country first”.\nShe said: “We have to recognise the dangers that we’re in now, that on this trajectory it doesn’t look good.” Asked how quickly Starmer should go, she said: “I think it is a matter of months.”\nFor now, however, Starmer has the backing of his senior ministers, at least in public, including the two routinely named as likely challengers: Wes Streeting, the health minister, and Angela Rayner, who was deputy prime minister until last year.\nComplicating matters for any plotters is that the person viewed by many in Labour as the best potential replacement for Starmer, Andy Burnham, is not in parliament. He is the mayor of Greater Manchester and could only return to the House of Commons if another MP stood down and he fought the election to replace them.\nStarmer has vowed to fight on. In [an opinion article](https://www.theguardian.com/commentisfree/2026/may/08/election-results-left-right-uk-keir-starmer) for the Guardian on Saturday, the prime minister said he accepted the results were “very tough”, and that lessons needed to be learned.\nBut he rejected the argument from some MPs that to recover, Labour must do more to bring back left-leaning voters who have shifted their allegiance to the Greens. He wrote: “While we must respond to the message that voters have sent us, that doesn’t mean tacking right or left. It means bringing together a broad political movement.”\nThere is a consensus, even among his closest allies, that while Starmer has had some policy successes, and has dealt adeptly with Donald Trump and the wider international situation, his government has made too many missteps and U-turns.\nMore broadly, many in Labour worry that Starmer is unable to properly challenge either Reform UK, led by Nigel Farage, the politician best known for pushing the UK to vote to leave the European Union in 2016, or the Greens, who have surged in the polls under the leadership of the self-styled “eco-populist” Zack Polanski.\nHowever others in the party argue that changing prime ministers mid-government annoys voters just as much. From 2016 to 2022, the then-ruling Conservatives switched prime ministers four times, and were heavily punished by the electorate at the next election.\nUnder their new leader, Kemi Badenoch, the [Conservatives fared badly](https://www.theguardian.com/politics/2026/may/08/badenoch-claims-tories-coming-back-despite-widespread-losses-in-local-elections) in Thursday’s voting, losing more than 500 councillors and giving ground in Scotland and Wales."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-09",
+        "raw_bundle_sha256": "ab4ca110dc1fea165da4ec91877b08229b433028d76642e528f9245f8266a2fd",
+        "saved_excerpt_sha256": "30205e5b0c89ebdcd6e62dacbd4b3843cbd4c3319b043dfdcc6c0a669c36583a",
+        "original_capture_offset": 0
+      }
+    },
+    {
+      "id": "unseen-10",
+      "question_id": "44801",
+      "domain": "fuel_prices",
+      "bundle": {
+        "request": {
+          "question": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+          "resolution_criteria": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://newsroom.aaa.com/2026/10/national-average-dips-following-record-setting-september": {
+            "content": "WASHINGTON, DC (October 1, 2026) – The national average for a gallon of regular gasoline dropped nearly 7 cents from last week to $4.41. This follows a record-setting September at the pump. The monthly average was $4.33, 50 cents higher than the previous September record of $3.83 set in 2023. Crude oil prices have dipped back into the $90 per barrel range, lowering the national average, but overall gas prices remain the highest they’ve ever been for this time of year.\nThe national average per kilowatt hour of electricity at a public EV charging station stayed the same this past week at 42 cents.\nFor the complete fuel report, including the latest EIA data, state gas and EV charging price trends, and oil market dynamics, please visit [AAA Fuel Site](https://gasprices.aaa.com/news/)."
+          }
+        }
+      },
+      "provenance": {
+        "prior_manifest_case": "unseen-10",
+        "raw_bundle_sha256": "3c51ecb0f6f450be19fd012b548952406a648c81185b32e511de221d5a7f2122",
+        "saved_excerpt_sha256": "2134a6fc223be736cedad1ae0c5b3642c5c2a28b96b28fa7205fa15fd40c0439",
+        "original_capture_offset": 0
+      }
+    }
+  ]
+}
