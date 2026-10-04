@@ -228,3 +228,50 @@ source content or original artifact and consumes zero additional requests. The
 three-case manifest still pins the actual tested implementation; it is not
 silently repinned to this later change. Any further live experiment needs a new
 freeze and the latest cumulative state, not the original parent allowances.
+
+## Provenance review V3 (development only)
+
+`supplement/acquisition_provenance.py` separates model-declared `source_fact`,
+`rule_constant`, `derived`, `inference`, and `unknown`. Explicit source facts
+require a uniquely aligned original passage witness; rule constants require a
+rule witness instead of a page citation. Derived values and interval inferences
+retain premise references but cannot become direct source observations. Invalid
+rows are quarantined independently, with their original content retained.
+
+Coverage describes field evidence, rule definitions, interpretations, and gaps.
+Every compound condition remains `unverified`: literal entity/value matching
+does not establish event stage, time coverage, exceptions or the whole condition.
+Values absent from a witness remain source interpretations rather than being
+silently normalized into literal observations. Classification and relevance are
+still model claims. An incorrect source-fact label can remain a semantic error
+even when its quotation binds correctly; this requires independent audit.
+
+Recorded interpretations go to analysis, without an unlimited acquisition retry
+loop. An explicit unknown or invalid row remains a gap. Original source bodies,
+background records and counterevidence are retained. The existing production
+pipeline and frozen V1/V2 implementations are unchanged.
+
+### Validation sequence
+
+1. Run provenance counterfactuals and existing compatibility suites. They cover
+   rule/source attribution, interval silence, compound conditions, Close versus
+   Adjusted Close, negative/background retention, changed captures, malformed
+   rows, and cumulative budget preservation. These are engineering checks,
+   not model-quality measurements.
+2. The frozen `ACQUISITION_PROVENANCE_PAIR2.json` compares two repaired cases
+   using the same automatically generated V2 needs and identical reading packet.
+   V2 and V3 each get one review call; order is counterbalanced. Model, fallback,
+   output and reasoning limits stay fixed. No additional planning, discovery,
+   capture, or forecast calls occur. Inherit run `37220371858` and its 16 consumed
+   calls; add at most four logical/eight physical attempts within the original
+   cumulative 20/30 limits. Original parent records must match exact hashes.
+3. Audit original replies against the preregistered checks, not just the new
+   labels or Actions status. Count incorrect provenance, unsupported interval
+   claims, incorrect measure equivalences, lost useful evidence, format failures,
+   and actual attempts/tokens. Two repaired cases do not prove generalization.
+4. Before rollout, freeze ten unseen questions stratified by domain and document
+   format. Independently record expected material requirements and source facts;
+   compare both versions on identical texts under a fixed model/budget, with
+   version-hidden audit. Do not expand if useful evidence is lost or condition
+   claims remain unsupported. Full rule-plan completeness and OR/exclusion
+   extraction need a separate assessment, since the paired review freezes plans.

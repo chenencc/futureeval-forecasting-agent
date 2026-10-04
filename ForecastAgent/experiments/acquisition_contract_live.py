@@ -27,13 +27,18 @@ def planning_payload(payload):
     return result
 
 
-def run(output, key, manifest=MANIFEST, *, ids_pilot=False, parent=None):
+def run(output, key, manifest=MANIFEST, *, ids_pilot=False, provenance_pair=False, parent=None):
     from ForecastAgent.providers.model import ask_model
     data = load(manifest)
     implementation = ac
+    if provenance_pair:
+        ids_pilot = True
     if ids_pilot:
         from ForecastAgent.supplement import acquisition_ids
         implementation = acquisition_ids
+    if provenance_pair:
+        from ForecastAgent.experiments import acquisition_provenance_pair
+        implementation = acquisition_provenance_pair
     if os.environ.get('FORECAST_MODEL') != MODEL or os.environ.get('FORECAST_MODEL_FALLBACK_SUPER') != '0':
         raise ValueError('fixed_super_without_fallback_required')
     for filename, expected in data['frozen_code_sha256'].items():
@@ -65,7 +70,7 @@ def run(output, key, manifest=MANIFEST, *, ids_pilot=False, parent=None):
     identity = {'schema': 'acquisition-contract-live-v1', 'model': MODEL, 'limits': LIMITS,
         'manifest_sha256': hashlib.sha256(Path(manifest).read_bytes()).hexdigest(),
         'frozen_contract': data['frozen_code_sha256'], 'scope': data['scope']}
-    identity['profile'] = 'ids_v2' if ids_pilot else 'offsets_v1'
+    identity['profile'] = 'provenance_pair' if provenance_pair else 'ids_v2' if ids_pilot else 'offsets_v1'
     save(output / 'identity.json', identity)
     state = prior if prior is not None else {'decisions': [], 'attempts': [], 'cases': [], 'blocked': False}
     state['blocked'] = False
@@ -134,7 +139,7 @@ def run(output, key, manifest=MANIFEST, *, ids_pilot=False, parent=None):
         save(output / 'state.json', state)
 
         def checkpoint(value):
-            filename = f"{'ids-' if ids_pilot else ''}{case['id']}-{value['phase']}.json"
+            filename = f"{'provenance-' if provenance_pair else 'ids-' if ids_pilot else ''}{case['id']}-{value['phase']}.json"
             save(output / filename, value)
             row['checkpoints'].append(filename)
             save(output / 'state.json', state)
@@ -144,7 +149,7 @@ def run(output, key, manifest=MANIFEST, *, ids_pilot=False, parent=None):
             if not ids_pilot:
                 kwargs['remaining'] = {}
             result = implementation.agent_review(case['bundle'], execute, checkpoint, **kwargs)
-            filename = f"{'ids-' if ids_pilot else ''}{case['id']}-ledger.json"
+            filename = f"{'provenance-' if provenance_pair else 'ids-' if ids_pilot else ''}{case['id']}-ledger.json"
             save(output / filename, result)
             status = result.get('application_status', 'completed' if result['requirements']['needs'] else 'failed_requirements')
             row.update(status=status, ledger_file=filename,
@@ -180,10 +185,13 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', required=True)
     p.add_argument('--ids-pilot', action='store_true')
+    p.add_argument('--provenance-pair', action='store_true')
     p.add_argument('--parent')
     args = p.parse_args()
-    manifest = MANIFEST.with_name('ACQUISITION_IDS_PILOT3.json') if args.ids_pilot else MANIFEST
-    report = run(args.output, os.environ['OPENROUTER_API_KEY'], manifest, ids_pilot=args.ids_pilot, parent=args.parent)
+    manifest = (MANIFEST.with_name('ACQUISITION_PROVENANCE_PAIR2.json') if args.provenance_pair else
+                MANIFEST.with_name('ACQUISITION_IDS_PILOT3.json') if args.ids_pilot else MANIFEST)
+    report = run(args.output, os.environ['OPENROUTER_API_KEY'], manifest, ids_pilot=args.ids_pilot,
+                 provenance_pair=args.provenance_pair, parent=args.parent)
     print(json.dumps({k: report[k] for k in ('blocked', 'logical_decisions', 'actual_http_attempts', 'known_tokens')}))
     if report['blocked'] or not report['business_gate_passed']:
         raise SystemExit(1)
