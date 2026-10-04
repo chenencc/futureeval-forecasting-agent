@@ -279,6 +279,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         except Exception as exc:
             state['material_agent_stopped'] = True
             state['material_agent_error'] = type(exc).__name__
+            state['material_agent_error_code'] = getattr(exc,'code','invalid_binding_or_transport')
             if state.get('material_reviews'):
                 state['material_reviews'][-1].update(status='invalid_or_failed', error=type(exc).__name__)
             # Incomplete review never closes material needs or invents bindings.
@@ -488,6 +489,7 @@ def _run(bundle, folder, *, prior, network, search, caps, max_link_depth, materi
         ledger=need_ledger.build(overlay,state,usage(bundle,prior,state),caps)
         overlay['material_need_ledger']=ledger
         reason=('provider_blocked' if state.get('provider_blocked') else
+                'material_review_failed' if state.get('material_agent_stopped') else
                 'discovery_capacity_exhausted' if all(usage(bundle,prior,state)[k]>=caps[k] for k in ('tavily','exa')) else
                 'source_capacity_exhausted' if usage(bundle,prior,state)['http']>=caps['http'] else
                 'offline_review' if not network else 'gap_search_unavailable' if not search else 'bounded_frontier_processed')

@@ -1,5 +1,6 @@
 """Offline regression gates for generic material acquisition and safe handoff."""
 import copy
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -160,6 +161,57 @@ class MaterialFitTests(unittest.TestCase):
             self.assertEqual(len(state['material_model_attempts']),1)
             self.assertTrue(state['material_model_attempts'][0]['usage_unknown'])
             self.assertEqual(state['material_reviews'][0]['status'],'failed')
+
+    def compact_reply(self,payload):
+        p=next(p for p in payload['passages'] if p['url'].endswith('/launch'))
+        return {'bindings':[{'need_id':'access','passage_id':p['passage_id'],
+                'axes':{a:True for a in material_review.AXES}}],
+                'priority_source_ids':[],'deferred_source_ids':[],'next_search':None}
+
+    def test_compact_passage_selection_binds_saved_text_without_model_copy(self):
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        args=self.compact_reply(payload)
+        message={'tool_calls':[{'function':{'name':'review_material','arguments':json.dumps(args)}}]}
+        result=material_review.bind(b,payload,material_review.decode(message,payload,'tool_calls'))
+        row=need_ledger.build(b,{'material_reviews':[{'result':result}]})['needs'][0]
+        self.assertTrue(row['target_material_captured'])
+        selected=next(p for p in payload['passages'] if p['passage_id']==args['bindings'][0]['passage_id'])
+        self.assertEqual(row['material_bindings'][0]['body_sha256'],selected['body_sha256'])
+
+    def test_complete_json_fallback_uses_identical_binding_checks(self):
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        result=material_review.decode({'content':json.dumps(self.compact_reply(payload))},payload,'stop')
+        self.assertTrue(material_review.bind(b,payload,result)['bindings'])
+        args=self.compact_reply(payload);args['bindings'][0]['passage_id']='P-invented'
+        with self.assertRaisesRegex(material_review.ReviewError,'unknown_or_invalid_reference'):
+            material_review.decode({'content':json.dumps(args)},payload,'stop')
+
+    def test_truncated_reply_is_never_salvaged_or_counted_as_material_absence(self):
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        with self.assertRaisesRegex(material_review.ReviewError,'output_truncated'):
+            material_review.decode({'content':json.dumps(self.compact_reply(payload))},payload,'length')
+        ledger=need_ledger.build(b,{'material_reviews':[{'status':'failed','error_code':'output_truncated'}]})
+        stop=need_ledger.termination(ledger,reason='material_review_failed',search_available=True)
+        self.assertEqual(stop['acquisition_outcome'],'review_incomplete')
+        self.assertEqual(stop['review_errors'],['output_truncated'])
+
+    def test_generation_profile_reserves_space_and_transmits_reasoning_cap(self):
+        b,url,text=self.notice();payload=material_review.packet(b,need_ledger.build(b),[])
+        def model(messages,key,**kwargs):
+            self.assertEqual(kwargs['reasoning'],{'max_tokens':768})
+            self.assertEqual(kwargs['max_output_tokens'],4096)
+            observer=kwargs['observer'];record={'status':'reserved'}
+            token=observer('reserve',record)
+            message={'tool_calls':[{'function':{'name':'review_material','arguments':json.dumps(self.compact_reply(payload))}}]}
+            record.update(status='received',response={'choices':[{'message':message,'finish_reason':'tool_calls'}],
+                'usage':{'completion_tokens':250,'completion_tokens_details':{'reasoning_tokens':40}}})
+            observer('complete',record,token)
+            return message
+        with tempfile.TemporaryDirectory() as tmp,patch('ForecastAgent.providers.model.ask_model',side_effect=model):
+            state={};result=material_review.callback('dummy',b)(payload,state,tmp)
+            self.assertTrue(material_review.bind(b,payload,result)['bindings'])
+            self.assertEqual(len(state['material_model_attempts']),1)
+            self.assertEqual(state['material_model_attempts'][0]['finish_reason'],'tool_calls')
 
 
 if __name__=='__main__':unittest.main()

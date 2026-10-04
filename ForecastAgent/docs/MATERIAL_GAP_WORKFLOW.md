@@ -92,6 +92,31 @@ Inventory fingerprints prevent repeat reviews on resume. Invalid decisions stop
 the review adapter and leave gaps open; bounded program discovery can continue.
 Tool descriptions, role enums and execution now share `runtime/search_contract.py`.
 
+## Review transport compatibility
+
+Material review uses a compact function contract: existing need IDs, saved
+passage IDs, four fit axes, source IDs and at most one bounded query. The model
+does not reproduce page quotations or long URLs. The program resolves IDs to
+delivered windows, rechecks body hashes and binds exact saved text. Six bindings
+and six source selections per batch bound visible output size.
+
+The generation profile is 4,096 total completion tokens with an explicit
+768-token reasoning budget. OpenRouter's public model directory reported
+`supports_max_tokens: true` for the authorized Ultra and Super free models on
+2026-10-04. This is request configuration, not proof that every provider honors
+the cap; audit actual `completion_tokens_details.reasoning_tokens` and response
+finish reasons during live acceptance. Excluding reasoning text is not a budget
+limit and must not be used as a substitute.
+
+Native function arguments are preferred. A complete JSON object in `content`
+may use the identical ID and binding validation; prose, unknown IDs, incomplete
+JSON and any `finish_reason: length` are rejected. Truncation is recorded as
+`output_truncated`, distinct from a missing document. `review_incomplete` and
+`critical_unverified_need_ids` expose unresolved fit. The legacy
+`critical_unlocated_need_ids` field remains for compatibility and means
+unverified fit, not confirmed document absence. Failed calls remain consumed;
+compatibility repair never restarts search or model allowances.
+
 Missing credentials disable that channel. HTTP 401/402/403/429 discovery failures
 stop further gap discovery and preserve state; they do not trigger a second
 provider to bypass an account failure. Failed and interrupted reservations count

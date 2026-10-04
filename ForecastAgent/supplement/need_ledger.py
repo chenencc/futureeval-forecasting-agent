@@ -133,6 +133,8 @@ def build(bundle, journal=None, usage=None, caps=None):
                      'next_action':None if target_captured else 'review_candidate_fit' if candidates else 'discover_missing_document_family',
                      'semantic_verified':False})
     return {'schema':PROTOCOL, 'needs':rows, 'usage':usage, 'caps':caps,
+            'review_errors':[r.get('error_code',r.get('error','unknown_review_failure'))
+                for r in (journal or {}).get('material_reviews',[]) if r.get('status') in {'failed','invalid_or_failed','reserved'}],
             'candidate_coverage_only':True, 'semantic_completeness_verified':False}
 
 
@@ -153,7 +155,11 @@ def termination(ledger, *, reason, search_available):
     pending = [n['id'] for n in ledger['needs'] if n['priority']=='critical' and not n['target_material_captured']]
     complete = bool(ledger['needs']) and not pending
     return {'reason':reason, 'critical_unlocated_need_ids':pending,
+            'critical_unverified_need_ids':pending,
+            'review_errors':ledger.get('review_errors',[]),
+            'legacy_unlocated_field_means_unverified':True,
             'acquisition_outcome':'materials_ready' if complete else
+                'review_incomplete' if ledger.get('review_errors') or reason=='material_review_failed' else
                 'budget_exhausted' if 'capacity_exhausted' in reason else
                 'source_unreadable' if any(n['status']=='read_failed' for n in ledger['needs'] if n['id'] in pending) else 'material_unlocated',
             'target_material_need_ids':[n['id'] for n in ledger['needs'] if n['target_material_captured']],
