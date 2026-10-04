@@ -282,3 +282,32 @@ navigation, event resolution or leak-free historical forecasting. The unchanged
 runner retains its old diagnostic `scope` string; the held-out manifest and audit
 supply the correct scope without altering the frozen implementation. Failures
 must remain in the first-pass report; any subsequent repair needs a new cohort.
+
+## Frozen V2 versus indexed V3 unseen-material comparison
+
+`MATERIAL_FIELD_PAIRED_UNSEEN10.json` freezes ten distinct question excerpts
+excluded from all previous material experiment manifests. The five usable and
+five unsuitable records cover defense, AI/music charts, politics, sport, papal
+travel, energy infrastructure, cybersecurity, financial JSON and fuel/trade news.
+Labels, original full-body hashes, exact window offsets and publisher requirements
+are committed before provider calls. Existing historical information is not a
+leak-free forecasting dataset; the target is document material fit only.
+
+`field_paired_unseen.py` verifies the untouched V2/V3 implementation file hashes
+from 9e82ab2 and extracts their existing literal prompts. Both arms receive the
+same exact raw excerpt and metadata, including required-field descriptions and
+indexed original ranges. This enriches V2's input relative to its previous run;
+it is a conservative shared-input baseline. Native output ceilings remain 1800
+for V2 and 4096 for V3, with fixed Super and 512 reasoning tokens. Alternate the
+arm order across examples. Each arm has ten logical decisions and fifteen HTTP
+attempts; the joint physical limit is thirty. Capacity is reserved before HTTP,
+provider failures stop the trial, and existing output cannot be silently reset.
+
+The uploaded archive includes original provider requests/responses, state,
+identity, a version-masked review packet and its separate mapping. Output shapes
+and issue descriptions may reveal the underlying version despite the mask;
+this is not an independent double-blind human evaluation. Preserve the first
+pass, including truncations, unknowns and missing decisions. Compare false
+acceptance, usable-material false rejection, uncertainty and actual usage. The
+preregistered safety requirement is no new false acceptance and no worse recall
+of usable material. Successful completion never automatically promotes production.
