@@ -2,7 +2,7 @@
   "schema_version": 1,
   "release": "1.0.1",
   "release_commit": "c9bfab44a670f4307ebc2330866479c82aec71ef",
-  "generated_at": "2026-10-04T03:52:42.497967+00:00",
+  "generated_at": "2026-10-04T04:06:14.397054+00:00",
   "mode": "archived_preview",
   "notice": "Release 1.0.1 presentation contract. Archived trial records are not live competition status.",
   "tasks": [
@@ -396,6 +396,902 @@
         "acquisition_http_attempts": 8,
         "search_attempts": 4,
         "fetch_attempts": 4,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "40967",
+      "title": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+      "type": "binary",
+      "created_at": "2026-10-03T05:47:46.524391+00:00",
+      "rules": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+      "fine_print": "",
+      "run_id": "37106094306",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37106094306",
+      "question_url": "https://www.metaculus.com/questions/40967/",
+      "input_sha256": "01c84ac1aa99614b383d454f7bff39ad7222853fdf1c49bdee4efa98099e97a1",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 8
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 3
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 8
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 2
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "pm_resignation",
+          "condition": "Keir Starmer formally resigns as Prime Minister",
+          "priority": "critical",
+          "query": "Keir Starmer resignation Prime Minister 2026 site:gov.uk OR site:parliament.uk"
+        },
+        {
+          "id": "vote_no_confidence",
+          "condition": "Vote of no confidence in Starmer government passes",
+          "priority": "critical",
+          "query": "vote no confidence Starmer government 2026 Hansard"
+        },
+        {
+          "id": "leadership_contest",
+          "condition": "Labour Party leadership contest triggered and new leader elected",
+          "priority": "critical",
+          "query": "Labour Party leadership election 2026 Starmer successor"
+        },
+        {
+          "id": "general_election",
+          "condition": "Early general election called and Labour loses",
+          "priority": "critical",
+          "query": "general election 2026 UK dissolution parliament Starmer"
+        },
+        {
+          "id": "health_incapacity",
+          "condition": "Starmer incapacitated or dies in office",
+          "priority": "useful",
+          "query": "Prime Minister health update Starmer 2026 official"
+        },
+        {
+          "id": "local_elections_2026",
+          "condition": "2026 UK local elections results triggering leadership pressure",
+          "priority": "useful",
+          "query": "2026 United Kingdom local elections results Labour Starmer leadership"
+        },
+        {
+          "id": "polling_trend",
+          "condition": "Sustained polling collapse indicating leadership untenability",
+          "priority": "useful",
+          "query": "Starmer approval rating polling 2026 YouGov Ipsos Opinium"
+        },
+        {
+          "id": "cabinet_resignations",
+          "condition": "Mass cabinet resignations forcing PM departure",
+          "priority": "useful",
+          "query": "cabinet resignation Starmer government 2026 site:gov.uk"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": "Keir Starmer Prime Minister resignation 2026 site:gov.uk OR site:parliament.uk OR site:number10.gov.uk",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://petition.parliament.uk/petitions?page=16&q=general+elections",
+              "title": "View all petitions - Petitions",
+              "snippet": "## Introduce a Citizen-Initiated Referendum to Trigger a General Election.\n\n## Let the public trigger a general election when confidence is lost\n\n## General election 🗳️\n\n## No confidence in present government, call a new General Election\n\n## Stop all postal voting in council and General elections\n\n## PLEASE make Keir Starmer resign. He is a disgrace to the UK.\n\n## Implement compulsory voting in Ge"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=asc&page=491&sort=closing",
+              "title": "View all petitions - Petitions - UK Parliament",
+              "snippet": "the Prime Minister has resigned it is time for a General Election. Keir Starmer has resigned. resigned the people should have an election for who is next PM"
+            },
+            {
+              "url": "https://lordslibrary.parliament.uk/house-of-lords-appointments-commission-role-and-powers",
+              "title": "House of Lords Appointments Commission: Role and powers",
+              "snippet": "In June 2026, the then prime minister, Sir Keir Starmer, issued a statement specifying these appointments are made “based on their public service”"
+            },
+            {
+              "url": "https://hansard.parliament.uk/Lords/2026-09-17/debates/BDD13DB4-5EF1-4A8C-A685-C00691FDC368/details",
+              "title": "Defence Funding - Hansard - UK Parliament",
+              "snippet": "Sir Keir Starmer could not persuade his Back-Benchers to reduce the welfare bill by £5 billion per annum. this Prime Minister will also continue to put social"
+            }
+          ]
+        },
+        {
+          "channel": "Tavily basic",
+          "query": "Keir Starmer resignation OR \"vote of no confidence\" OR leadership contest site:gov.uk OR site:parliament.uk 2026",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://petition.parliament.uk/petitions?page=51&sort=title&state=rejected",
+              "title": "View all petitions - Petitions - UK Parliament",
+              "snippet": "Prime Minister Keir Starmer to resign. Status: Rejected. Rejected on: 1 June 2026. Introduce a public right to trigger a national vote of no confidence."
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?amp%3Bamp%3Bsort=title&amp%3Border=asc&amp%3Bpage=1&amp%3Bsort=title&order=asc&page=559&sort=count",
+              "title": "View all petitions - Petitions - UK Parliament",
+              "snippet": "10 June 2026. Call for Keir Starmer to resign and appoint Larry the Cat ... Introduce a public right to trigger a national vote of no confidence. Status"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=asc&pag+e=4&page=172&sort=title&state=rejected",
+              "title": "View all petitions - Petitions",
+              "snippet": "## Make the Palestinian Nakba part of the Key Stage 3 history curriculum\n\n## We must leave the ECHR now\n\n## Introduce Digital ID Cards\n\n## Calling for a general election again!!!? Can’t ignore it twice Starmer.\n\n## Allow the public to trigger a vote of no confidence in the Government\n\n## Free bus transport to and from school\n\n## Make Welsh Baccalaureate optional for A-level students in Wales\n\n## K"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=asc&page=50&sort=created_at&state=rejected",
+              "title": "Rejected petitions - View all petitions - Petitions",
+              "snippet": "Support Prime Minister Sir Keir Starmer and Give the Government Time to Deliver. Status: Rejected. Rejected on: 15 June 2026"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?page=171&sort=title&state=rejected",
+              "title": "View all petitions - Petitions",
+              "snippet": "## Make Creed play at Download Festival 2026\n\n## Government to support the cost of gluten free foods for diagnosed coeliacs\n\n## Remove kier stamer from office before he ruines the uk\n\n## To stop or reduce cat predation in the UK\n\n## Raise the minimum wage to reflect the housing crisis!\n\n## We the people of the United Kingdom reject all forms of Digital ID\n\n## Make Fridays part of the weekend for s"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=descsort%3Dcountstate%3Dopen&page=322",
+              "title": "View all petitions - Petitions - UK Parliament",
+              "snippet": "Debate for a public referendum on a vote of no confidence in this government. ... Proposal to remove from Office The Prime Minister Keir Starmer. Status"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=desc&pag+e=4&page=640&sort=count",
+              "title": "View all petitions - Petitions - UK Parliament",
+              "snippet": "Raise a vote of no confidence of the Government of Keir Starmer. Status: Rejected. Rejected on: 23 January 2025. Lower car insurance for 17-25 year olds. Status"
+            },
+            {
+              "url": "https://petition.parliament.uk/petitions?order=asc&pag+e=4&page=177&sort=title&state=rejected",
+              "title": "Rejected petitions - UK Parliament",
+              "snippet": "no confidence in the current government led by Prime Minister Keir Starmer. Status: Rejected. Rejected on: 7 October 2025. Get rid of the TV license requirement."
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "2026 United Kingdom local elections results Labour Starmer leadership pressure May 2026",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.bbc.co.uk/news/articles/cz62dwe30wdo",
+              "title": "Starmer under pressure, as Labour suffers heavy election losses - BBC News",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/2026/may/09/british-leader-keir-starmer-under-pressure-after-heavy-election-losses",
+              "title": "British leader Keir Starmer under pressure after heavy election losses | Keir Starmer | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bbc.co.uk/news/articles/c5yxr7zng6po",
+              "title": "Many Labour MPs are blaming Starmer for elections body blow - BBC News",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/2026/may/08/labour-disastrous-night-local-elections-keir-starmer-leadership",
+              "title": "Keir Starmer’s leadership on line after Labour’s disastrous election night | Local elections 2026 | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/2026/may/08/labour-reform-uk-england-local-elections-2026-scotland-wales",
+              "title": "Labour losses pile up in England local elections as Reform UK makes gains | May 2026 elections | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/ng-interactive/2026/may/08/2026-elections-mapped-labour-reform-uk-greens-scotland-wales-england-local",
+              "title": "2026 elections mapped: how Labour lost ground in different directions | May 2026 elections | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.independent.co.uk/news/uk/politics/local-elections-results-uk-numbers-labour-reform-b2972977.html",
+              "title": "Local election in numbers: Inside Reform’s back-to-back record results and Labour’s disastrous collapse | The Independent",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/2026/may/08/keir-starmer-local-election-losses-labour",
+              "title": "Starmer vows to fight on as PM despite heavy local election losses for Labour  | Keir Starmer | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll",
+              "title": "Most Labour members think Starmer cannot revive party fortunes, poll finds | May 2026 elections | The Guardian",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.bbc.co.uk/news/articles/c9weye0lz5xo",
+              "title": "Labour's slow-motion election nightmare in Yorkshire - BBC News",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.theguardian.com/politics/2026/may/08/keir-starmer-local-election-losses-labour",
+          "title": "www.theguardian.com",
+          "characters": 5761,
+          "body_sha256": "83e9e880db29cec251e68f81699fb41d4864848407d2aa91e2846ab4f1da137c",
+          "captured_at": null,
+          "excerpt": "Keir Starmer has vowed to fight on as prime minister despite [early results](https://www.theguardian.com/politics/ng-interactive/2026/may/07/local-elections-2026-may-full-results-england-scotland-wales) in local elections showing his party suffering heavy losses, many at the hands of Nigel Farage’s Reform UK.\nStarmer struck a defiant note on Friday morning in [the face of calls from some of his MPs for him to quit](https://www.theguardian.com/politics/2026/may/08/labour-disastrous-night-local-elections-keir-starmer-leadership), insisting he remained as determined as ever to deliver on the promises on which he was elected less than two years ago.\nWith [Labour](https://www.theguardian.com/politics/labour) having lost control of councils in its heartlands across northern England and the Midlands, the prime minister was facing calls to resign from Labour MPs, including the former shadow chancellor John McDonnell and the Hartlepool MP, Jonathan Brash.\nReform’s successes meanwhile look set to confirm its place as England’s most popular party and underline the [decline of the two-party domination](https://www.theguardian.com/politics/2026/may/08/early-england-election-results-make-it-clear-we-are-in-an-era-of-five-party-politics) of British politics.\nStarmer admitted on Friday morning the results were looking bad for his party. “The results are tough, they are very tough, and there’s no sugarcoating it,” he said.\n“We have lost brilliant Labour representatives across the country. These are people who put so much into their communities, so much into our party. And that hurts, and it should hurt, and I take responsibility.”\nBut he added: “I accept that [the results] reflect voters don’t feel that their lives have changed enough or quickly enough, and that’s been going on for a lo",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://www.theguardian.com/politics/2026/may/08/labour-disastrous-night-local-elections-keir-starmer-leadership",
+          "title": "www.theguardian.com",
+          "characters": 4906,
+          "body_sha256": "ee39a9b8cff23af66c92f3bede400df3f57c18791c9b426a0137d2368b363e25",
+          "captured_at": null,
+          "excerpt": "Hartlepool once nearly triggered Keir Starmer’s resignation; local election results overnight mean it may yet do so in the coming days.\nFive years ago, Labour crashed to [a humiliating defeat](https://www.theguardian.com/politics/2021/may/07/hartlepool-byelection-result-labour-starmer-conservatives) in a byelection for the city’s Westminster seat, prompting Starmer to [consider resigning](https://www.theguardian.com/politics/2024/feb/17/keir-starmer-reportedly-wanted-to-quit-after-2021-byelection-defeat) as opposition leader.\nOn Thursday night, the party lost every single council seat it was contesting in the town to [Reform UK](https://www.theguardian.com/politics/brexit-party), putting Starmer’s leadership in question once more.\nThe local Labour MP, Jonathan Brash, [told the Guardian](https://www.theguardian.com/politics/2026/may/08/labour-reform-uk-england-local-elections-2026-scotland-wales) on Thursday night: “I think the very best thing the prime minister could do now is address the nation tomorrow and set out a timetable for his departure.\n“We can then have an orderly transition, one that, by the way, ensures the full breadth of talent within the [Labour](https://www.theguardian.com/politics/labour) party is able to stand should it want to.”\nIn Downing Street, where extra advisers have [reportedly been brought in](https://www.huffingtonpost.co.uk/entry/exclusive-downing-street-to-launch-bid-to-save-starmers-job-after-local-election-disaster_uk_69facb23e4b002c4c4a08a5a) to help the prime minister survive the next few days, officials will be watching carefully to see if others follow Brash’s lead.\nOn Friday morning, most senior Labour MPs were keeping their powder dry after David Lammy, the deputy prime minister, urged colleagues to remain loyal. “You don’t change ",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://www.theguardian.com/politics/2026/may/09/british-leader-keir-starmer-under-pressure-after-heavy-election-losses",
+          "title": "www.theguardian.com",
+          "characters": 4488,
+          "body_sha256": "30205e5b0c89ebdcd6e62dacbd4b3843cbd4c3319b043dfdcc6c0a669c36583a",
+          "captured_at": null,
+          "excerpt": "Keir Starmer, the British prime minister, is facing increasing pressure to set a date for his departure after elections across much of the country resulted in massive losses for his ruling Labour party.\nWith the bulk of results now counted after voting on Thursday, [Labour](https://www.theguardian.com/politics/labour) had lost more than 1,400 representatives from English councils, the local government structures that deliver many neighbourhood services.\nStarmer’s party also crashed to [defeat in the election for the devolved parliament of Wales](https://www.theguardian.com/uk-news/2026/may/08/plaid-cymru-biggest-party-wales-senedd-labour-reform), where it had dominated the country’s politics for a century, and [went backwards in representation in the Scottish parliament](https://www.theguardian.com/politics/2026/may/09/starmers-unpopularity-was-insurmountable-for-scottish-labour-and-a-boon-for-reform).\nAdding to the panic in Labour, the party lost to a series of challengers, including the rightwing populist Reform UK party, the leftwing Greens, and pro-independence nationalists in Wales and Scotland.\nThe elections, the biggest since Starmer won power in mid-2024, showed how the UK’s traditional two-party system of Labour and the Conservatives has been smashed, with Reform taking the most votes, and the Greens, Conservatives, Labour and the centrist Liberal Democrats bunched up behind.\nWhile Starmer does not have to face an election to the national parliament in Westminster for three years, increasing numbers of his MPs want him to announce a timetable for his departure, believing he is [too politically damaged](https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll) to turn things around.\nSpeaking on Saturday morning, Debbie Abr",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll",
+          "title": "www.theguardian.com",
+          "characters": 4685,
+          "body_sha256": "e2d978744ad27e03406c375be38d0b31631280d3fa58008f0a10eca8fdfa554c",
+          "captured_at": null,
+          "excerpt": "The majority of Labour members say they do not believe [Keir Starmer](https://www.theguardian.com/politics/keir-starmer) can turn around the party’s fortunes, while 45% say the prime minister should step down.\nThe mayor of [Greater Manchester](https://www.theguardian.com/uk/greater-manchester), Andy Burnham, was the first preference for 42% of members, who were asked to rank their preferred successor.\nSeveral Labour MPs – especially those who are close to Burnham – have told the Guardian that they would like to [see a timetable for Starmer to stand down](https://www.theguardian.com/politics/2026/may/08/keir-starmer-under-pressure-to-agree-exit-plan-after-election-mauling) in an orderly and dignified way, including allowing the mayor time to seek a parliamentary seat.\nThe poll was conducted just before Thursday’s elections, where Labour was fighting on all fronts, in local elections in England and parliamentary elections in Wales and Scotland. Nigel Farage’s Reform UK won hundreds of seats and control of more councils in England, Labour went backwards in Scotland as the [SNP claimed a historic fifth victory](https://www.theguardian.com/politics/2026/may/08/john-swinney-declares-victory-for-snp-in-holyrood-elections) and [Plaid Cymru ended a century of Labour dominance in Wales](https://www.theguardian.com/uk-news/2026/may/08/plaid-cymru-biggest-party-wales-senedd-labour-reform), unseating the Labour first minister Eluned Morgan.\nIn London, the Greens took several councils across the capital, a [sign of growing progressive disillusionment](https://www.theguardian.com/politics/2026/may/08/greens-unseat-labour-to-win-mayoral-election-in-hackney-zoe-garbett) in Keir Starmer’s party.\nAmong members, the poll found Burnham has a net favourability of 72%, suggesting he would be ",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.bbc.co.uk/news/articles/c9v124znrgmo",
+          "title": "www.bbc.co.uk",
+          "characters": 5427,
+          "body_sha256": "5ffaf1f3e15c6ea2f09302eb08889aa83cec211d4fad159f19548ff238e8bc50",
+          "captured_at": null,
+          "excerpt": "Streeting denies plotting against PM after leadership claims\n- Published\nWes Streeting has said suggestions from the prime minister's allies that he is seeking to challenge for the leadership are \"self-defeating nonsense\" and has urged Sir Keir Starmer to sack whoever is briefing the media.\nOn Tuesday evening, friends of Sir Keir had told several news outlets his job might be under immediate threat and that they were particularly suspicious of Streeting's leadership ambitions.\nSpeaking to the BBC on Wednesday, the health secretary said he could \"not see any circumstances under which I would do that to our prime minister\".\nHe added that briefings to the press against him were \"the worst attack on a faithful since Joe Marler was banished in The Traitors final\".\n\"Someone has definitely been watching too much Celebrity Traitors. They should swap to Countryfile,\" he said.\nStreeting was doing a round of media interviews on a morning with newspaper headlines dominated by the briefings from the prime minister's allies, suggesting a leadership rival could make their move after the Budget in two week's time.\nThe health secretary insisted he was \"not challenging the prime minister\" adding: \"I'm not doing any of the things some silly briefer said overnight.\"\nHe said the culture in No 10 was \"toxic\" and that Lucy Powell, the party's new deputy leader, had been right to call for a change of culture in Downing Street.\n\"I'd like to commend the briefer on at least picking on one of the men in the cabinet instead of the women,\" he added.\nAsked if he should sack those responsible, Streeting said: \"Yes. But he's got to find them first and I wouldn't expect him to waste loads of time on this.\n\"There are people around the prime minister who do not follow his model and style of leadership.\"\nO",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S006",
+          "url": "https://www.bbc.co.uk/news/articles/cz62dwe30wdo",
+          "title": "www.bbc.co.uk",
+          "characters": 8119,
+          "body_sha256": "3abf1422b7cd24bf246de5ca50255478c0bac211721af225a497c8dba38058a8",
+          "captured_at": null,
+          "excerpt": "Starmer under pressure, as Labour suffers heavy election losses\n- Published\nSir Keir Starmer has insisted he will not quit as prime minister and \"plunge the country into chaos\", as Labour reels from significant election losses.\nThe results in England, Scotland and Wales have piled pressure on Sir Keir, with some Labour MPs calling for him to set a timetable for his departure, although his cabinet allies have backed him for now.\nLabour has lost power in Wales, ending its 27-year rule, while the SNP remains the largest party in Scotland.\nReform UK has been the big winner in England, picking up more than 1,400 seats and taking control of councils in areas where Labour and the Conservatives have been historically dominant.\nThe BBC's projected national share (PNS), which is calculated from results in more than 1,000 wards and estimates a general election where people voted along similar lines, makes Reform the largest party, on 26% of the vote share.\nThe PNS puts the Greens in second on 18%, followed by Labour and the Conservatives neck-and-neck in third place on 17% - appearing to confirm the end of the traditional dominance of the big two parties in the UK.\nLabour has lost more than 1,100 English council seats, including in its heartlands across northern England and the Midlands, and faces further difficult results as counting continues throughout Friday.\nThe results are bleak for Labour in Wales, where Plaid Cymru is now the biggest party in the devolved parliament, with Reform as the main opposition.\nMeanwhile in Scotland, the SNP is the largest party in Scotland but fell short of an overall majority.\nLabour, who not so long ago harboured ambitions of toppling the SNP, finished a distant second on 17 seats - tied with Reform, who made their electoral breakthrough in Scot",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S007",
+          "url": "https://www.bbc.co.uk/news/articles/c5yxr7zng6po",
+          "title": "www.bbc.co.uk",
+          "characters": 5454,
+          "body_sha256": "5910db645d6c3a39309310d4b2201e9b11ec516b122c39a167cdeea25f4dd07a",
+          "captured_at": null,
+          "excerpt": "Many Labour MPs are blaming Starmer himself for elections body blow\n- Published\nSurveying the scale of Labour's disastrous elections performance, the number of Labour MPs saying publicly that Sir Keir Starmer should resign or attach a sell-by date to his premiership had passed 20 by late Friday evening.\nLet's see if that is a position that becomes contagious.\nThere are no shortage of Labour MPs who say it is the prime minister himself who was toxic to many voters.\n\"There was one issue on the door and it was Keir. If he leads us into a future election we are dead,\" one Labour MP told the BBC.\nAnother usually loyal Labour MP, in an area that went heavily Reform in Thursday's poll, told us that the reassuring thing was that voters didn't really hate Labour, but \"they did hate Keir\".\nA senior Labour figure said \"everyone in Wales is saying this is all Starmer's fault\".\nBut others do fret about the downsides of a leadership race while the party is in government, and also wonder if it would actually make any difference.\n\"I am still of the view that anyone who takes over will inherit the same problem - an impatient and almost ungovernable country that wants tax cuts and spending increases on nearly everything,\" said another Labour MP.\nMost cabinet ministers have been circling the wagons, taking to the TV studios to reinforce his message that Sir Keir will not be walking away from No 10 and tweeting support for him.\nFor example, Business Secretary Peter Kyle said: \"Reversing these results requires a collective effort, not just blaming the boss.\"\nBut while few MPs are entirely \"blaming the boss\", a significant number think he is part of the problem.\nGiven the level of dismay and frustration, you might assume there would be even more calls for the PM's removal.\nBut Labour politic",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S008",
+          "url": "https://www.bbc.co.uk/news/articles/c9weye0lz5xo",
+          "title": "www.bbc.co.uk",
+          "characters": 5204,
+          "body_sha256": "24958b850e48753764d0f7b00707cf6ebe5c2fb319c290c091d73bb9e535c500",
+          "captured_at": null,
+          "excerpt": "How Reform and Greens took advantage of Labour's slow-motion election nightmare\n- Published\nPolitics has a reputation for being a ruthless and decisive business. Last week's local elections were held and victors quickly crowned, while losers were rapidly dispatched.\nThe past seven days in Yorkshire politics, though, have been a marathon of endurance - not a sprint.\nLast week, Reform UK may have won big majorities in Barnsley, Calderdale and Wakefield, but the political parties in Bradford, Kirklees and Sheffield [have spent this week negotiating coalition deals](https://www.bbc.co.uk/news/articles/clypgm2m83vo). \nMeanwhile in Westminster, Labour has spent an agonising week debating who should lead the party and the country with no end yet in sight.\nSo, a week on, what should we take from this year's local election results in Yorkshire?\nFirst, quick and decisive election nights now appear confined to national general elections.\nIn this year's local ballot, no other region took as long as Yorkshire to tally its council results. From the polls closing at 22:00 BST on Thursday, it would take 42 hours and 29 minutes to count and verify all of the region's votes.\nAll seven councils holding elections this year chose to count from Friday morning, rather than overnight on Thursday, in a bid to cut costs and protect staff welfare.\nThe prolonged count meant that Labour's worst local election performance in the region played out over two days - in an area once considered a stronghold for the party.\nLabour lost 210 councillors - its single biggest loss of elected representatives in the region since the modern system of local government was introduced in 1974.\n\"The Prime Minister rang and asked me what the biggest issue on the doorstep was, and I was quite blunt with him: you are,\" s",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.theguardian.com/politics/2026/may/08/keir-starmer-local-election-losses-labour",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.theguardian.com/politics/2026/may/08/labour-disastrous-night-local-elections-keir-starmer-leadership",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.theguardian.com/politics/2026/may/09/british-leader-keir-starmer-under-pressure-after-heavy-election-losses",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bbc.co.uk/news/articles/c9v124znrgmo",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bbc.co.uk/news/articles/cz62dwe30wdo",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bbc.co.uk/news/articles/c5yxr7zng6po",
+          "status": "completed",
+          "error": ""
+        },
+        {
+          "url": "https://www.bbc.co.uk/news/articles/c9weye0lz5xo",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "probability_yes": 0.02
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "actor_action_target",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0002",
+            "E0009",
+            "E0017",
+            "E0024",
+            "E0033",
+            "E0058"
+          ],
+          "new_chars": 4260,
+          "second_call_required": true,
+          "diagnostics_are_not_facts": true,
+          "thresholds": {
+            "insufficient_probability": 0.4,
+            "conflict_probability": 0.5,
+            "minimum_new_chars": 900,
+            "yes_conflict_probability": 0.65,
+            "condition_refuted_probability": 0.65
+          }
+        },
+        "first_probability_yes": 0.03732688613936196,
+        "gaps": [
+          "time_window",
+          "scope_exceptions",
+          "observation_coverage",
+          "evidence_sufficiency"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 6,
+        "search_attempts": 3,
+        "fetch_attempts": 8,
+        "analysis_http_attempts": null,
+        "tokens": null
+      },
+      "delivery": {
+        "status": "not_recorded",
+        "note": "No submission receipt is present in this exported archive."
+      },
+      "warning": "Historical questions with current-information snapshots. Not a leakage-free forecasting backtest."
+    },
+    {
+      "id": "44358",
+      "title": "Will the Lebanese Armed Forces deploy to the initial two pilot zones in southern Lebanon before September 2026?",
+      "type": "binary",
+      "created_at": "2026-10-03T05:43:21.626249+00:00",
+      "rules": "This question will resolve as **Yes** if the Lebanese Armed Forces have physically deployed military units to the two initial pilot zones specified in the June 26, 2026 Washington trilateral framework agreement for a minimum of seven days before 12:01am ET on September 1, 2026, according to official statements from the United Nations Interim Force in Lebanon (UNIFIL), the Lebanese Armed Forces or credible reporting from Reuters or the Associated Press.",
+      "fine_print": "",
+      "run_id": "37106094306",
+      "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37106094306",
+      "question_url": "https://www.metaculus.com/questions/44358/",
+      "input_sha256": "b0fec03874ff005e0563314881046ba457f5407569f842ef13d38292d7e95c5b",
+      "record_scope": "Historical archived trial; source commit not verified as v1.0.1.",
+      "status": "completed_with_gaps",
+      "stages": [
+        {
+          "id": "rules",
+          "title": "Question & rules",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "plan",
+          "title": "Acquisition plan",
+          "status": "recorded",
+          "count": 7
+        },
+        {
+          "id": "search",
+          "title": "Search & discovery",
+          "status": "recorded",
+          "count": 3
+        },
+        {
+          "id": "read",
+          "title": "Read original sources",
+          "status": "recorded",
+          "count": 5
+        },
+        {
+          "id": "supplement",
+          "title": "Independent supplement",
+          "status": "recorded",
+          "count": 0
+        },
+        {
+          "id": "analysis",
+          "title": "Mercury analysis & rereading",
+          "status": "completed",
+          "count": 2
+        },
+        {
+          "id": "forecast",
+          "title": "Validated forecast",
+          "status": "recorded",
+          "count": 1
+        },
+        {
+          "id": "delivery",
+          "title": "Submission receipt",
+          "status": "not_recorded",
+          "count": 0
+        }
+      ],
+      "plan": [
+        {
+          "id": "need_1",
+          "condition": "Official text of the June 26, 2026 Washington trilateral framework agreement specifying the two initial pilot zones",
+          "priority": "critical",
+          "query": "trilateral framework agreement United States Israel Lebanon June 26 2026 pilot zones southern Lebanon"
+        },
+        {
+          "id": "need_2",
+          "condition": "UNIFIL official statements on LAF deployment to pilot zones between June 26 and September 1, 2026",
+          "priority": "critical",
+          "query": "UNIFIL Lebanese Armed Forces deployment pilot zones southern Lebanon 2026"
+        },
+        {
+          "id": "need_3",
+          "condition": "Lebanese Armed Forces official statements on deployment to pilot zones",
+          "priority": "critical",
+          "query": "Lebanese Armed Forces deployment pilot zones south Lebanon 2026"
+        },
+        {
+          "id": "need_4",
+          "condition": "Reuters reporting on LAF deployment to pilot zones between June 26 and September 1, 2026",
+          "priority": "critical",
+          "query": "Reuters Lebanese Armed Forces deploy pilot zones southern Lebanon 2026"
+        },
+        {
+          "id": "need_5",
+          "condition": "Associated Press reporting on LAF deployment to pilot zones between June 26 and September 1, 2026",
+          "priority": "critical",
+          "query": "Associated Press Lebanese Armed Forces deployment pilot zones Lebanon 2026"
+        },
+        {
+          "id": "need_6",
+          "condition": "Israel Defense Forces withdrawal from the two pilot zones per the agreement",
+          "priority": "useful",
+          "query": "Israel withdraws pilot zones southern Lebanon Lebanese Armed Forces 2026"
+        },
+        {
+          "id": "need_7",
+          "condition": "Hezbollah statements rejecting the framework and implications for LAF deployment",
+          "priority": "useful",
+          "query": "Hezbollah rejects trilateral framework Lebanon pilot zones 2026"
+        }
+      ],
+      "searches": [
+        {
+          "channel": "Tavily basic",
+          "query": "trilateral framework agreement United States Israel Lebanon June 26 2026 pilot zones southern Lebanon",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/secretary-of-state-marco-rubio-with-lebanese-ambassador-to-the-united-states-nada-hamadeh-moawad-and-israeli-ambassador-to-the-united-states-yechiel-leiter-at-a-trilateral-framework-signing-ceremony",
+              "title": "Secretary of State Marco Rubio with Lebanese Ambassador to the United States Nada Hamadeh Moawad and Israeli Ambassador to the United States Yechiel Leiter at a Trilateral Framework Signing Ceremony - United States Department of State",
+              "snippet": "Yechiel Leiter, Israeli Ambassador to the United States\n\nBenjamin Franklin Room\n\nWashington, DC\n\nJune 26, 2026\n\nSECRETARY RUBIO: Thank you. Today is a good day in that we are happy to announce the – a framework agreement between the sovereign Government of Lebanon and of course the Government of Israel, with the mediation and support of the United States of America, that begins to put in place a f"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/the-united-states-israel-and-lebanon-sign-the-trilateral-framework",
+              "title": "The United States, Israel and Lebanon Sign the Trilateral Framework - United States Department of State",
+              "snippet": "Title: The United States, Israel and Lebanon Sign the Trilateral Framework - United States Department of State\n# The United States, Israel and Lebanon Sign the Trilateral Framework. Today’s signing of the Trilateral Framework between Lebanon, Israel, and the United States marks another major milestone in President Trump’s effort to bring lasting peace and stability to the region. Israel and Lebano"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/joint-statement-of-the-united-states-of-america-republic-of-lebanon-and-state-of-israel-on-the-latest-high-level-trilateral-meeting",
+              "title": "Joint Statement of the United States of America, Republic of Lebanon, and State of Israel on the Latest High-Level Trilateral Meeting - United States Department of State",
+              "snippet": "As a result of the U.S.-led negotiations, Israel and Lebanon agreed to the implementation of a ceasefire. The ceasefire is contingent on a complete cessation of Hizbollah fire and the evacuation of all Hizbollah operatives from the South Litani Sector.\n\nThe two sides agreed with the guidance of the United States to swiftly advance the creation of pilot zones in which the Lebanese Armed Forces will"
+            },
+            {
+              "url": "https://www.state.gov/countries-areas/israel",
+              "title": "Israel - United States Department of State",
+              "snippet": "## Highlights\n\nSecretary of State Marco Rubio with Sid Rosenberg of WABC Radio “Sid and Friends in the Morning”\n\nJerusalem, Israel: Jerusalem American International School: 2026 Fact Sheet\n\nIsrael (26-701) – Land Lease and Use Agreement\n\nTrilateral Framework Between the United States of America, the State of Israel, and the Republic of Lebanon [...] Secretary of State Marco Rubio with Lebanese Amb"
+            },
+            {
+              "url": "https://www.state.gov/countries-areas/lebanon",
+              "title": "Lebanon - United States Department of State",
+              "snippet": "Secretary Rubio and Lebanese President Joseph Aoun shake hands; they are flanked by their country flags.\n\nTrilateral Framework Between the United States of America, the State of Israel, and the Republic of Lebanon\n\nSecretary of State Marco Rubio with Lebanese Ambassador to the United States Nada Hamadeh Moawad and Israeli Ambassador to the United States Yechiel Leiter at a Trilateral Framework Sig"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/04/meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+              "title": "Meeting Between the Governments of the United States, Lebanon, and Israel - United States Department of State",
+              "snippet": "April 14, 2026\n\nThe U.S. Department of State convened a trilateral meeting on April 14, 2026, with the participation of Secretary of State Marco Rubio, Counselor Michael Needham, United States Ambassador to Lebanon Issa, Ambassador of Israel to the United States Yechiel Leiter, the Ambassador of Lebanon to the United States Nada Hamadeh Moawad. [...] The United States congratulated the two countri"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/second-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+              "title": "Meetings Between the Governments of the United States, Lebanon, and Israel - United States Department of State",
+              "snippet": "May 15, 2026\n\nOn May 14 and 15, the United States facilitated two days of constructive talks between the State of Israel and the Republic of Lebanon at the Department of State. The two countries agreed upon a framework for negotiations to advance lasting peace between the two countries, full recognition of each other’s sovereignty and territorial integrity, and establishing genuine security along "
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/next-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+              "title": "Next Meeting Between the Governments of the United States, Lebanon, and Israel - United States Department of State",
+              "snippet": "Discussions will build a framework for lasting peace and security arrangements, the full restoration of Lebanese sovereignty throughout its territory, the delineation of borders, and creating concrete pathways for humanitarian relief and reconstruction in Lebanon. Both sides have committed to approaching these talks with their national interests in mind, and the United States will work to reconcil"
+            },
+            {
+              "url": "https://2021-2025.state.gov/historic-agreement-establishing-a-permanent-israel-lebanon-maritime-boundary",
+              "title": "Historic Agreement Establishing a Permanent Israel-Lebanon Maritime Boundary - United States Department of State",
+              "snippet": "This agreement meaningfully demonstrates the U.S. vision for a more secure, integrated, and prosperous Middle East. Equally beneficial to both Israel and Lebanon, it will strengthen the economic and security interests of Israel, while promoting critically needed foreign investment for the Lebanese people as they face a devastating economic crisis. The region and beyond will soon reap the benefit o"
+            },
+            {
+              "url": "https://2009-2017.state.gov/outofdate/bgn/lebanon/149912.htm",
+              "title": "Lebanon (03/22/10)",
+              "snippet": "the border to their Lebanese ally, the South Lebanon Army (SLA) under the leadership of Maj. Sa'ad Haddad, thus informally setting up a 12-mile wide \"security zone\" to protect Israeli territory from cross border attack. [...] The U.S. has neither a bilateral investment treaty (BIT) with Lebanon nor an agreement on the avoidance of double taxation. However, on December 1, 2006, the U.S. signed a Tr"
+            }
+          ]
+        },
+        {
+          "channel": "Tavily basic",
+          "query": "trilateral framework agreement United States Israel Lebanon June 26 2026 pilot zones southern Lebanon",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://www.state.gov/releases/2026/01/joint-statement-on-the-trilateral-meeting-between-the-governments-of-the-united-states-of-america-the-state-of-israel-and-the-syrian-arab-republic/",
+              "title": "Joint Statement on the Trilateral Meeting Between the Governments of the United States of America, the State of Israel, and the Syrian Arab Republic - U.S. Department of State (.gov)",
+              "snippet": "Joint Statement on the Trilateral Meeting Between the Governments of the United States of America, the State of Israel, and the Syrian Arab Republic - United States Department of State. The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/01/joint-statement-on-the-trilateral-meeting-between-the-governments-of-the-united-states-of-america-the-state-of-israel-and-the-syrian-arab-republic",
+              "title": "Joint Statement on the Trilateral Meeting Between the Governments of the United States of America, the State of Israel, and the Syrian Arab Republic - U.S. Department of State (.gov)",
+              "snippet": "Joint Statement on the Trilateral Meeting Between the Governments of the United States of America, the State of Israel, and the Syrian Arab Republic - United States Department of State. The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/department-of-state-charter-flight-departs-middle-east-to-united-states",
+              "title": "Department of State Charter Flight Departs Middle East to United States - U.S. Department of State (.gov)",
+              "snippet": "Department of State Charter Flight Departs Middle East to United States - United States Department of State. An official website of the United States Government Here's how you know. A **.gov** website belongs to an official government organization in the United States. **Secure .gov websites use HTTPS**. About the U.S. Department of State Agency Strategic Plan Foreign Affairs Manual and Handbook D"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/joint-statement-on-irans-missile-and-drone-attacks-in-the-region",
+              "title": "Joint Statement on Iran’s Missile and Drone Attacks in the Region - U.S. Department of State (.gov)",
+              "snippet": "Joint Statement on Iran’s Missile and Drone Attacks in the Region - United States Department of State. An official website of the United States Government Here's how you know. A **.gov** website belongs to an official government organization in the United States. _The text of the following statement was released by the Governments of the United States of America and Bahrain, Jordan, Kuwait, Qatar,"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/02/secretary-rubios-travel-to-israel",
+              "title": "Secretary Rubio’s Travel to Israel - U.S. Department of State (.gov)",
+              "snippet": "Secretary Rubio’s Travel to Israel - United States Department of State. The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications network. The technical storage or access is str"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/01/under-secretary-helbergs-travel-to-the-middle-east",
+              "title": "Under Secretary Helberg’s Travel to the Middle East - U.S. Department of State (.gov)",
+              "snippet": "Under Secretary Helberg’s Travel to the Middle East - United States Department of State. The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications network. An official website o"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/01/united-states-welcomes-united-arab-emirates-signing-of-pax-silica-declaration",
+              "title": "United States Welcomes United Arab Emirates’ Signing of Pax Silica Declaration - U.S. Department of State (.gov)",
+              "snippet": "United States Welcomes United Arab Emirates’Signing of Pax Silica Declaration - United States Department of State. Today,the United Arab Emirates signed the Pax Silica Declaration,marking a historic milestone in the region’s economic integration.The UAE’s leadership in energy, investment, and technological innovation make it an indispensable partner in this coalition.Its commitment to building a w"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2025/12/sanctioning-icc-judges-directly-engaged-in-the-illegitimate-targeting-of-israel",
+              "title": "Sanctioning ICC Judges Directly Engaged in the Illegitimate Targeting of Israel - U.S. Department of State (.gov)",
+              "snippet": "Sanctioning ICC Judges Directly Engaged in the Illegitimate Targeting of Israel - United States Department of State. The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications ne"
+            },
+            {
+              "url": "https://www.state.gov/releases/office-of-the-spokesperson/2025/12/signing-of-the-washington-accords-for-peace-and-prosperity-between-the-democratic-republic-of-the-congo-and-rwanda/",
+              "title": "Signing of the Washington Accords for Peace and Prosperity Between the Democratic Republic of the Congo and Rwanda - U.S. Department of State (.gov)",
+              "snippet": "Signing of the Washington Accords for Peace and Prosperity Between the Democratic Republic of the Congo and Rwanda - United States Department of State. A **.gov** website belongs to an official government organization in the United States. Signing of the Washington Accords for Peace and Prosperity Between the Democratic Republic of the Congo and Rwanda. The Washington Accords reaffirm the parties’"
+            }
+          ]
+        },
+        {
+          "channel": "Exa",
+          "query": "UNIFIL Lebanese Armed Forces deployment pilot zones southern Lebanon 2026",
+          "role": "Not recorded",
+          "status": "recorded",
+          "at": null,
+          "results": [
+            {
+              "url": "https://unifil.unmissions.org/sites/default/files/2026-07/n2617597.pdf",
+              "title": "Security Council",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/sites/default/files/2026-06/S_2026_453-EN.pdf",
+              "title": "Security Council",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/sites/default/files/2026-01/n2517575_0.pdf",
+              "title": "Security Council",
+              "snippet": ""
+            },
+            {
+              "url": "https://www.un.org/geospatial/content/unifil-deployment-march-2026",
+              "title": "UNIFIL Deployment March 2026 | Geospatial, location data for a better world",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/sites/default/files/2026-01/n2529705_0.pdf",
+              "title": "Security Council",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/sites/default/files/2026-06/BRF125_2605_M2K5V1AOC08X12L.pdf",
+              "title": "Misgav Am",
+              "snippet": ""
+            },
+            {
+              "url": "https://press.un.org/en/2025/sc16159.doc.htm",
+              "title": "Unanimously Adopting Resolution 2790 (2025), Security Council Extends Mandate of United Nations Interim Force in Lebanon | UN Meetings Coverage and Press Releases",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/en/unifil-mandate",
+              "title": "UNIFIL Mandate | UNIFIL",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/en/unifil-map-operations",
+              "title": "UNIFIL Map of Operations | UNIFIL",
+              "snippet": ""
+            },
+            {
+              "url": "https://unifil.unmissions.org/en/unifil-operations",
+              "title": "UNIFIL Operations | UNIFIL",
+              "snippet": ""
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "S001",
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/04/meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "title": "www.state.gov",
+          "characters": 3531,
+          "body_sha256": "2ac3762264ec079a8ed18586af09aa4ee934c0080c61da6f234fd04096164a8d",
+          "captured_at": null,
+          "excerpt": "**Official websites use .gov**\n\n**Secure .gov websites use HTTPS**\n\n![](https://www.state.gov/wp-content/themes/state/images/logos/us-flag-color.svg)\n![](https://www.state.gov/wp-content/themes/state/images/logos/statedept-logotype-white.svg)\n\n[Countries & Areas](/countries-and-areas-list/)\n\n[Bureaus & Offices](/bureaus-and-offices-list/)\n\n## [About](/about/)\n\n## Mission\n\n## History\n\n## Administrative\n\n## Leadership\n\n## Directories\n\n# Meeting Between the Governments of the United States, Lebanon, and Israel\n\nPress Statement\n\n[Thomas \"Tommy\" Pigott, Principal Deputy Spokesperson](https://www.state.gov/biographies/thomas-tommy-pigott/)\n\nApril 14, 2026\n\nThe U.S. Department of State convened a trilateral meeting on April 14, 2026, with the participation of Secretary of State Marco Rubio, Counselor Michael Needham, United States Ambassador to Lebanon Issa, Ambassador of Israel to the United States Yechiel Leiter, the Ambassador of Lebanon to the United States Nada Hamadeh Moawad.\n\nThis meeting marked the first major high-level engagement between the governments of Israel and Lebanon since 1993. The participants held productive discussions on steps toward launching direct negotiations between Israel and Lebanon.\n\nThe United States congratulated the two countries on this historic milestone and expressed its support for further talks, and for the Government of Lebanon’s plans to restore the monopoly of force and to end Iran’s overbearing influence. The United States expressed its hope that talks can exceed the scope of the 2024 agreement and bring about a comprehensive peace deal. The United States expressed its support for Israel’s right to defend itself from Hizballah’s continued attacks. The United States affirmed that any agreement to cease hostilities must be reached betwe",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S002",
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/next-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "title": "www.state.gov",
+          "characters": 2781,
+          "body_sha256": "11b9fee17f56b63852e4cae8334555d8ad0674315c0674ea75f4c22921d15ec2",
+          "captured_at": null,
+          "excerpt": "**Official websites use .gov**\n\n**Secure .gov websites use HTTPS**\n\n![](https://www.state.gov/wp-content/themes/state/images/logos/us-flag-color.svg)\n![](https://www.state.gov/wp-content/themes/state/images/logos/statedept-logotype-white.svg)\n\n[Countries & Areas](/countries-and-areas-list/)\n\n[Bureaus & Offices](/bureaus-and-offices-list/)\n\n## [About](/about/)\n\n## Mission\n\n## History\n\n## Administrative\n\n## Leadership\n\n## Directories\n\n# Next Meeting Between the Governments of the United States, Lebanon, and Israel\n\nPress Statement\n\n[Thomas \"Tommy\" Pigott, Department Spokesperson](https://www.state.gov/biographies/thomas-tommy-pigott/)\n\nMay 8, 2026\n\nThe United States will facilitate two days of intensive talks between the governments of Israel and Lebanon on May 14 and 15.\n\nBuilding on the April 23 round, which was led personally by President Trump, both delegations will engage in detailed discussions aimed at advancing a comprehensive peace and security agreement that substantively addresses the core concerns of both countries. These talks aim to break decisively from the failed approach of the past two decades, which allowed terrorist groups to entrench and enrich themselves, undermine the authority of the Lebanese state, and endanger Israel’s northern border.\n\nDiscussions will build a framework for lasting peace and security arrangements, the full restoration of Lebanese sovereignty throughout its territory, the delineation of borders, and creating concrete pathways for humanitarian relief and reconstruction in Lebanon. Both sides have committed to approaching these talks with their national interests in mind, and the United States will work to reconcile those interests in a manner that delivers lasting security for Israel, and sovereignty and reconstruction for Lebanon",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S003",
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/second-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "title": "www.state.gov",
+          "characters": 2475,
+          "body_sha256": "040cf89b6ba84b5048a1524538fa5d4a7a8ac5af953b03a2c43903fcbf2c8a96",
+          "captured_at": null,
+          "excerpt": "**Official websites use .gov**\n\n**Secure .gov websites use HTTPS**\n\n![](https://www.state.gov/wp-content/themes/state/images/logos/us-flag-color.svg)\n![](https://www.state.gov/wp-content/themes/state/images/logos/statedept-logotype-white.svg)\n\n[Countries & Areas](/countries-and-areas-list/)\n\n[Bureaus & Offices](/bureaus-and-offices-list/)\n\n## [About](/about/)\n\n## Mission\n\n## History\n\n## Administrative\n\n## Leadership\n\n## Directories\n\n# Meetings Between the Governments of the United States, Lebanon, and Israel\n\nPress Statement\n\n[Thomas \"Tommy\" Pigott, Spokesperson](https://www.state.gov/biographies/thomas-tommy-pigott/)\n\nMay 15, 2026\n\nOn May 14 and 15, the United States facilitated two days of constructive talks between the State of Israel and the Republic of Lebanon at the Department of State. The two countries agreed upon a framework for negotiations to advance lasting peace between the two countries, full recognition of each other’s sovereignty and territorial integrity, and establishing genuine security along their shared border.\n\nOver the two days, significant progress was made on the political track which will reconvene on June 2 and June 3 to continue those political conversations.\n\nThe security track will be launched at the Pentagon on May 29, with military delegations from both countries. To that end, the parties have agreed to a 45-day extension of the April 16 cessation of hostilities agreement to allow the security track to meaningfully improve the communication and coordination between Israel and Lebanon, facilitated by the United States.\n\nThe United States remains cognizant of the challenges posed by Hizballah’s continued attacks on Israel, without the consent or approval of the Government of Lebanon, undertaken in order to derail this process. The United St",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S004",
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/joint-statement-of-the-united-states-of-america-republic-of-lebanon-and-state-of-israel-on-the-latest-high-level-trilateral-meeting",
+          "title": "www.state.gov",
+          "characters": 4768,
+          "body_sha256": "e67bcfaf300e3204c0e5f1428f55a067228d610455528ed71ba1e031ded163d7",
+          "captured_at": null,
+          "excerpt": "**Official websites use .gov**\n\n**Secure .gov websites use HTTPS**\n\n![](https://www.state.gov/wp-content/themes/state/images/logos/us-flag-color.svg)\n![](https://www.state.gov/wp-content/themes/state/images/logos/statedept-logotype-white.svg)\n\n[Countries & Areas](/countries-and-areas-list/)\n\n[Bureaus & Offices](/bureaus-and-offices-list/)\n\n## [About](/about/)\n\n## Mission\n\n## History\n\n## Administrative\n\n## Leadership\n\n## Directories\n\n# Joint Statement of the United States of America, Republic of Lebanon, and State of Israel on the Latest High-Level Trilateral Meeting\n\nMedia Note\n\n[Office of the Spokesman](https://www.state.gov/bureaus-offices/under-secretary-for-public-diplomacy-and-public-affairs/bureau-of-global-public-affairs/office-of-the-spokesman/)\n\nJune 3, 2026\n\nThe text of the following statement was released by the Government of the United States of America, Republic of Lebanon, and the State of Israel.\n\n*Begin Text:*\n\nThe United States convened the fourth high-level trilateral meeting between Israeli and Lebanese representatives on June 2 and 3, 2026.\n\nAs a result of the U.S.-led negotiations, Israel and Lebanon agreed to the implementation of a ceasefire. The ceasefire is contingent on a complete cessation of Hizbollah fire and the evacuation of all Hizbollah operatives from the South Litani Sector.\n\nThe two sides agreed with the guidance of the United States to swiftly advance the creation of pilot zones in which the Lebanese Armed Forces will take exclusive control of the territory to the exclusion of all non-state actors.\n\nThese steps will enable progress towards a comprehensive peace and security agreement.\n\nAll countries reaffirmed that the future of the relationship between Israel and Lebanon must be decided by the two sovereign governments. They rejecte",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        },
+        {
+          "id": "S005",
+          "url": "https://www.thenationalnews.com/news/mena/2026/06/30/israel-tells-lebanon-that-leaving-pilot-zones-will-take-time",
+          "title": "www.thenationalnews.com",
+          "characters": 5097,
+          "body_sha256": "1fea79b68b7c7823adb0674a41179a3ae71b858e66340d41ac24e6948247c038",
+          "captured_at": null,
+          "excerpt": "Israeli officials have told Lebanon that leaving the two designated “pilot zones” occupied by their troops will take time, a Lebanese military official said, in what would delay the implementation of an agreement between the two countries.\n“We are waiting for them. They said it would take time. If the Israelis want to contact us, they do it through the Americans. They tell the Americans, and then the Americans tell us,” a senior Lebanese military official told The National.\n“The process was supposed to start last week when the Israelis declared that they would withdraw from the [pilot zones](https://www.thenationalnews.com/news/mena/2026/06/26/dispute-persists-over-proposed-areas-of-israeli-withdrawal-from-southern-lebanon/),” the military source added.\nThe [agreement](https://www.thenationalnews.com/news/mena/2026/06/27/five-questions-raised-by-framework-agreement-between-lebanon-and-israel/) reached between Lebanon and [Israel](https://www.thenationalnews.com/search/?query=israel) in Washington last Friday could eventually lead to Israel's withdrawal and [Hezbollah's disarmament](https://www.thenationalnews.com/news/mena/2026/06/19/israels-continued-presence-in-southern-lebanon-tests-fragile-us-iran-peace-deal/). \nBut Israeli officials have made it clear that they have no intention of withdrawing any time soon. Israeli media have reported that it could take a few weeks for the process to start, even if it involves only two locations.\nPrime Minister Benjamin Netanyahu visited Israeli-occupied zone in south Lebanon on Tuesday and insisted Israeli troops would remain there until the threat from Hezbollah has been removed, according to a statement from his office.\n“As long as Hezbollah, armed, is here, threatening us, we will stay here,” Mr Netanyahu said in remarks to so",
+          "excerpt_truncated": true,
+          "supplemented": false,
+          "truth_verified": false
+        }
+      ],
+      "fetches": [
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/04/meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/next-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/05/second-meeting-between-the-governments-of-the-united-states-lebanon-and-israel",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/joint-statement-of-the-united-states-of-america-republic-of-lebanon-and-state-of-israel-on-the-latest-high-level-trilateral-meeting",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/trilateral-framework-between-the-united-states-of-america-the-state-of-israel-and-the-republic-of-lebanon",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/the-united-states-israel-and-lebanon-sign-the-trilateral-framework",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/06/secretary-of-state-marco-rubio-with-lebanese-ambassador-to-the-united-states-nada-hamadeh-moawad-and-israeli-ambassador-to-the-united-states-yechiel-leiter-at-a-trilateral-framework-signing-ceremony",
+          "status": "failed",
+          "error": "HTTPError"
+        },
+        {
+          "url": "https://www.thenationalnews.com/news/mena/2026/06/30/israel-tells-lebanon-that-leaving-pilot-zones-will-take-time/",
+          "status": "completed",
+          "error": ""
+        }
+      ],
+      "supplement": [],
+      "forecast": {
+        "probability_yes": 0.09534947518185825
+      },
+      "analysis": {
+        "status": "completed",
+        "model": "inception/mercury-decide:free",
+        "routing": {
+          "reasons": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "new_ids": [
+            "E0017",
+            "E0008",
+            "E0013",
+            "E0018",
+            "E0023",
+            "E0014"
+          ],
+          "new_chars": 4154,
+          "second_call_required": true,
+          "diagnostics_are_not_facts": true,
+          "thresholds": {
+            "insufficient_probability": 0.4,
+            "conflict_probability": 0.5,
+            "minimum_new_chars": 900,
+            "yes_conflict_probability": 0.65,
+            "condition_refuted_probability": 0.65
+          }
+        },
+        "first_probability_yes": 0.08509903920620716,
+        "gaps": [
+          "time_window",
+          "actor_action_target",
+          "event_stage",
+          "scope_exceptions",
+          "observation_coverage",
+          "evidence_sufficiency",
+          "Independent supplement unresolved: access_restricted at https://www.state.gov/releases/office-of-the-spokesperson/2026/06/trilateral-framework-between-the-united-states-of-america-the-state-of-israel-and-the-republic-of-lebanon",
+          "Independent supplement unresolved: access_restricted at https://www.state.gov/releases/office-of-the-spokesperson/2026/06/the-united-states-israel-and-lebanon-sign-the-trilateral-framework",
+          "Independent supplement unresolved: access_restricted at https://www.state.gov/releases/office-of-the-spokesperson/2026/06/secretary-of-state-marco-rubio-with-lebanese-ambassador-to-the-united-states-nada-hamadeh-moawad-and-israeli-ambassador-to-the-united-states-yechiel-leiter-at-a-trilateral-framework-signing-ceremony",
+          "Independent supplement unresolved: transport_or_unknown at https://www.state.gov/countries-areas/israel",
+          "Independent supplement unresolved: transport_or_unknown at https://www.state.gov/countries-areas/lebanon",
+          "Independent supplement unresolved: transport_or_unknown at https://www.state.gov/releases/office-of-the-spokesperson/2025/12/signing-of-the-washington-accords-for-peace-and-prosperity-between-the-democratic-republic-of-the-congo-and-rwanda/"
+        ]
+      },
+      "usage": {
+        "acquisition_http_attempts": 6,
+        "search_attempts": 3,
+        "fetch_attempts": 8,
         "analysis_http_attempts": null,
         "tokens": null
       },

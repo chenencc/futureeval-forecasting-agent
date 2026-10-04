@@ -14,7 +14,7 @@ npm run dev
 npm run build
 ```
 
-The checked-in `public/data/console.json` contains six bounded real historical trial
+The checked-in `public/data/console.json` contains eight bounded real historical trial
 projections (binary, numeric, multiple choice, discrete and date). Their original
 runtime commits have not been verified as the release tag. This distinction is visible
 in the UI. They are archived examples, not live competition status, and are not a
@@ -60,3 +60,13 @@ This first version is a static snapshot. Live artifact ingestion, release-worker
 adapters, authenticated private full-body reading, experiment pairing, receipt
 read-back, Polymarket equivalence records and deployment are not yet implemented.
 Do not describe the export timestamp as the time of a forecast or a live worker update.
+
+## Market directory design
+
+The market directory uses category navigation, question-type filters, search, sorting,
+Cards/Table views and saved forecast summaries. The layout is inspired by the Octagon
+politics market directory. Typography uses Inter with native system fallbacks, a
+16px reading baseline, 18px card titles and a 34px page heading. The detail view retains
+the step-by-step evidence trail. Title-based topic grouping is for browsing only.
+Missing market quotes remain explicitly unrecorded. Responsive layouts use three,
+two or one card columns without reducing reading text to tiny labels.
