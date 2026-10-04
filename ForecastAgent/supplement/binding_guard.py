@@ -16,6 +16,12 @@ def source_requirement(need):
     explicit = need.get('required_source_domains', [])
     if explicit:
         return {'required':True, 'domains':list(explicit), 'origin':'explicit_need_contract', 'role':'issuer_original'}
+    # A disjunction of news and official announcements permits either origin.
+    # Explicit domain contracts above still take precedence.
+    if re.search(r'\b(?:news|media|press|reporting)\b[^.;]{0,40}\bor\b[^.;]{0,30}\bofficial\b|\bofficial\b[^.;]{0,40}\bor\b[^.;]{0,30}\b(?:news|media|press|reporting)\b',text,re.I):
+        return {'required':False, 'domains':[], 'origin':'alternative_source_roles', 'role':'primary_or_secondary'}
+    if re.search(r'\b(?:news|media)\s+(?:outlets|sources|reports|articles)\b',text,re.I) and not re.search(r'\bofficial\s+(?:news|media)\s+(?:outlets|sources|reports|articles)\b',text,re.I):
+        return {'required':False, 'domains':[], 'origin':'secondary_source_need', 'role':'secondary_reporting'}
     if re.search(r'\bsecondary\b|\battribut(?:ing|ion)\b|\bthird.party\b|\b(?:media|news|press)\b.*\b(?:report|coverage)', text, re.I):
         return {'required':False, 'domains':[], 'origin':'secondary_source_need', 'role':'secondary_reporting'}
     publishers = [p for p in PUBLISHERS if any(re.search(r'\b'+re.escape(a)+r'\b', text,

@@ -60,3 +60,29 @@ unknown labels visible. Expand to 20–30 only after masked labels are completed
 core coverage improves, no material regression remains unexplained, and costs
 are audited. No automatic promotion follows from workflow success. Small cohorts
 do not prove a universally low false rejection rate.
+
+## Round 2: source role, event stage and directional witnesses
+
+The original ten are now development cases because their failures informed the
+repair. They must no longer be described as held out. Original acquisition,
+shared packets, previous review journals and budgets remain immutable.
+
+`MATERIAL_REGRESSION_ROUND2.json` freezes eleven witnesses from five of these
+cases. Two checks judge publisher-role eligibility only; the original false
+metric or period axes are never changed to manufacture full closure. Remaining
+checks cover prospective versus actual trading, explicit actor/target direction,
+the named operation actor, and preservation of dated tables and secondary merits
+reports. Original twelve witnesses remain a separate regression gate.
+
+`compare-saved` starts a new authorized assessment allowance for each arm without
+restarting acquisition. It compares baseline `dcf49ec` with the frozen dispatch
+commit. Both arms receive identical original packets and use fixed Super without
+fallback, one logical decision and at most three physical requests per arm.
+No search, extraction or browser calls are performed by this command. Earlier
+results are retained in the parent artifact, not overwritten or reinterpreted.
+
+Lexical witness gates are conservative, not a general semantic verifier. Unknown
+aliases, coreference and indirect descriptions remain unverified closure while
+their raw material remains available for analysis. Counterexamples must be
+reviewed explicitly; fewer accepted needs alone is not a quality improvement.
+New independent questions are required before claiming generalization.

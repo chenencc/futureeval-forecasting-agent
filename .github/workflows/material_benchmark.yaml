@@ -6,6 +6,12 @@ on:
       resume_run:
         type: string
         default: ''
+      baseline_commit:
+        type: string
+        default: 05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660
+      round2:
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -19,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660
+          ref: ${{ inputs.baseline_commit || '05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660' }}
           path: baseline
       - uses: actions/setup-python@v5
         with:
@@ -29,6 +35,10 @@ jobs:
       - run: python -m unittest ForecastAgent.tests.test_material_benchmark ForecastAgent.tests.test_requirement_contract
       - run: python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --output snapshots/benchmark-regression
       - run: python -c 'import json; assert json.load(open("snapshots/benchmark-regression/report.json"))["gate_passed"]'
+      - if: inputs.round2
+        run: |
+          python -m ForecastAgent.experiments.material_benchmark regression --baseline baseline --manifest ForecastAgent/experiments/MATERIAL_REGRESSION_ROUND2.json --output snapshots/benchmark-regression/round2
+          python -c 'import json; assert json.load(open("snapshots/benchmark-regression/round2/report.json"))["gate_passed"]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -48,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660
+          ref: ${{ inputs.baseline_commit || '05ea8c4f0d4d6a7757e5e09a1627ec8b4af0c660' }}
           path: baseline
       - uses: actions/setup-python@v5
         with:
@@ -66,7 +76,7 @@ jobs:
           name: material-benchmark-case-${{ matrix.case }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/benchmark-case
+          path: ${{ inputs.round2 && 'snapshots/benchmark-parent' || 'snapshots/benchmark-case' }}
       - name: Single acquisition and identical-body paired review
         if: inputs.resume_run == ''
         run: python -u -m ForecastAgent.experiments.material_benchmark live --case "$CASE" --baseline baseline --output snapshots/benchmark-case
@@ -79,8 +89,17 @@ jobs:
           FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
           FORECAST_MODEL_FALLBACK_SUPER: '0'
       - name: Resume missing review arms with frozen bodies and preserved journals
-        if: inputs.resume_run != ''
+        if: inputs.resume_run != '' && !inputs.round2
         run: python -u -m ForecastAgent.experiments.material_benchmark resume --case "$CASE" --baseline baseline --output snapshots/benchmark-case --parent-run "$PARENT_RUN"
+        env:
+          CASE: ${{ matrix.case }}
+          PARENT_RUN: ${{ inputs.resume_run }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - name: New paired assessment on unchanged saved materials
+        if: inputs.round2
+        run: python -u -m ForecastAgent.experiments.material_benchmark compare-saved --case "$CASE" --baseline baseline --parent snapshots/benchmark-parent --output snapshots/benchmark-case --parent-run "$PARENT_RUN"
         env:
           CASE: ${{ matrix.case }}
           PARENT_RUN: ${{ inputs.resume_run }}

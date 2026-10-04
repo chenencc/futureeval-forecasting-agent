@@ -7,6 +7,34 @@ from ForecastAgent.experiments import material_benchmark as benchmark,solid_coll
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_round2_fixtures_keep_scoped_roles_separate_from_full_closure(self):
+        manifest=benchmark.read(benchmark.HERE.with_name('MATERIAL_REGRESSION_ROUND2.json'))
+        labels=[label for c in manifest['cases'] for label in benchmark.fixture(c)['labels']]
+        self.assertEqual(len(labels),11)
+        role_checks=[x for x in labels if x.get('check')=='issue']
+        self.assertEqual(len(role_checks),2)
+        self.assertTrue(all(x['issue']=='required_publisher_origin_unverified' and x['expected'] is False for x in role_checks))
+
+    def test_new_saved_assessment_never_mutates_parent_and_refuses_restart(self):
+        manifest=benchmark.read(benchmark.HERE.with_name('MATERIAL_BENCHMARK10.json'))
+        with tempfile.TemporaryDirectory() as temp:
+            parent=Path(temp)/'parent';out=Path(temp)/'assessment'
+            benchmark.write(parent/'collection/intelligence-bundle.json',{'id':'fixed'})
+            import hashlib
+            benchmark.write(parent/'shared-input.json',{'assessment':{
+                'assessment_parent_sha256':hashlib.sha256((parent/'collection/intelligence-bundle.json').read_bytes()).hexdigest()},'payload':{'passages':[]}})
+            benchmark.write(parent/'checklist.json',manifest['cases'][0])
+            benchmark.write(parent/'blind/corpus.json',{})
+            original=(parent/'shared-input.json').read_bytes()
+            with patch.object(benchmark,'complete_pair') as pair:
+                benchmark.compare_saved(1,Path('baseline'),parent,out,'source-run')
+                self.assertFalse(pair.call_args.kwargs['resume'])
+                with self.assertRaisesRegex(ValueError,'already exists'):
+                    benchmark.compare_saved(1,Path('baseline'),parent,out,'source-run')
+            self.assertEqual((parent/'shared-input.json').read_bytes(),original)
+            self.assertEqual((out/'shared-input.json').read_bytes(),original)
+            self.assertFalse(benchmark.read(out/'round-provenance.json')['acquisition_reset'])
+
     def test_resume_retains_failed_arm_and_writes_both_masked_results(self):
         manifest=benchmark.read(benchmark.HERE.with_name('MATERIAL_BENCHMARK10.json'))
         selected=manifest['cases'][0]

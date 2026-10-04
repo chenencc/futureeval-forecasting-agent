@@ -5,6 +5,15 @@ from ForecastAgent.tests.test_material_gap_workflow import bundle
 
 
 class BindingGuardTests(unittest.TestCase):
+    def test_alternative_roles_and_subject_official_are_not_primary_only(self):
+        for condition in ['News or official announcements indicate a company filed an S-1.',
+                          'Official announcements or news sources describe the filing.',
+                          'Credible international news outlets confirm a strike against official military forces.']:
+            self.assertFalse(binding_guard.source_requirement({'condition':condition})['required'])
+        self.assertTrue(binding_guard.source_requirement({'condition':'Official issuer filing'})['required'])
+        self.assertTrue(binding_guard.source_requirement({'condition':'News or official announcements',
+                         'required_source_domains':['issuer.example']})['required'])
+
     def test_exact_publisher_host_not_attribution_or_suffix_spoof(self):
         n={'condition':'EIA historical price observation'}
         for url in ['https://news.example/eia','https://eia.gov.evil.example/data']:

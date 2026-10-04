@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 
 HERE=Path(__file__).resolve()
 REPO=HERE.parents[2]
@@ -62,23 +63,30 @@ def invoke(repo,mode,input_path,output):
         cwd=repo,env=env,check=True,timeout=300)
 
 
-def regression(baseline,output):
-    output=Path(output);manifest=read(HERE.with_name('MATERIAL_REGRESSION5.json'));cases=[]
+def regression(baseline,output,manifest_path=None):
+    output=Path(output);manifest=read(Path(manifest_path) if manifest_path else HERE.with_name('MATERIAL_REGRESSION5.json'));cases=[]
     for case in manifest['cases']:
         item=fixture(case);folder=output/case['id'];write(folder/'input.json',item)
         for name,repo in [('baseline',baseline),('candidate',REPO)]:invoke(repo,'regression',folder/'input.json',folder/(name+'.json'))
         arms={name:read(folder/(name+'.json')) for name in ['baseline','candidate']};checks=[]
         for label in item['labels']:
             key=f"{label['response_index']}:{label['need_id']}:{label['passage_id']}"
-            observed={name:arms[name]['rows'].get(key,{}).get('eligible',False) for name in arms}
-            checks.append({**label,'observed':observed,'candidate_correct':observed['candidate']==label['expected_eligible'],
-                           'new_false_rejection':label['expected_eligible'] and observed['baseline'] and not observed['candidate']})
+            if label.get('check')=='issue':
+                observed={name:(label['issue'] in arms[name]['rows'][key]['guard']['issues'])
+                          if key in arms[name]['rows'] else None for name in arms}
+                expected=label['expected'];new_rejection=False
+            else:
+                observed={name:arms[name]['rows'].get(key,{}).get('eligible',False) for name in arms}
+                expected=label['expected_eligible']
+                new_rejection=expected and observed['baseline'] and not observed['candidate']
+            checks.append({**label,'observed':observed,'expected':expected,'candidate_correct':observed['candidate']==expected,
+                           'new_false_rejection':new_rejection})
         cases.append({'id':case['id'],'checks':checks,'failures':{name:arms[name]['failures'] for name in arms}})
     checks=[x for c in cases for x in c['checks']]
     report={'schema':'paired-regression-v1','cases':cases,'labeled_witnesses':len(checks),
         'new_false_rejections':sum(x['new_false_rejection'] for x in checks),
         'candidate_correct':sum(x['candidate_correct'] for x in checks),
-        'baseline_correct':sum(x['observed']['baseline']==x['expected_eligible'] for x in checks),
+        'baseline_correct':sum(x['observed']['baseline']==x['expected'] for x in checks),
         'gate_passed':bool(checks) and all(x['candidate_correct'] for x in checks) and not any(x['new_false_rejection'] for x in checks),
         'new_provider_calls':0,'scope':'Development regression witnesses, not independent held-out accuracy.'}
     write(output/'report.json',report);print({k:v for k,v in report.items() if k!='cases'})
@@ -139,6 +147,27 @@ def resume(case,baseline,output,parent_run):
         'quota_reset':False,'repeated_attempted_arms':False})
 
 
+def compare_saved(case,baseline,parent,output,parent_run):
+    """New authorized paired assessment; acquisition and earlier arms stay immutable."""
+    parent=Path(parent);output=Path(output)
+    if output.exists():raise ValueError('New assessment output already exists; no budget restart')
+    manifest=read(HERE.with_name('MATERIAL_BENCHMARK10.json'));selected=manifest['cases'][case-1]
+    shared=read(parent/'shared-input.json')
+    if read(parent/'checklist.json')!=selected:raise ValueError('Frozen checklist changed')
+    if hashlib.sha256((parent/'collection/intelligence-bundle.json').read_bytes()).hexdigest()!=shared['assessment']['assessment_parent_sha256']:
+        raise ValueError('Frozen acquisition changed')
+    for path in ('collection','blind/corpus.json','shared-input.json','checklist.json'):
+        source=parent/path;target=output/path
+        if source.is_dir():shutil.copytree(source,target)
+        else:
+            target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,target)
+    complete_pair(selected,manifest,baseline,output,resume=False)
+    write(output/'round-provenance.json',{'parent_run':parent_run,'round':'role-stage-direction-v2',
+        'new_authorized_assessment_allowance':{'logical_decisions_per_arm':1,'physical_requests_per_arm':3},
+        'acquisition_reset':False,'prior_assessment_records_erased':False,
+        'shared_input_identical_to_parent':hashlib.sha256((output/'shared-input.json').read_bytes()).hexdigest()==hashlib.sha256((parent/'shared-input.json').read_bytes()).hexdigest()})
+
+
 def complete_pair(selected,manifest,baseline,output,resume):
     """Export masked packets after retaining each existing terminal result."""
     payload=read(output/'shared-input.json')['payload']
@@ -167,9 +196,10 @@ def complete_pair(selected,manifest,baseline,output,resume):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['regression','live','resume','worker']);p.add_argument('--baseline');p.add_argument('--output',required=True);p.add_argument('--parent-run')
-    p.add_argument('--case',type=int);p.add_argument('--repo');p.add_argument('--mode');p.add_argument('--input');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['regression','live','resume','compare-saved','worker']);p.add_argument('--baseline');p.add_argument('--output',required=True);p.add_argument('--parent-run');p.add_argument('--parent')
+    p.add_argument('--case',type=int);p.add_argument('--repo');p.add_argument('--mode');p.add_argument('--input');p.add_argument('--manifest');a=p.parse_args()
     if a.command=='worker':worker(a.repo,a.mode,a.input,a.output)
-    elif a.command=='regression':regression(a.baseline,a.output)
+    elif a.command=='regression':regression(a.baseline,a.output,a.manifest)
     elif a.command=='resume':resume(a.case,a.baseline,a.output,a.parent_run)
+    elif a.command=='compare-saved':compare_saved(a.case,a.baseline,a.parent,a.output,a.parent_run)
     else:live(a.case,a.baseline,a.output)

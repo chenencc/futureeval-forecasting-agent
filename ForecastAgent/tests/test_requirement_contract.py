@@ -11,6 +11,23 @@ from pathlib import Path
 
 
 class RequirementTests(unittest.TestCase):
+    def test_planned_event_is_not_actual_commencement_and_negative_status_is_valid(self):
+        need={'condition':'Whether Example has begun trading on an exchange.'}
+        self.assertIn('actual_event_only_planned_witness',contract.issues(need,{'quote':'The shares are expected to begin trading on June 12.'}))
+        self.assertNotIn('actual_event_only_planned_witness',contract.issues(need,{'quote':'Expected on June 12. The stock began trading on June 13.'}))
+        self.assertNotIn('actual_event_only_planned_witness',contract.issues(need,{'quote':'The company has not begun trading; it is expected to begin trading later.'}))
+        self.assertNotIn('actual_event_only_planned_witness',contract.issues({'condition':'Planned trading date announcement'},
+                                  {'quote':'The shares are expected to begin trading on June 12.'}))
+
+    def test_actor_direction_and_missing_subject_do_not_close_need(self):
+        need={'condition':'Officials report a military attack by ABC forces on Eastern territory.'}
+        self.assertIn('explicit_actor_target_direction_unverified',contract.issues(need,{'quote':'Eastern forces attacked ABC targets.'}))
+        self.assertNotIn('explicit_actor_target_direction_unverified',contract.issues(need,{'quote':'ABC forces attacked Eastern targets.'}))
+        self.assertNotIn('explicit_actor_target_direction_unverified',contract.issues(need,{'quote':'Eastern targets were attacked by ABC forces.'}))
+        self.assertNotIn('explicit_actor_target_direction_unverified',contract.issues(need,{'quote':'Alpha Beta Coalition forces struck Eastern territory.'}))
+        self.assertIn('explicit_operation_actor_missing',contract.issues({'condition':'Military analysis shows a ABC-conducted strike.'},
+                                    {'quote':'Military analysis shows operations by another country.'}))
+
     def test_publication_month_never_becomes_observation_month(self):
         q={'resolution_criteria':'Use the release date occuring in August 2026.'}
         n=contract.attach(q,{'condition':'Current Index value for August 2026 release'})

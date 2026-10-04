@@ -1,0 +1,43 @@
+{
+  "schema": "material-regression-round2-v1",
+  "baseline_commit": "dcf49ecd245ffc1f9eb4565a020ee53977b488c3",
+  "source_run": "37183740101",
+  "scope": "Selected development witnesses; role-fit and literal event specificity only, not outcomes or general coverage.",
+  "cases": [
+    {
+      "id": "41206",
+      "fixture": "ForecastAgent/fixtures/material_round2/41206.json.gz",
+      "sha256": "2cff66725f6a00d3a64caea1896147c477faeef0d0e36da6dd8135d33a2dd33f",
+      "source_case": 3,
+      "original_shared_input_sha256": "cd1204e46deeb829611d7fa06fe0d2ee94203944876116a78fd54298677f521f"
+    },
+    {
+      "id": "43665",
+      "fixture": "ForecastAgent/fixtures/material_round2/43665.json.gz",
+      "sha256": "10545caa0a9e8225bbf796edbefd420412800b4eb86c7040c6aa8c2907d01ff1",
+      "source_case": 6,
+      "original_shared_input_sha256": "f81769e7c11c5654cb548cf8cbc2c08645b9bae27a107c0ab61474ed7ffcead9"
+    },
+    {
+      "id": "44731",
+      "fixture": "ForecastAgent/fixtures/material_round2/44731.json.gz",
+      "sha256": "4d475f70db7e7ff8c6865855da9e56c1af06f0662227fce2178fc76934928f1f",
+      "source_case": 7,
+      "original_shared_input_sha256": "e0d10cf66be55c36d8e9e00da3a32f72385468f304b3f8a62c5e27315086024b"
+    },
+    {
+      "id": "40417",
+      "fixture": "ForecastAgent/fixtures/material_round2/40417.json.gz",
+      "sha256": "210fd7cb56e123e925dfefcddb3262e85fc8760d03ac25aa66eee83d405f76f1",
+      "source_case": 8,
+      "original_shared_input_sha256": "e24963159e7588bb373ea88a7f2fcf85e704f0f93d6a66e634bfaa7c41f13897"
+    },
+    {
+      "id": "42489",
+      "fixture": "ForecastAgent/fixtures/material_round2/42489.json.gz",
+      "sha256": "593227d535de805b74911c407a15d451178e141939a6df9ebb8322c9984d90a8",
+      "source_case": 9,
+      "original_shared_input_sha256": "491db89abcd416a730953daf9e85ec32ed05206a3e35e29987c45b5d17c99fb7"
+    }
+  ]
+}
