@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes, unified_acquisition, unified_review_repair, unified_analysis]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes, unified_acquisition, unified_review_repair, unified_analysis, release_reproduce]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -35,6 +35,47 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  release-reproduce:
+    if: inputs.experiment == 'release_reproduce'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out immutable release runtime
+        uses: actions/checkout@v4
+        with:
+          ref: c9bfab44a670f4307ebc2330866479c82aec71ef
+          path: .release-runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r .release-runtime/ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Verify release analysis acceptance offline
+        working-directory: .release-runtime
+        run: python -m unittest ForecastAgent.tests.test_competition_mercury ForecastAgent.tests.test_official_competition
+      - name: Fresh release collection supplement and analysis
+        run: python -u ForecastAgent/experiments/release_reproduce_five.py run --runtime .release-runtime --manifest ForecastAgent/experiments/RELEASE_REPRODUCE5.json --output snapshots/release-reproduce-five
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          FORECAST_RELEASE_COMMIT: c9bfab44a670f4307ebc2330866479c82aec71ef
+      - name: Evaluate frozen release forecasts separately
+        if: always() && hashFiles('snapshots/release-reproduce-five/report.json') != ''
+        run: python ForecastAgent/experiments/release_reproduce_five.py evaluate --inputs snapshots/release-reproduce-five --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json --output snapshots/release-reproduce-five/evaluation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-reproduce-five
+          path: snapshots/release-reproduce-five
+          if-no-files-found: error
+          retention-days: 90
   unified-analysis:
     if: inputs.experiment == 'unified_analysis'
     runs-on: ubuntu-latest
