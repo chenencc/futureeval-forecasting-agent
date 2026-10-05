@@ -97,13 +97,17 @@ def review(root, run_id):
     for row in rows:
         arms=row['arms']
         eligible=all('resources' in arms[a] and not arms[a]['incomplete'] and not arms[a]['issues'] for a in ('baseline','candidate'))
+        bounded=all('resources' in arms[a] and arms[a]['state'] in {'completed','completed_with_gaps','budget_exhausted'}
+                    and not arms[a]['issues'] for a in ('baseline','candidate'))
         paired.append({'question_id':row['question_id'],'both_terminal_without_integrity_failure':eligible,
-            'banked_material_check_delta':arms['candidate']['material_checks_selected']-arms['baseline']['material_checks_selected'] if eligible else None,
-            'reason':'Both completed policies can be compared on frozen material.' if eligible else 'Missing/interrupted/service-failed arms are not zero-quality observations.'})
+            'both_bounded_dispatches_auditable':bounded,
+            'banked_material_check_delta':arms['candidate']['material_checks_selected']-arms['baseline']['material_checks_selected'] if bounded else None,
+            'reason':'Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately.' if bounded else 'Missing/interrupted/service-failed arms are not zero-quality observations.'})
     return {'schema':'frozen-frontier-paired-audit-v1','run_id':run_id,'pool_sha256':rubric['pool_sha256'],
         'results_complete':all('resources' in r['arms'][a] for r in rows for a in ('baseline','candidate')),
         'rows':rows,'totals':totals,'paired_comparisons':paired,
-        'comparable_terminal_pairs':sum(p['both_terminal_without_integrity_failure'] for p in paired),'promotion_allowed':False,
+        'comparable_terminal_pairs':sum(p['both_terminal_without_integrity_failure'] for p in paired),
+        'comparable_bounded_dispatch_pairs':sum(p['both_bounded_dispatches_auditable'] for p in paired),'promotion_allowed':False,
         'scope':'Development frozen-material navigation/selection replay. Original material inventory identical. Not fresh-search recall, strict blind review, event verification or forecast accuracy. Failed arms and all costs retained.'}
 
 

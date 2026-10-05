@@ -5,6 +5,9 @@ The analysis and production delivery modules retain their release file identitie
 See [the architecture](../docs/ACQUISITION_V2_DESIGN.md) and the
 [frozen baseline manifest](../experiments/acquisition_v2_baseline.json).
 
+The first [paired frozen-frontier experiment](FRONTIER_RESULTS.md) did not show
+an improvement. The candidate remains experimental and must not be promoted.
+
 ## What is implemented
 
 `pipeline.run` executes one task:
