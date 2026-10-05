@@ -1,0 +1,75 @@
+{
+  "schema": "fresh-acquisition-handoff-ten-labels-v1",
+  "records": {
+    "44925": {
+      "resolution": 1.0,
+      "checkpoint_date": "2026-09-01",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/44925",
+      "source_row_sha256": "53b8dc280deda98a55c440ca441f41c3236067058de49010f2a3024ee05cbb5e"
+    },
+    "40938": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-09-01",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/40938",
+      "source_row_sha256": "bd6a78f4b627a6c605921c274159cbed39becf0614878f2c77222336b2bd8b84"
+    },
+    "43703": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-08-31",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/43703",
+      "source_row_sha256": "1950c31bb859401bf6097a96198c4e96c6ee87d77d9e1b80b54fea61bc3ac5b8"
+    },
+    "43709": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-08-31",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/43709",
+      "source_row_sha256": "5eb6dcf374372fc0e077fe93004302200366c9fa5779615fa2bdc4f63538f827"
+    },
+    "44247": {
+      "resolution": 1.0,
+      "checkpoint_date": "2026-08-13",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/44247",
+      "source_row_sha256": "5d0b76e73399bbdb8cd70ba50959d38855f9d9f226798b6f5322a2c56a088798"
+    },
+    "43844": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-08-12",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/43844",
+      "source_row_sha256": "6537a438b660b8adac35f8b8232ecc15ff8dca6fc1f436197af59114c8ae7e1e"
+    },
+    "43992": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-07-31",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/43992",
+      "source_row_sha256": "1ca45c1b9662960e8820a46ebebe407ce55d7555b1ee4e2b8df61487f79fecbe"
+    },
+    "41090": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-07-12",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/41090",
+      "source_row_sha256": "c15b71c5fb907aac6d98ea39fcd292a060c6a98e8f441250811c535d95cddf08"
+    },
+    "43615": {
+      "resolution": 1.0,
+      "checkpoint_date": "2026-07-15",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/43615",
+      "source_row_sha256": "4d0ee8f693f503915a9355c3c948fded08185d3a3d8a8110d0dab25d93a7a3a3"
+    },
+    "44448": {
+      "resolution": 0.0,
+      "checkpoint_date": "2026-08-31",
+      "source": "Archived ForecastBench Metaculus resolved record",
+      "question_url": "https://www.metaculus.com/questions/44448",
+      "source_row_sha256": "7a60f57a643a91e34cef82d6fe1697e76dad3f5bfef458990c856a7b36117d95"
+    }
+  }
+}

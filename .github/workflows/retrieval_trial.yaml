@@ -7,7 +7,7 @@ on:
       candidate_policy:
         description: 'Separately frozen candidate strategy; never migrate prior case state'
         type: choice
-        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores']
+        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores', 'full_chain_ten']
         default: 'v1'
         required: true
       resume_run:
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   compare:
-    if: inputs.candidate_policy != 'handoff_scores'
+    if: inputs.candidate_policy != 'handoff_scores' && inputs.candidate_policy != 'full_chain_ten'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -76,6 +76,61 @@ jobs:
         with:
           name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
           path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  full_chain_ten:
+    if: inputs.candidate_policy == 'full_chain_ten'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        question: ['44925', '40938', '43703', '43709', '44247', '43844', '43992', '41090', '43615', '44448']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Reject empty-ledger workflow retries
+        run: |
+          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
+            echo 'Restore the exact previous artifacts with resume_run; do not rerun from empty state.'
+            exit 1
+          fi
+      - name: Restore exact previous full-chain case
+        if: inputs.resume_run != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: intelligent-full-chain-ten-${{ matrix.question }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/full-chain-ten/${{ matrix.question }}
+      - name: Offline source, budget and decision checks
+        run: |
+          python -m unittest ForecastAgent.tests.test_full_chain_ten ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
+          python -m ForecastAgent.acquisition.full_chain_ten --output snapshots/full-chain-ten --question-id "$CASE_ID" --dry-run
+        env:
+          CASE_ID: ${{ matrix.question }}
+      - name: Fresh acquisition, independent supplement, first and reread scores
+        run: python -u -m ForecastAgent.acquisition.full_chain_ten --output snapshots/full-chain-ten --question-id "$CASE_ID"
+        env:
+          CASE_ID: ${{ matrix.question }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+      - name: Preserve original collection, supplements and both score journals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligent-full-chain-ten-${{ matrix.question }}
+          path: snapshots/full-chain-ten/${{ matrix.question }}/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90

@@ -1,0 +1,101 @@
+{
+  "schema": "full-chain-ten-preregistration-v1",
+  "question_ids": [
+    "44925",
+    "40938",
+    "43703",
+    "43709",
+    "44247",
+    "43844",
+    "43992",
+    "41090",
+    "43615",
+    "44448"
+  ],
+  "registered_before_provider_calls": true,
+  "files_sha256_lf": {
+    "ForecastAgent/acquisition/full_chain_ten.py": "f98dfd358eb87526ac20ff8a9323082cb45d97bcecb6f86c6502779ff76bbd51",
+    "ForecastAgent/acquisition/handoff.py": "f70a0d3c6973d2834acb804083fb9f73fc863f396b54cbe8cdf4bf591d8c0889",
+    "ForecastAgent/acquisition/handoff_scoring.py": "ca4fb27295ba0076c4507e667b11e011c6937b923933e0ffa16570ef6e1390f6",
+    "ForecastAgent/acquisition/pipeline.py": "60ef28e37c04dbe58ef5f27b2d8d23ff6ce17637c5268922223a13141630eb9a",
+    "ForecastAgent/experiments/full_chain_ten_inputs.json": "e377f348ec3254ad363dd64d9f72a8cb9a80cbe1a4bc5d7b4bced87cb74cba30"
+  },
+  "labels_sha256_lf": "cf86b63a1f30262b14b6eb333436899197911f3943bd7d0a32329ddc8ba889b9",
+  "collection_model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "service_fallback": "Two qualifying service failures switch to Super; unchanged release account quota and credential errors do not trigger fallback.",
+  "collection_max_executions": 3,
+  "decision_model": "inception/mercury-decide:free",
+  "decision_endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "decision_http_ceiling": 40,
+  "minimum_new_chars": 900,
+  "first_request_bytes": 22000,
+  "second_request_bytes": 28000,
+  "collection_limits": {
+    "tavily_basic_lifetime": 3,
+    "exa_lifetime": 1,
+    "initial_source_http_lifetime": 8,
+    "extract_batches_lifetime": 1,
+    "extract_urls_per_batch": 5,
+    "supplement_http": 2,
+    "supplement_browser_renders": 2,
+    "supplement_local_reparses": 8,
+    "model_decisions_per_dispatch": 12,
+    "model_http_per_dispatch": 16,
+    "model_http_lifetime": 72,
+    "dispatch_seconds": 900
+  },
+  "maximum_parallel_questions": 2,
+  "route_order": {
+    "44925": [
+      "old_packing",
+      "new_packing"
+    ],
+    "40938": [
+      "new_packing",
+      "old_packing"
+    ],
+    "43703": [
+      "old_packing",
+      "new_packing"
+    ],
+    "43709": [
+      "new_packing",
+      "old_packing"
+    ],
+    "44247": [
+      "old_packing",
+      "new_packing"
+    ],
+    "43844": [
+      "new_packing",
+      "old_packing"
+    ],
+    "43992": [
+      "old_packing",
+      "new_packing"
+    ],
+    "41090": [
+      "new_packing",
+      "old_packing"
+    ],
+    "43615": [
+      "old_packing",
+      "new_packing"
+    ],
+    "44448": [
+      "new_packing",
+      "old_packing"
+    ]
+  },
+  "primary_metric": "First-pass paired clipped Brier across the same newly acquired packages.",
+  "secondary_metric": "First versus probe-reread clipped Brier on the identical eligible subset, plus unchanged production-policy final Brier.",
+  "reread_policy": "Probe one saved-body expansion if at least 900 novel original-coordinate characters fit; independently record whether the unchanged release diagnostics would trigger it.",
+  "source_policy": "Fresh current-information acquisition and release independent supplement; no previous collection or search imports.",
+  "clip_probability": [
+    0.02,
+    0.98
+  ],
+  "promotion_allowed": false,
+  "submitted": false,
+  "warning": "Fresh current collection on historical resolved questions. No historical cutoff enforcement; not a leakage-free forecast backtest."
+}
