@@ -574,3 +574,53 @@ Independent identity/measure matching and event applicability also need
 separate dispositions. Reading allocation remains a separate experiment.
 No truth certification, automatic closure or forecasting-accuracy claim is
 made by the current output statuses.
+
+## V6 parameter/observation ledgers and original operator provenance
+
+`MERCURY_OPERATOR_LEDGERS5.json` freezes the same five packets and 19 original
+needs for a fresh V5/V6 paired regression. Both arms rerun rules-only contract
+and evidence decisions with the same original question, needs, rule catalog
+and delivered reading. V6 additionally reviews original-rule scope for source
+claims labeled explicit. This is a system comparison, not a model-only test.
+The reader and collection remain unchanged, including the omitted USDC pages.
+
+Each V6 result contains independent requested-parameter, literal-context and
+observation objects. A parameter/identity selection may populate literal
+context, but it leaves the observation unassessed. A model's kind label cannot
+remove an observation obligation or populate an observed value from a target.
+Even a literal-only definition keeps the separate unassessed requirement until
+its meaning is reviewed; the program does not assert that all such definitions
+require external observations.
+
+The program inventories exact lexical by/before/on/as-of, interval, negative,
+active-state, operative-effect and definition cues in the original rule spans.
+Mercury time, polarity and effect selections reference those exact operators.
+A by-only rule does not offer an unanchored as-of choice. A paraphrased snapshot
+without a bound original snapshot/date cue receives a program risk, even if
+the model says aligned. Unbound negative/effect scopes are similarly retained.
+These English lexical cues verify text identity, not full Boolean logic,
+jurisdictional meaning, alternative nesting or semantic equivalence. Unknown
+wording stays unassessed. They cannot silently repair the original need.
+
+An explicit world-observation claim receives a separate Mercury review against
+original rules and source text. The review distinguishes entailed, contradicted,
+unestablished and literal-only; a past sentence/announcement is not proof of a
+currently operative effect. The original claim and exact binding survive a
+negative review. Unknowns, rules, targets and omitted text never prove absence.
+No claim is marked true and no condition closes automatically.
+
+New trial caps are 30 logical calls, 32 physical attempts, 1,200 seconds and
+500,000 request bytes. Previous 65 and 17 request histories/caps remain unchanged.
+Mercury remains free, with no new Super, search, fetch, forecast, reader change
+or production promotion. Continuation requires the identical normalized
+manifest and reuses completed contracts/proofs, preserving all reservations.
+
+Preregistered review checks: observed-price and observed-time needs remain
+independent of constants even under deliberately wrong parameter labels;
+crypto by/as-of conflicts stay visible; the energy negative interval is never
+replaced by affirmative reversal; active court effect is checked separately
+from historical issuance; valid AAA/person identities remain available.
+Audit exact spans, paired coverage, journals, usage, false entailment and lost
+useful context separately. Structural safeguards and semantic improvement
+are separate acceptance claims. These cases are repair regressions and do
+not establish unseen generalization or forecasting accuracy.
