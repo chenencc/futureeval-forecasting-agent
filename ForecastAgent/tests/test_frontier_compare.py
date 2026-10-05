@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
-from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics, run_case, request_for
+from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics, run_case, request_for, text_digest
 
 
 def call(name, args, ident):
@@ -14,6 +14,15 @@ def call(name, args, ident):
 
 
 class FrontierComparisonTests(TestCase):
+    def test_text_config_identity_is_portable_but_content_changes_still_fail(self):
+        with TemporaryDirectory() as tmp:
+            lf=Path(tmp)/'lf.json';crlf=Path(tmp)/'crlf.json';changed=Path(tmp)/'changed.json'
+            lf.write_bytes(b'{\n"limit":11\n}\n')
+            crlf.write_bytes(b'{\r\n"limit":11\r\n}\r\n')
+            changed.write_bytes(b'{\n"limit":12\n}\n')
+            self.assertEqual(text_digest(lf),text_digest(crlf))
+            self.assertNotEqual(text_digest(lf),text_digest(changed))
+
     def test_v3_pairs_v2_control_with_v3_using_identical_sources_and_fresh_identity(self):
         data,_=inputs()
         with TemporaryDirectory() as tmp:

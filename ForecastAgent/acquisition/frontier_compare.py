@@ -49,6 +49,11 @@ Batch useful local actions within the existing twelve-decision dispatch limit.
 """
 
 
+def text_digest(path):
+    """Normalize Git checkout newlines for text configuration, never source bytes."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
+
+
 def inputs():
     verify_baseline()
     data = json.loads(gzip.decompress(POOL.read_bytes()))
@@ -229,11 +234,13 @@ def run_case(question_id, root, *, replicate_super=False, repair_v2=False, repai
         protocol = json.loads(V3_PROTOCOL.read_text(encoding='utf-8'))
         if (protocol['pool_sha256'] != rubric['pool_sha256'] or protocol['question_ids'] != rubric['question_ids']
                 or protocol['primary_model'] != model or protocol['physical_http_ceiling_per_arm_per_question'] != http_cap
-                or protocol['rubric_sha256'] != hashlib.sha256(RUBRIC.read_bytes()).hexdigest()):
+                or protocol['rubric_sha256'] != text_digest(RUBRIC)):
             raise ValueError('V3 preregistration does not match the frozen experiment')
         identity.update(candidate_strategy='intelligent_materials_v3', baseline_strategy='intelligent_materials_v2',
             comparison_baseline_run=37297914625,
-            preregistration_sha256=hashlib.sha256(V3_PROTOCOL.read_bytes()).hexdigest(),
+            rubric_sha256=text_digest(RUBRIC),
+            preregistration_sha256=text_digest(V3_PROTOCOL),
+            text_identity_encoding='utf8_source_bytes_with_lf_line_endings',
             source_code_sha256=pipeline_identity(case['request'],False)['candidate_sha256'],
             replication_reason='Concurrent V2 versus V3 over identical preserved originals, Super, arm order and equal eleven-request ceilings; review control and temporal metadata changes only.')
     root = Path(root)

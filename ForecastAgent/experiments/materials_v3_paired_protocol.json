@@ -11,7 +11,7 @@
   "previous_super_v2_run_id": 37297914625,
   "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
   "rubric_path": "ForecastAgent/experiments/intelligent_frontier_rubric.json",
-  "rubric_sha256": "a29c7ef7b18c568fba6e82c19f0a7462bb1bb3c4c1ba418a96b4625e21bce04e",
+  "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
   "rubric_changes_permitted": false,
   "baseline": "intelligent_materials_v2",
   "candidate": "intelligent_materials_v3",
@@ -49,5 +49,7 @@
   ],
   "next_gate": "Consider an untouched pilot only after useful material retention is maintained or improved at lower measured cost, with no evidence loss or unresolved integrity defect. These five repaired cases cannot demonstrate generalization.",
   "promotion_allowed": false,
-  "temporal_scope": "Retrospective unrestricted current captures; not a cutoff-safe forecast"
+  "temporal_scope": "Retrospective unrestricted current captures; not a cutoff-safe forecast",
+  "text_identity_encoding": "utf8_source_bytes_with_lf_line_endings",
+  "pre_provider_dispatch_failure_run": 37307650595
 }

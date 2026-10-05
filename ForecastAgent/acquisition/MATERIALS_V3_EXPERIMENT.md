@@ -27,6 +27,13 @@ unknown/deferred material, execution stops, and reported versus unknown usage.
 
 Protocol: [materials_v3_paired_protocol.json](../experiments/materials_v3_paired_protocol.json).
 
+Text configuration identities normalize Git CRLF/LF checkout differences. Original
+source response hashes and archive hashes remain byte exact. Initial dispatch
+`37307650595` was rejected before creating task roots or provider reservations
+because its preregistration used a Windows checkout hash. That failed dispatch is
+preserved and is not a model-quality observation. The corrected registration keeps
+the same question pool, rubric contents, model, budgets and comparison policies.
+
 The manual-only workflow accepts `candidate_policy=v3` on `dev_acquisition_v2`.
 Artifacts are `intelligent-frontier-v3-<question_id>`. Re-running a workflow attempt
 with empty ledgers is prohibited. An interrupted saved case cannot silently start
