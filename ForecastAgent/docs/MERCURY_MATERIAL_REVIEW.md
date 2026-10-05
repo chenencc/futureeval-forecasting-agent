@@ -279,3 +279,62 @@ paid fallback, or automatic journal restarts. Source/reference completeness,
 unit errors, lost positive components, event-time overclaims and actual token
 consumption are audited independently. Fewer event-refutation options cannot
 by themselves count as a semantic improvement. Production remains unchanged.
+
+## V3 regression outcome
+
+[Run 37251487304](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37251487304)
+completed on tested commit `1180b3e`. Both arms returned complete typed outputs
+for eight cases and 33 fixed needs. The 69 focused tests passed locally and in
+the workflow. Exact input coverage, original-response binding replay, prior
+consumption and current caps passed the offline audit. The experiment consumed
+24 logical calls and 24 HTTP attempts, with no retries, planning, searches,
+captures or forecast submissions.
+
+| Provider-reported usage | V2 | V3 units + evidence |
+| --- | ---: | ---: |
+| HTTP attempts | 8 | 16 |
+| Decision questions | 99 | 66 |
+| Input tokens | 519,686 | 375,051 |
+| Output tokens | 96 | 101 |
+| Reported cost, USD | 0 | 0 |
+| Unknown usage attempts | 0 | 0 |
+
+Despite the extra sequential requests, reported input usage fell 27.8%.
+V3's measured provider-attempt time was longer in this single run; no stable
+speed advantage is established. Token totals may expand per independent head.
+
+The politics case now treats a May current-office report as an opposing
+snapshot rather than interval-wide departure refutation, and explicitly
+labels the date as publication-only. The ILS case retains Yahoo/ILS identity
+while excluding only the wrong-window price records, with bound references.
+The 50 MW and price-drop constants bind to original rules. AAA source identity
+is retained as partial evidence instead of rejected for its price date, though
+it is not yet fully matched.
+
+Two new observation-scope problems prevent semantic acceptance. Fuel needs
+`n2` (price greater than $5.016) and `n3` (observation before September 6) are
+classified as rule definitions: the constraint is known, but the actual price
+predicate/date has not been assessed. A rule match cannot close an observation
+obligation. The cybersecurity confirmation need `N4` and integrated missile
+test need `n1` also get event witnesses without explicit coverage of the
+before-deadline and target-hit qualifiers, respectively; the fresh V2 arm
+remains partial on these needs. These are semantic overclaims even though the
+joint reference selection is structurally valid. The sports host-identity need
+also lacks a selected rule identity reference, although the original rule and
+target bindings remain retained.
+
+V3's lack of whole-event refutation options and independently contradictory
+heads is a schema property, not a measured zero error rate. Unit classification
+can be wrong and compound witnesses still require qualifier coverage. The
+next design needs separate requested parameters and external observation
+obligations, with no disappearance of the latter when a rule constant is
+selected. All original model claims remain unverified; no automatic condition
+closure or production promotion occurred.
+
+Artifact `11320009651` was imported into `E:/metaculus_data`; its locally
+archived original ZIP was hash-verified at
+`71c23df3a1a381d9fbc2b2d2c5c9e283ed3f5af6a5f51614d708f8c05c16c32f`.
+The English semantic audit and per-need evidence are in
+`E:/metaculus_data/reports/mercury-material-units-audit-37251487304.json`.
+Review was not fully blinded. No resolved outcomes, accuracy or Brier metrics
+were used. These eight regressions do not establish unseen generalization.
