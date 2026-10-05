@@ -59,3 +59,18 @@ production release, listener or worker.
 
 See [the fresh pilot result](PILOT_RESULT.md) for actual capture counts, provider
 usage, failure preservation and the remaining integration limitations.
+
+## Analysis-only connection
+
+`ForecastAgent.analysis.acquisition_replay` connects immutable body packages to
+the retained `mercury-evidence-chain-v2` analysis. It passes exact question fields
+and original body spans, not V7 judgments or acquisition model opinions. V7 review
+completion is not a scoring prerequisite. Each question permits at most two
+Mercury HTTP attempts; an unavailable second read retains a validated first
+decision. Probabilities are clipped to 0.02–0.98 for evaluation.
+
+The frozen `UNIFIED_ANALYSIS5.json` manifest pins all five acquired bundle hashes
+and the analysis implementation. Inference and outcome evaluation run in separate
+steps. Source hashes, character offsets, request byte bounds and provider outputs
+are audited before labels are joined. This bridge makes no retrieval or submission
+calls and does not alter production. See [the analysis result](ANALYSIS_RESULT.md).
