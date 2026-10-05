@@ -190,6 +190,8 @@ class RetrievalTask:
         search_policy.freeze(self.bundle, request, existing)
         self.optimized = request.get('acquisition_profile') in {'collection_v2','collection_v3'}
         self.raw_recall = request.get('acquisition_focus') == 'raw_recall'
+        from ForecastAgent.runtime.intelligent_acquisition import validate_strategy
+        validate_strategy(self)
         if self.raw_recall and (mode != 'live' or request.get('pipeline','collection') != 'collection'):
             raise ValueError('Raw recall focus requires current-information collection mode')
         upgrading_body_policy=existing and 'historical_body_policy' not in self.bundle
@@ -495,6 +497,13 @@ class RetrievalTask:
             validate(self, name, args)
         if not isinstance(args, dict):
             raise ValueError('Tool arguments must be an object')
+        if name in {'inspect_materials', 'assess_materials'}:
+            from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier, assess, TOOLS
+            if not enabled(self):
+                raise ValueError('Intelligent material tools require the opt-in strategy')
+            from ForecastAgent.runtime.contracts import check_schema
+            check_schema(args, next(t['function']['parameters'] for t in TOOLS if t['function']['name'] == name))
+            return assess(self, args) if name == 'assess_materials' else frontier(self, args.get('offset', 0), args.get('limit', 8))
         if self.bundle['result'] and name in {'collect_dataset','collect_archive'}:
             raise ValueError('Retrieval already finished; no new initial-budget collection allowed')
         if name=='collect_archive' and self.bundle['plan'] is None:
@@ -545,6 +554,8 @@ class RetrievalTask:
             if card is not None and (not isinstance(card, dict) or not all(isinstance(card.get(k), str) and card[k].strip() for k in ["subject", "identity_checks", "required_form", "announcement_window", "effective_vs_announcement"])):
                 raise ValueError("Complete the subject, identity, form and timing card")
             from ForecastAgent.runtime.contracts import validate_plan_cutoff
+            from ForecastAgent.runtime.intelligent_acquisition import validate_plan
+            validate_plan(self, needs)
             validate_plan_cutoff(self, needs)
             from ForecastAgent.runtime.task_protocol import validate_current_plan
             validate_current_plan(self, needs)
@@ -799,6 +810,11 @@ class RetrievalTask:
                 b['result']['acquisition_complete'] = (b['acceptance']['status']=='accepted')
                 b['result']['completion_scope'] = 'Raw capture and execution integrity only; recall adequacy and interpretation remain unverified.'
                 b['result']['gaps'] = [f['issue'] for f in b['acceptance']['failures']]
+            from ForecastAgent.runtime.intelligent_acquisition import enabled, terminal_report
+            if enabled(self):
+                b['result']['material_report'] = terminal_report(self)
+                b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
+                    not b['result']['material_report']['unresolved_material_targets'])
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -1168,6 +1184,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     entry['function']['parameters']['properties']['queries']['minItems']=0
         if not task.exa_limit or not os.environ.get('EXA_API_KEY'):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
+        from ForecastAgent.runtime.intelligent_acquisition import configure_tools
+        available_tools = configure_tools(task, available_tools)
         if collection:
             task.bundle['control']['operating_clock_utc'] = utc_now()
             current_session['http_attempt_limit'] = COLLECTION_HTTP_PER_DISPATCH
@@ -1337,7 +1355,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     result = {"error": detail[:500]}
                     if isinstance(exc, ContractError):
                         result['contract_error'] = exc.details
-                if name in {'list_channels','list_sources','list_official_datasets','list_dated_datasets','collection_checkpoint','collection_acceptance'}:
+                if name in {'list_channels','list_sources','list_official_datasets','list_dated_datasets','collection_checkpoint','collection_acceptance','inspect_materials','assess_materials'}:
                     result['no_progress'] = True
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
                 step.update(status='failed' if failed else 'completed',

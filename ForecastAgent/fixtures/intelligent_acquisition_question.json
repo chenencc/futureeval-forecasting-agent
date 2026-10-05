@@ -1,0 +1,9 @@
+{
+  "id": "999001",
+  "question": "Will the agency publish the June statistic?",
+  "resolution_criteria": "Use the agency June table, including units and observation date.",
+  "background": "Synthetic engineering fixture. The example source is https://example.org/dataset. This is not a live Metaculus question.",
+  "question_type": "binary",
+  "mode": "live",
+  "open_time": "2026-06-01T00:00:00Z"
+}

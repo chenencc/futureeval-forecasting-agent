@@ -1,0 +1,110 @@
+{
+  "schema": "intelligent-acquisition-saved-body-audit-v1",
+  "questions": [
+    {
+      "question_id": "36871",
+      "bundle_sha256": "1ab54181369d0bfdced3f12ff72418c82d23f2e86c6e820117943f261f377fa0",
+      "input_warnings": [
+        {
+          "field": "open_time",
+          "issue": "Not provided; no value was inferred"
+        }
+      ],
+      "captured_sources": 8,
+      "readable_sources": 8,
+      "raw_hashes_checked": 8,
+      "banked_excerpts": 0,
+      "readable_body_chars": 72508,
+      "fixed_analysis_first_request_bytes": 21644,
+      "fixed_analysis_visible_chars": 6738,
+      "fixed_analysis_visible_source_count": 8,
+      "fixed_analysis_context_omitted": true,
+      "issues": []
+    },
+    {
+      "question_id": "43494",
+      "bundle_sha256": "ab38b3883d535a1b314bc22a0b70a1f9afca80080a7da5f9bb736fdaebb8c934",
+      "input_warnings": [
+        {
+          "field": "open_time",
+          "issue": "Not provided; no value was inferred"
+        }
+      ],
+      "captured_sources": 4,
+      "readable_sources": 4,
+      "raw_hashes_checked": 4,
+      "banked_excerpts": 0,
+      "readable_body_chars": 38446,
+      "fixed_analysis_first_request_bytes": 21917,
+      "fixed_analysis_visible_chars": 8646,
+      "fixed_analysis_visible_source_count": 4,
+      "fixed_analysis_context_omitted": true,
+      "issues": []
+    },
+    {
+      "question_id": "43501",
+      "bundle_sha256": "eff18b8b43089339747344fbb3eeb44124a73c9f3006bd9473bef081c78b75c8",
+      "input_warnings": [
+        {
+          "field": "open_time",
+          "issue": "Not provided; no value was inferred"
+        }
+      ],
+      "captured_sources": 8,
+      "readable_sources": 8,
+      "raw_hashes_checked": 8,
+      "banked_excerpts": 0,
+      "readable_body_chars": 69979,
+      "fixed_analysis_first_request_bytes": 21927,
+      "fixed_analysis_visible_chars": 5421,
+      "fixed_analysis_visible_source_count": 7,
+      "fixed_analysis_context_omitted": true,
+      "issues": []
+    },
+    {
+      "question_id": "43991",
+      "bundle_sha256": "6a5a00ae6e2be08a945ed2b78dc322c5902f1a4da3bcca4299b85af3cb1259c4",
+      "input_warnings": [
+        {
+          "field": "open_time",
+          "issue": "Not provided; no value was inferred"
+        }
+      ],
+      "captured_sources": 5,
+      "readable_sources": 5,
+      "raw_hashes_checked": 5,
+      "banked_excerpts": 0,
+      "readable_body_chars": 26663,
+      "fixed_analysis_first_request_bytes": 21502,
+      "fixed_analysis_visible_chars": 6759,
+      "fixed_analysis_visible_source_count": 5,
+      "fixed_analysis_context_omitted": true,
+      "issues": []
+    },
+    {
+      "question_id": "44801",
+      "bundle_sha256": "b70e01daa4f45a400c0703953b332a9aca63e62e9b97bf06b5973ea17eca620e",
+      "input_warnings": [
+        {
+          "field": "open_time",
+          "issue": "Not provided; no value was inferred"
+        }
+      ],
+      "captured_sources": 8,
+      "readable_sources": 8,
+      "raw_hashes_checked": 8,
+      "banked_excerpts": 0,
+      "readable_body_chars": 31302,
+      "fixed_analysis_first_request_bytes": 21745,
+      "fixed_analysis_visible_chars": 7211,
+      "fixed_analysis_visible_source_count": 8,
+      "fixed_analysis_context_omitted": true,
+      "issues": []
+    }
+  ],
+  "new_model_http_attempts": 0,
+  "new_search_attempts": 0,
+  "new_capture_attempts": 0,
+  "forecasts_submitted": 0,
+  "scope": "Saved-body integrity and unchanged release analysis projection only. No agent inference or live recall improvement was evaluated."
+}

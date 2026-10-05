@@ -12,6 +12,10 @@ def reading_targets(bundle):
 
 def checkpoint(task):
     b = task.bundle
+    from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier
+    if enabled(task):
+        from ForecastAgent.runtime.search_policy import requirement
+        return {**frontier(task), 'exa_requirement': requirement(task)}
     if getattr(task,'raw_recall',False):
         from ForecastAgent.evidence.raw_capture import capture_report
         from ForecastAgent.runtime.search_policy import requirement

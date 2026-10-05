@@ -1,8 +1,10 @@
 # ForecastAgent
 
 For the release-based, acquisition-only development plan with frozen analysis,
-see [Acquisition V2 design](docs/ACQUISITION_V2_DESIGN.md). This is a design branch;
-the production runtime and workflows retain release 1.0.1 behavior.
+see [Acquisition V2 design](docs/ACQUISITION_V2_DESIGN.md). This is an experimental branch;
+the production runtime and workflows retain release 1.0.1 behavior. The opt-in
+[Intelligent acquisition V1](acquisition/README.md) implements material planning,
+version-bound gap assessment, independent supplement and a compatible package.
 
 The official competition worker is pinned to [release 1.0.1](releases/1.0.1.md): original acquisition → independent supplement → Mercury original-evidence conditional rereading → validated automatic submission. The machine-readable policy is [1.0.1.json](releases/1.0.1.json).
 

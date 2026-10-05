@@ -1,7 +1,9 @@
 # Acquisition V2: release-based research design
 
-Status: design only. No runtime, production workflow, provider budget, or forecast
-submission policy changes are implemented by this document.
+Status: the first opt-in runtime is implemented; see
+[Intelligent acquisition V1](../acquisition/README.md). Production workflows,
+provider ceilings, and release analysis remain unchanged. Live acquisition
+quality and provider reliability have not been established by offline tests.
 
 ## 1. Baseline and experiment boundary
 

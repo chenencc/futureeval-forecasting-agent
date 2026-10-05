@@ -126,6 +126,15 @@ def primary_rescue(task):
 
 
 def next_action(task):
+    from ForecastAgent.runtime.intelligent_acquisition import enabled
+    if enabled(task):
+        # Preserve release repair and discovery-to-read gates. Remaining local
+        # navigation and material selection are agent decisions, not word rules.
+        rescue = primary_rescue(task)
+        if rescue:
+            return {'tool': 'extract_failed_pages', 'candidates': rescue,
+                    'instruction': 'Rescue a failed named source once within the existing allowance.'}
+        return discovery_read_action(task)
     if getattr(task,'raw_recall',False):
         rescue=primary_rescue(task)
         if rescue:

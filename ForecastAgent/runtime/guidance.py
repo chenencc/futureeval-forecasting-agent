@@ -17,6 +17,9 @@ def collection_system(task, skills):
     from pathlib import Path
     filename = 'raw_recall.md' if getattr(task,'raw_recall',False) else 'collection.md'
     template = (Path(__file__).parents[1] / 'prompts' / filename).read_text(encoding='utf-8')
+    from ForecastAgent.runtime.intelligent_acquisition import enabled
+    if enabled(task):
+        template = (Path(__file__).parents[1] / 'prompts' / 'intelligent_materials.md').read_text(encoding='utf-8')
     return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({'tavily_basic_lifetime':task.search_limit,
         'exa_lifetime':task.exa_limit, 'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional'), 'initial_shared_http':8, 'extract_batches':1,
         'model_decisions_per_dispatch':12, 'transport_failures_per_dispatch':4, 'model_http_per_dispatch':16, 'model_http_lifetime':72})+'\nAvailable skill catalog: '+json.dumps(skills)

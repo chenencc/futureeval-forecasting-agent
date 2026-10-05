@@ -18,6 +18,9 @@ def set_status(task, args):
         raise ContractError('invalid_need_status', 'arguments',
             'Use an existing need ID and a substantive reason. Only useful background needs may be deferred; failed retrieval never establishes inapplicability.')
     need = next(n for n in task.bundle['plan'] if n['id'] == ident)
+    from ForecastAgent.runtime.intelligent_acquisition import enabled
+    if enabled(task) and need['priority'] == 'critical' and status != 'active':
+        raise ContractError('critical_material_scope', 'status', 'Retain critical material targets. Record unavailable or not-yet-published material through assess_materials; do not delete the requirement.')
     if status == 'deferred' and need['priority'] == 'critical':
         raise ContractError('critical_deferral', 'status', 'Critical acquisition cannot be deferred to manufacture completion. Preserve its concrete gap.')
     statuses = task.bundle.setdefault('need_status', {})
