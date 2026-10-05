@@ -1,0 +1,3438 @@
+{
+  "schema": "frozen-frontier-paired-audit-v1",
+  "run_id": "37297914625",
+  "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+  "results_complete": true,
+  "rows": [
+    {
+      "question_id": "36871",
+      "question": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+      "arms": {
+        "baseline": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 10,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 10
+            },
+            "known_reported_tokens": 101028,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 2,
+          "banked_sources": 1,
+          "banked_chars": 218,
+          "frozen_material_checks": [
+            {
+              "target_id": "target_usdt_row",
+              "description": "USDT market capitalization at the target snapshot; preserve full value and entity",
+              "selected": true,
+              "matching_sources": [
+                "https://coinmarketcap.com/historical/20260630"
+              ]
+            },
+            {
+              "target_id": "target_usdc_row",
+              "description": "USDC market capitalization at the same target snapshot",
+              "selected": true,
+              "matching_sources": [
+                "https://coinmarketcap.com/historical/20260630"
+              ]
+            },
+            {
+              "target_id": "target_table_identity",
+              "description": "Target observation date, denomination and column meaning",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 2,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [],
+          "agent_material_report": null,
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21618,
+            "visible_chars": 8204,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "target_usdt_row",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "target_usdc_row",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "target_table_identity",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 0
+          },
+          "provider_statuses": {
+            "received": 10
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 70.99840580200001,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "d29a468854163e27f893c1abc1ec5a3dd6040e47dbba413f94fc70d7135794bc",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://coinmarketcap.com/historical/20260630",
+              "text": "3\nUSDT\nTether USDt\nUSDT\n$184,368,461,962.97\n$0.9984\n184,668,223,282 USDT *\n$65,377,485,194.64\n-0.02%\n-0.02%\n-0.04%",
+              "location": {
+                "format": "html",
+                "source": "https://coinmarketcap.com/historical/20260630/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_usdt_mcap_20260630"
+              ]
+            },
+            {
+              "url": "https://coinmarketcap.com/historical/20260630",
+              "text": "5\nUSDC\nUSDC\nUSDC\n$73,360,220,193.95\n$0.9996\n73,390,035,018 USDC *\n$12,195,105,821.59\n-0.01%\n0.00%\n-0.01%",
+              "location": {
+                "format": "html",
+                "source": "https://coinmarketcap.com/historical/20260630/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_usdc_mcap_20260630"
+              ]
+            }
+          ],
+          "candidate_strategy": null,
+          "actual_tool_counts": {
+            "finish_collection": 1,
+            "plan_evidence": 1,
+            "read_document": 3,
+            "record_quote": 3,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 0,
+          "context_chars_max": 27640,
+          "actual_exact_review_focus_requests": [],
+          "unique_coordinate_chars_identical_document_aliases_merged": 218,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": []
+        },
+        "candidate": {
+          "state": "completed_with_gaps",
+          "termination_reason": "stalled",
+          "incomplete": false,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 8,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 8
+            },
+            "known_reported_tokens": 83871,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 3,
+          "banked_sources": 1,
+          "banked_chars": 7685,
+          "frozen_material_checks": [
+            {
+              "target_id": "target_usdt_row",
+              "description": "USDT market capitalization at the target snapshot; preserve full value and entity",
+              "selected": true,
+              "matching_sources": [
+                "https://coinmarketcap.com/historical/20260630"
+              ]
+            },
+            {
+              "target_id": "target_usdc_row",
+              "description": "USDC market capitalization at the same target snapshot",
+              "selected": true,
+              "matching_sources": [
+                "https://coinmarketcap.com/historical/20260630"
+              ]
+            },
+            {
+              "target_id": "target_table_identity",
+              "description": "Target observation date, denomination and column meaning",
+              "selected": true,
+              "matching_sources": [
+                "https://coinmarketcap.com/historical/20260630"
+              ]
+            }
+          ],
+          "material_checks_selected": 3,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [
+            {
+              "tool": "assess_materials",
+              "error": "An adequate declaration cannot also declare missing material."
+            }
+          ],
+          "gaps": [],
+          "agent_material_report": {
+            "schema": "intelligent_materials_v2",
+            "needs": [
+              {
+                "need_id": "need_usdt_mcap_20260630",
+                "condition": "USDT market capitalization in USD as of June 30, 2026",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_84f7f623ad314317",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 101,
+                    "sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_91fdd0bb82b2e4b2",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 191,
+                    "sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "agent_assessment": {
+                  "need_id": "need_usdt_mcap_20260630",
+                  "status": "adequate",
+                  "source_urls": [
+                    "https://coinmarketcap.com/historical/20260630"
+                  ],
+                  "excerpt_ids": [
+                    "X1",
+                    "X2",
+                    "X3"
+                  ],
+                  "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDT.",
+                  "missing_material": "",
+                  "next_action": "No further action needed; data is collected.",
+                  "source_versions": {
+                    "https://coinmarketcap.com/historical/20260630": {
+                      "raw_sha256": "195a4dce3f880dabc7a763dca3d0f6f1607ce4a736d299431f261affcf3c06c6",
+                      "parsed_version": "598925adf28c2d99420186cacd089caecbb5461c5590104db826bee451fcceaf"
+                    }
+                  },
+                  "semantic_verified": false
+                },
+                "assessment_stale": false
+              },
+              {
+                "need_id": "need_usdc_mcap_20260630",
+                "condition": "USDC market capitalization in USD as of June 30, 2026",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_84f7f623ad314317",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 101,
+                    "sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_91fdd0bb82b2e4b2",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 191,
+                    "sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "agent_assessment": {
+                  "need_id": "need_usdc_mcap_20260630",
+                  "status": "adequate",
+                  "source_urls": [
+                    "https://coinmarketcap.com/historical/20260630"
+                  ],
+                  "excerpt_ids": [
+                    "X1",
+                    "X2",
+                    "X3"
+                  ],
+                  "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDC.",
+                  "missing_material": "",
+                  "next_action": "No further action needed; data is collected.",
+                  "source_versions": {
+                    "https://coinmarketcap.com/historical/20260630": {
+                      "raw_sha256": "195a4dce3f880dabc7a763dca3d0f6f1607ce4a736d299431f261affcf3c06c6",
+                      "parsed_version": "598925adf28c2d99420186cacd089caecbb5461c5590104db826bee451fcceaf"
+                    }
+                  },
+                  "semantic_verified": false
+                },
+                "assessment_stale": false
+              }
+            ],
+            "sources": [
+              {
+                "url": "https://coinmarketcap.com",
+                "title": "Cryptocurrency Prices, Charts And Market Capitalizations | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Tue, 25 Aug 2020 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/cmc-ai/usd-coin/latest-updates",
+                "title": "Latest USDC News - (USDC) Future Outlook, Trends & Market Insights",
+                "origin": "search",
+                "published_date": "Fri, 02 Oct 2026 03:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 12244
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/ethereum/historical-data",
+                "title": "Ethereum Price History and Historical Data | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Fri, 17 Nov 2023 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/gram",
+                "title": "Gram (prev. Toncoin) price today, GRAM to USD live price, marketcap and chart | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Fri, 10 Apr 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/solana/historical-data",
+                "title": "Solana Price History and Historical Data | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Mon, 06 Feb 2017 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/tether",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 2,
+                "chars": 8177
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/usd-coin",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 2,
+                "chars": 7004
+              },
+              {
+                "url": "https://coinmarketcap.com/currencies/usd-coin/historical-data",
+                "title": "USDC Price History and Historical Data | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Fri, 15 Dec 2023 00:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 1450
+              },
+              {
+                "url": "https://coinmarketcap.com/exchanges/gate",
+                "title": "Gate trade volume and market listings | CoinMarketCap",
+                "origin": "search",
+                "published_date": "date unknown",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical",
+                "title": "Check Cryptocurrency Price History For The Top Coins | CoinMarketCap",
+                "origin": "search",
+                "published_date": "date unknown",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20250630",
+                "title": "Historical Snapshot - 30 June 2025 | CoinMarketCap",
+                "origin": "search",
+                "published_date": "Mon, 30 Jun 2025 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260603/",
+                "title": "Historical Snapshot - 03 June 2026 | CoinMarketCap",
+                "origin": "search",
+                "published_date": "2026-06-03T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260607/",
+                "title": "Historical Snapshot - 07 June 2026 | CoinMarketCap",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260613",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 4,
+                "chars": 16139
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260613/",
+                "title": "Historical Snapshot - 13 June 2026 | CoinMarketCap",
+                "origin": "search",
+                "published_date": "2026-06-13T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260617",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 4,
+                "chars": 5656
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260617/",
+                "title": "Historical Snapshot - 17 June 2026 | CoinMarketCap",
+                "origin": "search",
+                "published_date": "2026-06-17T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260621",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 4,
+                "chars": 16153
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260621/",
+                "title": "Historical Snapshot - 21 June 2026 | CoinMarketCap",
+                "origin": "search",
+                "published_date": "2026-06-21T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://coinmarketcap.com/historical/20260630",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 4,
+                "chars": 5685
+              }
+            ],
+            "source_total": 35,
+            "next_offset": 20,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "semantic_verified": false,
+            "instruction": "Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.",
+            "unresolved_material_targets": [],
+            "plan_missing": false,
+            "plan_failures": [],
+            "pending_passage_count": 0,
+            "scope": "Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy."
+          },
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21670,
+            "visible_chars": 8204,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "target_usdt_row",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "target_usdc_row",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "target_table_identity",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 0
+          },
+          "provider_statuses": {
+            "received": 8
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 43.89948723299999,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "d29a468854163e27f893c1abc1ec5a3dd6040e47dbba413f94fc70d7135794bc",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://coinmarketcap.com/historical/20260630",
+              "text": "Markets\nCryptocurrencies\nRanking\nCategories\nHistorical Snapshots\nToken unlocks\nYield\nReal-World Assets\nLeaderboards\nTrending\nUpcoming\nRecently Added\nGainers & Losers\nMost Visited\nCommunity Sentiment\nPrediction Markets\nTrending\nNew\nCrypto\nPolitics\nSports\nFinance\nTech\nNFT\nOverall NFT Stats\nUpcoming Sales\nDashboards\nMarkets\nMarket Overview\nSpot Market\nNo. of Cryptocurrencies\nChain Ranking\nNew\nBitcoin Treasuries\nBNB Treasuries\nExchange Inflows/Outflows\nIndicators\nFear and Greed Index\nAltcoin Season Index\nMarket Cycle Indicators\nBitcoin Dominance\nCoinMarketCap 20 Index\nCoinMarketCap 100 Index\nETF Flows\nCrypto ETFs\nBitcoin ETFs\nEthereum ETFs\nSolana ETFs\nXRP ETFs\nHyperliquid ETFs\nTechnical analysis\nRSI\nMACD\nDerivatives\nOverview\nLiquidations\nLiquidation Map\nLiquidation Heatmap\nFunding Rates\nDexScan\nSignals\nTrending\nNew\nGainers\nMeme Explorer\nTop Traders\nExchanges\nCentralized Exchanges\nSpot\nDerivatives\nDecentralized Exchanges\nSpot\nDerivatives\nCommunity\nFeeds\nTopics\nLives\nArticles\nAPI\nAPI\nCrypto API\nDEX API\nEnterprise\nKeyless API\nWebSocket\nRWA API\nCase Studies\nPricing\nResources\nDocumentation\nFAQ\nAI Integrations\nCMC Agent Hub\nSkills Marketplace\nCMC MCP\nx402\nProducts\nProducts\nConverter\nNewsletter\nCMC Launch\nCMC Labs\nCMC Max\nTop Stories\nTelegram Bot\nAdvertise\nSite Widgets\nLearn\nNews\nAcademy\nResearch\nVideos\nGlossary\nCMC AI\nAsk CMC AI\nAI Alerts\nCampaigns\nAirdrops\nDiamond Rewards\nLearn & Earn\nCalendars\nICO Calendar\nEvents Calendar\nHistorical Snapshot - 30 June 2026\nUSD\n← Previous Week\nNext Week →\nView All\nRank\nName\nSymbol\nMarket Cap\nPrice\nCirculating Supply\nvolume (24h)\n% 1h\n% 24h\n% 7d\nRank\nName\nRank\nName\nSymbol\nMarket Cap\nPrice\nCirculating Supply\nvolume (24h)\n% 1h\n% 24h\n% 7d\n1\nBTC\nBitcoin\nBTC\n$1,174,130,878,716.65\n$58,558.86\n20,050,440 BTC\n$32,747,419,390.63\n0.06%\n-2.63%\n-6.56%\n2\nETH\nEthereum\nETH\n$189,422,712,731.43\n$1,569.58\n120,683,397 ETH *\n$9,639,804,636.81\n0.23%\n-2.52%\n-5.76%\n3\nUSDT\nTether USDt\nUSDT\n$184,368,461,962.97\n$0.9984\n184,668,223,282 USDT *\n$65,377,485,194.64\n-0.02%\n-",
+              "location": {
+                "format": "html",
+                "source": "https://coinmarketcap.com/historical/20260630/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_usdt_mcap_20260630",
+                "need_usdc_mcap_20260630"
+              ]
+            },
+            {
+              "url": "https://coinmarketcap.com/historical/20260630",
+              "text": "Markets\nCryptocurrencies\nRanking\nCategories\nHistorical Snapshots\nToken unlocks\nYield\nReal-World Assets\nLeaderboards\nTrending\nUpcoming\nRecently Added\nGainers & Losers\nMost Visited\nCommunity Sentiment\nPrediction Markets\nTrending\nNew\nCrypto\nPolitics\nSports\nFinance\nTech\nNFT\nOverall NFT Stats\nUpcoming Sales\nDashboards\nMarkets\nMarket Overview\nSpot Market\nNo. of Cryptocurrencies\nChain Ranking\nNew\nBitcoin Treasuries\nBNB Treasuries\nExchange Inflows/Outflows\nIndicators\nFear and Greed Index\nAltcoin Season Index\nMarket Cycle Indicators\nBitcoin Dominance\nCoinMarketCap 20 Index\nCoinMarketCap 100 Index\nETF Flows\nCrypto ETFs\nBitcoin ETFs\nEthereum ETFs\nSolana ETFs\nXRP ETFs\nHyperliquid ETFs\nTechnical analysis\nRSI\nMACD\nDerivatives\nOverview\nLiquidations\nLiquidation Map\nLiquidation Heatmap\nFunding Rates\nDexScan\nSignals\nTrending\nNew\nGainers\nMeme Explorer\nTop Traders\nExchanges\nCentralized Exchanges\nSpot\nDerivatives\nDecentralized Exchanges\nSpot\nDerivatives\nCommunity\nFeeds\nTopics\nLives\nArticles\nAPI\nAPI\nCrypto API\nDEX API\nEnterprise\nKeyless API\nWebSocket\nRWA API\nCase Studies\nPricing\nResources\nDocumentation\nFAQ\nAI Integrations\nCMC Agent Hub\nSkills Marketplace\nCMC MCP\nx402\nProducts\nProducts\nConverter\nNewsletter\nCMC Launch\nCMC Labs\nCMC Max\nTop Stories\nTelegram Bot\nAdvertise\nSite Widgets\nLearn\nNews\nAcademy\nResearch\nVideos\nGlossary\nCMC AI\nAsk CMC AI\nAI Alerts\nCampaigns\nAirdrops\nDiamond Rewards\nLearn & Earn\nCalendars\nICO Calendar\nEvents Calendar\nHistorical Snapshot - 30 June 2026\nUSD\n← Previous Week\nNext Week →\nView All\nRank\nName\nSymbol\nMarket Cap\nPrice\nCirculating Supply\nvolume (24h)\n% 1h\n% 24h\n% 7d\nRank\nName\nRank\nName\nSymbol\nMarket Cap\nPrice\nCirculating Supply\nvolume (24h)\n% 1h\n% 24h\n% 7d\n1\nBTC\nBitcoin\nBTC\n$1,174,130,878,716.65\n$58,558.86\n20,050,440 BTC\n$32,747,419,390.63\n0.06%\n-2.63%\n-6.56%\n2\nETH\nEthereum\nETH\n$189,422,712,731.43\n$1,569.58\n120,683,397 ETH *\n$9,639,804,636.81\n0.23%\n-2.52%\n-5.76%\n3\nUSDT\nTether USDt\nUSDT\n$184,368,461,962.97\n$0.9984\n184,668,223,282 USDT *\n$65,377,485,194.64\n-0.02%\n-0.02%\n-0.04%\n4\nBNB\nBNB\nBNB\n$73,549,062,932.16\n$545.69\n134,782,713 BNB *\n$1,113,363,069.00\n0.19%\n-2.32%\n-5.53%\n5\nUSDC\nUSDC\nUSDC\n$73,360,220,193.95\n$0.9996\n73,390,035,018 USDC *\n$12,195,105,821.59\n-0.01%\n0.00%\n-0.01%\n6\nXRP\nXRP\nXRP\n$64,633,451,841.40\n$1.0384\n62,241,508,805 XRP *\n$1,392,542,317.70\n0.00%\n-1.78%\n-6.40%\n7\nSOL\nSolana\nSOL\n$42,709,585,593.63\n$73.52\n580,898,574 SOL *\n$2,808,926,983.01\n0.31%\n-1.90%\n5.57%\n8\nTRX\nTRON\nTRX\n$29,874,421,181.48\n$0.315\n94,850,455,617 TRX *\n$633,246,570.34\n0.03%\n-1.85%\n-4.24%\n9\nHYPE\nHyperliquid\nHYPE\n$16,421,641,329.25\n$64.93\n252,909,691 HYPE *\n$505,215,229.20\n0.57%\n-2.83%\n4.44%\n10\nDOGE\nDogecoin\nDOGE\n$12,281,826,987.07\n$0.07199\n170,594,303,127 DOGE\n$804,871,522.06\n0.22%\n-1.76%\n-8.68%\n11\nLEO\nUNUS SED LEO\nLEO\n$8,524,777,100.44\n$9.2633\n920,279,145 LEO *\n$1,294,822.24\n0.67%\n-3.14%\n-2.85%\n12\nZEC\nZcash\nZEC\n$6,685,648,636.40\n$399.15\n16,749,820 ZEC\n$380,027,816.62\n1.78%\n-1.97%\n-4.04%\n13\nXLM\nStellar\nXLM\n$6,410,621,577.76\n$0.1887\n33,978,018,419 XLM *\n$357,789,912.64\n2.54%\n8.03%\n-3.29%\n14\nXMR\nMonero\nXMR\n$5,689,898,657.60\n$303.11\n18,771,970 XMR\n$118,458,342.02\n-0.73%\n-4.04%\n-4.80%\n15\nCC\nCanton\nCC\n$5,500,585,630.11\n$0.1412\n38,956,136,689 CC *\n$28,083,840.89\n0.22%\n-2.90%\n-6.87%\n16\nDAI\nDai\nDAI\n$5,361,706,964.21\n$0.9993\n5,365,382,703 DAI *\n$82,000,059.19\n-0.01%\n-0.02%\n-0.01%\n17\nADA\nCardano\nADA\n$5,247,470,469.00\n$0.1442\n36,399,761,513 ADA *\n$299,197,952.00\n0.23%\n-0.98%\n-4.76%\n18\nLINK\nChainlink\nLINK\n$5,227,453,086.99\n$7.1895\n727,099,970 LINK *\n$256,806,103.42\n0.31%\n-2.44%\n-5.69%\n19\nUSD1\nWorld Liberty Financial USD\nUSD1\n$4,618,147,389.48\n$0.9989\n4,623,098,486 USD1 *\n$1,159,583,176.17\n0.00%\n0.01%\n-0.02%\n20\nUSDe\nEthena USDe\nUSDe\n$4,445,491,232.16\n$0.998\n4,454,329,823 USDe *\n$45,148,856.37\n<0.01%\n-0.02%\n-0.08%\nGram (prev. Toncoin)\nBitcoin Cash\nLitecoin\nHedera\nGlobal Dollar\nAvalanche\nSui\nPayPal USD\nCronos\nShiba Inu\nTether Gold\nNEAR Protocol\nBittensor\nDeXe\nWorld Liberty Financial\nPAX Gold\nUniswap\nAster\nOKB\nOndo\nWorldcoin\nRipple USD\nPolkadot\nUSDD\nMantle\nAave\nPi\n",
+              "location": {
+                "format": "html",
+                "source": "https://coinmarketcap.com/historical/20260630/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_usdt_mcap_20260630",
+                "need_usdc_mcap_20260630"
+              ]
+            },
+            {
+              "url": "https://coinmarketcap.com/historical/20260630",
+              "text": "Sky\nInternet Computer\nBitget Token\nEthereum Classic\nUnited Stables\nMorpho\nMemeCore\nPepe\nStable\nKuCoin Token\nAudiera\nKaspa\nRender\nQuant\nCosmos\nJUST\nAlgorand\nPolygon (prev. MATIC)\nJupiter\nGateToken\nVelvet\n币安人生\nEthena\nXDC Network\nVenice Token\nPump.fun\nFilecoin\nFlare\nMidnight\nTrueUSD\nArbitrum\nAptos\nLighter\nNexo\nAerodrome Finance\nInjective\nEURC\nPancakeSwap\nDash\nOFFICIAL TRUMP\nArtificial Superintelligence Alliance\nPudgy Penguins\nVeChain\nBonk\nFirst Digital USD\nJito\nVirtuals Protocol\nSei\nTerra Classic\nCelestia\nSPX6900\nSun [New]\nether.fi\nPyth Network\nStacks\nLayerZero\nCurve DAO Token\nGnosis\nHumanity\nBitTorrent [New]\nAINFT\nBitcoin SV\nImmutable\nPendle\nConflux\nKaia\nTezos\nETHGas\nZebec Network\nMonad\nTelcoin\nDoubleZero\nBUILDon\nJasmyCoin\nOptimism\nFLOKI\nLido DAO\nFalcon Finance\nKite\nThe Graph\nPieverse\nStarknet\nDecred\nChiliz\nAkash Network\nEigenCloud\nAxie Infinity\nEthereum Name Service\ndogwifhat\nMaple Finance\nRaydium\nIOTA\nPlasma\nTrust Wallet Token\nCompound\ndYdX\nMX Token\nOnyxcoin\nApeCoin\nFartcoin\nThe Sandbox\nKAITO\nNeo\nGenius Terminal\nSynapse\nArweave\nOriginTrail\nTHORChain\nTheta Network\nDecentraland\nWEMIX\nBasic Attention Token\nVision\nCentrifuge\nGoМining\nNexus\nGrass\nSafePal\nGala\nBillions Network\nTagger\nGolem\nData Network\nSKYAI\nConvex Finance\nRe\nVaulta\nAWE\nedgeX\nZKsync\neCash\nAB\nSentient\n1inch\nKamino\nRootstock Infrastructure Framework\nYZY MONEY\nCheems (cheems.pet)\nSOON\nBanana For Scale\nMeteora\nCoW Protocol\nAethir\nRaveDAO\nDeepBook Protocol\no1.exchange\nFour\nORDI\nUseless Coin\nNEXPACE\nMultiversX\nLivepeer\nFTX Token\nLoad More\nCryptos:\n62.96M\nExchanges:\n978\nMarket Cap:\n$2.91T\n0.60%\n24h Vol:\n$56.9B\n37.63%\nDominance:\nBTC:\n59.0%\nETH:\n11.3%\nETH Gas:\n0.08 Gwei\nFear & Greed:\n67/100\nGet listed\nAPI",
+              "location": {
+                "format": "html",
+                "source": "https://coinmarketcap.com/historical/20260630/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_usdt_mcap_20260630",
+                "need_usdc_mcap_20260630"
+              ]
+            }
+          ],
+          "candidate_strategy": "intelligent_materials_v2",
+          "actual_tool_counts": {
+            "assess_materials": 2,
+            "list_documents": 1,
+            "plan_evidence": 1,
+            "read_document": 2,
+            "review_passages": 2
+          },
+          "material_assessment_count": 2,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 2,
+          "context_chars_max": 27966,
+          "actual_exact_review_focus_requests": [
+            {
+              "record": "model_calls/0003.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 2000,
+              "record_sha256": "916dde8e9023e6f4bb01311475281983637f893f2e6371cc015a0031c4acf0fe"
+            },
+            {
+              "record": "model_calls/0005.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 5685,
+              "record_sha256": "83c013418cb8b055718c5d0949884ecd7229e30b9c5f682fd851f5894ad7157f"
+            }
+          ],
+          "unique_coordinate_chars_identical_document_aliases_merged": 5685,
+          "overlap_chars_by_identical_document_alias": 2000,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Program ended collection: stalled; unresolved acquisition work remains."
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "43494",
+      "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+      "arms": {
+        "baseline": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 10,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 10
+            },
+            "known_reported_tokens": 91265,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 3,
+          "banked_sources": 2,
+          "banked_chars": 859,
+          "frozen_material_checks": [
+            {
+              "target_id": "ny_scope_and_date",
+              "description": "Executive-order date and electricity threshold, not merely a general moratorium headline",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "ny_permit_scope",
+              "description": "Exact permit restriction text to distinguish environmental permits from grid connections",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "pa_binding_scope",
+              "description": "Pennsylvania executive-order date and binding permit commitment",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 0,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [
+            "Critical needs without associated usable sources: EU_STATE_RESTRICTION"
+          ],
+          "agent_material_report": null,
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21874,
+            "visible_chars": 8984,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "ny_scope_and_date",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "ny_permit_scope",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "pa_binding_scope",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 2
+          },
+          "provider_statuses": {
+            "received": 10
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 159.89995657099996,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "0cfb9bd12888903864a9beae85536b3f9e9ce77d3ff25b96caeb44e479ab4e68",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://lysanderny.gov/sites/default/files/2026-07/summary_of_eo_62_on_data_centers.pdf",
+              "text": "data centers that consume 50 megawatts or more, pending completion of a statewide",
+              "location": {
+                "format": "pdf",
+                "page": 1,
+                "source": "https://lysanderny.gov/sites/default/files/2026-07/summary_of_eo_62_on_data_centers.pdf",
+                "table_count": 0,
+                "table_extraction": "pdfplumber",
+                "table_extraction_warning": "Heuristic cells; compare to original PDF.",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "US_STATE_RESTRICTION"
+              ]
+            },
+            {
+              "url": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements",
+              "text": "Most importantly, the Executive Order directs the Pennsylvania Department of Environmental Protection (DEP) to incorporate the GRID Requirements into the agency’s permit review process for all data center proposals. Projects will be required to make legally enforceable commitments to meet the stringent standards established in GRID through a Consent Order and Agreement (COA).",
+              "location": {
+                "format": "html",
+                "source": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "US_STATE_RESTRICTION"
+              ]
+            },
+            {
+              "url": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements",
+              "text": "For developers who do not agree to meet the Governor’s GRID Requirements, DEP will not begin review of permit applications until after all required local approvals are secured and every permit application required for construction of the data center has been reviewed and found to be compliant by DEP. The new permit review process will apply to all new data center permit applications going forward.",
+              "location": {
+                "format": "html",
+                "source": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "US_STATE_RESTRICTION"
+              ]
+            }
+          ],
+          "candidate_strategy": null,
+          "actual_tool_counts": {
+            "finish_collection": 1,
+            "list_sources": 1,
+            "plan_evidence": 1,
+            "read_sources": 1,
+            "review_passages": 3
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 0,
+          "context_chars_max": 27816,
+          "actual_exact_review_focus_requests": [],
+          "unique_coordinate_chars_identical_document_aliases_merged": 859,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "EU_STATE_RESTRICTION: No saved source documenting an EU member state announcement of a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (>=50 MW) before September 1, 2026."
+          ]
+        },
+        "candidate": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 9,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 9
+            },
+            "known_reported_tokens": 90009,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 2,
+          "banked_sources": 1,
+          "banked_chars": 5982,
+          "frozen_material_checks": [
+            {
+              "target_id": "ny_scope_and_date",
+              "description": "Executive-order date and electricity threshold, not merely a general moratorium headline",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "ny_permit_scope",
+              "description": "Exact permit restriction text to distinguish environmental permits from grid connections",
+              "selected": true,
+              "matching_sources": [
+                "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched"
+              ]
+            },
+            {
+              "target_id": "pa_binding_scope",
+              "description": "Pennsylvania executive-order date and binding permit commitment",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 1,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [
+            "Critical needs without associated usable sources: N_pa_restriction"
+          ],
+          "agent_material_report": {
+            "schema": "intelligent_materials_v2",
+            "needs": [
+              {
+                "need_id": "N_ny_moratorium",
+                "condition": "New York State announces a moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (facilities with contracted or requested grid capacity of 50 MW or more) before September 1, 2026.",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_2b6d1d71f6522f00",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 111,
+                    "sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_e7c0d57b11128553",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 537,
+                    "sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_background_169f25ac194edad8",
+                    "field": "background",
+                    "start_char": 0,
+                    "end_char": 1435,
+                    "sha256": "169f25ac194edad8155ba718ad4eb0a9506676be27bbddf0b1e9229efbf0fdb2",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1",
+                  "X2"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              },
+              {
+                "need_id": "N_pa_restriction",
+                "condition": "Pennsylvania announces a moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (>=50 MW) before September 1, 2026.",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_2b6d1d71f6522f00",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 111,
+                    "sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_e7c0d57b11128553",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 537,
+                    "sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_background_169f25ac194edad8",
+                    "field": "background",
+                    "start_char": 0,
+                    "end_char": 1435,
+                    "sha256": "169f25ac194edad8155ba718ad4eb0a9506676be27bbddf0b1e9229efbf0fdb2",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [],
+                "agent_assessment": null,
+                "assessment_stale": false
+              },
+              {
+                "need_id": "N_no_reversal",
+                "condition": "The restriction announced by New York or Pennsylvania is not officially reversed or rescinded before September 1, 2026.",
+                "priority": "useful",
+                "question_spans": [
+                  {
+                    "id": "Q_question_2b6d1d71f6522f00",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 111,
+                    "sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_e7c0d57b11128553",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 537,
+                    "sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_background_169f25ac194edad8",
+                    "field": "background",
+                    "start_char": 0,
+                    "end_char": 1435,
+                    "sha256": "169f25ac194edad8155ba718ad4eb0a9506676be27bbddf0b1e9229efbf0fdb2",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X2"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              }
+            ],
+            "sources": [
+              {
+                "url": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 8994
+              },
+              {
+                "url": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements/",
+                "title": "The Governor’s Responsible Infrastructure Development (GRID) Requirements - PA Department of Community & Economic Development",
+                "origin": "search",
+                "published_date": "2026-08-24T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+                "title": "First Statewide Moratorium on New Hyperscale Data Centers Launched by Governor Kathy Hochul | Empire State Development",
+                "origin": "search",
+                "published_date": "2026-07-14T00:00:00.000Z",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 3982
+              },
+              {
+                "url": "https://gov.texas.gov/uploads/files/press/Thomas_Gleeson_Pablo_Vegas_Data_Centers_Directive_Letter_to_PUCT_ERCOT_August_2026_.pdf",
+                "title": "Dear Chairman Gleeson and Chief Executive Officer Vegas:",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://lysanderny.gov/sites/default/files/2026-07/summary_of_eo_62_on_data_centers.pdf",
+                "title": "Governor Hochul signed Executive Order 62 on July 14, 2026, imposing a moratorium on data centers that consume 50 megawatts or more, pending completion of a statewide environmental review. Note: this is separate from S10642/A11560, the legislation passed by the Senate and Assembly in June that would impose its own data center moratorium. The Governor has until the end of December to act on that bill. Below is a detailed summary of the Executive Order, and towns should pay special attention to the Community Investment Framework and state permit pause.Overview:• The Executive Order pauses DEC from issuing any permits related to data centers while DPS conducts an environmental review and issues a Generic Environmental Impact Statement under SEQRA. Towns may still issue their own permits. • ESD will create guidelines for host community benefits• DPS must explore creating a fund to make sure that any grid improvements needed because of datacenters are paid by datacenters, not overall ratepayers.• DPS must convene a working group on things like who pays for the cost of improvements, if costs can accurately be estimated, and how data centers and large users connect to the grid.• It consumes, or has the capacity to consume, 50 megawatts of electricity or more.Facilities primarily used for manufacturing, research, education, or medical care are exempt from this definition, even if they meet the criteria above.",
+                "origin": "search",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 3,
+                "chars": 5910
+              },
+              {
+                "url": "https://mgaleg.maryland.gov/2026RS/amds/bil_0000/HB2100_34342201.pdf",
+                "title": "2026 Regular Session - Amendment 343422/01   to House Bill 2100",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://nyassembly.gov/leg/?Actions=Y&bn=A11560&default_fld=%0D%0A&Floor%26nbspVotes=Y&leg_video=&Memo=Y&Summary=Y&term=&Text=Y",
+                "title": "A11560 - New York State Assembly",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://senatedems.delaware.gov/2026/07/30/senate-democrats-reflect-on-impactful-second-leg-of-153rd-general-assembly/",
+                "title": "Senate Democrats reflect on “impactful” second leg of 153rd ...",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://thenextweb.com/news/europe-data-centres-leaving-flap-d-grid-queues-land",
+                "title": "63% of Europe’s new data centre capacity is now going somewhere other than the big five",
+                "origin": "search",
+                "published_date": "Sat, 05 Sep 2026 06:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.cnbc.com/2026/05/04/denmark-data-centers-moratorium-grid-pause-power-demand.html",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.cushmanwakefield.com/en/netherlands/news/2026/04/emea-datacentre-update-h2-2025",
+                "title": "Cushman & Wakefield: European data centre growth is shifting | NL | Cushman & Wakefield",
+                "origin": "search",
+                "published_date": "Tue, 28 Apr 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.datacenterknowledge.com/build-design/denmark-rations-grid-access-as-ai-buildout-floods-nordic-systems",
+                "title": "Denmark Rations Grid Access as AI Buildout Floods Nordic Systems",
+                "origin": "search",
+                "published_date": "Mon, 01 Jun 2026 19:00:48 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.eia.gov/outlooks/steo/archives/Jan26.pdf",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.governor.ny.gov/executive-order/no-62-establishing-temporary-moratorium-data-centers-new-york-while-state-develops",
+                "title": "No 62: Establishing a Temporary Moratorium on Data Centers ...",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.governor.ny.gov/news/first-statewide-moratorium-new-hyperscale-data-centers-launched-governor-kathy-hochul",
+                "title": "First Statewide Moratorium on New Hyperscale Data Centers Launched by Governor Kathy Hochul | Governor Kathy Hochul | New York State",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.irishexaminer.com/business/economy/arid-41918872.html",
+                "title": "Ireland built the data centre boom. Now Irish firms are taking it around the world",
+                "origin": "search",
+                "published_date": "Sat, 03 Oct 2026 05:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.marketdataforecast.com/market-reports/europe-data-center-gpu-market",
+                "title": "Europe Data Center GPU Market Size, Share and Analysis, 2034",
+                "origin": "search",
+                "published_date": "Wed, 01 Jul 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/governor/documents/eo2026_05_protecting%20pennsylvania%20consumers%20from%20data%20center%20impacts_final_executed.pdf",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 8,
+                "chars": 19560
+              },
+              {
+                "url": "https://www.pewresearch.org/short-reads/2026/04/13/most-new-data-centers-in-the-us-are-coming-to-rural-areas",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              }
+            ],
+            "source_total": 25,
+            "next_offset": 20,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "semantic_verified": false,
+            "instruction": "Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.",
+            "unresolved_material_targets": [
+              {
+                "need_id": "N_ny_moratorium",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              },
+              {
+                "need_id": "N_pa_restriction",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              },
+              {
+                "need_id": "N_no_reversal",
+                "priority": "useful",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              }
+            ],
+            "plan_missing": false,
+            "plan_failures": [],
+            "pending_passage_count": 0,
+            "scope": "Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy."
+          },
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21926,
+            "visible_chars": 8984,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "ny_scope_and_date",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "ny_permit_scope",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "pa_binding_scope",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 2
+          },
+          "provider_statuses": {
+            "received": 9
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 72.24989404500002,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "0cfb9bd12888903864a9beae85536b3f9e9ce77d3ff25b96caeb44e479ab4e68",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+              "text": "Will Establish a Nation-Leading Regulatory Framework That Protects Ratepayers, the Environment and New Yorkers\nOne-Year Pause Will Ensure New Yorkers Are Not Paying for Transmission and Infrastructure Build Outs\nWill Create New York State Data Center Community Investment Framework, Ensuring Localities Access Can Unlock Millions From New Development\nGovernor Will Pursue Legislation To Repeal Sales Tax Exemptions for Massive Data Centers Across the State\n[Policy Outline for Community Investment Framework](https://esd.ny.gov/communityinvestmentframework)\nGovernor Kathy Hochul today signed an Executive Order to create the nation’s first moratorium on new hyperscale data centers, establishing the strongest standards for data center development and creating a blueprint to support localities. The Governor is temporarily pausing State environmental permits for up to one year in order to build a nation-leading regulatory framework that protects ratepayers, the environment, the energy grid and communities across the state.\n“New York has always been at the forefront of innovation and change but we’ve also always guaranteed that New Yorkers benefit. As data center development threatens to hike up utility bills, deplete our natural resources, and create uncertainty for New Yorkers, it’s my responsibility to take action and lead,” Governor Hochul said. “New York will lead the way in creating the strongest standards in the nation for data center development, ensuring that when companies succeed because of New York, New Yorkers succeed too.”\nNew York State is experiencing unprecedented growth in demand for data center development driven by artificial intelligence and other computing operations. The increase in demand has led to proposals across the state for the construction and operation of data centers that could require massive amounts of energy and water to run and cool thousands of computer servers.\nEarlier this year, the Governor directed the Department of Public Service (DPS",
+              "location": {
+                "format": "html",
+                "source": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N_ny_moratorium"
+              ]
+            },
+            {
+              "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+              "text": "Will Establish a Nation-Leading Regulatory Framework That Protects Ratepayers, the Environment and New Yorkers\nOne-Year Pause Will Ensure New Yorkers Are Not Paying for Transmission and Infrastructure Build Outs\nWill Create New York State Data Center Community Investment Framework, Ensuring Localities Access Can Unlock Millions From New Development\nGovernor Will Pursue Legislation To Repeal Sales Tax Exemptions for Massive Data Centers Across the State\n[Policy Outline for Community Investment Framework](https://esd.ny.gov/communityinvestmentframework)\nGovernor Kathy Hochul today signed an Executive Order to create the nation’s first moratorium on new hyperscale data centers, establishing the strongest standards for data center development and creating a blueprint to support localities. The Governor is temporarily pausing State environmental permits for up to one year in order to build a nation-leading regulatory framework that protects ratepayers, the environment, the energy grid and communities across the state.\n“New York has always been at the forefront of innovation and change but we’ve also always guaranteed that New Yorkers benefit. As data center development threatens to hike up utility bills, deplete our natural resources, and create uncertainty for New Yorkers, it’s my responsibility to take action and lead,” Governor Hochul said. “New York will lead the way in creating the strongest standards in the nation for data center development, ensuring that when companies succeed because of New York, New Yorkers succeed too.”\nNew York State is experiencing unprecedented growth in demand for data center development driven by artificial intelligence and other computing operations. The increase in demand has led to proposals across the state for the construction and operation of data centers that could require massive amounts of energy and water to run and cool thousands of computer servers.\nEarlier this year, the Governor directed the Department of Public Service (DPS) to begin the Energize NY proceeding, which will require data centers to either pay more for their energy or supply their own, allowing the state to keep energy more affordable for New Yorkers. As part of that proceeding, the Governor is now also directing DPS to develop a Generic Environmental Impact Statement (GEIS) for data centers to ensure new data centers coming online are being held to consistent standards. During the development of this GEIS, which will take up to a year, a moratorium will be in place and the Department of Environmental Conservation (DEC) will not issue any discretionary permits not already deemed complete. The state will use the GEIS to assess the potential environmental impacts of the construction and operation of data centers in the state, including their effect on energy demand, water use and quality, and air quality. Once the State finalizes these standards, the moratorium will be lifted, allowing new data center projects to proceed as long as they follow state, zoning code and other local approvals.\nThe Governor also directed Empire State Development (ESD) to issue a Community Investment Framework (CIF) within 60 days, which will provide clear guidance to local entities to help them negotiate community benefits as part of any large-scale data center deal, including local infrastructure improvements, child care investments, and direct financial support for their community. The CIF will also establish frameworks that provide organized labor a seat at the table and prioritize prevailing wage standards and project labor agreements for data center construction, local hiring, apprenticeships and workforce development to maximize economic benefits. This framework will additionally include a formula to help communities assess where to begin investment negotiations. An outline of the CIF is currently available on [ESD’s website](https://esd.ny.gov/communityinvestmentframework), and the public is encouraged to submit feedback.",
+              "location": {
+                "format": "html",
+                "source": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N_no_reversal",
+                "N_ny_moratorium"
+              ]
+            }
+          ],
+          "candidate_strategy": "intelligent_materials_v2",
+          "actual_tool_counts": {
+            "list_documents": 1,
+            "plan_evidence": 1,
+            "read_document": 4,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 2,
+          "context_chars_max": 27385,
+          "actual_exact_review_focus_requests": [
+            {
+              "record": "model_calls/0005.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 2000,
+              "record_sha256": "da05b3e7b65d6e125e23bb10719d8ae321aa79e1c53f64cda7062b6c71ff58a2"
+            },
+            {
+              "record": "model_calls/0007.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 3982,
+              "record_sha256": "5dcea98348c775323b4dbc4b44e27baa77d3efabc7bdf124f43d70c521ced6af"
+            }
+          ],
+          "unique_coordinate_chars_identical_document_aliases_merged": 3982,
+          "overlap_chars_by_identical_document_alias": 2000,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Program ended collection: program_dispatch_limit; unresolved acquisition work remains."
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "43501",
+      "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+      "arms": {
+        "baseline": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 10,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 10
+            },
+            "known_reported_tokens": 98108,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 5,
+          "banked_sources": 2,
+          "banked_chars": 617,
+          "frozen_material_checks": [
+            {
+              "target_id": "government_incident_details",
+              "description": "Confirmed vendor/product and unauthorized data types",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "incident_date_range",
+              "description": "Explicit incident-related log-review dates for chronology",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "vendor_response",
+              "description": "Original vendor acknowledgement and ongoing institution-level breakdown",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 0,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [],
+          "agent_material_report": null,
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21851,
+            "visible_chars": 6333,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "government_incident_details",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "incident_date_range",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "vendor_response",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 0
+          },
+          "provider_statuses": {
+            "received": 10
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 73.270973107,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "74eaa6e2a93dbbc0d7b00fe2f2ef9061402186155647985582c308fc76632102",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+              "text": "4 Instructure Holdings, Inc., Cybersecurity Incident Update (May 1, 2026), available at",
+              "location": {
+                "format": "pdf",
+                "page": 1,
+                "source": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+                "table_count": 0,
+                "table_extraction": "pdfplumber",
+                "table_extraction_warning": "Heuristic cells; compare to original PDF.",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+              "text": " Instructure disclosed on May 1, 2026, that it had experienced a cybersecurity incident in",
+              "location": {
+                "format": "pdf",
+                "page": 1,
+                "source": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+                "table_count": 0,
+                "table_extraction": "pdfplumber",
+                "table_extraction_warning": "Heuristic cells; compare to original PDF.",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+              "text": "5 Instructure Holdings, Inc., Cybersecurity Incident Update (May 2, 2026), available at https://status.instructure.com.",
+              "location": {
+                "format": "pdf",
+                "page": 1,
+                "source": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+                "table_count": 0,
+                "table_extraction": "pdfplumber",
+                "table_extraction_warning": "Heuristic cells; compare to original PDF.",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://redriver.com/education/the-canvas-hack-how-shinyhunters-breached-instructure",
+              "text": "The exposure window ran from April 30 to May 7, 2026, when Instructure shut down the Free-For-Teacher program permanently and completed credential rotation. Eight days is a short window; the downstream risk, however, isn’t.",
+              "location": {
+                "format": "html",
+                "source": "https://redriver.com/education/the-canvas-hack-how-shinyhunters-breached-instructure",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1"
+              ]
+            },
+            {
+              "url": "https://redriver.com/education/the-canvas-hack-how-shinyhunters-breached-instructure",
+              "text": "- 65 terabytes of data covering approximately 275 million individuals across roughly 9,000 schools",
+              "location": {
+                "format": "html",
+                "source": "https://redriver.com/education/the-canvas-hack-how-shinyhunters-breached-instructure",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N2"
+              ]
+            }
+          ],
+          "candidate_strategy": null,
+          "actual_tool_counts": {
+            "finish_collection": 1,
+            "list_sources": 1,
+            "plan_evidence": 1,
+            "read_document": 4,
+            "read_sources": 1,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 0,
+          "context_chars_max": 27768,
+          "actual_exact_review_focus_requests": [],
+          "unique_coordinate_chars_identical_document_aliases_merged": 617,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": []
+        },
+        "candidate": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 9,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 9
+            },
+            "known_reported_tokens": 86186,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 1,
+          "banked_sources": 1,
+          "banked_chars": 2000,
+          "frozen_material_checks": [
+            {
+              "target_id": "government_incident_details",
+              "description": "Confirmed vendor/product and unauthorized data types",
+              "selected": true,
+              "matching_sources": [
+                "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system"
+              ]
+            },
+            {
+              "target_id": "incident_date_range",
+              "description": "Explicit incident-related log-review dates for chronology",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "vendor_response",
+              "description": "Original vendor acknowledgement and ongoing institution-level breakdown",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 1,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [
+            {
+              "tool": "assess_materials",
+              "error": "An adequate declaration cannot also declare missing material."
+            }
+          ],
+          "gaps": [],
+          "agent_material_report": {
+            "schema": "intelligent_materials_v2",
+            "needs": [
+              {
+                "need_id": "N_instructure_postMay2026_incident",
+                "condition": "Any cybersecurity incident affecting Instructure or its products (Canvas, Mastery, Parchment, Impact) occurring after May 7, 2026 and before September 1, 2026 that meets at least one of the following: (1) data exfiltration of personal data of at least 10,000 users; (2) service disruption rendering one or more products substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours; (3) ransom or extortion demand related to data or systems access newly obtained from Instructure. Confirmation required from Instructure official communications, credible news reporting, or government disclosures.",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_9c74c106c80ccd25",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 75,
+                    "sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_54573dbe4bd291ae",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 1125,
+                    "sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_background_2b34d578b12eae95",
+                    "field": "background",
+                    "start_char": 0,
+                    "end_char": 3041,
+                    "sha256": "2b34d578b12eae95105b08d4a476986dceb9d8298aa2aed5c34e616455baa036",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              }
+            ],
+            "sources": [
+              {
+                "url": "https://auburn.edu/administration/oacp/CaseInPoint/index.php",
+                "title": "Case In Point | Office of Audit, Compliance & Privacy",
+                "origin": "search",
+                "published_date": "Tue, 15 Sep 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 3,
+                "chars": 19686
+              },
+              {
+                "url": "https://en.wikipedia.org/wiki/2026_Canvas_security_incident",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://en.wikipedia.org/wiki/ShinyHunters",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 6909
+              },
+              {
+                "url": "https://gcn.com/support-ticket-submitted-through-teacher-account/20334/",
+                "title": "A support ticket submitted through a teacher account handed hackers a claimed 3.65 terabytes of data, and the breach now reported across nearly 9,000 schools is already changing how every campus logs in",
+                "origin": "search",
+                "published_date": "2026-08-01T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+                "title": "The Committee on Homeland Security (Committee) is investigating the concerning reports related to recent cybersecurity incidents affecting Instructure Holdings, Inc. and the tens of millions of students, educators, and administrators who rely on its Canvas learning management platform. Within the span of one week, the cybercriminal group known as ShinyHunters breached Instructure twice. The group reportedly first struck on May 1, accessing personal data belonging to students and faculty across thousands of institutions, and struck again on May 7, defacing Canvas login pages nationwide and posting ransom demands directly on students’screens. With students at more than 8,000 institutions navigating final examinations and end of semester deadlines, the disruption of a platform that Instructure itself describes as serving more than 30 million active users globally is a matter of national concern.",
+                "origin": "search",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 3,
+                "chars": 7971
+              },
+              {
+                "url": "https://konbriefing.com/en-topics/cyber-attacks.html",
+                "title": "Cyber attacks worldwide: News today & 2025 | KonBriefing.com",
+                "origin": "search",
+                "published_date": "Sat, 03 Oct 2026 06:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://mashable.com/tech/biggest-cybersecurity-data-breaches-2026",
+                "title": "The 6 biggest cybersecurity breaches of 2026 so far | Mashable",
+                "origin": "search",
+                "published_date": "Sat, 11 Jul 2026 10:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://nypost.com/2026/05/08/business/popular-higher-ed-system-canvas-hacked-putting-millions-of-students-personal-data-at-risk",
+                "title": "Popular higher ed system 'Canvas' hacked, putting millions of students' personal data at risk",
+                "origin": "search",
+                "published_date": "Fri, 08 May 2026 16:36:27 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://redriver.com/education/the-canvas-hack-how-shinyhunters-breached-instructure",
+                "title": "The Canvas Hack: How ShinyHunters Breached Instructure and What Schools Should Do Next",
+                "origin": "search",
+                "published_date": "2026-06-16T00:00:00.000Z",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 17280
+              },
+              {
+                "url": "https://studentprivacy.ed.gov/sites/default/files/resource_document/file/Instructure%20Follow%20Up%20Letter_SPPO_v_5.12.2026%20%28002%29_Redacted_1_0.pdf",
+                "title": "SPPO Letter to Instructure",
+                "origin": "search",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 4,
+                "chars": 5696
+              },
+              {
+                "url": "https://tech-insider.org/data-breaches-471-million-victims-2026",
+                "title": "Data Breaches Hit 471M Victims: 2026 Report Breakdown",
+                "origin": "search",
+                "published_date": "Tue, 18 Aug 2026 03:21:53 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://techcrunch.com/2026/05/13/us-lawmakers-demand-answers-from-instructure-after-canvas-data-breaches",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 3309
+              },
+              {
+                "url": "https://techcrunch.com/2026/09/15/the-worst-hacks-and-breaches-of-2026-so-far",
+                "title": "Leaks, data breaches, and ransom notes: The worst hacks of 2026 so far | TechCrunch",
+                "origin": "search",
+                "published_date": "Tue, 15 Sep 2026 16:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www-edweek-org.ezproxy.baylor.edu/technology/a-cyberattack-on-canvas-could-cause-lasting-aftershocks-for-schools/2026/05",
+                "title": "A Cyberattack on Canvas Could Cause Lasting Aftershocks for Schools",
+                "origin": "search",
+                "published_date": "2026-05-08T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.abc4.com/news/wasatch-front/lawsuits-instructure-data-breach",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.anthropic.com/threat-intelligence-report-september-2026",
+                "title": "Countering misuse of AI: September 2026 / Anthropic",
+                "origin": "search",
+                "published_date": "Thu, 10 Sep 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026",
+                "title": "Instructure Confirms Canvas Breach",
+                "origin": "search",
+                "published_date": "Tue, 05 May 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.brightdefense.com/resources/cybercrime-statistics",
+                "title": "350+ Cybercrime Statistics for 2026",
+                "origin": "search",
+                "published_date": "Thu, 20 Mar 2025 18:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              }
+            ],
+            "source_total": 38,
+            "next_offset": 20,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "semantic_verified": false,
+            "instruction": "Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.",
+            "unresolved_material_targets": [
+              {
+                "need_id": "N_instructure_postMay2026_incident",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              }
+            ],
+            "plan_missing": false,
+            "plan_failures": [],
+            "pending_passage_count": 0,
+            "scope": "Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy."
+          },
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21903,
+            "visible_chars": 6333,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "government_incident_details",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "incident_date_range",
+                "first_analysis_visible": false
+              },
+              {
+                "target_id": "vendor_response",
+                "first_analysis_visible": false
+              }
+            ],
+            "selected_check_count": 0
+          },
+          "provider_statuses": {
+            "received": 9
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 78.02540835100001,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "74eaa6e2a93dbbc0d7b00fe2f2ef9061402186155647985582c308fc76632102",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+              "text": "Update on May 29, 2026: For additional information about ED’s ongoing engagement with Instructure and the FERPA implications of this incident, please see the May 12, 2026, letter from ED’s Student Privacy Policy Office to Instructure: [Letter on the Importance of Protecting Student Privacy](https://studentprivacy.ed.gov/resources/letter-instructure-holdings-inc).  \nInstructure Holdings, Inc. (Instructure), the parent company of the Canvas Learning Management System (Canvas), recently disclosed an ongoing cybersecurity incident affecting Canvas platforms used by K–12 schools and institutions of higher education worldwide. This incident involves unauthorized access to usernames, email addresses, course names, enrollment information, and messages. While some messages may incidentally include personally identifiable information, Instructure stated on their public web page that there is no evidence that passwords, dates of birth, government identifiers, or financial information were exposed.\nA ransomware group identified as ShinyHunters claimed responsibility and repeatedly defaced Canvas login pages with ransom demands. Some institutions reported receiving ransom messages when attempting to access Canvas.\nFor the latest verified information from Instructure, institutions should continue to monitor the Instructure Status Page at [instructure.com/incident_update](https://www.instructure.com/incident_update).\nSenior U.S. Department of Education (ED) leaders have been actively engaged with Instructure regarding this incident. ED is in contact with Instructure’s chief information security officer about technical details; the affected systems; the population of impacted institutions; and steps to protect students, teachers, school districts, K-12 schools, and institutions of higher education.\nED’s office of Federal Student Aid (FSA) is coordinating with federal partners and continues to analyze incoming information as the investigation progresses. ED’s Student Privacy Policy ",
+              "location": {
+                "format": "html",
+                "source": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system-updated-may-29-2026",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N_instructure_postMay2026_incident"
+              ]
+            }
+          ],
+          "candidate_strategy": "intelligent_materials_v2",
+          "actual_tool_counts": {
+            "assess_materials": 1,
+            "list_documents": 2,
+            "plan_evidence": 1,
+            "read_document": 2,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 2,
+          "context_chars_max": 26586,
+          "actual_exact_review_focus_requests": [
+            {
+              "record": "model_calls/0005.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 5000,
+              "record_sha256": "c93b6f51719e8a9b6d4e7b55dfb426f4a8ea903245ce242e600b36faf3dd1baf"
+            },
+            {
+              "record": "model_calls/0008.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 2000,
+              "record_sha256": "75aaf35d2780ae61614a3f5e3cb079700041e0eccdbfdf7629cfb7249b1c7569"
+            }
+          ],
+          "unique_coordinate_chars_identical_document_aliases_merged": 2000,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Program ended collection: program_dispatch_limit; unresolved acquisition work remains."
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "43991",
+      "question": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+      "arms": {
+        "baseline": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 10,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 10
+            },
+            "known_reported_tokens": 99351,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 4,
+          "banked_sources": 2,
+          "banked_chars": 2536,
+          "frozen_material_checks": [
+            {
+              "target_id": "sentence_components",
+              "description": "Custodial and ineligibility components must remain distinguishable",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "sentence_effect",
+              "description": "Eligibility wording and original sentence-clock start",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "future_appeal_branch",
+              "description": "Conditional prosecutor appeal and timing, not a completed reversal",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 0,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [],
+          "agent_material_report": null,
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21978,
+            "visible_chars": 7682,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "sentence_components",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "sentence_effect",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "future_appeal_branch",
+                "first_analysis_visible": true
+              }
+            ],
+            "selected_check_count": 3
+          },
+          "provider_statuses": {
+            "received": 10
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 89.568188593,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "303e4367943aa63142a8d3517c9c9c357444e134274265dd42799efeae615077",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": " - Réponse de Robin Prudentfranceinfo Il y a 0 secLes délais de la Cour de cassation sont habituellement compris entre huit mois et un an pour qu'elle se prononce sur un pourvoi formé contre une condamnation en appel. Mais dans le cas de Marine Le Pen, elle a déjà indiqué qu'elle tenterait de se prononcer autour de la fin d'année 2026, compte tenu de l'imminence de la présidentielle 2027 au printemps.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_appeal_ruling"
+              ]
+            },
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": "Marine Le Pen a annoncé son intention de se présenter à l'élection présidentielle après la réduction de sa peine d'inéligibilité par la cour d'appel de Paris.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_appeal_ruling"
+              ]
+            },
+            {
+              "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+              "text": "Si la cour d'appel de Paris a confirmé la condamnation de Marine Le Pen, elle a réduit sa peine d'inéligibilité, lui permettant de se présenter à l'élection présidentielle de 2027. Mais la cheffe de file du Rassemblement national (RN) a été condamnée à trois de prison, dont un an ferme aménageable, donc sous bracelet électronique.",
+              "location": {
+                "format": "html",
+                "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_election_date"
+              ]
+            },
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": "Les premières réactions se font entendre après l'annonce de [la candidature de Marine Le Pen à l'élection présidentielle de 2027](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html), mardi 7 juillet. \"Il lui appartiendra de s'expliquer\" sur son choix, [a estimé l'ancien Premier ministre Edouard Philippe](https://www.franceinfo.fr/politique/marine-le-pen/video-edouard-philippe-estime-que-marine-le-pen-devra-s-expliquer-aux-francais-sur-son-choix-d-etre-candidate-a-la-presidentielle-apres-sa-condamnation-en-appel_8098403.html) sur France 2. De son côté, le secrétaire général des Républicains Othman Nasrou accuse la leader du Rassemblement national de \"prendre la démocratie en otage\". La gauche condamne aussi la décision de Marine Le Pen, [condamnée en appel](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) dans l'affaire des assistants parlementaires européens du FN, mais dont la peine d'inéligibilité a été réduite, et qui compte se pourvoir en cassation. \"Dans un monde normal où le RN aurait le plus petit soupçon de moralité, Marine Le Pen renoncerait d'elle-même à être candidate\", dénonce la cheffe des Ecologistes, Marine Tondelier, auprès de France Télévisions. \"Elle n'a plus aucune crédibilité pour garantir l'autorité de l'Etat\", ajoute le patron des socialistes, Olivier Faure.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "need_identity"
+              ]
+            }
+          ],
+          "candidate_strategy": null,
+          "actual_tool_counts": {
+            "finish_collection": 1,
+            "list_documents": 1,
+            "plan_evidence": 1,
+            "read_document": 4,
+            "read_sources": 1,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 0,
+          "context_chars_max": 26564,
+          "actual_exact_review_focus_requests": [],
+          "unique_coordinate_chars_identical_document_aliases_merged": 2536,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": []
+        },
+        "candidate": {
+          "state": "budget_exhausted",
+          "termination_reason": "program_dispatch_limit",
+          "incomplete": true,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 9,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 9
+            },
+            "known_reported_tokens": 77783,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 12,
+          "banked_sources": 4,
+          "banked_chars": 6990,
+          "frozen_material_checks": [
+            {
+              "target_id": "sentence_components",
+              "description": "Custodial and ineligibility components must remain distinguishable",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "sentence_effect",
+              "description": "Eligibility wording and original sentence-clock start",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "future_appeal_branch",
+              "description": "Conditional prosecutor appeal and timing, not a completed reversal",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 0,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [
+            "2 surfaced exact passages remain unreviewed."
+          ],
+          "agent_material_report": {
+            "schema": "intelligent_materials_v2",
+            "needs": [
+              {
+                "need_id": "N1",
+                "condition": "The court decision on July 7, 2026 regarding Marine Le Pen's peine d'inéligibilité (specifically the length of the disqualification and whether it allows her to run in the 2027 French presidential election).",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_7232a41312fed209",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 98,
+                    "sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_a4a6284fa6351dab",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 398,
+                    "sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X5",
+                  "X6",
+                  "X9",
+                  "X10",
+                  "X11"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              },
+              {
+                "need_id": "N2",
+                "condition": "Marine Le Pen's announcement of candidacy for the 2027 French presidential election on July 7, 2026 (or around that date) and any statements about her eligibility.",
+                "priority": "useful",
+                "question_spans": [
+                  {
+                    "id": "Q_question_7232a41312fed209",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 98,
+                    "sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X5",
+                  "X6",
+                  "X9",
+                  "X10",
+                  "X11",
+                  "X12"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              },
+              {
+                "need_id": "N3",
+                "condition": "Legal analysis of whether the peine d'inéligibilité as of July 8, 2026 prevents her from being a candidate in the 2027 election (i.e., if the disqualification period includes the election date).",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_resolution_criteria_a4a6284fa6351dab",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 398,
+                    "sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_background_3fbbf28b6acdc4ff",
+                    "field": "background",
+                    "start_char": 0,
+                    "end_char": 664,
+                    "sha256": "3fbbf28b6acdc4ff54b50d426290bd7468f39fd4a750cad433e388d89935bf95",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X3",
+                  "X4",
+                  "X7",
+                  "X8",
+                  "X9",
+                  "X10",
+                  "X11"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              }
+            ],
+            "sources": [
+              {
+                "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                "title": "\"Je suis candidate à l'élection présidentielle\", annonce Marine Le Pen sur TF1 | Euronews",
+                "origin": "search",
+                "published_date": "Tue, 07 Jul 2026 18:19:11 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 1664
+              },
+              {
+                "url": "https://lcp.fr/actualites/marine-le-pen-a-quelle-heure-la-decision-de-la-cour-d-appel-sera-t-elle-rendue-ce-mardi",
+                "title": "À quelle heure la décision sur Marine Le Pen sera-t-elle rendue ce mardi?",
+                "origin": "search",
+                "published_date": "Tue, 07 Jul 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps",
+                "title": "",
+                "origin": "question_resolution_criteria",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.britannica.com/biography/Marine-Le-Pen",
+                "title": "",
+                "origin": "question_background",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.decideurs-juridiques.com/affaires-juridiques/64880-proces-du-rn-marine-le-pen-condamnee-en-appel-a-trois-ans-de-prison-dont-deux-avec-sursis-et-un-sous-bracelet-electronique.html",
+                "title": "Procès du RN : Marine Le Pen condamnée en appel, flou juridique sur sa candidature - DECIDEURS MAGAZINE - Accédez à toute l’actualité de la vie des affaires : stratégie, finance, RH, innovation - Chaque jour, retrouvez l'actualité des professionnels du droit des affaires.",
+                "origin": "search",
+                "published_date": "Fri, 10 Jul 2026 10:08:23 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.france24.com/fr/france/20260702-proces-appel-marine-le-pen-quels-scenarios-possibles-7-juillet-ineligibilite-rassemblement-national-eurodeputes-fn-jugement",
+                "title": "Jugement en appel de Marine Le Pen : quels scénarios possibles en vue de la présidentielle ? - France 24",
+                "origin": "search",
+                "published_date": "Mon, 06 Jul 2026 14:09:25 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "title": "DIRECT. Procès en appel de Marine Le Pen :, qui compte se pourvoir en cassation",
+                "origin": "search",
+                "published_date": "Tue, 07 Jul 2026 00:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 11087
+              },
+              {
+                "url": "https://www.leclubdesjuristes.com/justice/affaire-des-assistants-parlementaires-du-fn-coup-darret-a-la-candidature-de-marine-le-pen-16827",
+                "title": "Marine Le Pen condamnée en appel : ce qu’il faut retenir de la décision de justice - Le Club des Juristes",
+                "origin": "search",
+                "published_date": "Tue, 07 Jul 2026 15:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.leclubdesjuristes.com/justice/condamnation-de-marine-le-pen-des-motivations-qui-font-debat-10159",
+                "title": "Condamnation de Marine Le Pen : des motivations qui font débat - Le Club des Juristes",
+                "origin": "search",
+                "published_date": "Fri, 04 Apr 2025 18:56:41 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/actualite-france/affaire-des-assistants-parlementaires-du-fn-pas-de-pourvoi-du-parquet-general-20260715",
+                "title": "Affaire des assistants parlementaires du FN : pas de pourvoi du parquet général",
+                "origin": "search",
+                "published_date": "2026-07-15T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                "title": "Élection présidentielle : un pourvoi en cassation du parquet général pourrait-il empêcher Marine Le Pen de se présenter ?",
+                "origin": "search",
+                "published_date": "2026-07-07T00:00:00.000Z",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 4673
+              },
+              {
+                "url": "https://www.lefigaro.fr/actualite-france/proces-en-appel-de-marine-le-pen-un-arret-au-trebuchet-desormais-suspendu-a-la-decision-de-la-cour-de-cassation-20260707",
+                "title": "Procès en appel de Marine Le Pen : les incertitudes multiples d’un pourvoi en cassation décidé en quelques heures",
+                "origin": "search",
+                "published_date": "2026-07-07T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "title": "«En 2027, on les dégage» : la gauche se réjouit de la condamnation de Marine Le Pen mais la juge «incompatible» avec une candidature présidentielle",
+                "origin": "search",
+                "published_date": "2026-07-07T00:00:00.000Z",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 6733
+              },
+              {
+                "url": "https://www.lefigaro.fr/politique/marine-le-pen-6-questions-sur-un-pourvoi-en-cassation-20260708",
+                "title": "Marine Le Pen : 6 questions sur un pourvoi en cassation",
+                "origin": "search",
+                "published_date": "2026-07-08T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/politique/nouvelle-jeanne-d-arc-suspense-prolonge-la-presse-etrangere-dans-l-attente-apres-la-condamnation-de-marine-le-pen-20260707",
+                "title": "«Nouvelle Jeanne d’Arc», «suspense prolongé» : la presse étrangère dans l’attente après la condamnation de Marine Le Pen",
+                "origin": "search",
+                "published_date": "2026-07-07T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/politique/preservation-de-la-liberte-de-l-electeur-ce-principe-juridique-qui-a-sauve-marine-le-pen-20260708",
+                "title": "«Préservation de la liberté de l’électeur» : ce principe juridique qui a sauvé Marine Le Pen",
+                "origin": "search",
+                "published_date": "2026-07-08T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lefigaro.fr/vox/politique/affaire-des-assistants-parlementaires-du-rn-jean-eric-schoettl-decrypte-la-decision-de-la-cour-d-appel-20260707",
+                "title": "Affaire des assistants parlementaires du RN : Jean-Éric Schoettl décrypte la décision de la cour d’appel",
+                "origin": "search",
+                "published_date": "2026-07-07T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lemonde.fr/politique/article/2025/03/31/condamnation-de-marine-le-pen-retrouvez-le-detail-de-l-ensemble-des-peines-prononcees-dans-l-affaire-des-assistants-fn-au-parlement-europeen_6589014_823448.html",
+                "title": "Condamnation de Marine Le Pen : retrouvez le détail de l’ensemble des peines prononcées dans l’affaire des assistants FN au Parlement européen",
+                "origin": "search",
+                "published_date": "Mon, 31 Mar 2025 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.lemonde.fr/societe/article/2025/04/01/un-systeme-mis-en-place-pour-alleger-les-charges-du-parti-les-principaux-extraits-du-jugement-dans-le-proces-des-assistants-du-fn-au-parlement-europeen_6589181_3224.html",
+                "title": "« Le Monde » publie les principaux extraits du jugement condamnant Marine Le Pen : « Un système mis en place pour alléger les charges du parti »",
+                "origin": "search",
+                "published_date": "Tue, 01 Apr 2025 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://www.noovo.info/nouvelles/justice/article/presidentielle-en-france-journee-cruciale-avec-le-denouement-du-proces-de-marine-le-pen",
+                "title": "France: Marine Le Pen candidate à la présidentielle malgré sa condamnation",
+                "origin": "search",
+                "published_date": "Tue, 07 Jul 2026 19:13:29 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              }
+            ],
+            "source_total": 29,
+            "next_offset": 20,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "semantic_verified": false,
+            "instruction": "Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.",
+            "unresolved_material_targets": [
+              {
+                "need_id": "N1",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              },
+              {
+                "need_id": "N2",
+                "priority": "useful",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              },
+              {
+                "need_id": "N3",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              }
+            ],
+            "plan_missing": false,
+            "plan_failures": [],
+            "pending_passage_count": 2,
+            "scope": "Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy."
+          },
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21967,
+            "visible_chars": 7688,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "sentence_components",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "sentence_effect",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "future_appeal_branch",
+                "first_analysis_visible": true
+              }
+            ],
+            "selected_check_count": 3
+          },
+          "provider_statuses": {
+            "received": 9
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 79.918943321,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "303e4367943aa63142a8d3517c9c9c357444e134274265dd42799efeae615077",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": "Les premières réactions se font entendre après l'annonce de [la candidature de Marine Le Pen à l'élection présidentielle de 2027](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html), mardi 7 juillet. \"Il lui appartiendra de s'expliquer\" sur son choix, [a estimé l'ancien Premier ministre Edouard Philippe](https://www.franceinfo.fr/politique/marine-le-pen/video-edouard-philippe-estime-que-marine-le-pen-devra-s-expliquer-aux-francais-sur-son-choix-d-etre-candidate-a-la-presidentielle-apres-sa-condamnation-en-appel_8098403.html) sur France 2. De son côté, le secrétaire général des Républicains Othman Nasrou accuse la leader du Rassemblement national de \"prendre la démocratie en otage\". La gauche condamne aussi la décision de Marine Le Pen, [condamnée en appel](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) dans l'affaire des assistants parlementaires européens du FN, mais dont la peine d'inéligibilité a été réduite, et qui compte se pourvoir en cassation. \"Dans un monde normal où le RN aurait le plus petit soupçon de moralité, Marine Le Pen renoncerait d'elle-même à être candidate\", dénonce la cheffe des Ecologistes, Marine Tondelier, auprès de France Télévisions. \"Elle n'a plus aucune crédibilité pour garantir l'autorité de l'Etat\", ajoute le patron des socialistes, Olivier Faure.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1"
+              ]
+            },
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": " - Réponse de Robin Prudentfranceinfo Il y a 0 secLes délais de la Cour de cassation sont habituellement compris entre huit mois et un an pour qu'elle se prononce sur un pourvoi formé contre une condamnation en appel. Mais dans le cas de Marine Le Pen, elle a déjà indiqué qu'elle tenterait de se prononcer autour de la fin d'année 2026, compte tenu de l'imminence de la présidentielle 2027 au printemps.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+              "text": "Car en vérité, le parquet général ne peut déposer un pourvoi en cassation que pour dénoncer de la part de la Cour d’appel la mauvaise application d’une loi ou une erreur de droit. Contrairement au parquet de la première instance qui peut tout contester car le procès va se rejouer, le parquet général ne peut déposer un pourvoi qu’en soulevant des moyens de droit ou des vices de procédure. On imagine qu’en l’occurrence, les juges d’appel auront été d’une grande vigilance.",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N3"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+              "text": "La décision de la cour d’appel de Paris qui condamne Marine Le Pen à trois ans de prison, dont un an ferme sous bracelet électronique, dans l’affaire des assistants parlementaires du Front national est finement ciselée. L’efficacité que la justice veut lui donner en la fondant sur «la liberté des candidatures» et «le libre choix des électeurs», «condition de l’expression démocratique», repose largement sur l’hypothèse que le parquet général ne fera pas appel.",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N3"
+              ]
+            },
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": "Marine Le Pen a annoncé son intention de se présenter à l'élection présidentielle après la réduction de sa peine d'inéligibilité par la cour d'appel de Paris.",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N2"
+              ]
+            },
+            {
+              "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "text": " - #LE_PEN Marine Le Pen [est candidate à l'élection présidentielle](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html) . La cour d'appel de Paris[a confirmé](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) sa condamnation dans l'affaire des assistants parlementaires européens du FN, mais a réduit sa peine d'inéligibilité.[Voici les questions qui se posent.](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/presidentielle-bracelet-electronique-pourvoi-en-cassation-les-questions-qui-se-posent-apres-la-condamnation-reduite-de-marine-le-pen-en-appel_8097893.html)",
+              "location": {
+                "format": "html",
+                "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N2"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+              "text": "«En 2027, on les dégage» : la gauche se réjouit de la condamnation de Marine Le Pen mais la juge «incompatible» avec une candidature présidentielle",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N3"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+              "text": "Dès le couperet tombé, Emmanuel Macron, [en voyage à Damas](http://www.lefigaro.fr/international/elles-visaient-a-faire-du-bruit-malgre-les-explosions-pres-de-son-hotel-a-damas-emmanuel-macron-maintient-son-programme-en-syrie-20260707), a refusé de s’exprimer sur le sujet, affirmant qu’un «président ne commente pas les décisions de justice». La gauche s’est, elle, réjouie en chœur de cette condamnation. Mais l’a estimée incompatible avec une candidature présidentielle.",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N3"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+              "text": "Sauf que la finaliste des deux dernières courses à l’Élysée avait conditionné une quatrième candidature à une liberté de mouvement totale, incompatible selon elle avec le port d’un bracelet. «S’il s’agit de m’autoriser à être candidate, mais de m’empêcher en réalité de mener une campagne tout à fait librement, vous entendez bien que ça ne sera pas possible», avait-elle insisté mercredi sur LCI. Peut-elle changer d’avis ? Le jeu des remises de peine pourrait réduire le quantum d’environ six mois, ce qui retarderait une pleine entrée en campagne en janvier. À défaut, elle devrait introniser ce soir en bonne et due forme Jordan Bardella comme candidat du RN pour la présidentielle de 2027.",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N2",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+              "text": "La justice a ouvert mardi la voie à une quatrième candidature à la présidentielle de Marine Le Pen [en réduisant son inéligibilité](https://video.lefigaro.fr/figaro/politique/marine-le-pen-condamnee-a-trois-ans-de-prison-pourrait-se-presenter-a-la-presidentielle-20260707). Mais la dirigeante nationaliste pourrait devoir faire [une partie de sa campagne sous bracelet électronique](https://video.lefigaro.fr/figaro/politique/marine-le-pen-des-l-automne-elle-pourrait-ne-plus-avoir-la-contrainte-du-bracelet-electronique-selon-un-journaliste-politique-du-figaro-20260707) si elle se lançait malgré cette condamnation, ce qu’elle a toujours refusé. Devant la cheffe de file du RN debout à la barre, la présidente de la cour d’appel l’a condamnée à trois ans de prison, dont un an ferme à purger à domicile sous bracelet électronique. Mais elle a drastiquement réduit la peine complémentaire d’inéligibilité à 45 mois dont 30 avec sursis (qui a déjà été purgée), depuis la condamnation en première instance à cinq ans d’inéligibilité avec exécution provisoire.",
+              "location": {
+                "format": "html",
+                "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N2",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+              "text": "Si la cour d'appel de Paris a confirmé la condamnation de Marine Le Pen, elle a réduit sa peine d'inéligibilité, lui permettant de se présenter à l'élection présidentielle de 2027. Mais la cheffe de file du Rassemblement national (RN) a été condamnée à trois de prison, dont un an ferme aménageable, donc sous bracelet électronique.",
+              "location": {
+                "format": "html",
+                "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N1",
+                "N2",
+                "N3"
+              ]
+            },
+            {
+              "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+              "text": "L'intervention de Marine Le Pen au 20 heures de TF1 était très attendue, après le verdict rendu par la cour d'appel de Paris dans l'affaire des assistants parlementaires européens du FN.",
+              "location": {
+                "format": "html",
+                "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N2"
+              ]
+            }
+          ],
+          "candidate_strategy": "intelligent_materials_v2",
+          "actual_tool_counts": {
+            "plan_evidence": 1,
+            "read_sources": 1,
+            "review_passages": 7
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 7,
+          "context_chars_max": 27437,
+          "actual_exact_review_focus_requests": [
+            {
+              "record": "model_calls/0003.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 2046,
+              "record_sha256": "ce6cfaa10d7f337dd139f21e0ac07fb462a3541a739c3a846109290552cd5e7f"
+            },
+            {
+              "record": "model_calls/0004.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 575,
+              "record_sha256": "eb67963ccc800e188989132542503c5adfb56faac8d79dbf204876286f750a82"
+            },
+            {
+              "record": "model_calls/0005.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 937,
+              "record_sha256": "6ba4192769c3dc54832e2f802deb29307e0984f6ca98b8f6d0d52a3b094a5a5c"
+            },
+            {
+              "record": "model_calls/0006.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 1117,
+              "record_sha256": "1db002e9fb5a818bcf717d78b01d887586afe67d538fdd3ac9aabcfa956bfb1c"
+            },
+            {
+              "record": "model_calls/0007.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 620,
+              "record_sha256": "b296850f0a2ea4bc4f752cbc6d97a44b8b77aad0a5104960ad3abd6ab5db8aa4"
+            },
+            {
+              "record": "model_calls/0008.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 1752,
+              "record_sha256": "2cb906d6807a6ed6e58e10147ca429b1311f0841289f2a9f7e9705b646cddc1a"
+            },
+            {
+              "record": "model_calls/0009.json",
+              "status": "received",
+              "span_count": 2,
+              "exact_chars": 518,
+              "record_sha256": "c5f29d557e2fe7779bb48d9b39134ff80848f988c892ef5464afff4076b876c7"
+            }
+          ],
+          "unique_coordinate_chars_identical_document_aliases_merged": 6990,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Program ended collection: program_dispatch_limit; unresolved acquisition work remains."
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "44801",
+      "question": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+      "arms": {
+        "baseline": {
+          "state": "completed_with_gaps",
+          "termination_reason": "stalled",
+          "incomplete": false,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 9,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 9
+            },
+            "known_reported_tokens": 82740,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 1,
+          "banked_sources": 1,
+          "banked_chars": 1394,
+          "frozen_material_checks": [
+            {
+              "target_id": "aaa_predeadline_metric",
+              "description": "AAA dated pre-deadline regular national price, not a state or monthly average",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "later_annual_and_alltime",
+              "description": "Later report differentiates annual record from all-time high and retains its date",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "near_deadline_lead",
+              "description": "Saved AAA September 3 index lead retained as incomplete source, not full daily series",
+              "selected": false,
+              "matching_sources": []
+            }
+          ],
+          "material_checks_selected": 0,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [
+            "Critical needs without associated usable sources: need_exceed_threshold"
+          ],
+          "agent_material_report": null,
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21815,
+            "visible_chars": 8696,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "aaa_predeadline_metric",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "later_annual_and_alltime",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "near_deadline_lead",
+                "first_analysis_visible": true
+              }
+            ],
+            "selected_check_count": 3
+          },
+          "provider_statuses": {
+            "received": 9
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 85.44910889799999,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "955409cad66f86f43375c3f84d2273b334e28179cd37103ebec1377bb60cd0f3",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://gasprices.aaa.com/2026/03",
+              "text": "WASHINGTON, DC (March 26, 2026) – The national average for a gallon of regular gasoline is up 10 cents from last week and one dollar since last month. The line graph below shows the steep rise from $2.98 on February 26 to $3.98 today. Crude oil prices remain high as the Iran conflict nears the…Read more »\nWASHINGTON, DC (March 19, 2026) – Tomorrow marks the official start of Spring and prices at the pump continued to climb by 28 cents since last week. With the Spring equinox ushering in warmer weather and more time on the road, gas prices are trending upward alongside seasonal demand. Last week’s announcement by the White House to release 172 million…Read more »\nWASHINGTON, DC (March 12, 2026) – Spring Break season is here as the national average for a gallon of regular gasoline jumped nearly 35 cents since last week. Current prices are similar to the spring of 2024. Gasoline demand increases this time of year as the weather warms up and more drivers hit the road. Crude oil prices play a major role in what…Read more »\nWASHINGTON, DC (March 5, 2026) – The national average for a gallon of regular gasoline jumped nearly 27 cents since last week to $3.25. The conflict in the Middle East has sent crude oil prices higher to the mid $70/barrel range. The recent increase puts the national average at the same price as it was in early April of 2025. Springtime typically…Read more »",
+              "location": {
+                "coordinate_space": "saved_content"
+              },
+              "need_ids": [
+                "need_price_series"
+              ]
+            }
+          ],
+          "candidate_strategy": null,
+          "actual_tool_counts": {
+            "finish_collection": 1,
+            "list_documents": 1,
+            "list_sources": 1,
+            "plan_evidence": 1,
+            "read_document": 3,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 0,
+          "context_chars_max": 26442,
+          "actual_exact_review_focus_requests": [],
+          "unique_coordinate_chars_identical_document_aliases_merged": 1394,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Missing explicit AAA source confirming that $5.016 is the all-time high national average price for Regular Unleaded gasoline (useful need need_threshold_confirm).",
+            "Missing complete series of AAA-reported national average prices for Regular Unleaded gasoline for each available period (monthly/weekly) in 2026 up to September 6, 2026 (useful need need_price_series). Only scattered weekly press-release values are available; no extracted specific values from the March 2026 archive page."
+          ]
+        },
+        "candidate": {
+          "state": "completed_with_gaps",
+          "termination_reason": "stalled",
+          "incomplete": false,
+          "last_error": null,
+          "resources": {
+            "model_http_attempts": 9,
+            "model_attempts_by_backend": {
+              "nvidia/nemotron-3-super-120b-a12b:free": 9
+            },
+            "known_reported_tokens": 90031,
+            "unknown_usage_attempts": 0,
+            "tavily_basic_attempts": 0,
+            "exa_attempts": 0,
+            "initial_source_http_attempts": 0,
+            "extract_batches": 0,
+            "supplement_attempts": []
+          },
+          "banked_excerpts": 2,
+          "banked_sources": 2,
+          "banked_chars": 3081,
+          "frozen_material_checks": [
+            {
+              "target_id": "aaa_predeadline_metric",
+              "description": "AAA dated pre-deadline regular national price, not a state or monthly average",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "later_annual_and_alltime",
+              "description": "Later report differentiates annual record from all-time high and retains its date",
+              "selected": false,
+              "matching_sources": []
+            },
+            {
+              "target_id": "near_deadline_lead",
+              "description": "Saved AAA September 3 index lead retained as incomplete source, not full daily series",
+              "selected": true,
+              "matching_sources": [
+                "https://gasprices.aaa.com/2026"
+              ]
+            }
+          ],
+          "material_checks_selected": 1,
+          "material_check_count": 3,
+          "issues": [],
+          "tool_errors": [],
+          "gaps": [],
+          "agent_material_report": {
+            "schema": "intelligent_materials_v2",
+            "needs": [
+              {
+                "need_id": "N_gas_price_history",
+                "condition": "Collect the national average price of regular unleaded gasoline (USD per gallon) as reported by AAA for each available time point (weekly/monthly) from January 1, 2026 up to September 6, 2026.",
+                "priority": "critical",
+                "question_spans": [
+                  {
+                    "id": "Q_question_c93e9d779f396a23",
+                    "field": "question",
+                    "start_char": 0,
+                    "end_char": 79,
+                    "sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  },
+                  {
+                    "id": "Q_resolution_criteria_0c29be6b4e38dd0a",
+                    "field": "resolution_criteria",
+                    "start_char": 0,
+                    "end_char": 197,
+                    "sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "scope": "Original field binding only; target relevance is unverified."
+                  }
+                ],
+                "banked_excerpt_ids": [
+                  "X1",
+                  "X2"
+                ],
+                "agent_assessment": null,
+                "assessment_stale": false
+              }
+            ],
+            "sources": [
+              {
+                "url": "https://gasprices.aaa.com",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Wed, 30 Sep 2026 02:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/",
+                "title": "",
+                "origin": "question_resolution_criteria",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 1687
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "2026-10-01T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/03",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 1394
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/03/",
+                "title": "Month: March 2026 - AAA Fuel Prices",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/04",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 30 Apr 2026 00:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 619
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/08/",
+                "title": "Month: August 2026 - AAA Gas Prices",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/2026/10/",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "2026-10-01T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/ahead-of-july-4th-drivers-get-some-relief-at-the-pump",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 02 Jul 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/for-the-first-time-in-four-years-national-average-exceeds-4-gallon",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 02 Apr 2026 00:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 2708
+              },
+              {
+                "url": "https://gasprices.aaa.com/gas-prices-remain-high-as-august-will-likely-set-new-record",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 27 Aug 2026 00:00:00 GMT",
+                "state": "readable",
+                "document_count": 1,
+                "chars": 2698
+              },
+              {
+                "url": "https://gasprices.aaa.com/national-average-dips-following-record-setting-september",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 2567
+              },
+              {
+                "url": "https://gasprices.aaa.com/national-average-dips-following-record-setting-september/",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "2026-10-01T15:16:25.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/national-average/",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/national-gas-average-jumps-one-dollar-in-one-month",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 26 Mar 2026 00:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/news",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "Thu, 24 Sep 2026 22:00:00 GMT",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/pump-prices-keep-climbing-as-crude-oil-remains-high-2",
+                "title": "",
+                "origin": "saved_capture",
+                "published_date": null,
+                "state": "readable",
+                "document_count": 1,
+                "chars": 2625
+              },
+              {
+                "url": "https://gasprices.aaa.com/pump-prices-keep-climbing-as-crude-oil-remains-high-2/",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": "2026-09-17T00:00:00.000Z",
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              },
+              {
+                "url": "https://gasprices.aaa.com/top-trends/?filter=month&filter=most&filter=st&filter=unleaded",
+                "title": "AAA Fuel Prices",
+                "origin": "search",
+                "published_date": null,
+                "state": "unattempted",
+                "document_count": 0,
+                "chars": 0
+              }
+            ],
+            "source_total": 33,
+            "next_offset": 20,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "semantic_verified": false,
+            "instruction": "Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.",
+            "unresolved_material_targets": [
+              {
+                "need_id": "N_gas_price_history",
+                "priority": "critical",
+                "status": "unreviewed",
+                "missing_material": "Material adequacy was not assessed by the agent.",
+                "next_action": ""
+              }
+            ],
+            "plan_missing": false,
+            "plan_failures": [],
+            "pending_passage_count": 0,
+            "scope": "Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy."
+          },
+          "scope": "Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.",
+          "fixed_analysis_projection": {
+            "model_calls": 0,
+            "request_bytes": 21867,
+            "visible_chars": 8696,
+            "context_omitted": true,
+            "material_checks": [
+              {
+                "target_id": "aaa_predeadline_metric",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "later_annual_and_alltime",
+                "first_analysis_visible": true
+              },
+              {
+                "target_id": "near_deadline_lead",
+                "first_analysis_visible": true
+              }
+            ],
+            "selected_check_count": 3
+          },
+          "provider_statuses": {
+            "received": 9
+          },
+          "provider_errors": [],
+          "elapsed_seconds": 43.64931693600002,
+          "frozen_case_identity": {
+            "schema": "frozen-frontier-case-v2",
+            "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+            "rubric_sha256": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d",
+            "question_sha256": "955409cad66f86f43375c3f84d2273b334e28179cd37103ebec1377bb60cd0f3",
+            "commit": "2dd3e12c58b9294ab505e3ca25da7d28ba098f69",
+            "model": "nvidia/nemotron-3-super-120b-a12b:free",
+            "fallback": false,
+            "decisions_per_arm": 12,
+            "http_ceiling_per_arm": 11,
+            "replication_reason": "Fresh paired release-reading versus repaired V2 over the same five frozen bodies, model, arm order, rubric and common eleven-request ceiling. Never migrate prior tasks.",
+            "search_calls": 0,
+            "source_fetch_calls": 0,
+            "analysis_calls": 0,
+            "submissions": 0,
+            "candidate_strategy": "intelligent_materials_v2",
+            "comparison_baseline_run": 37288399817,
+            "preregistration_sha256": "22e9bb6bd1e854a5473201244027e9e494cfb6fb5c642e5a21f2f985ec8cb34e"
+          },
+          "selected_original_material": [
+            {
+              "url": "https://gasprices.aaa.com/2026/03",
+              "text": "WASHINGTON, DC (March 26, 2026) – The national average for a gallon of regular gasoline is up 10 cents from last week and one dollar since last month. The line graph below shows the steep rise from $2.98 on February 26 to $3.98 today. Crude oil prices remain high as the Iran conflict nears the…Read more »\nWASHINGTON, DC (March 19, 2026) – Tomorrow marks the official start of Spring and prices at the pump continued to climb by 28 cents since last week. With the Spring equinox ushering in warmer weather and more time on the road, gas prices are trending upward alongside seasonal demand. Last week’s announcement by the White House to release 172 million…Read more »\nWASHINGTON, DC (March 12, 2026) – Spring Break season is here as the national average for a gallon of regular gasoline jumped nearly 35 cents since last week. Current prices are similar to the spring of 2024. Gasoline demand increases this time of year as the weather warms up and more drivers hit the road. Crude oil prices play a major role in what…Read more »\nWASHINGTON, DC (March 5, 2026) – The national average for a gallon of regular gasoline jumped nearly 27 cents since last week to $3.25. The conflict in the Middle East has sent crude oil prices higher to the mid $70/barrel range. The recent increase puts the national average at the same price as it was in early April of 2025. Springtime typically…Read more »",
+              "location": {
+                "format": "html",
+                "source": "https://gasprices.aaa.com/2026/03/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N_gas_price_history"
+              ]
+            },
+            {
+              "url": "https://gasprices.aaa.com/2026",
+              "text": "WASHINGTON, DC (October 1, 2026) – The national average for a gallon of regular gasoline dropped nearly 7 cents from last week to $4.41. This follows a record-setting September at the pump. The monthly average was $4.33, 50 cents higher than the previous September record…Read more »\nWASHINGTON, DC (September 24, 2026) – The national average for a gallon of regular gasoline continues to climb, up nearly 5 cents from last week. At $4.48 per gallon, this is the highest the national average has ever been for this time of year. Typically,…Read more »\nWASHINGTON, DC (September 17, 2026) – The national average for a gallon of regular gasoline is up 16 cents from last week at $4.43 and more than one dollar higher than it was a year ago. Crude oil remains high, averaging $100 per barrel amid…Read more »\nWASHINGTON, DC (September 10, 2026) – The national average for a gallon of regular gasoline went up 13 cents since last week to $4.27 as crude oil prices continue climbing. Volatility in the Strait of Hormuz has pushed crude oil back in the $100 per…Read more »\nWASHINGTON, DC (September 3, 2026) – Labor Day weekend travelers are facing the highest gas prices ever for this time of year. The national average is $4.14, up 4 cents from last week. Continued volatility in the Strait of Hormuz has pushed crude oil prices in the $90 per barrel range. After…Read more »\nWASHINGTON, DC (August 27, 2026) – The national average for a gallon of regular gasoline is one cent lower than last week at $4.09, but there’s been little movement on the crude oil front. Due to continued volatility in the Strait of Hormuz, crude oil prices remain in the $80 per barrel range. For the…Read more »",
+              "location": {
+                "format": "html",
+                "source": "https://gasprices.aaa.com/2026/",
+                "truncated": false,
+                "coordinate_space": "saved_document",
+                "document_index": 1
+              },
+              "need_ids": [
+                "N_gas_price_history"
+              ]
+            }
+          ],
+          "candidate_strategy": "intelligent_materials_v2",
+          "actual_tool_counts": {
+            "inspect_materials": 1,
+            "list_documents": 1,
+            "plan_evidence": 1,
+            "read_document": 4,
+            "review_passages": 2
+          },
+          "material_assessment_count": 0,
+          "material_plan_failure_count": 0,
+          "pending_review_projection_count": 2,
+          "context_chars_max": 27370,
+          "actual_exact_review_focus_requests": [
+            {
+              "record": "model_calls/0003.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 1394,
+              "record_sha256": "8d283375a231b8de538ced90e0cdb0ac4e00e5e2030e1da28c583a44c04e3af8"
+            },
+            {
+              "record": "model_calls/0006.json",
+              "status": "received",
+              "span_count": 1,
+              "exact_chars": 1687,
+              "record_sha256": "05067c0db1dfb01c6b58de7239cccacce3c04f2327febb5ac79cf3bba4133fc7"
+            }
+          ],
+          "unique_coordinate_chars_identical_document_aliases_merged": 3081,
+          "overlap_chars_by_identical_document_alias": 0,
+          "acquisition_complete": false,
+          "agent_declared_gaps": [
+            "Program ended collection: stalled; unresolved acquisition work remains."
+          ]
+        }
+      }
+    }
+  ],
+  "totals": {
+    "baseline": {
+      "reported_arms": 5,
+      "terminal_arms": 1,
+      "incomplete_arms": 4,
+      "banked_material_checks": 2,
+      "frozen_denominator": 15,
+      "model_http_attempts": 49,
+      "known_reported_tokens": 472492,
+      "unknown_usage_attempts": 0,
+      "fixed_first_analysis_visible_checks": 8,
+      "integrity_violations": 0,
+      "search_and_source_calls": 0
+    },
+    "candidate": {
+      "reported_arms": 5,
+      "terminal_arms": 2,
+      "incomplete_arms": 3,
+      "banked_material_checks": 6,
+      "frozen_denominator": 15,
+      "model_http_attempts": 44,
+      "known_reported_tokens": 427880,
+      "unknown_usage_attempts": 0,
+      "fixed_first_analysis_visible_checks": 8,
+      "integrity_violations": 0,
+      "search_and_source_calls": 0
+    }
+  },
+  "paired_comparisons": [
+    {
+      "question_id": "36871",
+      "both_terminal_without_integrity_failure": false,
+      "both_bounded_dispatches_auditable": true,
+      "banked_material_check_delta": 1,
+      "reason": "Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately."
+    },
+    {
+      "question_id": "43494",
+      "both_terminal_without_integrity_failure": false,
+      "both_bounded_dispatches_auditable": true,
+      "banked_material_check_delta": 1,
+      "reason": "Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately."
+    },
+    {
+      "question_id": "43501",
+      "both_terminal_without_integrity_failure": false,
+      "both_bounded_dispatches_auditable": true,
+      "banked_material_check_delta": 1,
+      "reason": "Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately."
+    },
+    {
+      "question_id": "43991",
+      "both_terminal_without_integrity_failure": false,
+      "both_bounded_dispatches_auditable": true,
+      "banked_material_check_delta": 0,
+      "reason": "Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately."
+    },
+    {
+      "question_id": "44801",
+      "both_terminal_without_integrity_failure": true,
+      "both_bounded_dispatches_auditable": true,
+      "banked_material_check_delta": 1,
+      "reason": "Banked material at the common ceiling is comparable; task completion and budget censoring are reported separately."
+    }
+  ],
+  "comparable_terminal_pairs": 1,
+  "comparable_bounded_dispatch_pairs": 5,
+  "promotion_allowed": false,
+  "scope": "Development frozen-material navigation/selection replay. Original material inventory identical. Not fresh-search recall, strict blind review, event verification or forecast accuracy. Failed arms and all costs retained.",
+  "manual_trace_review": {
+    "method": "Read original selected spans, original question criteria, plans, dispositions and raw provider request/response records. Frozen rubric remains unchanged. No new inference or source acquisition.",
+    "findings": [
+      {
+        "question_id": "36871",
+        "finding": "Both stablecoin values, observation date and currency/column labels are retained from the target snapshot. All 3 frozen anchors pass.",
+        "remaining": "Overlapping reads duplicate table/navigation text. The agent stored 2 adequacy declarations but then listed documents instead of finishing. Two assessment turns and the catalog turn add no material progress, causing stalled program closure with a generic gap. Adequacy remains unverified.",
+        "verified_benefit": "Original target table retained, V1 candidate had no banked spans."
+      },
+      {
+        "question_id": "43494",
+        "finding": "The original New York official permit-moratorium body is retained; one fixed permit-scope check passes. All planning succeeds without manual quote binding errors.",
+        "remaining": "New York date/threshold and Pennsylvania binding detail checks remain unbanked; no adequacy assessments are stored. Binding an official environmental permit pause does not certify a grid-connection restriction.",
+        "verified_benefit": "V1 candidate had 10 planning rejections and no banked text; V2 has one accepted plan and 2 banked excerpts."
+      },
+      {
+        "question_id": "43501",
+        "finding": "A substantive Department of Education incident statement is retained; generic ShinyHunters context is rejected. One fixed government detail check passes.",
+        "remaining": "Original criteria require an incident after question opening, but opening timestamp is absent. The new plan invents May 7, 2026 as a start boundary. Incident log-review dates and vendor response are unbanked; an adequacy declaration saying No further material needed in missing_material is rejected.",
+        "verified_benefit": "A 2000-character substantive government body replaces V1 generic fragments/citation footer; chronology adequacy is not established."
+      },
+      {
+        "question_id": "43991",
+        "finding": "The fixed source-specific rubric remains 0/3, but alternate saved Le Figaro text includes 45-month ineligibility, 30 suspended, already served, and distinct custodial components. This is useful original material outside the fixed gold source matching.",
+        "remaining": "Seven review_passages actions consume 7 of 9 model requests; 12 spans include political reactions and background. Two surfaced spans remain pending and no adequacy assessments are saved. Source-specific 0/3 must not be interpreted as zero relevant information.",
+        "verified_benefit": "Exact substantive alternate-source material is retained, but relevance prioritization and review fan-out remain weak."
+      },
+      {
+        "question_id": "44801",
+        "finding": "AAA year/month indexes retain March observations and the August 27 $4.09 / September 3 $4.14 entries. One fixed index check passes.",
+        "remaining": "The dedicated August target detail/table check is absent, even though the index contains its summary. Later September/October context is co-banked. The broad January-September weekly/monthly plan does not establish an exhaustive daily maximum against the $5.016 threshold. No adequacy assessment is stored.",
+        "verified_benefit": "Useful dated index summaries are banked; target detail and exhaustive observation coverage remain gaps."
+      }
+    ],
+    "all_provider_review_spans_match_original_versions": true,
+    "promotion_allowed": false
+  },
+  "cross_run_comparison": {
+    "prior_run_id": 37288399817,
+    "prior_totals": {
+      "baseline": {
+        "reported_arms": 5,
+        "terminal_arms": 1,
+        "incomplete_arms": 4,
+        "banked_material_checks": 6,
+        "frozen_denominator": 15,
+        "model_http_attempts": 47,
+        "known_reported_tokens": 425972,
+        "unknown_usage_attempts": 0,
+        "fixed_first_analysis_visible_checks": 8,
+        "integrity_violations": 0,
+        "search_and_source_calls": 0
+      },
+      "candidate": {
+        "reported_arms": 5,
+        "terminal_arms": 2,
+        "incomplete_arms": 3,
+        "banked_material_checks": 0,
+        "frozen_denominator": 15,
+        "model_http_attempts": 47,
+        "known_reported_tokens": 475168,
+        "unknown_usage_attempts": 0,
+        "fixed_first_analysis_visible_checks": 8,
+        "integrity_violations": 0,
+        "search_and_source_calls": 0
+      }
+    },
+    "current_vs_concurrent_baseline": {
+      "model_attempt_delta": -5,
+      "model_attempt_reduction_percent": 10.204081632653061,
+      "known_token_delta": -44612,
+      "known_token_reduction_percent": 9.441852983754217,
+      "fixed_material_check_delta": 4
+    },
+    "interpretation": "V2 improves mechanical planning and measured original retention in this repaired five-question cohort. Current baseline scored 2/15 versus prior baseline 6/15 with identical frozen sources/model/ceiling; sampling variability and source-specific rubric limitations prevent a stable generalization or forecast-quality claim. Fixed first-analysis visibility is unchanged at 8/15."
+  },
+  "review_requests": {
+    "model": 0,
+    "search": 0,
+    "source": 0,
+    "analysis": 0,
+    "submission": 0
+  }
+}

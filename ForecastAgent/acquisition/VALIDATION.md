@@ -64,5 +64,7 @@ repairs are documented in [MATERIALS_V2_REPAIRS.md](MATERIALS_V2_REPAIRS.md).
 All **461** local offline tests passed after these changes, including nine saved
 failure/retention regressions. The original five bundles/provider records and 47
 frozen release dependencies passed SHA-256 verification. The repair replay made
-zero provider requests. V2 has no measured live model or recall result yet and
-remains ineligible for promotion.
+zero provider requests. At that stage V2 had no measured live model or recall
+result. The subsequent [fixed-frontier V2 paired run](MATERIALS_V2_RESULTS.md)
+improved banked anchors in this repaired cohort but exposed review fan-out,
+status/closure and interpretation defects; it remains ineligible for promotion.

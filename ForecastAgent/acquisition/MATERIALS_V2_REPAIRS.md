@@ -68,10 +68,14 @@ The replay makes **zero model, search, source, analysis or submission requests**
 
 ## Remaining gate
 
-This validates control and source-retention mechanics. V2 autonomous selection,
+At this offline stage, these checks validated control and source-retention mechanics. V2 autonomous selection,
 adequacy assessment, real requests/tokens and frozen rubric recall remain
 unmeasured. No promotion or broader recollection is justified yet. The next
 provider experiment should use a separately frozen V2 identity with the same
 five materials, model and physical request ceiling; do not reuse or mutate V1
 tasks or reset their ledgers. Inspect assessments and actual downstream visibility
 as well as excerpt counts. Historical current captures still permit leakage.
+
+The subsequent provider experiment is recorded in
+[MATERIALS_V2_RESULTS.md](MATERIALS_V2_RESULTS.md); its measured outcomes supersede
+the unmeasured status above without changing this original offline evidence.

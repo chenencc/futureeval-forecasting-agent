@@ -8,8 +8,9 @@ See [the architecture](../docs/ACQUISITION_V2_DESIGN.md) and the
 The first [paired frozen-frontier experiment](FRONTIER_RESULTS.md) did not show
 an improvement. The candidate remains experimental and must not be promoted.
 The pipeline now opts into `intelligent_materials_v2`, a mechanical repair of V1.
-See [the zero-provider repair validation](MATERIALS_V2_REPAIRS.md). V2 has not had
-a live model comparison and is not a new production release.
+See [the zero-provider repair validation](MATERIALS_V2_REPAIRS.md) and the subsequent
+[fixed-Super paired results](MATERIALS_V2_RESULTS.md). V2 remains experimental;
+measured retention improvements do not justify a new production release.
 
 ## What is implemented
 
