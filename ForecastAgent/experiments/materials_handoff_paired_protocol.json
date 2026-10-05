@@ -1,0 +1,64 @@
+{
+  "schema": "banked-material-handoff-paired-protocol-v1",
+  "parent_run_id": "37316638264",
+  "status": "frozen_before_candidate_packing",
+  "question_ids": [
+    "36871",
+    "43494",
+    "43501",
+    "43991",
+    "44801"
+  ],
+  "scope": "Offline paired evidence delivery on ten saved bundles. No model, search, fetch, supplement, analysis or submission calls. No outcome labels. Not a forecast accuracy experiment or a held-out test.",
+  "limit_bytes": 22000,
+  "decision_questions": "Unchanged release Mercury registry",
+  "policy": {
+    "protect_old_visible_text": true,
+    "normalize_source_references": true,
+    "coalesce_exact_adjacent_body_spans": true,
+    "bank_validation": "Exact raw source and parsed-view hashes plus original document-local coordinates. No guessed body offsets.",
+    "identity_context": "At most the first 1800 saved-body characters, ending on a full line where possible. It is original text, not inferred metadata.",
+    "table_policy": "Whole saved table rows with their original header; no cell reinterpretation. Rank rows by the unchanged question lexical terms, not rubric or model claims.",
+    "overflow": "Preserve original old-visible text; expose omitted banked ranges and reasons. Never clip a row to hide the byte cap."
+  },
+  "gates": {
+    "all_original_versions_unchanged": true,
+    "all_request_bytes_within_limit": true,
+    "all_spans_exact_original": true,
+    "no_old_visible_characters_removed": true,
+    "no_old_fixed_material_checks_lost": true,
+    "new_provider_calls": 0,
+    "promotion_allowed": false
+  },
+  "metrics": [
+    "fixed material check delta and lost checks",
+    "valid banked characters forwarded and omitted ranges",
+    "source-specific first request bytes",
+    "old visible character preservation",
+    "coordinate and source integrity failures"
+  ],
+  "bundles": {
+    "36871": {
+      "baseline": "5e6c9120382f01702303b4dbaa8f6863f0554d1aa4646139a874e2cabc235b86",
+      "candidate": "3e004355ccb81218d99be42ce7f7406382e5d2e189ee65e2b695da0936e11a9c"
+    },
+    "43494": {
+      "baseline": "a81e61cff3385f9de0705256ed7d0f67f28e21881d456db41082d70028f323ff",
+      "candidate": "ccaa7f6fa26cd547b8ccedc77a7341d1544626e44e4e1f331e7425440a498b55"
+    },
+    "43501": {
+      "baseline": "afb8e98dc00b15ad304879665621000415afa3c4486a03765a24293fab2eacb2",
+      "candidate": "d7160d5dc85a8ad0605c0d7827b9623a8b814f085add02090c1255be3468702b"
+    },
+    "43991": {
+      "baseline": "da7a7fd2684a2eda5791cad632b2aa961354d9571a3312ab42fe68af66cf0236",
+      "candidate": "4c9b9bf4cdbf8028c4ce4a589382ea27816657cf6602474a2952afd84fe0cb4b"
+    },
+    "44801": {
+      "baseline": "3ba08aabb0f59b9333bbff3bc3f0bf09477cbc626ff512cf6b8cbe7d2aa6e57e",
+      "candidate": "cb7b9dc0d39a398ee8a0b5dfddd5e58df196342e48d7fc1e9b417fbd2651f168"
+    }
+  },
+  "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+  "rubric_sha256_lf": "df488996250b8e2ed322be235cdf570e03448990ed997d1eacc424dc07be6c7d"
+}

@@ -137,3 +137,10 @@ python -m ForecastAgent.acquisition.offline_audit \
 This is compatible-input and original-span evidence, not a replay of autonomous
 discovery. Actual recall, relevance, calls, tokens, and elapsed time still require
 the bounded frozen-frontier and untouched live pair specified in the design.
+
+## Saved-material delivery
+
+[Saved-material handoff](HANDOFF.md) documents the opt-in offline first-request
+packer, exact source/view bindings, protected old-visible text, omission
+manifest, and same-bundle paired replay. It repairs the acquisition-to-analysis
+export without changing the frozen analyst or production wiring.

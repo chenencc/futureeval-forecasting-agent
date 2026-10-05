@@ -1,0 +1,161 @@
+{
+  "schema": "banked-material-handoff-paired-review-v1",
+  "parent_run_id": "37316638264",
+  "protocol_sha256_lf": "6cde3920580484300a0e259f5e3cf514d64a8614b36a58f53d70bf921518a05a",
+  "implementation_sha256_lf": "f70a0d3c6973d2834acb804083fb9f73fc863f396b54cbe8cdf4bf591d8c0889",
+  "report_file_sha256": "48dff6c6a0fcf8aab3b50445d9e5b91b30a710f361a61d905e3a1fcac0cc5388",
+  "totals": {
+    "baseline": {
+      "paired_bundles": 5,
+      "frozen_checks": 15,
+      "old_visible_checks": 8,
+      "new_visible_checks": 10,
+      "gained_checks": 2,
+      "lost_checks": 0,
+      "old_forwarded_bank_chars": 7686,
+      "new_forwarded_bank_chars": 12212,
+      "unique_valid_bank_chars": 15372,
+      "unique_omitted_bank_chars": 3160,
+      "invalid_bank_count": 0,
+      "gate_passed_pairs": 5,
+      "old_request_bytes_total": 109333,
+      "new_request_bytes_total": 109047
+    },
+    "candidate": {
+      "paired_bundles": 5,
+      "frozen_checks": 15,
+      "old_visible_checks": 8,
+      "new_visible_checks": 13,
+      "gained_checks": 5,
+      "lost_checks": 0,
+      "old_forwarded_bank_chars": 6050,
+      "new_forwarded_bank_chars": 9614,
+      "unique_valid_bank_chars": 16598,
+      "unique_omitted_bank_chars": 6984,
+      "invalid_bank_count": 0,
+      "gate_passed_pairs": 5,
+      "old_request_bytes_total": 109493,
+      "new_request_bytes_total": 109534
+    }
+  },
+  "per_question": [
+    {
+      "question_id": "36871",
+      "arms": {
+        "baseline": {
+          "old_visible_checks": 0,
+          "new_visible_checks": 1,
+          "lost_checks": [],
+          "new_request_bytes": 21783,
+          "omitted_bank_chars": 0
+        },
+        "candidate": {
+          "old_visible_checks": 0,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21998,
+          "omitted_bank_chars": 2963
+        }
+      }
+    },
+    {
+      "question_id": "43494",
+      "arms": {
+        "baseline": {
+          "old_visible_checks": 2,
+          "new_visible_checks": 2,
+          "lost_checks": [],
+          "new_request_bytes": 21549,
+          "omitted_bank_chars": 0
+        },
+        "candidate": {
+          "old_visible_checks": 2,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21843,
+          "omitted_bank_chars": 0
+        }
+      }
+    },
+    {
+      "question_id": "43501",
+      "arms": {
+        "baseline": {
+          "old_visible_checks": 0,
+          "new_visible_checks": 1,
+          "lost_checks": [],
+          "new_request_bytes": 21992,
+          "omitted_bank_chars": 3160
+        },
+        "candidate": {
+          "old_visible_checks": 0,
+          "new_visible_checks": 1,
+          "lost_checks": [],
+          "new_request_bytes": 21854,
+          "omitted_bank_chars": 4021
+        }
+      }
+    },
+    {
+      "question_id": "43991",
+      "arms": {
+        "baseline": {
+          "old_visible_checks": 3,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21934,
+          "omitted_bank_chars": 0
+        },
+        "candidate": {
+          "old_visible_checks": 3,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21953,
+          "omitted_bank_chars": 0
+        }
+      }
+    },
+    {
+      "question_id": "44801",
+      "arms": {
+        "baseline": {
+          "old_visible_checks": 3,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21789,
+          "omitted_bank_chars": 0
+        },
+        "candidate": {
+          "old_visible_checks": 3,
+          "new_visible_checks": 3,
+          "lost_checks": [],
+          "new_request_bytes": 21886,
+          "omitted_bank_chars": 0
+        }
+      }
+    }
+  ],
+  "validation": {
+    "local_unittest_count": 501,
+    "new_boundary_test_count": 12,
+    "result": "passed",
+    "analysis_calls": 0,
+    "search_calls": 0,
+    "source_calls": 0,
+    "new_known_provider_tokens": 0,
+    "cli_export_and_exact_reuse": "passed",
+    "scope": "Offline verification only; no provider requests attempted."
+  },
+  "all_acceptance_gates_passed": true,
+  "frozen_release_dependencies_verified": 47,
+  "promotion_allowed": false,
+  "limitations": [
+    "Five repaired development cases, not untouched holdouts.",
+    "The before/after comparison is paired within each saved bundle; original collection arms remain stochastic.",
+    "First-request original-text coverage only; Mercury has not been called and forecasting quality is unmeasured.",
+    "Body identity context does not prove a table date, relevant event, or interval completeness.",
+    "No historical cutoff enforcement. Unmapped extracted tables retain heuristic extraction warnings.",
+    "Three offline packing revisions were developed and inspected against these known cases. Final selection is development regression, not one-shot held-out confirmation."
+  ],
+  "full_report_path": "E:/metaculus_data/reports/materials-handoff-paired-37316638264.json"
+}
