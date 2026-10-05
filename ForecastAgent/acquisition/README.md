@@ -33,6 +33,13 @@ any existing ledger or provider account allowance. Cross-task caching is forbidd
 The requirements reuse the prior pilot's exact rules for source-quality comparison;
 requirement generation for arbitrary new questions is outside this pilot adapter.
 
+For two recorded selection HTTP 422 failures, the isolated
+`unified_review_repair` experiment can send each independent selection head with
+the identical full original state. It preserves cumulative logical/HTTP/time
+caps and all completed phases. Merged typed answers retain their individual
+provider records; no source text, criteria, V7 interpretation or acquisition
+budget changes. A failed single head stops this repair without blind retries.
+
 To continue an interrupted Actions run, use its exact completed artifact via
 `--resume PARENT --output NEW_DIR`. Inputs, caps, reservations and cached phases
 remain frozen. A collector with incomplete saved material may still enter review,
