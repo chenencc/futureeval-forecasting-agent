@@ -71,6 +71,17 @@ class UnifiedAcquisitionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             pipeline.collect(self.request, self.root)
 
+    def test_empty_gap_list_does_not_hide_declared_stop_or_unread_candidates(self):
+        self.bundle['result']['agent_declared_gaps'] = ['raw_source_budget_exhausted']
+        self.bundle['result']['unread_urls'] = ['https://example.org/unread']
+        with self.collect():
+            result = pipeline.collect(self.request, self.root)
+        self.assertEqual(result['state'], 'collected_with_gaps')
+        self.assertEqual(result['acquisition_coverage']['unread_candidate_count'], 1)
+        self.assertEqual(result['acquisition_coverage']['agent_declared_gaps'], ['raw_source_budget_exhausted'])
+        self.assertFalse(result['acquisition_coverage']['full_recall_verified'])
+        self.assertEqual(load(self.root / 'raw/bundle.json')['result']['gaps'], [])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,6 +14,22 @@ PROTOCOL = 'unified-acquisition-v1'
 DEFAULT_LIMITS = {'http': 10, 'browser': 4, 'saved_reparse': 8, 'executions': 3}
 
 
+def disclose_coverage(package, bundle):
+    """Keep collector-declared gaps distinct from failed captures and unread leads."""
+    result = bundle.get('result') or {}
+    declared = list(dict.fromkeys(result.get('agent_declared_gaps', [])))
+    unread = list(dict.fromkeys(result.get('unread_urls', [])))
+    out = copy.deepcopy(package)
+    out['acquisition_coverage'] = {'agent_declared_gaps': declared,
+        'unread_candidate_urls': unread, 'unread_candidate_count': len(unread),
+        'unread_candidates_are_not_all_required_sources': True,
+        'agent_declarations_are_not_verified_findings': True,
+        'full_recall_verified': False}
+    if declared:
+        out['state'] = 'collected_with_gaps'
+    return out
+
+
 def collect(request, folder, *, network=True, limits=None):
     """Resume identical input and reservations, returning a checked body package.
 
@@ -41,8 +57,16 @@ def collect(request, folder, *, network=True, limits=None):
             package = load(final)
             if digest(load(folder / 'analysis-input.json')) != package['analysis_input_sha256']:
                 raise ValueError('acquisition_output_changed')
-            if digest(load(folder / 'raw/bundle.json')) != package['raw_bundle_sha256']:
+            raw = load(folder / 'raw/bundle.json')
+            if digest(raw) != package['raw_bundle_sha256']:
                 raise ValueError('raw_acquisition_parent_changed')
+            disclosed = disclose_coverage(package, raw)
+            if disclosed != package:
+                save(folder / 'coverage-disclosure.json', {'previous_package_sha256': digest(package),
+                    'updated_package_sha256': digest(disclosed), 'raw_and_analysis_bodies_unchanged': True,
+                    'provider_calls': 0, 'budgets_reset': False})
+                save(final, disclosed)
+            package = disclosed
             return package
         raw_path = folder / 'raw/bundle.json'
         executions_path = folder / 'executions.json'
@@ -106,5 +130,6 @@ def collect(request, folder, *, network=True, limits=None):
             'repair_provider_calls': sidecar['provider_calls'], 'original_ledgers_preserved': True,
             'truth_verified': False, 'forecast_submissions': 0,
             'state': 'collected_with_gaps' if view['gaps'] or not collector_complete else 'collected'}
+        package = disclose_coverage(package, bundle)
         save(final, package)
         return package

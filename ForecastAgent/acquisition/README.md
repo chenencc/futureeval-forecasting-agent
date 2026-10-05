@@ -24,6 +24,12 @@ Ultra-to-Super service-failure routing. Repair adds at most ten HTTP captures, f
 browser renders (each at most 25 requests), and eight saved-response reparses.
 These are ceilings, not quotas that must be spent.
 
+The package separately exports collector-declared gaps, unread candidate URLs,
+and failed repair captures. An empty `result.gaps` does not mean full recall.
+Unread leads are not all required documents, and model-declared gaps are not
+verified findings. A cached coverage-disclosure upgrade makes no provider calls
+and leaves the raw bundle and analysis body hashes unchanged.
+
 ## Fresh pilot and recovery
 
 Run `python -m ForecastAgent.experiments.unified_acquisition_trial --output NEW_DIR`.
@@ -50,3 +56,6 @@ The trial collects current pages for historical questions. It measures acquisiti
 and review quality, not leakage-free forecasting accuracy. It emits no forecast
 probabilities and has no submission path. This experiment does not change the
 production release, listener or worker.
+
+See [the fresh pilot result](PILOT_RESULT.md) for actual capture counts, provider
+usage, failure preservation and the remaining integration limitations.

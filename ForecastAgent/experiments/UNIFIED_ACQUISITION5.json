@@ -1,6 +1,6 @@
 {
   "schema": "unified-acquisition-trial-v1",
-  "trial_id": "unified-acquisition-five-20261005",
+  "trial_id": "unified-acquisition-five-20261005-disclosure",
   "scope": "Fresh current acquisition followed by independent free repair and frozen V7 evidence review. No probabilities or submissions. Same five questions and requirements; no old bodies or searches.",
   "budget_authorization": "User authorized independent refreshed experiment budgets; existing ledgers and provider account quotas remain unchanged.",
   "repair_limits": {
@@ -19,6 +19,11 @@
     {
       "run_id": 37264261076,
       "scope": "saved-packet V7 baseline",
+      "not_reset": true
+    },
+    {
+      "run_id": 37267803362,
+      "scope": "original fresh integrated pilot; all raw budgets remain preserved",
       "not_reset": true
     }
   ],
@@ -47,7 +52,7 @@
     "ForecastAgent/experiments/mercury_field_scopes_trial.py": "a3c41be3b9731a585b572c8d386515ef43951efef2cc100a74ad5f87e52a34fd"
   },
   "integration_code_sha256": {
-    "ForecastAgent/acquisition/pipeline.py": "56228c0f5e0db7c1bf23e39238b880da5db2d53c15d55d313c769c0300eed80b",
+    "ForecastAgent/acquisition/pipeline.py": "17fbb9ad8b90119197c0a6a201ebd86ff314440748b2201b115c8bbf749f5169",
     "ForecastAgent/experiments/unified_acquisition_trial.py": "94287949ddea7da0cb105f4c3591cfd97b7897c3ee5481af9c5209cb518000e9"
   },
   "cases": [
@@ -64,7 +69,7 @@
         "acquisition_profile": "collection_v3",
         "acquisition_focus": "raw_recall",
         "exa_search_policy": "required",
-        "experiment_id": "unified-acquisition-five-20261005",
+        "experiment_id": "unified-acquisition-five-20261005-disclosure",
         "budget_profile": "default"
       },
       "plan": {
@@ -221,7 +226,7 @@
         "acquisition_profile": "collection_v3",
         "acquisition_focus": "raw_recall",
         "exa_search_policy": "required",
-        "experiment_id": "unified-acquisition-five-20261005",
+        "experiment_id": "unified-acquisition-five-20261005-disclosure",
         "budget_profile": "default"
       },
       "plan": {
@@ -599,7 +604,7 @@
         "acquisition_profile": "collection_v3",
         "acquisition_focus": "raw_recall",
         "exa_search_policy": "required",
-        "experiment_id": "unified-acquisition-five-20261005",
+        "experiment_id": "unified-acquisition-five-20261005-disclosure",
         "budget_profile": "default"
       },
       "plan": {
@@ -804,7 +809,7 @@
         "acquisition_profile": "collection_v3",
         "acquisition_focus": "raw_recall",
         "exa_search_policy": "required",
-        "experiment_id": "unified-acquisition-five-20261005",
+        "experiment_id": "unified-acquisition-five-20261005-disclosure",
         "budget_profile": "default"
       },
       "plan": {
@@ -1058,7 +1063,7 @@
         "acquisition_profile": "collection_v3",
         "acquisition_focus": "raw_recall",
         "exa_search_policy": "required",
-        "experiment_id": "unified-acquisition-five-20261005",
+        "experiment_id": "unified-acquisition-five-20261005-disclosure",
         "budget_profile": "default"
       },
       "plan": {
