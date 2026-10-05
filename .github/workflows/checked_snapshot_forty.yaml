@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes, unified_acquisition, unified_review_repair]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes, unified_acquisition, unified_review_repair, unified_analysis]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -35,6 +35,45 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  unified-analysis:
+    if: inputs.experiment == 'unified_analysis'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_acquisition_replay ForecastAgent.tests.test_mercury_evidence_chain
+      - name: Check frozen completed acquisition parent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT_RUN: ${{ inputs.resume_run }}
+        run: |
+          test "$PARENT_RUN" = 37267803362
+          test "$(gh run view "$PARENT_RUN" --json status --jq .status)" = completed
+      - uses: actions/download-artifact@v4
+        with:
+          name: unified-acquisition-five
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+          path: snapshots/unified-acquisition-parent
+      - name: Mercury analysis of saved original bodies
+        run: python -u -m ForecastAgent.analysis.acquisition_replay run --inputs snapshots/unified-acquisition-parent --output snapshots/unified-analysis-five --manifest ForecastAgent/experiments/UNIFIED_ANALYSIS5.json
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+      - name: Evaluate frozen predictions separately
+        if: always()
+        run: python -m ForecastAgent.analysis.acquisition_replay evaluate --inputs snapshots/unified-analysis-five --output snapshots/unified-analysis-five/evaluation --labels ForecastAgent/fixtures/repaired_fifty_evaluation_labels.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-analysis-five
+          path: snapshots/unified-analysis-five
+          if-no-files-found: error
+          retention-days: 90
   unified-acquisition:
     if: inputs.experiment == 'unified_acquisition' || inputs.experiment == 'unified_review_repair'
     runs-on: ubuntu-latest
