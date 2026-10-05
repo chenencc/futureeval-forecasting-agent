@@ -84,3 +84,52 @@ unseen generalization, calibrated confidence thresholds or forecasting accuracy.
 
 Before production adoption, freeze a stratified unseen cohort and review both
 arms without version labels; preserve the failed and successful regressions.
+
+## Completed regression pilot
+
+[Run 37245414693](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37245414693)
+completed successfully on tested commit `c501e6e`. Both arms returned valid
+complete outputs for all three cases. Mercury returned all 56 independent
+typed answers for 14 needs; this is an interface pass, not a semantic pass.
+The 51 focused tests passed locally and in the workflow.
+
+| Question | Mercury material review | Fresh Super V2 review |
+| --- | --- | --- |
+| 43494, energy restrictions / PDF | Recognized the 50 MW rule definition; avoided asserting non-rescission from silence. The deadline field and the continuity condition still have different meanings. | Inferred non-rescission from no reversal mentioned and requested an external definition already in the rules. |
+| 43501, security incident / HTML | Retained qualification gaps but selected a rule reference for an asserted source fact. The program flagged the disagreement. | Selected the official communication and retained affected-count, duration and ransom gaps. |
+| 43824, ILS prices / JSON | Three needs converted insufficient or out-of-window Close records into `condition_refuted`. Two confidence values exceeded 0.94. | Retained missing in-window Adjusted Close values/dates; identified the price-drop threshold as a rule constant. |
+
+Missing applicable data does not refute the event. The current guard caught the
+source/rule disagreement but missed the symmetric combination of insufficient
+origin and condition refutation. All original claims survive in the artifact;
+no condition was automatically closed and no forecast was submitted.
+
+| Actual provider-reported usage | Super | Mercury |
+| --- | ---: | ---: |
+| HTTP attempts | 3 | 3 |
+| Input tokens | 18,807 | 346,663 |
+| Output tokens | 3,015 | 52 |
+| Reported cost, USD | 0 | 0 |
+| Attempts with unknown token usage | 0 | 0 |
+
+Six logical calls and six HTTP attempts consumed the independent trial budget.
+There were no retries, searches or captures. Prior experiment counters remain
+unchanged. Per-attempt latency was not recorded. Mercury reported 18.43 times
+the input tokens, despite batching its questions into three HTTP requests.
+This may reflect per-question expansion; the accounting mechanism was not
+established. These counters are not unique context lengths, and they do not
+establish a context overflow or a latency comparison.
+
+The original artifact `11318783541` was imported into `E:/metaculus_data` and
+the locally archived ZIP was independently hash-verified:
+`4f2f1bb15ccb2d1a583e1b2d4ede1962996c681d71beda0326eff10295631206`.
+The English audit, original decisions/distributions, and per-case evidence are
+in `E:/metaculus_data/reports/mercury-material-pilot-audit-37245414693.json`.
+
+Recommendation: keep Mercury experimental for narrow provenance/reference
+selection; do not replace the full material-condition review or promote this
+protocol to production. First separate document applicability from event truth,
+separate field provenance from compound-condition provenance, and detect
+disagreements symmetrically. Reduce unnecessary independent heads before a
+separately authorized unseen trial. Confidence filtering alone cannot fix the
+high-confidence refutations observed here. Production remains unchanged.
