@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -31,6 +31,31 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  mercury-material-two-rounds:
+    if: inputs.experiment == 'mercury_material_two_rounds'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_mercury_material_v2 ForecastAgent.tests.test_mercury_material_rounds ForecastAgent.tests.test_mercury_material ForecastAgent.tests.test_mercury_material_pilot ForecastAgent.tests.test_acquisition_ids ForecastAgent.tests.test_acquisition_contract
+      - name: Frozen regression then repair-heldout paired Mercury review
+        run: python -u -m ForecastAgent.experiments.mercury_material_rounds --output snapshots/mercury-material-two-rounds
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-material-two-rounds
+          path: snapshots/mercury-material-two-rounds
+          if-no-files-found: error
+          retention-days: 90
   mercury-material-pilot:
     if: inputs.experiment == 'mercury_material_pilot'
     runs-on: ubuntu-latest

@@ -133,3 +133,58 @@ separate field provenance from compound-condition provenance, and detect
 disagreements symmetrically. Reduce unnecessary independent heads before a
 separately authorized unseen trial. Confidence filtering alone cannot fix the
 high-confidence refutations observed here. Production remains unchanged.
+
+## Preregistered two-round follow-up
+
+The user authorized automatic advancement through two rounds. Both rounds and
+the V2 protocol are frozen before live execution, with no semantic tuning
+between rounds. The comparison now isolates Mercury protocol V1 versus V2,
+using the same free decision model; it does not compare model intelligence.
+
+V2 separates a record's applicability from what it establishes about the world.
+It provides `nonqualifying_record` without converting it to event refutation.
+`exhaustive_refutation` requires complete entity, alternative and interval
+coverage. Both positive and negative conclusions are checked for conflicting
+applicability/reference answers and remain unverified original model claims.
+The requested constraints keep their exact rule bindings in the output;
+source references cannot select a rule as an observed source fact. V2 uses three
+independent heads (reference, applicability, evidence), rather than four. It
+retains all original source text and rules and does not extract observed values.
+
+1. Round 1: fresh paired Mercury reviews of 43494, 43501, and 43824, using the
+   exact previously frozen needs and source packets.
+2. Round 2: 43343 (sports), 14025 (defense), 43911 (trade), 40967 (politics), and
+   44801 (fuel prices). These materials were not used to repair Mercury, but
+   they appeared in older trials; they are not globally unseen. One Super plan
+   per case is generated from original rules and frozen for both Mercury arms.
+
+Expected maximum consumption is 21 logical calls: 16 Mercury calls and five
+Super planning calls. The physical limit is 24 HTTP attempts (6 in round 1,
+18 in round 2). No old allowance is reset, no paid fallback exists, and existing
+journals/reruns cannot restart this trial. Transport/account failure blocks
+automatic advancement and preserves its reservation. Semantic failures are
+audited after the frozen experiment; they never silently rewrite outputs.
+
+The reviewer checks these original-material limits, not resolved answers:
+
+- 43494: an announcement does not establish non-rescission through a future
+  deadline; 50 MW is a rule definition, not a missing external observation.
+- 43501: official communication does not by itself establish counts, duration
+  or ransom. An actual source fact cannot bind to a rule citation.
+- 43824: outside-window Close data does not establish inside-window Adjusted
+  Close, and excludes only the supplied records. It cannot refute all events.
+- 43343: distinguish the listed foreign participants from a complete host-team
+  semifinal exclusion; do not infer completeness from one match alone.
+- 14025: launch and flight to the target are reported; a hit is a separate
+  qualifier. Preserve positive components as well as undisclosed details.
+- 43911: a nearly finalized text or planned signing does not establish joint
+  official announcement and completion before the deadline.
+- 40967: political pressure/current office status does not establish departure
+  or non-departure throughout the rest of the year.
+- 44801: the AAA publisher matches, but a September monthly seasonal record or
+  October weekly price does not establish an all-time high before September 6.
+
+These reviewer expectations are not present in either model's request.
+Report paired completion, semantic overclaims and lost positive components
+separately from token consumption and reference identity. Independent typed
+decisions cannot supply arbitrary values or a coherent free-form rationale.
