@@ -7,7 +7,7 @@ on:
       candidate_policy:
         description: 'Separately frozen candidate strategy; never migrate prior case state'
         type: choice
-        options: ['v1', 'v2']
+        options: ['v1', 'v2', 'v3']
         default: 'v1'
         required: true
       resume_run:
@@ -55,11 +55,12 @@ jobs:
       - name: Frozen input and offline contract checks
         run: |
           python -m ForecastAgent.acquisition.frontier_compare --preflight
-          python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_intelligent_repairs ForecastAgent.tests.test_frontier_compare
+          python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_intelligent_repairs ForecastAgent.tests.test_frontier_compare ForecastAgent.tests.test_material_protocol
       - name: Compare two model policies over identical saved sources
         run: |
           EXTRA=()
           if [ "$CANDIDATE_POLICY" = 'v2' ]; then EXTRA+=(--repair-v2); fi
+          if [ "$CANDIDATE_POLICY" = 'v3' ]; then EXTRA+=(--repair-v3); fi
           python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier-$CANDIDATE_POLICY/$CASE_ID" --replicate-super "${EXTRA[@]}"
         env:
           CASE_ID: ${{ matrix.question }}

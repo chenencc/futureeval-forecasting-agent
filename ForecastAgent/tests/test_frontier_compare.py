@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
-from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics, run_case
+from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics, run_case, request_for
 
 
 def call(name, args, ident):
@@ -14,6 +14,54 @@ def call(name, args, ident):
 
 
 class FrontierComparisonTests(TestCase):
+    def test_v3_pairs_v2_control_with_v3_using_identical_sources_and_fresh_identity(self):
+        data,_=inputs()
+        with TemporaryDirectory() as tmp:
+            control=seeded(data['cases'][0],'baseline',Path(tmp)/'control',repair_v3=True)
+            candidate=seeded(data['cases'][0],'candidate',Path(tmp)/'candidate',repair_v3=True)
+            self.assertEqual(control.bundle['request']['acquisition_strategy'],'intelligent_materials_v2')
+            self.assertEqual(candidate.bundle['request']['acquisition_strategy'],'intelligent_materials_v3')
+            a=dict(control.bundle['request']);b=dict(candidate.bundle['request'])
+            a.pop('acquisition_strategy');b.pop('acquisition_strategy')
+            self.assertEqual(a,b)
+            self.assertEqual(control.bundle['pages'],candidate.bundle['pages'])
+            self.assertEqual(control.catalog(),candidate.catalog())
+            self.assertEqual(control.budget(),candidate.budget())
+            self.assertEqual(candidate.bundle.get('model_attempts',[]),[])
+            with self.assertRaisesRegex(ValueError,'different input'):
+                seeded(data['cases'][0],'candidate',Path(tmp)/'candidate',repair_v2=True)
+            with self.assertRaisesRegex(ValueError,'one separately frozen'):
+                request_for(data['cases'][0],'candidate',repair_v2=True,repair_v3=True)
+            with self.assertRaisesRegex(ValueError,'fixed Super'):
+                run_case(data['cases'][0]['id'],Path(tmp)/'invalid',repair_v3=True)
+
+    def test_v3_harness_uses_actual_loop_and_refuses_cached_policy_migration(self):
+        from ForecastAgent.tests.test_material_protocol import saved, plan_for
+        data,_=inputs()
+        case=data['cases'][0]
+        rows=saved('36871')['calls'][:6]
+        with TemporaryDirectory() as tmp:
+            calls=[]
+            def respond(*args,**kwargs):
+                row=rows[len(calls)];calls.append(row['tool'])
+                args=copy.deepcopy(row['arguments'])
+                if row['tool']=='plan_evidence':args=plan_for('36871')
+                if row['tool']=='assess_materials':
+                    for item in args['items']:item['missing_items']=[]
+                return {'tool_calls':[call(row['tool'],args,str(len(calls)))]}
+            with patch('ForecastAgent.runtime.retrieval.ask_ultra',side_effect=respond) as model, \
+                 patch('ForecastAgent.providers.http.download') as fetch:
+                report=run_arm(case,'candidate',Path(tmp),'mock-key',http_cap=11,repair_v3=True)
+            self.assertEqual(model.call_count,6)
+            fetch.assert_not_called()
+            self.assertEqual(report['issues'],[])
+            self.assertEqual(report['material_checks_selected'],3)
+            with patch('ForecastAgent.runtime.retrieval.ask_ultra') as model:
+                self.assertEqual(run_arm(case,'candidate',Path(tmp),'mock-key',http_cap=11,repair_v3=True),report)
+                with self.assertRaisesRegex(ValueError,'policy changed'):
+                    run_arm(case,'candidate',Path(tmp),'mock-key',http_cap=11,repair_v2=True)
+                model.assert_not_called()
+
     def test_v2_is_explicit_separate_identity_and_cannot_migrate_saved_v1_task(self):
         data,_=inputs()
         with TemporaryDirectory() as tmp:

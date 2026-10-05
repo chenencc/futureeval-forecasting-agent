@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import zipfile
 
-from ForecastAgent.acquisition.frontier_compare import inputs, metrics
+from ForecastAgent.acquisition.frontier_compare import inputs, metrics, request_for
 from ForecastAgent.competition.mercury import packet_for
 from ForecastAgent.analysis.mercury_evidence_chain import select
 from ForecastAgent.local_sync import GitHub, import_zip
@@ -85,6 +85,15 @@ def review(root, run_id):
             record['material_plan_failure_count']=len(bundle.get('control',{}).get('material_plan_failures',[]))
             record['pending_review_projection_count']=sum(bool(p.get('retained_pending_passage_ids')) for p in bundle.get('context_projections',[]))
             record['context_chars_max']=max((p.get('projected_chars',0) for p in bundle.get('context_projections',[])),default=0)
+            if identity.get('candidate_strategy') == 'intelligent_materials_v3':
+                if bundle['request'] != request_for(case,arm,repair_v3=True):
+                    record['issues'].append({'error':'V3 arm request differs from its frozen policy'})
+                record['execution_report']=(bundle.get('result') or {}).get('execution_report')
+                record['material_adequacy_status']=(bundle.get('result') or {}).get('material_adequacy_status')
+                record['review_batches_recorded']=len(bundle.get('material_review_batches',[]))
+                record['deferred_passage_count']=((bundle.get('result') or {}).get('material_report') or {}).get('deferred_passage_count',0)
+                record['rule_unknowns']=[{'need_id':n['id'],'fields':[r['field'] for r in n.get('rule_metadata_bindings',[]) if r['state']=='unknown']}
+                    for n in bundle.get('plan') or [] if any(r['state']=='unknown' for r in n.get('rule_metadata_bindings',[]))]
             row['arms'][arm]=record
         rows.append(row)
     totals={}
