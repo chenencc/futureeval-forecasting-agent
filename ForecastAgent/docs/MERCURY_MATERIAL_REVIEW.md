@@ -526,3 +526,51 @@ observed price versus rule target, crypto any-time-by versus as-of and legally
 operative prohibition versus an earlier issued sentence. Identity/parameter
 retention must not introduce new world-event overclaims. Improvement requires
 manual evidence audit; a successful workflow is insufficient for promotion.
+
+### V5 regression outcome
+
+[Run 37261275819](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37261275819)
+completed on `52186e5`: all five paired cases and 19 unchanged needs received
+typed outputs. The 82 focused tests passed. Original provider-response replay,
+exact paired material equality, source/rule span identity, manifest identity,
+archived ZIP hash and unchanged prior history passed. Manifest verification
+normalizes the local Windows CRLF to committed Linux LF bytes; this is not a
+semantic or ledger change. The full English audit is
+`E:/metaculus_data/reports/mercury-typed-roots-audit-37261275819.json`.
+
+| Actual usage | V4 proof/coherence | V5 contract/proof |
+| --- | ---: | ---: |
+| HTTP attempts | 7 | 10 |
+| Known input tokens | 862,016 | 346,756 |
+| Known output tokens | 77 | 119 |
+| Unknown usage attempts | 0 | 0 |
+| Provider-reported USD | 0 | 0 |
+
+The new trial used 17 total HTTP/logical calls within its 26/24 caps, with no
+search, fetch or forecast. V5's reported input tokens fell 59.8%, but its call
+count increased. Provider token accounting can expand per head; these values
+are not unique context lengths.
+
+The energy negative root stays negative/throughout, and its literal 50 MW
+definition now binds to the original rule. AAA and Marine Le Pen identities
+are retained without requiring event coherence. Cyber source context survives
+without inventing counts; a mixed confirmation need selecting only identity
+gets a consistency flag.
+
+Semantic acceptance fails. Fuel's actual greater-than price predicate becomes
+a pure parameter, and its required observed time is also typed as a parameter.
+The model can still replace a world-observation obligation with rule knowledge
+even when the raw root remains archived. All four crypto operators remain
+as-of; two snapshot needs are incorrectly called aligned with the original
+any-time-by rule. USDC omissions remain unchanged. The legal n3 remains an
+explicit observation candidate despite a selected July 8 article stating that
+the operative ineligibility had already been served and candidacy was legally
+possible. Historical issuance remains conflated with active prohibition.
+
+Do not promote V5. The next general contract must retain rule constants,
+requested fields and observed predicates separately, and require exact
+operator provenance before treating need/rule equivalence as established.
+Independent identity/measure matching and event applicability also need
+separate dispositions. Reading allocation remains a separate experiment.
+No truth certification, automatic closure or forecasting-accuracy claim is
+made by the current output statuses.
