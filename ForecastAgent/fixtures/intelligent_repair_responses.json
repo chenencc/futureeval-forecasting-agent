@@ -1,0 +1,1125 @@
+{
+  "schema": "saved-material-repair-responses-v1",
+  "source_run_id": 37288399817,
+  "scope": "Exact saved tool-call arguments, not new model inference.",
+  "cases": [
+    {
+      "id": "36871",
+      "bundle_sha256": "f5564ead579ec29718a2a49bbba6137e939eadfcfa599bb00bf1f4c97b6d5788",
+      "original_plan_failures": 0,
+      "calls": [
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "usdt_mcap",
+                "condition": "USDT market capitalization in USD",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap",
+                "query": "USDT market cap CoinMarketCap",
+                "question_spans": [
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "according to CoinGecko OR CoinMarketCap"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "greater than \\$300 billion USD"
+                  }
+                ]
+              },
+              {
+                "id": "usdc_mcap",
+                "condition": "USDC market capitalization in USD",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap",
+                "query": "USDC market cap CoinMarketCap",
+                "question_spans": [
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "according to CoinGecko OR CoinMarketCap"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "greater than \\$300 billion USD"
+                  }
+                ]
+              },
+              {
+                "id": "combined_mcap",
+                "condition": "Combined market cap of USDT and USDC in USD",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap",
+                "query": "USDT USDC combined market cap CoinMarketCap",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "according to CoinGecko OR CoinMarketCap"
+                  }
+                ]
+              },
+              {
+                "id": "date_snapshot",
+                "condition": "Market cap snapshot for June 30, 2026",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap historical data",
+                "query": "CoinMarketCap historical snapshot 20260630 USDT USDC",
+                "question_spans": [
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "by June 30th, 2026"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "greater than \\$300 billion USD"
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Combined market capitalization of USDT and USDC stablecoins",
+              "identity_checks": "USDT (Tether) and USDC (USD Coin) ticker symbols",
+              "required_form": "Numeric value in USD (e.g., 150000000000)",
+              "announcement_window": "As of June 30, 2026 (resolution date)",
+              "effective_vs_announcement": "The market cap is effective as of the date of measurement; announcements may precede but effective value is the snapshot."
+            }
+          },
+          "record_name": "0001.json",
+          "record_sha256": "7eae97bba37606c2bfbdfecc8c16a7e10031f9b9b31ccfd94ca01f2cccc60eae"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "document_index": 4,
+            "start_char": 0,
+            "max_chars": 3813
+          },
+          "record_name": "0003.json",
+          "record_sha256": "02d9b67e64294796748340692fc12fbd11049a645324eaef6e97f40f3d4841d4"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "document_index": 4,
+            "start_char": 0,
+            "max_chars": 3813
+          },
+          "record_name": "0005.json",
+          "record_sha256": "44cea33b231cb6df1c0e9f96c0532b12b481ab9091ca735246ce90a9cf21f29c"
+        }
+      ]
+    },
+    {
+      "id": "43494",
+      "bundle_sha256": "0615d663936105a14bfe053fd664650565a7869e4c0c184e0b0cb7b6540c2051",
+      "original_plan_failures": 10,
+      "calls": [
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to credible sources."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to credible sources."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0002.json",
+          "record_sha256": "9a2647c730fc661279db77c1833fb54b1f1ff6e28132ecc2c5f404039953c16b"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0003.json",
+          "record_sha256": "eeb113cbdcdfca6fc67ff67ea47ef4106cdefa42f03755722826aae8b56e4884"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0004.json",
+          "record_sha256": "0ac87cb66ca5c6e254a574c0e1fdf30c20af79ad986152035f3e5c4b7d199ce2"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0005.json",
+          "record_sha256": "a8f0c5caa069a78bcba77daccc23c2b453146071cad38c6c4356a3d464ba66df"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0006.json",
+          "record_sha256": "48cc2752ac445b573da3e3bc97f14933c778587ab555bd65992113aa9c9f9742"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0007.json",
+          "record_sha256": "82789598e78095b9249d5ef07e6ed6e3e3829ee57ccecf341316be9575220228"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0008.json",
+          "record_sha256": "d1555263634b507c7a7067983e2de46bff665e77f680840337b6a19ee9fca8c6"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0009.json",
+          "record_sha256": "b6d9b8686445aea731e9f29411729943ad504f66faa91390a20d945abe762c0c"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0010.json",
+          "record_sha256": "9f3cf6dc5e666aeebbc88101b80178ccbf9ecb36a73a9957eb16f031d5496722"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_us_state",
+                "condition": "Find evidence of a U.S. state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "critical",
+                "expected_source": "official state government website, executive order, press release, or legislation",
+                "query": "U.S. state moratorium large scale data center grid connection 50 MW",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              },
+              {
+                "id": "need_eu_state",
+                "condition": "Find evidence of an EU member state announcing a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (≥50 MW) before September 1, 2026, and not reversed before that date.",
+                "priority": "useful",
+                "expected_source": "official EU member state government website, executive order, press release, or legislation",
+                "query": "EU member state moratorium data center grid connection 50 MW 2026",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions)."
+                  },
+                  {
+                    "field": "fine_print",
+                    "quote": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Restriction on large-scale data center grid connections (≥50 MW)",
+              "identity_checks": "Official government announcements (executive orders, legislation, press releases) from U.S. states or EU member states",
+              "required_form": "Announcement text specifying moratorium/suspension/binding rule on new grid connections for data centers meeting 50 MW threshold",
+              "announcement_window": "Any time before September 1, 2026",
+              "effective_vs_announcement": "Restriction considered effective upon announcement unless officially reversed/rescinded before September 1, 2026"
+            }
+          },
+          "record_name": "0011.json",
+          "record_sha256": "83ebc90232b2cd788090804875f5559f51611e1c975f0f7f6e48f34cf56a0afc"
+        }
+      ]
+    },
+    {
+      "id": "43501",
+      "bundle_sha256": "f840b44ffb95a84b89b3c25eb08c525dbd51ca303468164900a615e80d1e244e",
+      "original_plan_failures": 1,
+      "calls": [
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "hack_reports_2026",
+                "condition": "Any reported cybersecurity incident affecting Instructure or its products after May 1, 2026 and before September 1, 2026 that meets at least one of the three conditions: data exfiltration of >=10,000 users, service disruption affecting >=100 institutional customers for >=4 hours, or ransom/extortion demand related to newly obtained data/systems access.",
+                "priority": "critical",
+                "expected_source": "news articles, press releases, government disclosures, corporate blog posts",
+                "query": "Instructure Canvas hack May June July August 2026",
+                "question_spans": [
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "Data exfiltration: An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users."
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "Service disruption: One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach."
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "Ransom or extortion demand: A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure."
+                  }
+                ]
+              },
+              {
+                "id": "entity_verification",
+                "condition": "Confirm that Instructure is the company behind Canvas LMS and its products (Mastery, Parchment, Impact).",
+                "priority": "useful",
+                "expected_source": "Instructure official website or reputable description",
+                "query": "Instructure Canvas LMS company",
+                "question_spans": [
+                  {
+                    "field": "background",
+                    "quote": "Instructure is the company behind Canvas LMS, used by [41%](https://en.wikipedia.org/wiki/2026_Canvas_security_incident) of North American higher education institutions for coursework, exams, grading, and student communication."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Instructure Holdings, Inc.",
+              "identity_checks": "Company name as appears in official filings, website, or reputable news sources; verify via Instructure.com or press releases.",
+              "required_form": "Online news article, press release, government alert, or corporate blog post",
+              "announcement_window": "Time between incident occurrence and public disclosure (if any)",
+              "effective_vs_announcement": "Actual incident date vs announcement date"
+            }
+          },
+          "record_name": "0001.json",
+          "record_sha256": "8857db31bbefae4835637d0eefda04b225bae5d9454a4748ea09d642359dee72"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "hack_reports_2026",
+                "condition": "Any reported cybersecurity incident affecting Instructure or its products after May 1, 2026 and before September 1, 2026 that meets at least one of the three conditions: data exfiltration of >=10,000 users, service disruption affecting >=100 institutional customers for >=4 hours, or ransom/extortion demand related to newly obtained data/systems access.",
+                "priority": "critical",
+                "expected_source": "news articles, press releases, government disclosures, corporate blog posts",
+                "query": "Instructure Canvas hack May June July August 2026",
+                "question_spans": [
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) expe"
+                  }
+                ]
+              },
+              {
+                "id": "entity_verification",
+                "condition": "Confirm that Instructure is the company behind Canvas LMS and its products (Mastery, Parchment, Impact).",
+                "priority": "useful",
+                "expected_source": "Instructure official website or reputable description",
+                "query": "Instructure Canvas LMS company",
+                "question_spans": [
+                  {
+                    "field": "background",
+                    "quote": "Instructure is the company behind Canvas LMS, used by [41%](https://en.wikipedia.org/wiki/2026_Canvas_security_incident) of North American higher education institutions for coursework, exams, grading, and student communication. In the last eight mont"
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Instructure Holdings, Inc.",
+              "identity_checks": "Company name as appears in official filings, website, or reputable news sources; verify via Instructure.com or press releases.",
+              "required_form": "Online news article, press release, government alert, or corporate blog post",
+              "announcement_window": "Time between incident occurrence and public disclosure (if any)",
+              "effective_vs_announcement": "Actual incident date vs announcement date"
+            }
+          },
+          "record_name": "0002.json",
+          "record_sha256": "5eba67a48565bbbe7c3491cb143ac6555b1ae53cecd68bec9d1e6b9ce9acd920"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          },
+          "record_name": "0008.json",
+          "record_sha256": "4828b4570ee01bba679e7d2bce62aaebb623019fdac6c5b29b0319f32f290daa"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+            "document_index": 1,
+            "start_char": 2000,
+            "max_chars": 18000
+          },
+          "record_name": "0009.json",
+          "record_sha256": "19cb9fe5f0265f740be24406caceaa60d86a08a78161fd47862812a32e35e89e"
+        }
+      ]
+    },
+    {
+      "id": "43991",
+      "bundle_sha256": "af5d2c274e8e39cffc965d266ac1084390d28a50591a2703497f8f2fc73ab396",
+      "original_plan_failures": 1,
+      "calls": [
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need1",
+                "condition": "On July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office that prevents her from being a candidate in the 2027 French presidential election.",
+                "priority": "critical",
+                "expected_source": "https://www.reuters.com/world/le-pen-lawyers-tell-french-appeals-court-she-did-not-intend-do-wrong-2026-02-11",
+                "query": "Marine Le Pen ineligibility ruling July 7 2026 cour d'appel de Paris",
+                "question_spans": [
+                  {
+                    "field": "background",
+                    "quote": "Le Pen has appealed her sentence, with the next court ruling expected July 7, 2026."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Marine Le Pen",
+              "identity_checks": "French politician, leader of the National Rally (formerly National Front), convicted in March 2025 of misuse of European parliamentary funds.",
+              "required_form": "Court ruling (decision) from the French appeals court (Cour d'appel de Paris) regarding the peine d'inéligibilité (disqualification) imposed on Marine Le Pen.",
+              "announcement_window": "The ruling was expected on July 7, 2026; the actual decision date is the date of the court's judgment.",
+              "effective_vs_announcement": "The disqualification, if imposed, is effective from the date of the ruling and determines eligibility for future elections, including the 2027 French presidential election."
+            }
+          },
+          "record_name": "0001.json",
+          "record_sha256": "efe069e20a36082865893c0c7f3593dce56f001d1c0a2e77487d3ec3dbc9019a"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need1",
+                "condition": "On July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office that prevents her from being a candidate in the 2027 French presidential election.",
+                "priority": "critical",
+                "expected_source": "https://www.reuters.com/world/le-pen-lawyers-tell-french-appeals-court-she-did-not-intend-do-wrong-2026-02-11",
+                "query": "Marine Le Pen ineligibility ruling July 7 2026 cour d'appel de Paris",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?"
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Marine Le Pen",
+              "identity_checks": "French politician, leader of the National Rally (formerly National Front), convicted in March 2025 of misuse of European parliamentary funds.",
+              "required_form": "Court ruling (decision) from the French appeals court (Cour d'appel de Paris) regarding the peine d'inéligibilité (disqualification) imposed on Marine Le Pen.",
+              "announcement_window": "The ruling was expected on July 7, 2026; the actual decision date is the date of the court's judgment.",
+              "effective_vs_announcement": "The disqualification, if imposed, is effective from the date of the ruling and determines eligibility for future elections, including the 2027 French presidential election."
+            }
+          },
+          "record_name": "0002.json",
+          "record_sha256": "c75e27109f19ccebb838abff4c0733a5839a2303c4cacad13ccba7a37441c040"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 1664
+          },
+          "record_name": "0004.json",
+          "record_sha256": "3d21e9490bee1897c66eb2bcbdb70cf463512ca624146402e0aa6e8faaa6bdb1"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 11087
+          },
+          "record_name": "0005.json",
+          "record_sha256": "d1fe1f4147e85cd9fc770264fa671ba7a0d56c401243d8e83e1147bec6e74215"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+            "document_index": 1,
+            "start_char": 6000,
+            "max_chars": 5087
+          },
+          "record_name": "0006.json",
+          "record_sha256": "9b56c7e347da3fd3d52da91672d9941466d38a6fe11ff6d2085d53743ea221d9"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 1664
+          },
+          "record_name": "0007.json",
+          "record_sha256": "24d1d685e289b013b6c8f5580fafd64f77ce71b4f961dcf8256677b63b78ad3b"
+        },
+        {
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 1664
+          },
+          "record_name": "0009.json",
+          "record_sha256": "2bed7dd529140aa9bbe7aee4767ce19f0fb2b990941e7d68b0742a27742b1ca0"
+        }
+      ]
+    },
+    {
+      "id": "44801",
+      "bundle_sha256": "04d73032ddf8887ee126cd59c7a26b4bb532dfc029ea13c561d91c2fbc801732",
+      "original_plan_failures": 5,
+      "calls": [
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": "[{\"id\": \"need1\", \"condition\": \"Collect exact quotes showing national average price of Regular Unleaded gasoline (USD per gallon) and date from AAA sources for dates before September 6, 2026, to assess if price ever exceeded $5.016.\", \"priority\": \"critical\", \"expected_source\": \"AAA gasprices.aaa.com news/articles\", \"query\": \"national average price Regular Unleaded gasoline AAA 2026 before September 6\", \"question_spans\": [{\"field\": \"question\", \"quote\": \"Will gas prices in the U.S. reach a new all-time high before September 6, 2026?\"}, {\"field\": \"resolution_criteria\", \"quote\": \"This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\\\$5.016 according to [AAA](https://gasprices.aaa.com/).\"}, {\"field\": \"background\", \"quote\": \"Washington Post (July 24, 2026): [Why the gas price surge may be just the start](https://www.washingtonpost.com/business/2026/07/24/gas-prices-poised-climb-further-markets-price-iran-disruption/)\\n\\n*American drivers face fresh sticker shock after disruptions from the Iran war intensified in recent days, sending oil over \\\\$100 a barrel and national gasoline prices above \\\\$4 a gallon.*\\n\\n*But prices*\\\\*\\\\*\\\\* could be poised to go significantly higher, energy analysts and executives warn,\\\\*\\\\*\\\\*\\\\* as oil markets are forced to recognize the dislocations the conflict has inflicted on global energy infrastructure and the slim prospects of a speedy recovery.\\\\*\\n\\n*“This has been one of the biggest cases of energy market mispricing in modern times,” said Bob McNally, who founded the research firm Rapidan Energy Group and was an energy adviser in the George W. Bush administration. “Some of the prices we’ve seen during this conflict have just been unaligned with the fundamentals… I think July will be the month we snap back to reality. The latest outbreak of violence could really send oil prices a lot higher.”*\"}]}",
+            "entity_card": {
+              "subject": "U.S. national average price of Regular Unleaded gasoline",
+              "identity_checks": "AAA (American Automobile Association) gasprices.aaa.com",
+              "required_form": "Price in USD per gallon, with date of announcement",
+              "announcement_window": "AAA publishes weekly gas price updates, typically on Wednesdays",
+              "effective_vs_announcement": "Price is effective as of the date of the announcement (e.g., 'WASHINGTON, DC (Date) –')"
+            }
+          },
+          "record_name": "0002.json",
+          "record_sha256": "6bf83620b3cfc43cb2f6169650677dbaaad02c4388abba4197d7b104fc28b3aa"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": "[{\"id\": \"need1\", \"condition\": \"Collect exact quotes showing national average price of Regular Unleaded gasoline (USD per gallon) and date from AAA sources for dates before September 6, 2026, to assess if price ever exceeded $5.016.\", \"priority\": \"critical\", \"expected_source\": \"AAA gasprices.aaa.com news/articles\", \"query\": \"national average price Regular Unleaded gasoline AAA 2026 before September 6\", \"question_spans\": [{\"field\": \"question\", \"quote\": \"Will gas prices in the U.S. reach a new all-time high before September 6, 2026?\"}, {\"field\": \"resolution_criteria\", \"quote\": \"This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\\\$5.016 according to [AAA](https://gasprices.aaa.com/).\"}, {\"field\": \"background\", \"quote\": \"Washington Post (July 24, 2026): [Why the gas price surge may be just the start](https://www.washingtonpost.com/business/2026/07/24/gas-prices-poised-climb-further-markets-price-iran-disruption/)\\n\\n*American drivers face fresh sticker shock after disruptions from the Iran war intensified in recent days, sending oil over \\\\$100 a barrel and national gasoline prices above \\\\$4 a gallon.*\\n\\n*But prices*\\\\*\\\\*\\\\* could be poised to go significantly higher, energy analysts and executives warn,\\\\*\\\\*\\\\*\\\\* as oil markets are forced to recognize the dislocations the conflict has inflicted on global energy infrastructure and the slim prospects of a speedy recovery.\\\\*\\n\\n*“This has been one of the biggest cases of energy market mispricing in modern times,” said Bob McNally, who founded the research firm Rapidan Energy Group and was an energy adviser in the George W. Bush administration. “Some of the prices we’ve seen during this conflict have just been unaligned with the fundamentals… I think July will be the month we snap back to reality. The latest outbreak of violence could really send oil prices a lot higher.”*\"}]}",
+            "entity_card": {
+              "subject": "U.S. national average price of Regular Unleaded gasoline",
+              "identity_checks": "AAA (American Automobile Association) gasprices.aaa.com",
+              "required_form": "Price in USD per gallon, with date of announcement",
+              "announcement_window": "AAA publishes weekly gas price updates, typically on Wednesdays",
+              "effective_vs_announcement": "Price is effective as of the date of the announcement (e.g., 'WASHINGTON, DC (Date) –')"
+            }
+          },
+          "record_name": "0003.json",
+          "record_sha256": "a2ff00f5eb47ae7efcccfa0addcb47b5d35429fc0c89d83cee6e19bb1db21b6f"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": "[{\"id\": \"need1\", \"condition\": \"Collect exact quotes showing national average price of Regular Unleaded gasoline (USD per gallon) and date from AAA sources for dates before September 6, 2026, to assess if price ever exceeded $5.016.\", \"priority\": \"critical\", \"expected_source\": \"AAA gasprices.aaa.com news/articles\", \"query\": \"national average price Regular Unleaded gasoline AAA 2026 before September 6\", \"question_spans\": [{\"field\": \"question\", \"quote\": \"Will gas prices in the U.S. reach a new all-time high before September 6, 2026?\"}, {\"field\": \"resolution_criteria\", \"quote\": \"This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\\\$5.016 according to [AAA](https://gasprices.aaa.com/).\"}, {\"field\": \"background\", \"quote\": \"Washington Post (July 24, 2026): [Why the gas price surge may be just the start](https://www.washingtonpost.com/business/2026/07/24/gas-prices-poised-climb-further-markets-price-iran-disruption/)\\n\\n*American drivers face fresh sticker shock after disruptions from the Iran war intensified in recent days, sending oil over \\\\$100 a barrel and national gasoline prices above \\\\$4 a gallon.*\\n\\n*But prices*\\\\*\\\\*\\\\* could be poised to go significantly higher, energy analysts and executives warn,\\\\*\\\\*\\\\*\\\\* as oil markets are forced to recognize the dislocations the conflict has inflicted on global energy infrastructure and the slim prospects of a speedy recovery.\\\\*\\n\\n*“This has been one of the biggest cases of energy market mispricing in modern times,” said Bob McNally, who founded the research firm Rapidan Energy Group and was an energy adviser in the George W. Bush administration. “Some of the prices we’ve seen during this conflict have just been unaligned with the fundamentals… I think July will be the month we snap back to reality. The latest outbreak of violence could really send oil prices a lot higher.”*\"}]}",
+            "entity_card": {
+              "subject": "U.S. national average price of Regular Unleaded gasoline",
+              "identity_checks": "AAA (American Automobile Association) gasprices.aaa.com",
+              "required_form": "Price in USD per gallon, with date of announcement",
+              "announcement_window": "AAA publishes weekly gas price updates, typically on Wednesdays",
+              "effective_vs_announcement": "Price is effective as of the date of the announcement (e.g., 'WASHINGTON, DC (Date) –')"
+            }
+          },
+          "record_name": "0004.json",
+          "record_sha256": "9eaa323fbbb5f7c2650876c2d8238e640a1886bcda5e43cee567e382b3902c4a"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need1",
+                "condition": "test",
+                "priority": "critical",
+                "expected_source": "test",
+                "query": "test",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "test"
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "test",
+              "identity_checks": "test",
+              "required_form": "test",
+              "announcement_window": "test",
+              "effective_vs_announcement": "test"
+            }
+          },
+          "record_name": "0005.json",
+          "record_sha256": "fa9576cb983f487d93d275b631d686cc2d1a18b3d4d25c087a747fe201278607"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_price_data_2026_pre_sep",
+                "condition": "Collect national average price data for Regular Unleaded gasoline from AAA for months Jan-Aug 2026 to determine if any exceeded $5.016 before Sep 6, 2026.",
+                "priority": "critical",
+                "expected_source": "AAA gas prices website (gasprices.aaa.com)",
+                "query": "AAA national average gasoline price 2026 monthly",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/)."
+                  },
+                  {
+                    "field": "background",
+                    "quote": "American drivers face fresh sticker shock after disruptions from the Iran war intensified in recent days, sending oil over $100 a barrel and national gasoline prices above $4 a gallon."
+                  }
+                ]
+              },
+              {
+                "id": "need_all_time_high_confirm",
+                "condition": "Confirm the historical all-time high price for U.S. regular unleaded gasoline prior to 2026 to verify that $5.016 represents the record threshold.",
+                "priority": "useful",
+                "expected_source": "AAA historical data or reputable source",
+                "query": "all time high U.S. gasoline price AAA",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "quote": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/)."
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "U.S. regular unleaded gasoline national average price",
+              "identity_checks": "AAA-reported national average price for Regular Unleaded gasoline (USD per gallon)",
+              "required_form": "weekly or monthly average price in USD per gallon",
+              "announcement_window": "AAA updates prices weekly; monthly averages reported",
+              "effective_vs_announcement": "Price effective as of the date of announcement (same day)"
+            }
+          },
+          "record_name": "0006.json",
+          "record_sha256": "16be05f5850ec1dc4f4417a6ffe44a7f66eb862c665f68ca796d9dcccfaba5e2"
+        },
+        {
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_price_data_2026_pre_sep",
+                "condition": "Collect national average price data for Regular Unleaded gasoline from AAA for months Jan-Aug 2026 to determine if any exceeded $5.016 before Sep 6, 2026.",
+                "priority": "critical",
+                "expected_source": "AAA gas prices website (gasprices.aaa.com)",
+                "query": "AAA national average gasoline price 2026 monthly",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?"
+                  }
+                ]
+              },
+              {
+                "id": "need_all_time_high_confirm",
+                "condition": "Confirm the historical all-time high price for U.S. regular unleaded gasoline prior to 2026 to verify that $5.016 represents the record threshold.",
+                "priority": "useful",
+                "expected_source": "AAA historical data or reputable source",
+                "query": "all time high U.S. gasoline price AAA",
+                "question_spans": [
+                  {
+                    "field": "question",
+                    "quote": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?"
+                  }
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "U.S. regular unleaded gasoline national average price",
+              "identity_checks": "AAA-reported national average price for Regular Unleaded gasoline (USD per gallon)",
+              "required_form": "weekly or monthly average price in USD per gallon",
+              "announcement_window": "AAA updates prices weekly; monthly averages reported",
+              "effective_vs_announcement": "Price effective as of the date of announcement (same day)"
+            }
+          },
+          "record_name": "0007.json",
+          "record_sha256": "911fd1baf79ec0363676c6f2e4382a8361586b9291b5393bc0b955a5136d1bb7"
+        }
+      ]
+    }
+  ]
+}

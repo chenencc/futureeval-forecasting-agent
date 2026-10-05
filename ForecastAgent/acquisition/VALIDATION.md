@@ -55,3 +55,14 @@ question fields, lead/body inventory, model, budget, material rubric, and case
 selection. Then run a separately identified untouched live pilot if appropriate.
 Keep the fixed analyst and release production listener unchanged during these
 acquisition experiments.
+
+## Subsequent V2 mechanical repair validation
+
+The first V1 provider comparison and its failed selection policy are documented
+in [FRONTIER_RESULTS.md](FRONTIER_RESULTS.md). The next candidate's three generic
+repairs are documented in [MATERIALS_V2_REPAIRS.md](MATERIALS_V2_REPAIRS.md).
+All **461** local offline tests passed after these changes, including nine saved
+failure/retention regressions. The original five bundles/provider records and 47
+frozen release dependencies passed SHA-256 verification. The repair replay made
+zero provider requests. V2 has no measured live model or recall result yet and
+remains ineligible for promotion.

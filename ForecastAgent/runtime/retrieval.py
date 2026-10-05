@@ -815,6 +815,15 @@ class RetrievalTask:
                 b['result']['material_report'] = terminal_report(self)
                 b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
                     not b['result']['material_report']['unresolved_material_targets'])
+                from ForecastAgent.runtime.intelligent_acquisition import repaired
+                if repaired(self):
+                    report = b['result']['material_report']
+                    if report['plan_missing']:
+                        b['result']['gaps'].append('Material plan was not frozen; target coverage cannot be assessed.')
+                    if report['pending_passage_count']:
+                        b['result']['gaps'].append(str(report['pending_passage_count'])+' surfaced exact passages remain unreviewed.')
+                    b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
+                        not report['plan_missing'] and not report['pending_passage_count'])
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -1245,6 +1254,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
                                       'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')
             pending_audit = any("audit" not in e for e in task.bundle["evidence"])
+            from ForecastAgent.runtime.intelligent_acquisition import repaired
+            if collection and repaired(task) and control['forced_close']:
+                # Missing plans cannot override closure or buy another repair.
+                termination_reason = control.get('material_plan_stop') or termination_reason or 'program_forced_close'
+                break
             if collection and task.raw_recall and control['forced_close']:
                 # Program finalization below exports saved evidence without asking
                 # a model to repeat a closing summary or spend an exhausted tool.
@@ -1280,6 +1294,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 from ForecastAgent.runtime.context import collection_context
                 from ForecastAgent.runtime.tool_selection import active_tools
                 model_messages = collection_context(task) if collection else messages
+                if collection and repaired(task) and forced is None:
+                    # Projection stages the newest exact read. Bind its review
+                    # gate in this same request, before exposing navigation.
+                    from ForecastAgent.runtime.collection_actions import next_action
+                    action = next_action(task)
+                    if action and action['tool'] == 'review_passages':
+                        forced = 'review_passages'
                 turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
                 if forced=='search_exa':
                     from ForecastAgent.runtime.task_protocol import supplemental_messages
@@ -1321,6 +1342,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
                     validate(task, name, args, turn_tools)
+                    if collection and repaired(task) and control['forced_close'] and name != 'finish_collection':
+                        raise ContractError('program_closing', 'tool', 'The material repair/closure limit is reached. Preserve the ledger and finish with gaps; no further plan or acquisition call is allowed.')
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
                         raise ValueError("Closing phase: audit saved facts or finish with gaps")
                     signature = (name, json.dumps(args, sort_keys=True))
@@ -1358,6 +1381,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if name in {'list_channels','list_sources','list_official_datasets','list_dated_datasets','collection_checkpoint','collection_acceptance','inspect_materials','assess_materials'}:
                     result['no_progress'] = True
                 failed = "error" in result or ("items" in result and not any(item.get("ok") for item in result["items"]))
+                if failed and name == 'plan_evidence':
+                    from ForecastAgent.runtime.intelligent_acquisition import note_plan_failure
+                    note_plan_failure(task, call['function'].get('arguments', ''), result)
                 step.update(status='failed' if failed else 'completed',
                             duration_seconds=time.monotonic() - step_started, finished_at_utc=utc_now())
                 turn_failed = turn_failed or failed

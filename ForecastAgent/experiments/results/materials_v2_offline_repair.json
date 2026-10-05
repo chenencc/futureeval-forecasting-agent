@@ -1,0 +1,115 @@
+{
+  "schema": "intelligent-materials-v2-offline-repair-v1",
+  "source_run_id": 37288399817,
+  "physical_model_requests": 0,
+  "physical_search_requests": 0,
+  "physical_source_requests": 0,
+  "analysis_requests": 0,
+  "submissions": 0,
+  "production_changed": false,
+  "baseline_release": "v1.0.1",
+  "frozen_dependency_count": 47,
+  "fixture_sha256": "715e62bbfd1009dfc423b16d86e0c2868a1e3158537e129f3c5381995cadfc82",
+  "cases": [
+    {
+      "question_id": "36871",
+      "preserved_bundle_sha256": "f5564ead579ec29718a2a49bbba6137e939eadfcfa599bb00bf1f4c97b6d5788",
+      "actual_v1_plan_failures": 0,
+      "saved_arguments_verified": 3,
+      "v1_stablecoin_request_visibility": [
+        {
+          "record": "0001.json",
+          "both_stablecoin_values_in_actual_request": false
+        },
+        {
+          "record": "0002.json",
+          "both_stablecoin_values_in_actual_request": false
+        },
+        {
+          "record": "0003.json",
+          "both_stablecoin_values_in_actual_request": false
+        },
+        {
+          "record": "0004.json",
+          "both_stablecoin_values_in_actual_request": true
+        },
+        {
+          "record": "0005.json",
+          "both_stablecoin_values_in_actual_request": false
+        },
+        {
+          "record": "0006.json",
+          "both_stablecoin_values_in_actual_request": true
+        },
+        {
+          "record": "0007.json",
+          "both_stablecoin_values_in_actual_request": false
+        },
+        {
+          "record": "0008.json",
+          "both_stablecoin_values_in_actual_request": false
+        }
+      ]
+    },
+    {
+      "question_id": "43494",
+      "preserved_bundle_sha256": "0615d663936105a14bfe053fd664650565a7869e4c0c184e0b0cb7b6540c2051",
+      "actual_v1_plan_failures": 10,
+      "saved_arguments_verified": 10,
+      "v1_stablecoin_request_visibility": []
+    },
+    {
+      "question_id": "43501",
+      "preserved_bundle_sha256": "f840b44ffb95a84b89b3c25eb08c525dbd51ca303468164900a615e80d1e244e",
+      "actual_v1_plan_failures": 1,
+      "saved_arguments_verified": 4,
+      "v1_stablecoin_request_visibility": []
+    },
+    {
+      "question_id": "43991",
+      "preserved_bundle_sha256": "af5d2c274e8e39cffc965d266ac1084390d28a50591a2703497f8f2fc73ab396",
+      "actual_v1_plan_failures": 1,
+      "saved_arguments_verified": 7,
+      "v1_stablecoin_request_visibility": []
+    },
+    {
+      "question_id": "44801",
+      "preserved_bundle_sha256": "04d73032ddf8887ee126cd59c7a26b4bb532dfc029ea13c561d91c2fbc801732",
+      "actual_v1_plan_failures": 5,
+      "saved_arguments_verified": 6,
+      "v1_stablecoin_request_visibility": []
+    }
+  ],
+  "tests_run": 9,
+  "tests_passed": true,
+  "regression_log": "test_actual_saved_failed_responses_stop_after_one_repair_without_network (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_actual_saved_failed_responses_stop_after_one_repair_without_network) ... ok\ntest_actual_stablecoin_table_survives_catalog_eviction_and_banks_exactly (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_actual_stablecoin_table_survives_catalog_eviction_and_banks_exactly) ... ok\ntest_field_handles_preserve_long_original_and_validate_atomically (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_field_handles_preserve_long_original_and_validate_atomically) ... ok\ntest_first_projected_read_forces_review_in_the_same_model_request (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_first_projected_read_forces_review_in_the_same_model_request) ... ok\ntest_focus_bounded_rejectable_stale_and_no_silent_strategy_migration (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_focus_bounded_rejectable_stale_and_no_silent_strategy_migration) ... ok\ntest_forced_closure_ignores_pending_review_and_exports_remaining_count (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_forced_closure_ignores_pending_review_and_exports_remaining_count) ... ok\ntest_later_call_in_same_failed_batch_cannot_reopen_planning (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_later_call_in_same_failed_batch_cannot_reopen_planning) ... ok\ntest_legacy_wrong_field_discloses_exact_path_and_matching_field (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_legacy_wrong_field_discloses_exact_path_and_matching_field) ... ok\ntest_saved_five_plans_translate_without_semantic_edits (ForecastAgent.tests.test_intelligent_repairs.IntelligentRepairTests.test_saved_five_plans_translate_without_semantic_edits) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 2.599s\n\nOK\n",
+  "observed_mechanics": {
+    "five_saved_typed_plans": "Test-only field-handle translation preserves all original conditions and copies exact original fields. It is not a new agent decision.",
+    "failed_response_sequences": {
+      "43494": {
+        "old_actual_failures": 10,
+        "new_simulated_responses_before_closure": 2
+      },
+      "44801": {
+        "old_actual_failures": 5,
+        "new_simulated_responses_before_closure": 2
+      }
+    },
+    "loop_test_scope": "Unadapted legacy responses are invalid under the new wire protocol; this tests bounded failure closure, not how a model would correct the new request.",
+    "stablecoin_table": "Both actual saved values survive three neutral catalog groups under an 18000-character ceiling, then bank by exact version-bound passage IDs.",
+    "retention_limit": "At most two spans and 6000 exact text characters per review focus; unresolved spans remain on disk and forced closure exports their count.",
+    "safety": "Explicit rejection works, stale versions disappear from selectable candidates, plan failure count and provider reservations survive restore, and V1-to-V2 task identity changes are rejected."
+  },
+  "limitations": [
+    "No new inference was performed; model request count, tokens, source selection, adequacy assessments and recall gains remain unmeasured for V2.",
+    "Original field binding is structural; correct entity, metric, dates and exceptions still require agent judgment.",
+    "Frozen downstream analysis is unchanged; better banking alone does not demonstrate better forecast inputs or scores.",
+    "Current historical bodies remain exploratory and potentially contaminated by future information."
+  ],
+  "promotion_allowed": false,
+  "full_offline_suite": {
+    "tests_run": 461,
+    "passed": true,
+    "log_sha256": "dcb3d053d5c4cd1f2594f3e57fb6815b405add66e5379919d7143b5987a8643c"
+  }
+}

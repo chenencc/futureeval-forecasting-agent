@@ -20,6 +20,11 @@ def collection_system(task, skills):
     from ForecastAgent.runtime.intelligent_acquisition import enabled
     if enabled(task):
         template = (Path(__file__).parents[1] / 'prompts' / 'intelligent_materials.md').read_text(encoding='utf-8')
+        from ForecastAgent.runtime.intelligent_acquisition import repaired
+        if repaired(task):
+            template = template.replace('Bind each need to question_spans containing\nan exact quote and its field: question, resolution_criteria, fine_print, or background.',
+                'Bind each need to question_refs using original_question_handles IDs. The program\ncopies immutable original fields; never retype rule quotes or guess the field.\nWhole-field binding is structural only: describe the exact target and exceptions in condition.')
+            template += '\nDispose of the pinned pending_material_review spans with review_passages before more navigation. Keep useful context or reject with a reason; no automatic acceptance. Planning has one correction opportunity. Forced closure exports gaps without another model request.'
     return template.replace('{temporal}',temporal).replace('{body_policy}',body_policy) + '\nFrozen task budget: '+json.dumps({'tavily_basic_lifetime':task.search_limit,
         'exa_lifetime':task.exa_limit, 'exa_policy':task.bundle.get('search_policy', {}).get('exa', 'optional'), 'initial_shared_http':8, 'extract_batches':1,
         'model_decisions_per_dispatch':12, 'transport_failures_per_dispatch':4, 'model_http_per_dispatch':16, 'model_http_lifetime':72})+'\nAvailable skill catalog: '+json.dumps(skills)

@@ -126,8 +126,14 @@ def primary_rescue(task):
 
 
 def next_action(task):
-    from ForecastAgent.runtime.intelligent_acquisition import enabled
+    from ForecastAgent.runtime.intelligent_acquisition import enabled, repaired
     if enabled(task):
+        if repaired(task):
+            focus = review_focus(task)
+            passages = focus['passages'] if focus else []
+            if passages:
+                return {'tool': 'review_passages', 'candidates': passages,
+                    'instruction': 'Keep or explicitly reject these exact delivered spans before more navigation. Choose actual associated need IDs; availability is not relevance. Text remains pinned until disposition or forced closure, with remaining work exported as gaps.'}
         # Preserve release repair and discovery-to-read gates. Remaining local
         # navigation and material selection are agent decisions, not word rules.
         rescue = primary_rescue(task)
@@ -179,6 +185,28 @@ def next_action(task):
                 return {'tool':'read_sources','urls':[url],
                     'instruction':'Follow this already-discovered named primary product update page for current platform/status material, within the existing HTTP allowance. Never infer event absence from a failed read.'}
     return discovery_read_action(task)
+
+
+def review_focus(task):
+    """Bounded exact-source refresh, independent of evicted inventory messages."""
+    from ForecastAgent.runtime.intelligent_acquisition import repaired
+    if not repaired(task) or task.bundle.get('control', {}).get('forced_close'):
+        return None
+    candidates = pending_passages(task, limit=2)
+    rows = []
+    for candidate in candidates:
+        passage = task.bundle['passages'][candidate['passage_id']]
+        # pending_passages already verifies version, eligibility and coordinates.
+        _, text, _ = select(task.bundle['pages'], passage['url'], passage.get('document_index'))
+        exact = text[passage['start_char']:passage['end_char']]
+        if rows and sum(len(r['text']) for r in rows) + len(exact) > 6000:
+            break
+        rows.append({**candidate, **passage, 'text': exact})
+    if not rows:
+        return None
+    return {'kind': 'pending_material_review', 'passages': rows,
+            'instruction': 'These are exact saved spans previously surfaced for review, with immutable versions and coordinates. Use review_passages keep/reject; do not retype text. Need IDs are choices, not verified associations. Remaining spans stay on disk.',
+            'semantic_verified': False}
 
 
 def duplicate_read(task, args, projected_only=True):

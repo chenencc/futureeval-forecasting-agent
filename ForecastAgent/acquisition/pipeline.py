@@ -13,7 +13,7 @@ import zipfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from ForecastAgent.runtime.intelligent_acquisition import STRATEGY, terminal_report
+from ForecastAgent.runtime.intelligent_acquisition import CURRENT_STRATEGY, terminal_report
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.supplement.stage import save, digest
 
@@ -42,7 +42,7 @@ def prepare(request):
         raise ValueError('A numeric Metaculus question id is required')
     result = copy.deepcopy(request)
     result.update(id=ident, pipeline='collection', acquisition_profile='collection_v3',
-                  acquisition_focus='material_recall', acquisition_strategy=STRATEGY)
+                  acquisition_focus='material_recall', acquisition_strategy=CURRENT_STRATEGY)
     result.setdefault('mode', 'live')
     result.setdefault('question_type', 'binary')
     if result['question_type'] not in {'binary', 'multiple_choice', 'numeric', 'date', 'discrete'}:

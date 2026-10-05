@@ -9,7 +9,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from ForecastAgent.acquisition.pipeline import prepare, run, verify_baseline
-from ForecastAgent.runtime.intelligent_acquisition import STRATEGY, assess, frontier, configure_tools
+from ForecastAgent.runtime.intelligent_acquisition import CURRENT_STRATEGY as STRATEGY, assess, frontier, configure_tools
 from ForecastAgent.runtime.retrieval import RetrievalTask, run_retrieval
 from ForecastAgent.runtime.collection_actions import next_action
 from ForecastAgent.runtime.contracts import ContractError
@@ -25,11 +25,11 @@ REQUEST = {'id': '999001', 'question': 'Will the agency publish the June statist
            'mode': 'live', 'question_type': 'binary', 'open_time': '2026-06-01T00:00:00Z'}
 PLAN = {'needs': [{'id': 'series', 'condition': 'June statistic with units and date',
                   'priority': 'critical', 'expected_source': 'agency June table',
-                  'query': 'agency June statistic', 'question_spans': [
-                      {'field': 'resolution_criteria', 'quote': 'agency June table'}]}],
+                  'query': 'agency June statistic', 'question_refs': []}],
         'entity_card': {'subject': 'agency statistic', 'identity_checks': 'Exact agency series and metric',
                         'required_form': 'Official dataset table', 'announcement_window': 'June observation period',
                         'effective_vs_announcement': 'Observation date is distinct from publication date'}}
+PLAN['needs'][0]['question_refs'] = ['Q_resolution_criteria_' + hashlib.sha256(REQUEST['resolution_criteria'].encode()).hexdigest()[:16]]
 TEXT = 'Agency official dataset: complete June observations.\nDate | Metric | Units\n2026-06-30 | 184368461962.97 | USD\nThe June row is an observed value, distinct from the publication date.\n' * 2
 
 
@@ -86,7 +86,7 @@ class IntelligentAcquisitionTests(TestCase):
             request, _ = prepare(REQUEST)
             task = RetrievalTask(Path(directory), request)
             plan = copy.deepcopy(PLAN)
-            plan['needs'][0]['question_spans'][0]['quote'] = 'Invented official acknowledgement requirement'
+            plan['needs'][0]['question_refs'] = ['Invented official acknowledgement requirement']
             budget = task.budget()
             with self.assertRaises(ContractError):
                 task.execute('plan_evidence', plan, '')
@@ -199,13 +199,23 @@ class IntelligentAcquisitionTests(TestCase):
                 {'tool_calls': [call('record_quote', {'url': URL, 'quote': quote, 'occurrence_index': 1, 'need_ids': ['series']}, 'q'),
                                 call('assess_materials', declaration('X1'), 'a'), call('finish_collection', {'gaps': []}, 'f')]},
             ]
-            with patch('ForecastAgent.runtime.retrieval.ask_ultra', side_effect=messages) as model, \
+            def respond(projected, *args, **kwargs):
+                index = respond.index
+                respond.index += 1
+                if index != 3:
+                    return messages[index]
+                focus = next(json.loads(m['content']) for m in projected if m.get('role') == 'user' and 'pending_material_review' in m.get('content', ''))
+                items = [{'passage_id':r['passage_id'], 'action':'keep', 'need_ids':['series'], 'reason':'Preserve the complete dated June row and its units.'} for r in focus['passages']]
+                return {'tool_calls':[call('review_passages', {'items':items}, 'q'),
+                    call('assess_materials', declaration('X1'), 'a'), call('finish_collection', {'gaps':[]}, 'f')]}
+            respond.index = 0
+            with patch('ForecastAgent.runtime.retrieval.ask_ultra', side_effect=respond) as model, \
                  patch('ForecastAgent.runtime.retrieval.search_batch', return_value={'results': [{'url': URL, 'title': 'Agency June table'}]}) as search, \
                  patch('ForecastAgent.runtime.retrieval.fetch_public_page', return_value=source()):
                 bundle = run_retrieval(request, directory, 'test-search-key', 'test-router-key')
             self.assertEqual(model.call_count, 4, json.dumps(bundle.get('transcript', []), default=str)[-7000:])
             self.assertEqual(search.call_count, 1, json.dumps(bundle.get('transcript', []), default=str)[-6000:])
-            self.assertEqual(bundle['excerpts'][0]['text'], quote)
+            self.assertIn('2026-06-30 | 184368461962.97 | USD', bundle['excerpts'][0]['text'])
             self.assertFalse(bundle['result']['material_report']['unresolved_material_targets'])
             self.assertFalse(bundle['submitted_to_metaculus'])
             with patch('ForecastAgent.runtime.retrieval.ask_ultra') as second_model:

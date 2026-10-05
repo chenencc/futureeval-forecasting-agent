@@ -13,6 +13,7 @@ from ForecastAgent.tavily_research import canonical_url
 from ForecastAgent.tools.registry import tool
 
 STRATEGY = 'intelligent_materials_v1'
+CURRENT_STRATEGY = 'intelligent_materials_v2'
 FIELDS = ('question', 'resolution_criteria', 'fine_print', 'background')
 STATUSES = ('adequate', 'partial', 'unavailable', 'not_yet_published', 'unreviewed')
 TOOLS = [
@@ -34,14 +35,51 @@ TOOLS = [
 
 
 def enabled(task):
-    return task.bundle['request'].get('acquisition_strategy') == STRATEGY
+    return task.bundle['request'].get('acquisition_strategy') in {STRATEGY, CURRENT_STRATEGY}
+
+
+def repaired(task):
+    return task.bundle['request'].get('acquisition_strategy') == CURRENT_STRATEGY
+
+
+def question_handles(task):
+    """Whole-field bindings copy immutable input; they do not certify semantics.
+
+    Four handles bound the catalog size regardless of question length. Precise
+    material targets remain the agent's conditions, not machine-inferred rules.
+    """
+    from hashlib import sha256
+    rows = []
+    for field in FIELDS:
+        original = task.bundle['request'].get(field)
+        if not isinstance(original, str) or not original.strip():
+            continue
+        digest = sha256(original.encode('utf-8')).hexdigest()
+        rows.append({'id': 'Q_' + field + '_' + digest[:16], 'field': field,
+                     'start_char': 0, 'end_char': len(original), 'sha256': digest,
+                     'scope': 'Original field binding only; target relevance is unverified.'})
+    return rows
+
+
+def note_plan_failure(task, arguments, error):
+    """One correction opportunity; failures never grant budget or reset on resume."""
+    if not repaired(task) or task.bundle.get('plan') is not None:
+        return
+    from ForecastAgent.runtime.progress import fingerprint
+    control = task.bundle['control']
+    events = control.setdefault('material_plan_failures', [])
+    if len(events) >= 2:
+        return  # Later rejected calls stay in the transcript, not repair history.
+    events.append({'arguments_sha256': fingerprint(arguments), 'error': copy.deepcopy(error)})
+    if len(events) >= 2:
+        control.update(forced_close=True, material_plan_stop='plan_repair_limit')
 
 
 def validate_strategy(task):
     name = task.bundle['request'].get('acquisition_strategy')
     if name is None:
         return
-    if name != STRATEGY or task.bundle['pipeline'] != 'collection' or not task.optimized or task.raw_recall:
+    if not enabled(task) or task.bundle['pipeline'] != 'collection' or not task.optimized or task.raw_recall:
         raise ValueError('Intelligent materials require collection_v3 with local reading enabled')
 
 
@@ -54,6 +92,12 @@ def configure_tools(task, tools):
             spec = entry['function']['parameters']['properties']['needs']
             spec.update(minItems=1, maxItems=8)
             item = spec['items']
+            if repaired(task):
+                item['properties']['question_refs'] = {'type': 'array', 'minItems': 1, 'maxItems': 3,
+                    'items': {'type': 'string', 'enum': [r['id'] for r in question_handles(task)]}}
+                item['required'] = list(item['required']) + ['question_refs']
+                entry['function']['description'] = 'Freeze material targets. Bind each to question_refs from original_question_handles. The program copies exact original fields; do not retype rules. State precise entities, metrics, units, dates and exceptions in condition. Binding is not semantic verification.'
+                continue
             item['properties']['question_spans'] = {'type': 'array', 'minItems': 1, 'maxItems': 3,
                 'items': {'type': 'object', 'additionalProperties': False, 'properties': {
                     'field': {'type': 'string', 'enum': list(FIELDS)},
@@ -69,15 +113,30 @@ def validate_plan(task, needs):
         return
     if not 1 <= len(needs) <= 8:
         raise ContractError('material_plan_size', 'needs', 'Plan one to eight concrete material targets.')
-    for need in needs:
+    expanded = []
+    handles = {r['id']: r for r in question_handles(task)}
+    for index, need in enumerate(needs):
+        if repaired(task):
+            refs = need.get('question_refs')
+            if not isinstance(refs, list) or not 1 <= len(refs) <= 3 or any(not isinstance(r, str) or r not in handles for r in refs):
+                raise ContractError('invalid_question_reference', f'needs[{index}].question_refs',
+                    'Choose original_question_handles IDs. No rule copying or field guessing is required.', list(handles))
+            expanded.append([dict(handles[r], quote=task.bundle['request'][handles[r]['field']]) for r in dict.fromkeys(refs)])
+            continue
         spans = need.get('question_spans')
         if not isinstance(spans, list) or not 1 <= len(spans) <= 3:
             raise ContractError('missing_rule_binding', 'question_spans', 'Bind every need to exact original question text.')
-        for span in spans:
+        for position, span in enumerate(spans):
             field, quote = span.get('field'), span.get('quote')
             original = task.bundle['request'].get(field)
             if field not in FIELDS or not isinstance(quote, str) or not 1 <= len(quote) <= 1200 or not isinstance(original, str) or quote not in original:
-                raise ContractError('invalid_rule_binding', 'question_spans', 'Copy a nonempty exact quote from the named question field. Do not invent a requirement.')
+                matching = [k for k in FIELDS if isinstance(quote, str) and quote and quote in (task.bundle['request'].get(k) or '')]
+                raise ContractError('invalid_rule_binding', f'needs[{index}].question_spans[{position}]',
+                    'Copy exact original text from its named field. Matching fields: '+(', '.join(matching) or 'none; preserve punctuation and hyperlinks.'), matching)
+    # Expand only after every reference validates; never partly mutate a plan.
+    if repaired(task):
+        for need, spans in zip(needs, expanded):
+            need['question_spans'] = spans
 
 
 def assess(task, args):
@@ -153,16 +212,18 @@ def frontier(task, offset=0, limit=8):
         row = assessments.get(need['id'])
         stale = bool(row and any(url not in b['pages'] or version_digest(b['pages'][url]) != ref['parsed_version'] or b['pages'][url].get('sha256') != ref['raw_sha256'] for url, ref in row['source_versions'].items()))
         needs.append({'need_id': need['id'], 'condition': need['condition'], 'priority': need['priority'],
-                      'question_spans': need.get('question_spans', []),
+                      'question_spans': ([{k:v for k,v in s.items() if k != 'quote'} for s in need.get('question_spans', [])]
+                                         if repaired(task) else need.get('question_spans', [])),
                       'banked_excerpt_ids': [e['id'] for e in b.get('excerpts', []) if need['id'] in e.get('need_ids', [])],
                       'agent_assessment': row, 'assessment_stale': stale})
-    return {'schema': STRATEGY, 'needs': needs, 'sources': rows[offset:offset+limit], 'source_total': len(rows),
+    return {'schema': b['request']['acquisition_strategy'], 'needs': needs, 'sources': rows[offset:offset+limit], 'source_total': len(rows),
             'next_offset': offset+limit if offset+limit < len(rows) else None,
             'budget_remaining': task.budget(), 'semantic_verified': False,
             'instruction': 'Choose a critical material gap and a concrete available action. Inspect saved rows/passages before another search. Future unpublished outcomes remain explicit gaps, not event absence. Assessments never prove adequacy.'}
 
 
 def terminal_report(task):
+    from ForecastAgent.runtime.collection_actions import pending_passages
     view = frontier(task, limit=20)
     unresolved = []
     for need in view['needs']:
@@ -172,4 +233,8 @@ def terminal_report(task):
                                'status': 'stale' if need['assessment_stale'] else row['status'] if row else 'unreviewed',
                                'missing_material': row['missing_material'] if row else 'Material adequacy was not assessed by the agent.',
                                'next_action': row['next_action'] if row else ''})
-    return {**view, 'unresolved_material_targets': unresolved, 'scope': 'Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy.'}
+    return {**view, 'unresolved_material_targets': unresolved,
+            'plan_missing': task.bundle.get('plan') is None,
+            'plan_failures': copy.deepcopy(task.bundle.get('control', {}).get('material_plan_failures', [])),
+            'pending_passage_count': len(pending_passages(task, limit=len(task.bundle.get('passages', {})))),
+            'scope': 'Unverified agent assessment and mechanical source binding; not factual verification or forecast accuracy.'}

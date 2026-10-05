@@ -28,6 +28,12 @@ def active_tools(task, tools, forced=None):
             if names:
                 entry['function']['parameters']['properties']['name'] = {'type':'string', 'enum':names}
     if forced:
+        from ForecastAgent.runtime.intelligent_acquisition import repaired
+        if forced == 'review_passages' and repaired(task):
+            # Permit a single response to dispose, assess and close in order.
+            # Navigation remains unavailable while exact material is pending.
+            return [entry for entry in tools if entry['function']['name'] in
+                    {'review_passages', 'assess_materials', 'finish_collection'}]
         if forced == 'read_sources':
             for entry in tools:
                 if entry['function']['name'] == 'read_sources':

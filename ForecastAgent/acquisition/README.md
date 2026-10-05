@@ -1,4 +1,4 @@
-# Intelligent acquisition V1
+# Intelligent acquisition experiments
 
 Experimental entry point on `dev_acquisition_v2`, based on release `v1.0.1`.
 The analysis and production delivery modules retain their release file identities.
@@ -7,6 +7,9 @@ See [the architecture](../docs/ACQUISITION_V2_DESIGN.md) and the
 
 The first [paired frozen-frontier experiment](FRONTIER_RESULTS.md) did not show
 an improvement. The candidate remains experimental and must not be promoted.
+The pipeline now opts into `intelligent_materials_v2`, a mechanical repair of V1.
+See [the zero-provider repair validation](MATERIALS_V2_REPAIRS.md). V2 has not had
+a live model comparison and is not a new production release.
 
 ## What is implemented
 
@@ -16,8 +19,8 @@ an improvement. The candidate remains experimental and must not be promoted.
    reject outcome labels and previous predictions recursively.
 2. Verify frozen release dependencies and freeze request, code, model policy, and
    network-mode identities before any provider calls.
-3. Run the existing collector under the opt-in `intelligent_materials_v1` strategy.
-   The agent binds each material need to exact original question text, chooses
+3. Run the existing collector under the opt-in `intelligent_materials_v2` strategy.
+   The agent binds each material need to original-field handles, chooses
    discovery/read actions, banks exact excerpts, and records material gaps.
 4. Freeze the collection parent and run the release's independent deterministic
    supplement with its existing reservations and limits.
@@ -43,12 +46,22 @@ No event-specific product/keyword rules are added. Critical targets cannot be
 removed to manufacture completion. Forced closure exports unreviewed targets and
 preserved reservations without requiring another successful search or assessment.
 
-Plans contain exact `question_spans` with `field` and `quote`, not guessed offsets.
-Bindings prove that text exists, not that the agent interpreted it correctly.
+V2 plans supply `question_refs` from `original_question_handles`. The program
+expands these into exact whole-field `question_spans`, including field, SHA-256,
+coordinates and quote. No manual quote copying is required. These structural
+bindings do not prove correct interpretation or precise target relevance.
+V1 quote-based requests remain recognized; the preregistered paired harness stays
+explicitly on V1. Request/code identity changes reject silent task migration.
 Large frontier previews disclose pagination; full bodies remain on disk. A source
 version change invalidates prior assessments. The supplement may change a source
 version, so the final report recomputes stale-reference diagnostics without
 reopening collection or inventing a new semantic review.
+
+After a saved read, V2 retains a bounded exact review focus and restricts the next
+action to passage disposition. One response may also assess and close, in that
+order. The program never auto-accepts passages. Two failed planning operations
+close with gaps; forced closure wins even when no plan exists, and does not
+require another model call. Pending/unassessed targets remain in the report.
 
 ## CLI
 

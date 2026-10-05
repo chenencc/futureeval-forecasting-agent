@@ -131,9 +131,20 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         for document in state['documents']:
             document['navigation']='Raw capture retained. Interpretation and excerpt selection are deferred.'
         state['instruction']='Preserved originals and rows are the deliverable. Prioritize the target event period in search queries and source selection; latest news can concern a different event. Keep older and later context separately, with no publication cutoff or event adjudication. Copy catalog URLs exactly; comparison keys are not transport URLs. Navigation shells are parse gaps even when long. Do not require comprehension, excerpts or page-by-page reading. Full recall and truth remain unverified.'
-    from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier
+    from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier, repaired, question_handles
     if enabled(task):
         state['material_frontier'] = frontier(task)
+    if repaired(task):
+        state['original_question_handles'] = question_handles(task)
+        state['plan'] = copy.deepcopy(state['plan'])
+        for need in state['plan'] or []:
+            need['question_spans'] = [{k:v for k,v in span.items() if k != 'quote'}
+                                     for span in need.get('question_spans', [])]
+        action = state.get('next_acquisition_action')
+        if action and action['tool'] == 'review_passages':
+            action = copy.deepcopy(action)
+            action['candidates'] = [{k:v for k,v in row.items() if k != 'text'} for row in action['candidates']]
+            state['next_acquisition_action'] = action
     state = model_view(state, blocked)
     projected = [system, {'role':'user', 'content':encode(state)}]
     # Keep complete assistant/tool groups only. Interrupted replies are closed by the runtime.
@@ -188,25 +199,36 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     # Reserve the newest complete tool group before compressing task summaries.
     # Execution is not delivery: dropping this group would strand its source.
     newest = pinned
+    from ForecastAgent.runtime.collection_actions import review_focus
+    focus = review_focus(task)
+    retained = [{'role': 'user', 'content': encode(focus)}] if focus else []
     state['working_memory_ranges'] = list(projected_visibility(task, recent).values())
     projected[1]['content'] = encode(state)
-    if len(encode(projected+recent)) > max_chars:
+    if len(encode(projected+recent+retained)) > max_chars:
         recent = newest
         state['working_memory_ranges'] = list(projected_visibility(task, recent).values())
         projected[1]['content'] = encode(state)
-    if len(encode(projected+recent)) > max_chars:
+    if len(encode(projected+recent+retained)) > max_chars:
         for text_limit, items in ((1200, 16), (600, 10), (250, 5)):
-            projected[1]['content'] = encode(bounded(state, text_limit, items))
-            if len(encode(projected+recent)) <= max_chars: break
-    if len(encode(projected+recent)) > max_chars:
+            compact = bounded(state, text_limit, items)
+            if repaired(task):
+                compact['original_question_handles'] = state['original_question_handles']
+                compact['task_protocol'] = state['task_protocol']
+            projected[1]['content'] = encode(compact)
+            if len(encode(projected+recent+retained)) <= max_chars: break
+    if len(encode(projected+recent+retained)) > max_chars:
         # Durable catalogs and evidence inventories are navigable tool data.
         # Evict their summaries before evicting the just-requested source text.
         optional = {'sources','documents','excerpts','passage_dispositions','entity_card','progress'}
         lean = {k:v for k,v in state.items() if k not in optional}
         lean['omitted_sections'] = sorted(optional)
         lean['omission_instruction'] = 'These inventories remain on disk. Use list_sources/list_documents and saved-source tools; absence from this context is not absence from the ledger.'
-        projected[1]['content'] = encode(bounded(lean,250,5))
-    if len(encode(projected+recent)) > max_chars:
+        compact = bounded(lean,250,5)
+        if repaired(task):
+            compact['original_question_handles'] = state['original_question_handles']
+            compact['task_protocol'] = state['task_protocol']
+        projected[1]['content'] = encode(compact)
+    if len(encode(projected+recent+retained)) > max_chars:
         # Keep the exact objective and newest source reply before optional prose.
         minimal = {k:state[k] for k in ('schema','task_protocol','budget','effective_mode',
             'effective_cutoff_utc','exa_requirement','need_status')}
@@ -233,8 +255,15 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         if getattr(task, 'raw_recall', False):
             minimal['next_action']['urls'] = action.get('urls', [])
         minimal['projection_notice'] = 'Optional inventories omitted. Saved data and excerpts remain available; omission never proves absence. Navigate saved sources before declaring a gap.'
+        if repaired(task):
+            minimal['original_question_handles'] = state['original_question_handles']
         projected[1]['content'] = encode(minimal)
+    if retained and len(encode(projected+recent+retained)) > max_chars:
+        # Exact pending spans outrank neutral old catalogs. Fail below if the
+        # immutable objective and focus cannot fit; never trim source text.
+        recent = []
     projected.extend(recent)
+    projected.extend(retained)
     # If immutable instructions alone exceed the ceiling, fail without a model HTTP call.
     if len(encode(projected)) > max_chars:
         raise ValueError('Context ceiling cannot fit loaded instructions; preserve ledger and reduce skill scope.')
@@ -242,5 +271,6 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     b.setdefault('context_projections', []).append({'original_chars':len(encode(messages)),
         'projected_chars':len(encode(projected)), 'max_chars':max_chars,
         'retained_recent_messages':max(0, len(projected)-2), 'loaded_skills':[s['name'] for s in loaded],
+        'retained_pending_passage_ids':[p['passage_id'] for p in focus['passages']] if focus else [],
         'policy':'bounded_state_complete_tool_groups_frozen_loaded_skills_v3'})
     return projected

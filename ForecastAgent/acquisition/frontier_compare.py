@@ -73,7 +73,10 @@ def request_for(case, arm):
     request.update(mode='live', exa_search_policy='optional')
     if arm == 'baseline':
         request.pop('acquisition_strategy')
-    elif arm != 'candidate':
+    elif arm == 'candidate':
+        # The preregistered experiment remains V1 despite the new pipeline default.
+        request['acquisition_strategy'] = 'intelligent_materials_v1'
+    else:
         raise ValueError('Unknown comparison arm')
     return request
 
