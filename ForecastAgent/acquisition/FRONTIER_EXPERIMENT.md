@@ -45,3 +45,18 @@ requests, and interrupted sessions require review rather than implicit retries.
 
 Frozen analysis dependency checks remain mandatory. Passing this development
 replay cannot authorize production promotion; a separate untouched pilot is needed.
+
+## Separately frozen Super replication
+
+Ultra-only run `37287329839` produced zero terminal pairs: all ten arms were
+interrupted by upstream overload. It consumed 42 physical attempts, with 88,572
+known tokens and 32 attempts without reported usage. This is availability evidence,
+not an acquisition-quality comparison. Original archives remain unchanged.
+
+The next separately identified run freezes Super in BOTH arms with fallback off,
+the same pool/rubric/order/context, and an equal lower eleven-HTTP-attempt ceiling.
+It keeps twelve decision slots but cannot use more than eleven physical attempts;
+forced closure starts before the physical limit. There is no automatic redispatch.
+At most 110 additional attempts are possible; both runs together are bounded by
+152, below the initial 160-attempt campaign ceiling. Compare strategies only
+within the Super replication, never between an interrupted Ultra arm and Super.

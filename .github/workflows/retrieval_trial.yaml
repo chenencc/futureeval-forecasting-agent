@@ -50,11 +50,11 @@ jobs:
           python -m ForecastAgent.acquisition.frontier_compare --preflight
           python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_frontier_compare
       - name: Compare two model policies over identical saved sources
-        run: python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier/$CASE_ID"
+        run: python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier/$CASE_ID" --replicate-super
         env:
           CASE_ID: ${{ matrix.question }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
           FORECAST_MODEL_FALLBACK_SUPER: '0'
       - name: Preserve complete paired experiment state
         if: always()

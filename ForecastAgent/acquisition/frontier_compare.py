@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 POOL = ROOT/'ForecastAgent/fixtures/intelligent_frontier_five.json.gz'
 RUBRIC = ROOT/'ForecastAgent/experiments/intelligent_frontier_rubric.json'
 MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free'
+SUPER = 'nvidia/nemotron-3-super-120b-a12b:free'
 LOCAL_TOOLS = {'plan_evidence', 'plan_channels', 'list_channels', 'list_sources',
     'list_documents', 'read_document', 'read_dataset_rows', 'search_saved_text',
     'find_passages', 'read_sources', 'record_quote', 'record_excerpt', 'record_excerpts',
@@ -141,7 +142,7 @@ def metrics(bundle, directory, case, targets):
         'scope':'Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.'}
 
 
-def run_arm(case, arm, directory, key):
+def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16):
     directory.mkdir(parents=True, exist_ok=True)
     report_path = directory/'comparison.json'
     if report_path.exists():
@@ -172,11 +173,13 @@ def run_arm(case, arm, directory, key):
 
     started = time.monotonic()
     with ExitStack() as stack:
-        stack.enter_context(patch.dict(os.environ, {'FORECAST_MODEL':MODEL,
+        stack.enter_context(patch.dict(os.environ, {'FORECAST_MODEL':model,
             'FORECAST_MODEL_FALLBACK_SUPER':'0', 'EXA_API_KEY':'', 'TAVILY_API_KEY':''}))
+        stack.enter_context(patch('ForecastAgent.runtime.retrieval.COLLECTION_HTTP_PER_DISPATCH',http_cap))
         stack.enter_context(patch.object(RetrievalTask,'execute',local_execute))
         stack.enter_context(patch.object(tool_selection,'active_tools',local_tools))
-        stack.enter_context(patch.object(guidance,'collection_system',lambda task, skills:original_system(task,skills)+POLICY))
+        stack.enter_context(patch.object(guidance,'collection_system',lambda task, skills:original_system(task,skills)+POLICY+
+            '\nThis frozen replay further limits physical model HTTP attempts to '+str(http_cap)+'. No second dispatch.'))
         # Defense in depth: accidental physical source access is a hard failure.
         stack.enter_context(patch('ForecastAgent.providers.http.download', side_effect=RuntimeError('Source network disabled by frozen experiment')))
         bundle = run_retrieval(request_for(case,arm), directory, '', key)
@@ -188,13 +191,16 @@ def run_arm(case, arm, directory, key):
     return report
 
 
-def run_case(question_id, root):
+def run_case(question_id, root, *, replicate_super=False):
     data, rubric = inputs()
     case = next(c for c in data['cases'] if c['id']==question_id)
+    model = SUPER if replicate_super else MODEL
+    http_cap = 11 if replicate_super else 16
     identity = {'schema':'frozen-frontier-case-v1', 'pool_sha256':rubric['pool_sha256'],
         'rubric_sha256':hashlib.sha256(RUBRIC.read_bytes()).hexdigest(),
         'question_sha256':digest(case['request']), 'commit':os.environ.get('GITHUB_SHA'),
-        'model':MODEL, 'fallback':False, 'decisions_per_arm':12, 'http_ceiling_per_arm':16,
+        'model':model, 'fallback':False, 'decisions_per_arm':12, 'http_ceiling_per_arm':http_cap,
+        'replication_reason':'Ultra-only run 37287329839 failed all ten arms with upstream overload; separately freeze Super, same materials and lower equal ceilings.' if replicate_super else None,
         'search_calls':0,'source_fetch_calls':0,'analysis_calls':0,'submissions':0}
     root = Path(root)
     root.mkdir(parents=True,exist_ok=True)
@@ -209,7 +215,7 @@ def run_case(question_id, root):
         order = rubric['arm_order'][question_id]
         result = {'question_id':question_id,'order':order,'arms':{}}
         for arm in order:
-            result['arms'][arm] = run_arm(case, arm, root/arm, key)
+            result['arms'][arm] = run_arm(case, arm, root/arm, key,model=model,http_cap=http_cap)
             save(root/'paired.json',result)
         summary = {a:{k:r[k] for k in ('state','material_checks_selected','material_check_count','banked_excerpts','resources','issues')}
                    for a,r in result['arms'].items()}
@@ -221,6 +227,7 @@ def main():
     parser.add_argument('--question-id',choices=['36871','43494','43501','43991','44801'])
     parser.add_argument('--root',type=Path)
     parser.add_argument('--preflight',action='store_true')
+    parser.add_argument('--replicate-super',action='store_true')
     args = parser.parse_args()
     data,rubric = inputs()
     if args.preflight:
@@ -228,7 +235,7 @@ def main():
             'material_checks':sum(len(t) for t in rubric['targets'].values()), 'pool_sha256':rubric['pool_sha256'],
             'new_model_calls':0,'new_network_acquisition_calls':0}))
     elif args.question_id and args.root:
-        run_case(args.question_id,args.root)
+        run_case(args.question_id,args.root,replicate_super=args.replicate_super)
     else:
         parser.error('Use --preflight or --question-id and --root')
 
