@@ -673,3 +673,52 @@ but separate independent field identity from event scope, normalize conflict
 status precedence and compress repeated operator choices before another
 bounded experiment. These five repair cases do not establish unseen quality,
 truth certification or forecasting accuracy.
+
+## V7 independent fields and scope-limited review
+
+`MERCURY_FIELD_SCOPES5.json` preregisters a fresh paired V5/V7 regression of
+the same five packets and 19 original needs. V7 removes the model type-contract
+call. Its source-selection call sees identical full delivered reading, original
+needs and rules. A second call assesses exact selected spans under four separate
+axes: identity/indicator, reported observation, temporal applicability and
+event applicability. This later context is explicitly narrower than the full
+selection context; it is not claimed to be a full-body reread of every source.
+The complete original packet and omissions remain archived.
+
+Record-local failure, explicit scoped refutation, partial context and literal
+context have separate dispositions. An absent size, stage or date cannot delete
+a selected source. An out-of-time observation cannot erase issuer/indicator
+matching. Rules and identities cannot fill an observed value. Unresolved program
+conflicts always take status precedence. Scope review covers important support,
+counterevidence and complex partial claims, with at most one combined review
+call per case; literal-only claims do not undergo unrelated event-effect checks.
+Initial answers, review disagreement, selected evidence and independent ledgers
+are retained. No condition closes automatically and no world verdict is emitted.
+
+Literal source quantities and complete English/ISO dates receive exact offsets
+and hashes. Explicit compatible USD, percent and MW/GW values support Decimal
+arithmetic and GW/MW conversion. Explicit dates support ordering. Mercury must
+select the literal's field role; arithmetic itself cannot certify relevance.
+Unsupported units, omitted years and ambiguous values remain unknown. All
+comparisons are record-local, never exhaustive historical refutations.
+
+V7 removes repeated model-facing observation ledgers and operator-choice
+expansion, deduplicates selected source text/rules and keeps full audit objects
+outside model context. Provider-reported tokens, actual HTTP attempts, unknown
+usage and selected-span coverage will be audited; compression is a hypothesis,
+not a measured gain until the run completes.
+
+The runner accepts a frozen paired or V7-only manifest, handles at most five
+cases per dispatch, caches selection/assessment/review outputs and resumes the
+same input identity with cumulative reservations. Completed cases are skipped.
+Invalid typed outputs preserve per-case failures; service/credential/quota
+failures block the dispatch with its state retained. No automatic retry can
+reset budgets. The current pilot has 30 logical/32 HTTP attempts, 1,200 seconds
+and 500,000 request bytes; all earlier experiment histories are unchanged.
+
+The user requested freezing this version for later batch use regardless of
+pilot semantic quality. Batch readiness is distinct from quality acceptance
+and production promotion. The pilot must report regressions as well as gains;
+later batches retain partial sources, conflicts, missing fields and failed
+cases rather than claiming those tasks fully verified. Acquisition, forecasts
+and production monitoring are unchanged.

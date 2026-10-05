@@ -5,11 +5,15 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
         required: false
+      field_manifest:
+        description: Frozen V7 paired or single-arm manifest; at most five cases per dispatch
+        required: false
+        default: ForecastAgent/experiments/MERCURY_FIELD_SCOPES5.json
       benchmark_cases:
         description: Frozen material benchmark case indices as a JSON array
         required: false
@@ -31,6 +35,37 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  mercury-field-scopes:
+    if: inputs.experiment == 'mercury_field_scopes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest ForecastAgent.tests.test_mercury_material_v7 ForecastAgent.tests.test_mercury_field_scopes_trial ForecastAgent.tests.test_mercury_material_v6 ForecastAgent.tests.test_mercury_operator_ledgers_trial
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: mercury-field-scopes
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+          path: snapshots/field-scopes-parent
+      - name: Run frozen independent-field baseline or next preserved batch
+        run: python -u -m ForecastAgent.experiments.mercury_field_scopes_trial --output snapshots/mercury-field-scopes --manifest "$FIELD_MANIFEST" --max-cases 5 ${{ inputs.resume_run != '' && '--resume snapshots/field-scopes-parent' || '' }}
+        env:
+          FIELD_MANIFEST: ${{ inputs.field_manifest }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mercury-field-scopes
+          path: snapshots/mercury-field-scopes
+          if-no-files-found: error
+          retention-days: 90
   mercury-operator-ledgers:
     if: inputs.experiment == 'mercury_operator_ledgers'
     runs-on: ubuntu-latest
