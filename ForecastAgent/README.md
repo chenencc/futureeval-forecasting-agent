@@ -1,5 +1,9 @@
 # ForecastAgent
 
+For the release-based, acquisition-only development plan with frozen analysis,
+see [Acquisition V2 design](docs/ACQUISITION_V2_DESIGN.md). This is a design branch;
+the production runtime and workflows retain release 1.0.1 behavior.
+
 The official competition worker is pinned to [release 1.0.1](releases/1.0.1.md): original acquisition → independent supplement → Mercury original-evidence conditional rereading → validated automatic submission. The machine-readable policy is [1.0.1.json](releases/1.0.1.json).
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
