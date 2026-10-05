@@ -42,6 +42,9 @@ def prepare(request):
     if not re.fullmatch(r'[0-9]{1,20}', ident):
         raise ValueError('A numeric Metaculus question id is required')
     result = copy.deepcopy(request)
+    from ForecastAgent.runtime.delivery_control import POLICY_FIELD
+    if POLICY_FIELD in request and type(request[POLICY_FIELD]) is not bool:
+        raise ValueError(POLICY_FIELD+' must be a boolean')
     strategy = request.get('acquisition_strategy', CURRENT_STRATEGY)
     if strategy not in {CURRENT_STRATEGY, V3_STRATEGY}:
         raise ValueError('Use an explicitly supported intelligent acquisition strategy')
@@ -79,7 +82,7 @@ def identity(request, supplement_network):
     prepared, warnings = prepare(request)
     base = verify_baseline()
     paths = ['ForecastAgent/runtime/'+name+'.py' for name in (
-        'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition', 'material_protocol')]
+        'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition', 'material_protocol', 'delivery', 'delivery_control', 'progress')]
     paths += ['ForecastAgent/acquisition/pipeline.py', 'ForecastAgent/prompts/intelligent_materials.md',
               'ForecastAgent/tools/registry.py', 'ForecastAgent/runtime/contracts.py',
               'ForecastAgent/runtime/tool_selection.py', 'ForecastAgent/supplement/stage.py']

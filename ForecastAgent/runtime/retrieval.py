@@ -1281,8 +1281,19 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
                 control['forced_close'] = True
                 break
-            if turn >= turn_limit-2 or control["consecutive_errors"] >= (3 if collection else 3) or (collection and
-                    (control.get('no_progress_turns',0)>=3 or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)):
+            stall = collection and control.get('no_progress_turns',0)>=3
+            hard_close = (turn >= turn_limit-2 or control["consecutive_errors"] >= 3 or
+                          collection and len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)
+            from ForecastAgent.runtime.delivery_control import pending_reads
+            drain = pending_reads(task) if stall and not hard_close else []
+            if drain:
+                control.setdefault('delivery_drain_events', []).append({
+                    'turn':turn, 'at_utc':utc_now(), 'pending_reads':drain,
+                    'no_progress_turns':control['no_progress_turns'],
+                    'reason':'Deliver a new saved read before soft stall closure; hard limits unchanged.',
+                    'progress_credit_granted':False, 'budget_reset':False})
+                task.save()
+            if hard_close or stall and not drain:
                 control["forced_close"] = True
                 termination_reason = ('stalled' if control.get('no_progress_turns',0)>=3 else
                                       'repeated_tool_errors' if control['consecutive_errors']>=3 else 'program_dispatch_limit')

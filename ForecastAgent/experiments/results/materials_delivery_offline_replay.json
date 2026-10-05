@@ -1,0 +1,113 @@
+{
+  "schema": "delivery-offline-replay-audit-v1",
+  "source_run": "37308208275",
+  "rows": [
+    {
+      "question_id": "43501",
+      "arms": {
+        "baseline": {
+          "mocked_decisions": 5,
+          "banked_excerpts": 0,
+          "banked_chars": 0,
+          "checks": 0,
+          "stop": "stalled",
+          "drain_events": [],
+          "issues": []
+        },
+        "candidate": {
+          "mocked_decisions": 7,
+          "banked_excerpts": 1,
+          "banked_chars": 2000,
+          "checks": 0,
+          "stop": "agent_finished",
+          "drain_events": [
+            {
+              "turn": 5,
+              "at_utc": "2026-10-05T13:21:08.482915+00:00",
+              "pending_reads": [
+                {
+                  "tool_call_id": "call-0e218f4e-daaf-47f7-bbb1-271f6ca92303",
+                  "tool": "read_document",
+                  "url": "https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf",
+                  "document_index": 1,
+                  "source_sha256": "ac33267c0e8c2335084b44d282d5a63fd1f118dc99e55d2232d0561e39e80748",
+                  "source_parsed_sha256": "c234953648786db89ddca69896822260ed21626e8e0738324f083280d8de9c60",
+                  "start_char": 0,
+                  "end_char": 2000,
+                  "undelivered_ranges": [
+                    [
+                      0,
+                      2000
+                    ]
+                  ],
+                  "scope": "Delivery pending; relevance and comprehension unverified."
+                }
+              ],
+              "no_progress_turns": 3,
+              "reason": "Deliver a new saved read before soft stall closure; hard limits unchanged.",
+              "progress_credit_granted": false,
+              "budget_reset": false
+            }
+          ],
+          "issues": []
+        }
+      }
+    },
+    {
+      "question_id": "44801",
+      "arms": {
+        "baseline": {
+          "mocked_decisions": 8,
+          "banked_excerpts": 1,
+          "banked_chars": 1394,
+          "checks": 0,
+          "stop": "stalled",
+          "drain_events": [],
+          "issues": []
+        },
+        "candidate": {
+          "mocked_decisions": 10,
+          "banked_excerpts": 2,
+          "banked_chars": 3394,
+          "checks": 0,
+          "stop": "agent_finished",
+          "drain_events": [
+            {
+              "turn": 8,
+              "at_utc": "2026-10-05T13:21:11.032381+00:00",
+              "pending_reads": [
+                {
+                  "tool_call_id": "call-e944458d-111e-4e59-9348-57050fe00eb6",
+                  "tool": "read_document",
+                  "url": "https://gasprices.aaa.com/for-the-first-time-in-four-years-national-average-exceeds-4-gallon",
+                  "document_index": 1,
+                  "source_sha256": "b45dbe0b6ff59087971795b29dcf74712082a38072a09eb80a60c880c1462fe9",
+                  "source_parsed_sha256": "b1788ef07a705b9d92d4e3b1dc056525383a0b2368d8ffe59be6fc7dcb2481e1",
+                  "start_char": 0,
+                  "end_char": 2000,
+                  "undelivered_ranges": [
+                    [
+                      0,
+                      2000
+                    ]
+                  ],
+                  "scope": "Delivery pending; relevance and comprehension unverified."
+                }
+              ],
+              "no_progress_turns": 3,
+              "reason": "Deliver a new saved read before soft stall closure; hard limits unchanged.",
+              "progress_credit_granted": false,
+              "budget_reset": false
+            }
+          ],
+          "issues": []
+        }
+      }
+    }
+  ],
+  "provider_http_attempts": 0,
+  "source_network_attempts": 0,
+  "frozen_release_files": 47,
+  "protocol_sha256": "4d296fcae2decf29fd5e2dec5f0abdf56afe074bb82413e8adea04891046be2d",
+  "scope": "Mocked replay of preserved decisions; no live-model quality or cost claim."
+}

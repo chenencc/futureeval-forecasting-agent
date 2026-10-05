@@ -18,6 +18,11 @@ dependencies. Set `acquisition_strategy=intelligent_materials_v3` on a new task
 input to exercise it. V2 remains the default until a separately frozen provider
 pilot demonstrates quality; existing task identities are not migrated.
 
+The [delivery-before-stall pilot](DELIVERY_EXPERIMENT.md) compares concurrent V3
+against the same V3 with one opt-in runtime control. It preserves a new exact
+saved read for delivery before a soft stall stop, within unchanged hard limits.
+This control is disabled by default and does not change production or prompts.
+
 ## What is implemented
 
 `pipeline.run` executes one task:

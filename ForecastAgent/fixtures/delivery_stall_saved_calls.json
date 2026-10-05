@@ -1,0 +1,189 @@
+{
+  "schema": "saved-delivery-stall-calls-v1",
+  "source_run_id": "37308208275",
+  "scope": "Original model decisions only; no labels or regenerated source data.",
+  "cases": [
+    {
+      "question_id": "43501",
+      "calls": [
+        {
+          "content": null,
+          "tool_calls": []
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-489e39ec-ba2c-42b2-9def-c6ccdae556a0",
+              "function": {
+                "name": "plan_evidence",
+                "arguments": "{\"needs\":[{\"id\":\"need_data_exfiltration\",\"condition\":\"Evidence of data exfiltration: unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users from Instructure or any of its products (including Canvas, Mastery, Parchment, Impact) occurring before September 1, 2026.\",\"priority\":\"critical\",\"expected_source\":\"credible news reporting, Instructure official communications, or government disclosures\",\"query\":\"Instructure Canvas data exfiltration April 2026 275 million users\",\"rule_time_fields\":[],\"question_refs\":[\"Q_question_9c74c106c80ccd25\",\"Q_resolution_criteria_54573dbe4bd291ae\",\"Q_background_2b34d578b12eae95\"]},{\"id\":\"need_service_disruption\",\"condition\":\"Evidence of service disruption: one or more Instructure products rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach before September 1, 2026.\",\"priority\":\"critical\",\"expected_source\":\"credible news reporting, Instructure official communications, or government disclosures\",\"query\":\"Instructure Canvas outage May 2026 4 hours disruption\",\"rule_time_fields\":[],\"question_refs\":[\"Q_question_9c74c106c80ccd25\",\"Q_resolution_criteria_54573dbe4bd291ae\",\"Q_background_2b34d578b12eae95\"]},{\"id\":\"need_ransom_demand\",\"condition\":\"Evidence of ransom or extortion demand: a threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure before September 1, 2026.\",\"priority\":\"critical\",\"expected_source\":\"credible news reporting, Instructure official communications, or government disclosures\",\"query\":\"Instructure ransom demand ShinyHunters May 2026\",\"rule_time_fields\":[],\"question_refs\":[\"Q_question_9c74c106c80ccd25\",\"Q_resolution_criteria_54573dbe4bd291ae\",\"Q_background_2b34d578b12eae95\"]}],\"entity_card\":{\"subject\":\"Instructure cybersecurity incident before September 1, 2026\",\"identity_checks\":\"Confirmation from Instructure official communications, credible news reporting, or government disclosures\",\"required_form\":\"news article, government disclosure, official statement, or blog post\",\"announcement_window\":\"Between question opening and September 1, 2026\",\"effective_vs_announcement\":\"Incident effective date may precede announcement; announcement must fall within the window\"}}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-b4d59fba-04fe-4242-8ba9-7f0d77500c90",
+              "function": {
+                "name": "list_documents",
+                "arguments": "{\"url\":\"https://techcrunch.com/2026/05/13/us-lawmakers-demand-answers-from-instructure-after-canvas-data-breaches\"}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-fdae61bc-b5d9-4e56-bdcf-0a3f4580b634",
+              "function": {
+                "name": "list_documents",
+                "arguments": "{\"url\":\"https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf\"}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-0e218f4e-daaf-47f7-bbb1-271f6ca92303",
+              "function": {
+                "name": "read_document",
+                "arguments": "{\"url\":\"https://homeland.house.gov/wp-content/uploads/2026/05/2026.05.11-Homeland-to-Instructure-Holdings-Inc.pdf\",\"document_index\":1,\"start_char\":0,\"max_chars\":2000}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "44801",
+      "calls": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-7919ba1e-bc90-44c1-a014-7611cca0af2b",
+              "function": {
+                "name": "plan_evidence",
+                "arguments": "{\"needs\":[{\"id\":\"need_gas_price_before_sep6_2026\",\"condition\":\"National average price of Regular Unleaded gasoline (USD per gallon) as reported by AAA for any date on or before September 5, 2026 (since the event must occur before September 6, 2026).\",\"priority\":\"critical\",\"expected_source\":\"AAA website (gasprices.aaa.com)\",\"query\":\"national average price of Regular Unleaded gasoline before September 6, 2026\",\"rule_time_fields\":[],\"question_refs\":[\"Q_question_c93e9d779f396a23\",\"Q_resolution_criteria_0c29be6b4e38dd0a\"]}],\"entity_card\":{\"subject\":\"U.S. national average price of Regular Unleaded gasoline\",\"identity_checks\":\"AAA's gasprices.aaa.com website\",\"required_form\":\"numeric value in USD per gallon, with two decimal places\",\"announcement_window\":\"weekly updates (as per the observed AAA posts)\",\"effective_vs_announcement\":\"The price is effective as of the date of the announcement (the date of the press release).\"}}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-43420465-c84e-4ba9-8c5c-b0dc62e1948d",
+              "function": {
+                "name": "plan_evidence",
+                "arguments": "{\"needs\":[{\"id\":\"need_gas_price_before_sep6_2026\",\"condition\":\"National average price of Regular Unleaded gasoline (USD per gallon) as reported by AAA for any date before September 6, 2026.\",\"priority\":\"critical\",\"expected_source\":\"AAA website (gasprices.aaa.com)\",\"query\":\"national average price of Regular Unleaded gasoline before September 6, 2026\",\"rule_time_fields\":[],\"question_refs\":[\"Q_question_c93e9d779f396a23\",\"Q_resolution_criteria_0c29be6b4e38dd0a\"]}],\"entity_card\":{\"subject\":\"U.S. national average price of Regular Unleaded gasoline\",\"identity_checks\":\"AAA's gasprices.aaa.com website\",\"required_form\":\"numeric value in USD per gallon, with two decimal places\",\"announcement_window\":\"weekly updates (as per the observed AAA posts)\",\"effective_vs_announcement\":\"The price is effective as of the date of the announcement (the date of the press release).\"}}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-1c71c7a6-2e40-4800-b52d-1f4c48ad8b5f",
+              "function": {
+                "name": "list_documents",
+                "arguments": "{\"url\":\"https://gasprices.aaa.com/2026\"}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-dd3c43c0-2ccc-4313-bb01-c0317a3c80fe",
+              "function": {
+                "name": "read_document",
+                "arguments": "{\"url\":\"https://gasprices.aaa.com/2026/03\",\"document_index\":1,\"start_char\":0,\"max_chars\":2000}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-cfb00af5-d61e-4a0f-b2e6-a9b2ad3f29ed",
+              "function": {
+                "name": "review_passages",
+                "arguments": "{\"items\":[{\"passage_id\":\"P01ce9cc085a0adae1ccf12e3b27c6403caff5b81965964bcd0b542c824274237\",\"action\":\"keep\",\"reason\":\"Contains explicit national average gasoline prices for dates in March 2026 before September 6, 2026, relevant to the need for gas price data.\",\"need_ids\":[\"need_gas_price_before_sep6_2026\"]}]}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-612377cf-9ca1-4b92-8fdf-2bcc29df1226",
+              "function": {
+                "name": "read_document",
+                "arguments": "{\"url\":\"https://gasprices.aaa.com/2026/03\",\"document_index\":1,\"start_char\":0,\"max_chars\":1400}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-55b905b6-fd57-412c-8e1f-255bf7589118",
+              "function": {
+                "name": "list_documents",
+                "arguments": "{\"url\":\"https://gasprices.aaa.com/2026/04\"}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "type": "function",
+              "index": 0,
+              "id": "call-e944458d-111e-4e59-9348-57050fe00eb6",
+              "function": {
+                "name": "read_document",
+                "arguments": "{\"url\":\"https://gasprices.aaa.com/for-the-first-time-in-four-years-national-average-exceeds-4-gallon\",\"document_index\":1,\"start_char\":0,\"max_chars\":2000}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,7 @@ POOL = ROOT/'ForecastAgent/fixtures/intelligent_frontier_five.json.gz'
 RUBRIC = ROOT/'ForecastAgent/experiments/intelligent_frontier_rubric.json'
 V2_PROTOCOL = ROOT/'ForecastAgent/experiments/materials_v2_paired_protocol.json'
 V3_PROTOCOL = ROOT/'ForecastAgent/experiments/materials_v3_paired_protocol.json'
+DELIVERY_PROTOCOL = ROOT/'ForecastAgent/experiments/materials_delivery_paired_protocol.json'
 MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free'
 SUPER = 'nvidia/nemotron-3-super-120b-a12b:free'
 LOCAL_TOOLS = {'plan_evidence', 'plan_channels', 'list_channels', 'list_sources',
@@ -75,20 +76,24 @@ def inputs():
     return data, rubric
 
 
-def request_for(case, arm, *, repair_v2=False, repair_v3=False):
-    if repair_v2 and repair_v3:
+def request_for(case, arm, *, repair_v2=False, repair_v3=False, repair_delivery=False):
+    if sum((repair_v2, repair_v3, repair_delivery)) > 1:
         raise ValueError('Choose one separately frozen candidate policy')
     request, _ = prepare(case['request'])
     request.update(mode='live', exa_search_policy='optional')
     if arm == 'baseline':
-        if repair_v3:
+        if repair_delivery:
+            request['acquisition_strategy'] = 'intelligent_materials_v3'
+        elif repair_v3:
             request['acquisition_strategy'] = 'intelligent_materials_v2'
         else:
             request.pop('acquisition_strategy')
     elif arm == 'candidate':
         # The preregistered experiment remains V1 despite the new pipeline default.
-        request['acquisition_strategy'] = ('intelligent_materials_v3' if repair_v3 else
+        request['acquisition_strategy'] = ('intelligent_materials_v3' if repair_v3 or repair_delivery else
             'intelligent_materials_v2' if repair_v2 else 'intelligent_materials_v1')
+        if repair_delivery:
+            request['drain_unseen_reads_before_stall'] = True
     else:
         raise ValueError('Unknown comparison arm')
     return request
@@ -99,8 +104,8 @@ def snapshot_versions(bundle):
             for u,p in bundle['pages'].items()}
 
 
-def seeded(case, arm, directory, *, repair_v2=False, repair_v3=False):
-    request = request_for(case, arm, repair_v2=repair_v2, repair_v3=repair_v3)
+def seeded(case, arm, directory, *, repair_v2=False, repair_v3=False, repair_delivery=False):
+    request = request_for(case, arm, repair_v2=repair_v2, repair_v3=repair_v3, repair_delivery=repair_delivery)
     task = RetrievalTask(directory, request)
     if not task.path.exists():
         task.bundle['pages'] = copy.deepcopy(case['pages'])
@@ -158,7 +163,7 @@ def metrics(bundle, directory, case, targets):
         'scope':'Exact frozen anchors in banked original text. A coverage proxy, not truth, event resolution, live recall, or forecast accuracy.'}
 
 
-def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16, repair_v2=False, repair_v3=False):
+def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16, repair_v2=False, repair_v3=False, repair_delivery=False):
     directory.mkdir(parents=True, exist_ok=True)
     report_path = directory/'comparison.json'
     if report_path.exists():
@@ -166,10 +171,10 @@ def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16, repair_v2=Fa
         raw = (directory/'bundle.json').read_bytes()
         if hashlib.sha256(raw).hexdigest() != report['bundle_sha256']:
             raise ValueError('Completed comparison bundle was changed')
-        if json.loads(raw)['request'] != request_for(case,arm,repair_v2=repair_v2,repair_v3=repair_v3):
+        if json.loads(raw)['request'] != request_for(case,arm,repair_v2=repair_v2,repair_v3=repair_v3,repair_delivery=repair_delivery):
             raise ValueError('Completed comparison policy changed; no silent migration')
         return report
-    task = seeded(case, arm, directory, repair_v2=repair_v2,repair_v3=repair_v3)
+    task = seeded(case, arm, directory, repair_v2=repair_v2,repair_v3=repair_v3,repair_delivery=repair_delivery)
     # Interrupted physical reservations are not safe to silently repeat.
     if task.bundle.get('sessions'):
         raise ValueError('Interrupted comparison session requires review; refusing implicit redispatch')
@@ -201,7 +206,7 @@ def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16, repair_v2=Fa
             '\nThis frozen replay further limits physical model HTTP attempts to '+str(http_cap)+'. No second dispatch.'))
         # Defense in depth: accidental physical source access is a hard failure.
         stack.enter_context(patch('ForecastAgent.providers.http.download', side_effect=RuntimeError('Source network disabled by frozen experiment')))
-        bundle = run_retrieval(request_for(case,arm,repair_v2=repair_v2,repair_v3=repair_v3), directory, '', key)
+        bundle = run_retrieval(request_for(case,arm,repair_v2=repair_v2,repair_v3=repair_v3,repair_delivery=repair_delivery), directory, '', key)
     _, rubric = inputs()
     report = metrics(bundle, directory, case, rubric['targets'][case['id']])
     report.update(question_id=case['id'], arm=arm, elapsed_seconds=time.monotonic()-started,
@@ -210,10 +215,10 @@ def run_arm(case, arm, directory, key, *, model=MODEL, http_cap=16, repair_v2=Fa
     return report
 
 
-def run_case(question_id, root, *, replicate_super=False, repair_v2=False, repair_v3=False):
-    if repair_v2 and repair_v3:
+def run_case(question_id, root, *, replicate_super=False, repair_v2=False, repair_v3=False, repair_delivery=False):
+    if sum((repair_v2, repair_v3, repair_delivery)) > 1:
         raise ValueError('Choose one separately frozen candidate policy')
-    if (repair_v2 or repair_v3) and not replicate_super:
+    if (repair_v2 or repair_v3 or repair_delivery) and not replicate_super:
         raise ValueError('Repaired paired replication requires the fixed Super policy and eleven-request ceiling')
     data, rubric = inputs()
     case = next(c for c in data['cases'] if c['id']==question_id)
@@ -243,6 +248,20 @@ def run_case(question_id, root, *, replicate_super=False, repair_v2=False, repai
             text_identity_encoding='utf8_source_bytes_with_lf_line_endings',
             source_code_sha256=pipeline_identity(case['request'],False)['candidate_sha256'],
             replication_reason='Concurrent V2 versus V3 over identical preserved originals, Super, arm order and equal eleven-request ceilings; review control and temporal metadata changes only.')
+    if repair_delivery:
+        from ForecastAgent.acquisition.pipeline import identity as pipeline_identity
+        protocol = json.loads(DELIVERY_PROTOCOL.read_text(encoding='utf-8'))
+        if (protocol['pool_sha256'] != rubric['pool_sha256'] or protocol['question_ids'] != rubric['question_ids']
+                or protocol['primary_model'] != model or protocol['physical_http_ceiling_per_arm_per_question'] != http_cap
+                or protocol['rubric_sha256'] != text_digest(RUBRIC)):
+            raise ValueError('Delivery preregistration does not match the frozen experiment')
+        identity.update(schema='frozen-frontier-delivery-v1',
+            candidate_strategy='intelligent_materials_v3', baseline_strategy='intelligent_materials_v3',
+            delivery_control_policy='drain_unseen_reads_before_stall', comparison_baseline_run=37308208275,
+            rubric_sha256=text_digest(RUBRIC), preregistration_sha256=text_digest(DELIVERY_PROTOCOL),
+            text_identity_encoding='utf8_source_bytes_with_lf_line_endings',
+            source_code_sha256=pipeline_identity(case['request'],False)['candidate_sha256'],
+            replication_reason='Concurrent V3 control versus V3 with delivery before soft stall. Same prompts, frozen originals, Super and ceilings. No rule or date changes.')
     root = Path(root)
     root.mkdir(parents=True,exist_ok=True)
     with task_lock(root):
@@ -256,7 +275,7 @@ def run_case(question_id, root, *, replicate_super=False, repair_v2=False, repai
         order = rubric['arm_order'][question_id]
         result = {'question_id':question_id,'order':order,'arms':{}}
         for arm in order:
-            result['arms'][arm] = run_arm(case, arm, root/arm, key,model=model,http_cap=http_cap,repair_v2=repair_v2,repair_v3=repair_v3)
+            result['arms'][arm] = run_arm(case, arm, root/arm, key,model=model,http_cap=http_cap,repair_v2=repair_v2,repair_v3=repair_v3,repair_delivery=repair_delivery)
             save(root/'paired.json',result)
         summary = {a:{k:r[k] for k in ('state','material_checks_selected','material_check_count','banked_excerpts','resources','issues')}
                    for a,r in result['arms'].items()}
@@ -271,6 +290,7 @@ def main():
     parser.add_argument('--replicate-super',action='store_true')
     parser.add_argument('--repair-v2',action='store_true')
     parser.add_argument('--repair-v3',action='store_true')
+    parser.add_argument('--repair-delivery',action='store_true')
     args = parser.parse_args()
     data,rubric = inputs()
     if args.preflight:
@@ -278,7 +298,7 @@ def main():
             'material_checks':sum(len(t) for t in rubric['targets'].values()), 'pool_sha256':rubric['pool_sha256'],
             'new_model_calls':0,'new_network_acquisition_calls':0}))
     elif args.question_id and args.root:
-        run_case(args.question_id,args.root,replicate_super=args.replicate_super,repair_v2=args.repair_v2,repair_v3=args.repair_v3)
+        run_case(args.question_id,args.root,replicate_super=args.replicate_super,repair_v2=args.repair_v2,repair_v3=args.repair_v3,repair_delivery=args.repair_delivery)
     else:
         parser.error('Use --preflight or --question-id and --root')
 

@@ -86,7 +86,8 @@ def review(root, run_id):
             record['pending_review_projection_count']=sum(bool(p.get('retained_pending_passage_ids')) for p in bundle.get('context_projections',[]))
             record['context_chars_max']=max((p.get('projected_chars',0) for p in bundle.get('context_projections',[])),default=0)
             if identity.get('candidate_strategy') == 'intelligent_materials_v3':
-                if bundle['request'] != request_for(case,arm,repair_v3=True):
+                delivery = identity.get('delivery_control_policy') == 'drain_unseen_reads_before_stall'
+                if bundle['request'] != request_for(case,arm,repair_v3=not delivery,repair_delivery=delivery):
                     record['issues'].append({'error':'V3 arm request differs from its frozen policy'})
                 record['execution_report']=(bundle.get('result') or {}).get('execution_report')
                 record['material_adequacy_status']=(bundle.get('result') or {}).get('material_adequacy_status')
@@ -94,6 +95,13 @@ def review(root, run_id):
                 record['deferred_passage_count']=((bundle.get('result') or {}).get('material_report') or {}).get('deferred_passage_count',0)
                 record['rule_unknowns']=[{'need_id':n['id'],'fields':[r['field'] for r in n.get('rule_metadata_bindings',[]) if r['state']=='unknown']}
                     for n in bundle.get('plan') or [] if any(r['state']=='unknown' for r in n.get('rule_metadata_bindings',[]))]
+                if delivery:
+                    record['delivery_drain_events']=bundle.get('control',{}).get('delivery_drain_events',[])
+                    from ForecastAgent.runtime.delivery_control import pending_reads
+                    from ForecastAgent.runtime.retrieval import RetrievalTask
+                    task = RetrievalTask(directory/arm, bundle['request'])
+                    task.bundle = bundle
+                    record['undelivered_newest_reads_at_stop']=pending_reads(task,inspect_only=True)
             row['arms'][arm]=record
         rows.append(row)
     totals={}
