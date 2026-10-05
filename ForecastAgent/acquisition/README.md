@@ -144,3 +144,6 @@ the bounded frozen-frontier and untouched live pair specified in the design.
 packer, exact source/view bindings, protected old-visible text, omission
 manifest, and same-bundle paired replay. It repairs the acquisition-to-analysis
 export without changing the frozen analyst or production wiring.
+
+[Paired Mercury score validation](HANDOFF_SCORING.md) defines the subsequent
+bounded same-snapshot first/final prediction experiment and label separation.

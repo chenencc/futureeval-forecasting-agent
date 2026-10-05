@@ -1,0 +1,69 @@
+{
+  "schema": "material-handoff-mercury-score-protocol-v1",
+  "parent_run_id": "37316638264",
+  "question_ids": [
+    "36871",
+    "43494",
+    "43501",
+    "43991",
+    "44801"
+  ],
+  "collection_arm": "candidate",
+  "bundles": {
+    "36871": "3e004355ccb81218d99be42ce7f7406382e5d2e189ee65e2b695da0936e11a9c",
+    "43494": "ccaa7f6fa26cd547b8ccedc77a7341d1544626e44e4e1f331e7425440a498b55",
+    "43501": "d7160d5dc85a8ad0605c0d7827b9623a8b814f085add02090c1255be3468702b",
+    "43991": "4c9b9bf4cdbf8028c4ce4a589382ea27816657cf6602474a2952afd84fe0cb4b",
+    "44801": "cb7b9dc0d39a398ee8a0b5dfddd5e58df196342e48d7fc1e9b417fbd2651f168"
+  },
+  "model": "inception/mercury-decide:free",
+  "endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "comparison": [
+    "old_packing",
+    "new_packing"
+  ],
+  "route_order": {
+    "36871": [
+      "old_packing",
+      "new_packing"
+    ],
+    "43494": [
+      "new_packing",
+      "old_packing"
+    ],
+    "43501": [
+      "old_packing",
+      "new_packing"
+    ],
+    "43991": [
+      "new_packing",
+      "old_packing"
+    ],
+    "44801": [
+      "old_packing",
+      "new_packing"
+    ]
+  },
+  "limits": {
+    "per_route_first_http": 1,
+    "per_route_conditional_second_http": 1,
+    "per_question_maximum_http": 4,
+    "campaign_maximum_http": 20,
+    "first_request_bytes": 22000,
+    "second_request_bytes": 28000
+  },
+  "routing": "Unchanged release chain.route and minimum 900 genuine new saved-coordinate characters. New packing deduplicates original view ranges before the conditional gate.",
+  "clip_probability": [
+    0.02,
+    0.98
+  ],
+  "primary_metric": "Paired first-pass clipped Brier across all five questions; raw probability, log loss and classification accuracy also reported.",
+  "secondary_metric": "Paired final clipped Brier using the bounded conditional reread.",
+  "labels_sha256_lf": "1a2614e9d0a6bdfebedcda0279a8183316ecdd94e3bef4fc684913d185ef3b61",
+  "handoff_implementation_sha256_lf": "f70a0d3c6973d2834acb804083fb9f73fc863f396b54cbe8cdf4bf591d8c0889",
+  "analysis_policy": "Frozen Mercury model, endpoint, question registry, instructions, routing thresholds and clipping. No fitted calibration, paid fallback or score fusion.",
+  "source_policy": "Existing immutable saved bundle only; no search, fetch, new supplement, metadata backfill or forecast submission.",
+  "scope": "Development retrospective paired scoring, not leakage-free forecasting or a held-out evaluation. Four No and one Yes labels. One stochastic outcome per route.",
+  "failure_policy": "Persist every reserved request. Preserve a validated first result if conditional rereading fails. No synthetic forecast or silent rerun. Same-request successful responses may be reused.",
+  "promotion_allowed": false
+}

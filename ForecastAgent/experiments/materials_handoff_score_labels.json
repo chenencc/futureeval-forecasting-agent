@@ -1,0 +1,38 @@
+{
+  "schema": "handoff-score-labels-v1",
+  "records": {
+    "44801": {
+      "resolution": 0.0,
+      "resolution_checkpoint_date": "2026-08-31",
+      "source": "ForecastBench archived Metaculus resolution",
+      "question_title": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?"
+    },
+    "43494": {
+      "resolution": 1.0,
+      "resolution_checkpoint_date": "2026-08-10",
+      "source": "ForecastBench archived Metaculus resolution",
+      "question_title": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?"
+    },
+    "43501": {
+      "resolution": 0.0,
+      "resolution_checkpoint_date": "2026-08-01",
+      "source": "ForecastBench archived Metaculus resolution",
+      "question_title": "Will Instructure be subject to another major hack before September 1, 2026?"
+    },
+    "43991": {
+      "resolution": 0.0,
+      "resolution_checkpoint_date": "2026-07-07",
+      "source": "ForecastBench archived Metaculus resolution",
+      "question_title": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?"
+    },
+    "36871": {
+      "resolution": 0.0,
+      "resolution_checkpoint_date": "2026-07-01",
+      "source": "ForecastBench archived Metaculus resolution",
+      "question_title": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?"
+    }
+  },
+  "source_file_sha256": "d70b207adf929f32e41ed430c3b94ab553f1f0c2bdaa2f3cc263a38831995d00",
+  "source_revision": "5e184cb7ccf4d577787c8201e08875e2fe070a43",
+  "warning": "Checkpoint dates are not guaranteed Metaculus settlement timestamps. These records must never be part of model input."
+}

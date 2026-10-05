@@ -7,7 +7,7 @@ on:
       candidate_policy:
         description: 'Separately frozen candidate strategy; never migrate prior case state'
         type: choice
-        options: ['v1', 'v2', 'v3', 'delivery']
+        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores']
         default: 'v1'
         required: true
       resume_run:
@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   compare:
+    if: inputs.candidate_policy != 'handoff_scores'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -75,6 +76,62 @@ jobs:
         with:
           name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
           path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  handoff_scores:
+    if: inputs.candidate_policy == 'handoff_scores'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        question: ['36871', '43494', '43501', '43991', '44801']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject untracked workflow retries
+        run: |
+          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
+            echo 'Use a new dispatch with the exact resume_run artifact; budgets cannot restart.'
+            exit 1
+          fi
+      - name: Restore original frozen source bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: intelligent-frontier-delivery-${{ matrix.question }}
+          run-id: '37316638264'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/handoff-source/${{ matrix.question }}
+      - name: Restore exact prior decision journals
+        if: inputs.resume_run != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: intelligent-handoff-score-${{ matrix.question }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/handoff-score/${{ matrix.question }}
+      - name: Offline first-request preflight
+        run: |
+          python -m unittest ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
+          python -m ForecastAgent.acquisition.handoff_scoring --root snapshots/handoff-source --output snapshots/handoff-score --question-id "$CASE_ID" --dry-run
+        env:
+          CASE_ID: ${{ matrix.question }}
+      - name: Score old and new packing with frozen Mercury
+        run: python -u -m ForecastAgent.acquisition.handoff_scoring --root snapshots/handoff-source --output snapshots/handoff-score --question-id "$CASE_ID"
+        env:
+          CASE_ID: ${{ matrix.question }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+      - name: Preserve exact requests, responses, gaps and reservations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligent-handoff-score-${{ matrix.question }}
+          path: snapshots/handoff-score/${{ matrix.question }}/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
