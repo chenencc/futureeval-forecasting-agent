@@ -502,8 +502,10 @@ class RetrievalTask:
             if not enabled(self):
                 raise ValueError('Intelligent material tools require the opt-in strategy')
             from ForecastAgent.runtime.contracts import check_schema
+            if name == 'assess_materials':
+                return assess(self, args)  # The versioned assessment validator owns its schema.
             check_schema(args, next(t['function']['parameters'] for t in TOOLS if t['function']['name'] == name))
-            return assess(self, args) if name == 'assess_materials' else frontier(self, args.get('offset', 0), args.get('limit', 8))
+            return frontier(self, args.get('offset', 0), args.get('limit', 8))
         if self.bundle['result'] and name in {'collect_dataset','collect_archive'}:
             raise ValueError('Retrieval already finished; no new initial-budget collection allowed')
         if name=='collect_archive' and self.bundle['plan'] is None:
@@ -686,7 +688,10 @@ class RetrievalTask:
             return result
         if name == 'review_passages':
             from ForecastAgent.runtime.collection_actions import pending_passages
-            candidates={p['passage_id']:p for p in pending_passages(self)}
+            from ForecastAgent.runtime.material_protocol import enabled as v3
+            modern = v3(self)
+            candidates={p['passage_id']:p for p in pending_passages(self,
+                limit=len(b.get('passages', {})) if modern else 8, include_deferred=modern)}
             outcomes=[]
             for item in args['items']:
                 pid=item['passage_id']
@@ -700,12 +705,17 @@ class RetrievalTask:
                     if not outcome['ok']:
                         outcomes.append(outcome)
                         continue
-                elif item['action']!='reject':
+                elif item['action']!='reject' and not (modern and item['action']=='defer'):
                     outcomes.append({'ok':False,'error':'Use keep or reject'})
                     continue
                 b.setdefault('passage_dispositions',{})[pid]={**item,'at_utc':utc_now(),
                     'source_version':b['passages'][pid]['source_version'],'truth_verified':False}
                 outcomes.append({'ok':True,'passage_id':pid,'action':item['action']})
+            if modern and any(r['ok'] for r in outcomes):
+                b.setdefault('material_review_batches', []).append({
+                    'at_utc':utc_now(), 'outcomes':copy.deepcopy(outcomes),
+                    'model_attempt_count':len(b.get('model_attempts', [])),
+                    'scope':'Review routing only; no provider budget renewal or semantic verification.'})
             self.save()
             return {'items':outcomes,'scope':'Acquisition selection only; no truth verdict.'}
         if name == 'record_excerpts':
@@ -824,6 +834,21 @@ class RetrievalTask:
                         b['result']['gaps'].append(str(report['pending_passage_count'])+' surfaced exact passages remain unreviewed.')
                     b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
                         not report['plan_missing'] and not report['pending_passage_count'])
+                from ForecastAgent.runtime.material_protocol import enabled as v3
+                if v3(self):
+                    report = b['result']['material_report']
+                    b['result']['material_adequacy_status'] = ('agent_declared_adequate'
+                        if not report['plan_missing'] and not report['unresolved_material_targets']
+                        else 'unresolved')
+                    b['result']['execution_report'] = {
+                        'stop_reason':b['control'].get('material_stop_reason', 'agent_finished'),
+                        'owner':'program' if b['control'].get('material_stop_reason') else 'agent',
+                        'pending_passage_count':report['pending_passage_count'],
+                        'deferred_passage_count':report['deferred_passage_count'],
+                        'semantic_verified':False}
+                    # Deferred candidates remain an explicit recall limitation.
+                    b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
+                        not report['deferred_passage_count'])
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -1233,6 +1258,14 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
             turn_failed = False
+            if collection:
+                from ForecastAgent.runtime.material_protocol import enabled as v3, closure_ready
+                if closure_ready(task):
+                    termination_reason = 'agent_declared_targets_complete'
+                    control['material_stop_reason'] = termination_reason
+                    task.execute('finish_collection', {'gaps':[]}, tavily_key)
+                    task.save()
+                    break
             if collection and task.raw_recall:
                 from ForecastAgent.runtime.collection_actions import raw_stop_reason
                 reason=raw_stop_reason(task)
@@ -1413,13 +1446,32 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         if not task.bundle["result"]:
             if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
                 task.bundle['control']['forced_close'] = True
-                task.execute('finish_collection', {'gaps':['Program ended collection: '+str(termination_reason or 'program_dispatch_limit')+'; unresolved acquisition work remains.']}, tavily_key)
+                from ForecastAgent.runtime.material_protocol import enabled as v3
+                if v3(task):
+                    task.bundle['control']['material_stop_reason'] = termination_reason or 'program_dispatch_limit'
+                    task.execute('finish_collection', {'gaps':[]}, tavily_key)
+                else:
+                    task.execute('finish_collection', {'gaps':['Program ended collection: '+str(termination_reason or 'program_dispatch_limit')+'; unresolved acquisition work remains.']}, tavily_key)
                 termination_reason = termination_reason or 'program_dispatch_limit'
                 task.bundle.setdefault('agent_runtime',{}).setdefault('events',[]).append({'stage':'export','owner':'program','at':utc_now()})
             else:
                 task.bundle["result"] = {"status": "partial" if task.bundle["pages"] or task.bundle["evidence"] else "failed", "summary": "Agent interrupted or turn limit reached",
                 "coverage": task.coverage(), "gaps": ["Collection interrupted" if collection else "Retrieval did not complete its final audit"], "conflicts": [], "incomplete": True}
         if collection:
+            from ForecastAgent.runtime.material_protocol import enabled as v3
+            if v3(task):
+                from ForecastAgent.runtime.intelligent_acquisition import terminal_report
+                result = task.bundle['result']
+                report = result.setdefault('material_report', terminal_report(task))
+                if result.get('incomplete'):
+                    result['gaps'] = []  # Interruption is execution state, not missing source evidence.
+                result['material_adequacy_status'] = ('agent_declared_adequate'
+                    if not report['plan_missing'] and not report['unresolved_material_targets'] else 'unresolved')
+                result['execution_report'] = {'stop_reason':termination_reason or 'agent_finished',
+                    'owner':'agent' if not termination_reason or termination_reason=='agent_finished' else 'program',
+                    'interrupted':bool(result.get('incomplete')),
+                    'pending_passage_count':report['pending_passage_count'],
+                    'deferred_passage_count':report['deferred_passage_count'], 'semantic_verified':False}
             task.bundle['result']['exa_requirement'] = search_policy.requirement(task)
             task.bundle['result']['acquisition_checkpoint'] = checkpoint(task)
             task.bundle['result']['acquisition_complete'] = bool(task.bundle['result'].get('acquisition_complete', False))

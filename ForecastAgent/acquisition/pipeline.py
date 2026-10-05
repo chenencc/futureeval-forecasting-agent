@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from ForecastAgent.runtime.intelligent_acquisition import CURRENT_STRATEGY, terminal_report
+from ForecastAgent.runtime.material_protocol import STRATEGY as V3_STRATEGY
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.supplement.stage import save, digest
 
@@ -41,8 +42,11 @@ def prepare(request):
     if not re.fullmatch(r'[0-9]{1,20}', ident):
         raise ValueError('A numeric Metaculus question id is required')
     result = copy.deepcopy(request)
+    strategy = request.get('acquisition_strategy', CURRENT_STRATEGY)
+    if strategy not in {CURRENT_STRATEGY, V3_STRATEGY}:
+        raise ValueError('Use an explicitly supported intelligent acquisition strategy')
     result.update(id=ident, pipeline='collection', acquisition_profile='collection_v3',
-                  acquisition_focus='material_recall', acquisition_strategy=CURRENT_STRATEGY)
+                  acquisition_focus='material_recall', acquisition_strategy=strategy)
     result.setdefault('mode', 'live')
     result.setdefault('question_type', 'binary')
     if result['question_type'] not in {'binary', 'multiple_choice', 'numeric', 'date', 'discrete'}:
@@ -75,7 +79,7 @@ def identity(request, supplement_network):
     prepared, warnings = prepare(request)
     base = verify_baseline()
     paths = ['ForecastAgent/runtime/'+name+'.py' for name in (
-        'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition')]
+        'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition', 'material_protocol')]
     paths += ['ForecastAgent/acquisition/pipeline.py', 'ForecastAgent/prompts/intelligent_materials.md',
               'ForecastAgent/tools/registry.py', 'ForecastAgent/runtime/contracts.py',
               'ForecastAgent/runtime/tool_selection.py', 'ForecastAgent/supplement/stage.py']

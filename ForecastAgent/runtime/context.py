@@ -134,6 +134,9 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
     from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier, repaired, question_handles
     if enabled(task):
         state['material_frontier'] = frontier(task)
+    from ForecastAgent.runtime.material_protocol import enabled as v3, rule_metadata
+    if v3(task):
+        state['immutable_rule_metadata'] = rule_metadata(task)
     if repaired(task):
         state['original_question_handles'] = question_handles(task)
         state['plan'] = copy.deepcopy(state['plan'])
@@ -214,6 +217,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
             if repaired(task):
                 compact['original_question_handles'] = state['original_question_handles']
                 compact['task_protocol'] = state['task_protocol']
+                if v3(task):
+                    compact['immutable_rule_metadata'] = state['immutable_rule_metadata']
             projected[1]['content'] = encode(compact)
             if len(encode(projected+recent+retained)) <= max_chars: break
     if len(encode(projected+recent+retained)) > max_chars:
@@ -227,6 +232,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         if repaired(task):
             compact['original_question_handles'] = state['original_question_handles']
             compact['task_protocol'] = state['task_protocol']
+            if v3(task):
+                compact['immutable_rule_metadata'] = state['immutable_rule_metadata']
         projected[1]['content'] = encode(compact)
     if len(encode(projected+recent+retained)) > max_chars:
         # Keep the exact objective and newest source reply before optional prose.
@@ -257,6 +264,8 @@ def collection_context(task, recent_turns=2, max_recent_chars=12000, max_chars=M
         minimal['projection_notice'] = 'Optional inventories omitted. Saved data and excerpts remain available; omission never proves absence. Navigate saved sources before declaring a gap.'
         if repaired(task):
             minimal['original_question_handles'] = state['original_question_handles']
+            if v3(task):
+                minimal['immutable_rule_metadata'] = state['immutable_rule_metadata']
         projected[1]['content'] = encode(minimal)
     if retained and len(encode(projected+recent+retained)) > max_chars:
         # Exact pending spans outrank neutral old catalogs. Fail below if the

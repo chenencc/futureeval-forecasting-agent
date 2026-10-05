@@ -12,6 +12,12 @@ See [the zero-provider repair validation](MATERIALS_V2_REPAIRS.md) and the subse
 [fixed-Super paired results](MATERIALS_V2_RESULTS.md). V2 remains experimental;
 measured retention improvements do not justify a new production release.
 
+The opt-in [V3 control protocol](MATERIALS_V3_REPAIRS.md) adds bounded mandatory
+review batches, explicit no-gap lists, program closure, and immutable timing
+dependencies. Set `acquisition_strategy=intelligent_materials_v3` on a new task
+input to exercise it. V2 remains the default until a separately frozen provider
+pilot demonstrates quality; existing task identities are not migrated.
+
 ## What is implemented
 
 `pipeline.run` executes one task:

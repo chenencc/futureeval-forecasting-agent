@@ -1,0 +1,1819 @@
+{
+  "schema": "materials-v3-saved-v2-controls-v1",
+  "run_id": 37297914625,
+  "source_scope": "Exact arguments from completed provider records; no generated model responses.",
+  "cases": [
+    {
+      "id": "36871",
+      "bundle_sha256": "1e551e31cd5e7157ed2cb98cde74ee5805521fdc5c57b19ee342922cb904242e",
+      "calls": [
+        {
+          "record_name": "0001.json",
+          "record_sha256": "a5ec81ecae0e97e2858f49a90ef98041659ed6beaea9594c5895ae8be08c97ae",
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "need_usdt_mcap_20260630",
+                "condition": "USDT market capitalization in USD as of June 30, 2026",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap historical snapshot for 2026-06-30",
+                "query": "USDT market cap June 30 2026 CoinMarketCap",
+                "question_refs": [
+                  "Q_question_84f7f623ad314317",
+                  "Q_resolution_criteria_91fdd0bb82b2e4b2"
+                ]
+              },
+              {
+                "id": "need_usdc_mcap_20260630",
+                "condition": "USDC market capitalization in USD as of June 30, 2026",
+                "priority": "critical",
+                "expected_source": "CoinMarketCap historical snapshot for 2026-06-30",
+                "query": "USDC market cap June 30 2026 CoinMarketCap",
+                "question_refs": [
+                  "Q_question_84f7f623ad314317",
+                  "Q_resolution_criteria_91fdd0bb82b2e4b2"
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Combined market capitalization of USDT and USDC stablecoins",
+              "identity_checks": "USDT (Tether) and USDC (USD Coin) ticker symbols",
+              "required_form": "USD value (numeric)",
+              "announcement_window": "June 30, 2026",
+              "effective_vs_announcement": "Effective date matches announcement window (as of June 30, 2026)"
+            }
+          }
+        },
+        {
+          "record_name": "0002.json",
+          "record_sha256": "1f5a340cca3a60c831718741f4f9b93cc2130cf4937ea952297b9d24e156eba7",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          }
+        },
+        {
+          "record_name": "0003.json",
+          "record_sha256": "916dde8e9023e6f4bb01311475281983637f893f2e6371cc015a0031c4acf0fe",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P4cb89ba99510e4acaad055464d63a93e1cef9af2121e9365a66abaa89c6d7bd6",
+                "action": "keep",
+                "reason": "Contains USDT market cap data for 2026-06-30 from CoinMarketCap historical snapshot.",
+                "need_ids": [
+                  "need_usdt_mcap_20260630",
+                  "need_usdc_mcap_20260630"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0004.json",
+          "record_sha256": "4e5af4ea24ba09b70b5e79cb2832774a09ad1774d787ed87c71c974e88e48c91",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 18000
+          }
+        },
+        {
+          "record_name": "0005.json",
+          "record_sha256": "83c013418cb8b055718c5d0949884ecd7229e30b9c5f682fd851f5894ad7157f",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P8ffb3d83da5e2b5b620dc3ad7c40427d7818b9e66ac458472bf204e9e604f114",
+                "action": "keep",
+                "reason": "Contains USDT and USDC market cap data as of June 30, 2026 from CoinMarketCap historical snapshot.",
+                "need_ids": [
+                  "need_usdt_mcap_20260630",
+                  "need_usdc_mcap_20260630"
+                ]
+              },
+              {
+                "passage_id": "P42f6c1ba17a73e02ab8674b2669aeeb1f136e80d757a4492f9c2294d8064ac55",
+                "action": "keep",
+                "reason": "Continuation of the same historical snapshot, contains same market cap data for USDT and USDC as of June 30, 2026.",
+                "need_ids": [
+                  "need_usdt_mcap_20260630",
+                  "need_usdc_mcap_20260630"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0006.json",
+          "record_sha256": "f6d697587cc9742ae1ec7a6319925690df8020f45fde08ea07de2e6e18f290d8",
+          "tool": "assess_materials",
+          "arguments": {
+            "items": [
+              {
+                "need_id": "need_usdt_mcap_20260630",
+                "status": "adequate",
+                "source_urls": [
+                  "https://coinmarketcap.com/historical/20260630"
+                ],
+                "excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDT.",
+                "missing_material": "None",
+                "next_action": "No further action needed; data is collected."
+              },
+              {
+                "need_id": "need_usdc_mcap_20260630",
+                "status": "adequate",
+                "source_urls": [
+                  "https://coinmarketcap.com/historical/20260630"
+                ],
+                "excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDC.",
+                "missing_material": "None",
+                "next_action": "No further action needed; data is collected."
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0007.json",
+          "record_sha256": "6e16d165fe17ddaf81ca7f7a1e47bd5bdb8472b2f23bfeea504dd72f15cd8fdf",
+          "tool": "assess_materials",
+          "arguments": {
+            "items": [
+              {
+                "need_id": "need_usdt_mcap_20260630",
+                "status": "adequate",
+                "source_urls": [
+                  "https://coinmarketcap.com/historical/20260630"
+                ],
+                "excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDT.",
+                "missing_material": "",
+                "next_action": "No further action needed; data is collected."
+              },
+              {
+                "need_id": "need_usdc_mcap_20260630",
+                "status": "adequate",
+                "source_urls": [
+                  "https://coinmarketcap.com/historical/20260630"
+                ],
+                "excerpt_ids": [
+                  "X1",
+                  "X2",
+                  "X3"
+                ],
+                "reason": "We have saved excerpts from the CoinMarketCap historical snapshot for June 30, 2026 that contain the market capitalization data for USDC.",
+                "missing_material": "",
+                "next_action": "No further action needed; data is collected."
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0008.json",
+          "record_sha256": "e76f983b853f62d23bde7db096d020d51751f4cfff709636fea596f8adcb4f16",
+          "tool": "list_documents",
+          "arguments": {
+            "url": "https://coinmarketcap.com/historical/20260630"
+          }
+        }
+      ],
+      "passages": {
+        "P4cb89ba99510e4acaad055464d63a93e1cef9af2121e9365a66abaa89c6d7bd6": {
+          "url": "https://coinmarketcap.com/historical/20260630",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 2000,
+          "source_version": "598925adf28c2d99420186cacd089caecbb5461c5590104db826bee451fcceaf",
+          "source_sha256": "195a4dce3f880dabc7a763dca3d0f6f1607ce4a736d299431f261affcf3c06c6"
+        },
+        "P8ffb3d83da5e2b5b620dc3ad7c40427d7818b9e66ac458472bf204e9e604f114": {
+          "url": "https://coinmarketcap.com/historical/20260630",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 4000,
+          "source_version": "598925adf28c2d99420186cacd089caecbb5461c5590104db826bee451fcceaf",
+          "source_sha256": "195a4dce3f880dabc7a763dca3d0f6f1607ce4a736d299431f261affcf3c06c6"
+        },
+        "P42f6c1ba17a73e02ab8674b2669aeeb1f136e80d757a4492f9c2294d8064ac55": {
+          "url": "https://coinmarketcap.com/historical/20260630",
+          "document_index": 1,
+          "start_char": 4000,
+          "end_char": 5685,
+          "source_version": "598925adf28c2d99420186cacd089caecbb5461c5590104db826bee451fcceaf",
+          "source_sha256": "195a4dce3f880dabc7a763dca3d0f6f1607ce4a736d299431f261affcf3c06c6"
+        }
+      },
+      "delivery_passages": {
+        "P4cb89ba99510e4acaad055464d63a93e1cef9af2121e9365a66abaa89c6d7bd6": {
+          "need_ids": [
+            "need_usdt_mcap_20260630",
+            "need_usdc_mcap_20260630"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "P8ffb3d83da5e2b5b620dc3ad7c40427d7818b9e66ac458472bf204e9e604f114": {
+          "need_ids": [
+            "need_usdt_mcap_20260630",
+            "need_usdc_mcap_20260630"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "P42f6c1ba17a73e02ab8674b2669aeeb1f136e80d757a4492f9c2294d8064ac55": {
+          "need_ids": [
+            "need_usdt_mcap_20260630",
+            "need_usdc_mcap_20260630"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        }
+      },
+      "read_source_transcript": []
+    },
+    {
+      "id": "43494",
+      "bundle_sha256": "0a4c958aeba8d5750cd663c684a9bb6e8daaea6b45e406fdb7c2bccc52de4684",
+      "calls": [
+        {
+          "record_name": "0002.json",
+          "record_sha256": "8a29ed280aab62f978de497ff6e129c237e5c102f86aabaf9457a42c1bb868bd",
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "N_ny_moratorium",
+                "condition": "New York State announces a moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (facilities with contracted or requested grid capacity of 50 MW or more) before September 1, 2026.",
+                "priority": "critical",
+                "expected_source": "Official New York State government press release or executive order document",
+                "query": "New York Executive Order 62 data centers moratorium July 14 2026 50 megawatts",
+                "question_refs": [
+                  "Q_question_2b6d1d71f6522f00",
+                  "Q_resolution_criteria_e7c0d57b11128553",
+                  "Q_background_169f25ac194edad8"
+                ]
+              },
+              {
+                "id": "N_pa_restriction",
+                "condition": "Pennsylvania announces a moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers (>=50 MW) before September 1, 2026.",
+                "priority": "critical",
+                "expected_source": "Official Pennsylvania government executive order or press release",
+                "query": "Pennsylvania Executive Order 2026-05 data center impacts August 18 2026",
+                "question_refs": [
+                  "Q_question_2b6d1d71f6522f00",
+                  "Q_resolution_criteria_e7c0d57b11128553",
+                  "Q_background_169f25ac194edad8"
+                ]
+              },
+              {
+                "id": "N_no_reversal",
+                "condition": "The restriction announced by New York or Pennsylvania is not officially reversed or rescinded before September 1, 2026.",
+                "priority": "useful",
+                "expected_source": "Official government announcements or news sources indicating no reversal before Sep 1 2026",
+                "query": "New York Pennsylvania data center moratorium reversal before September 1 2026",
+                "question_refs": [
+                  "Q_question_2b6d1d71f6522f00",
+                  "Q_resolution_criteria_e7c0d57b11128553",
+                  "Q_background_169f25ac194edad8"
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "U.S. state or EU member state restriction on large-scale data center grid connections",
+              "identity_checks": "Official government announcements, executive orders, legislation, or credible news reports",
+              "required_form": "Announcement or official document (executive order, press release, legislation)",
+              "announcement_window": "Before September 1, 2026",
+              "effective_vs_announcement": "Effective upon announcement unless otherwise specified; restriction must not be officially reversed or rescinded before September 1, 2026"
+            }
+          }
+        },
+        {
+          "record_name": "0003.json",
+          "record_sha256": "1cf0d337b70ebed06e358bb9af5a1035137195a0d83b2658d1551333da5642cc",
+          "tool": "list_documents",
+          "arguments": {
+            "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+            "offset": 0,
+            "limit": 10
+          }
+        },
+        {
+          "record_name": "0004.json",
+          "record_sha256": "6c5bec53aa4ad7f57474f4f557d699f0153620aa431b6a8ded4571f70df53f89",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          }
+        },
+        {
+          "record_name": "0005.json",
+          "record_sha256": "da05b3e7b65d6e125e23bb10719d8ae321aa79e1c53f64cda7062b6c71ff58a2",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P15abf8796ee5c775c65bfed4d4a65e5a7e56d163988b0e0c78112de1c54b980e",
+                "action": "keep",
+                "reason": "Relevant to New York moratorium on new hyperscale data centers, which may include grid connection restrictions for large-scale data centers.",
+                "need_ids": [
+                  "N_ny_moratorium"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0006.json",
+          "record_sha256": "e1e5ba24076a620364899b6a5490e0aae6b6baea25b11c99c2cc2c0e6b801550",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 5000
+          }
+        },
+        {
+          "record_name": "0007.json",
+          "record_sha256": "5dcea98348c775323b4dbc4b44e27baa77d3efabc7bdf124f43d70c521ced6af",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P65b0fbd731ea36c2ba64aea205357cdf6b195ba9e926992e418bb60a833b86b9",
+                "action": "keep",
+                "reason": "Announces a moratorium on new hyperscale data centers in New York State.",
+                "need_ids": [
+                  "N_ny_moratorium"
+                ]
+              },
+              {
+                "passage_id": "P65b0fbd731ea36c2ba64aea205357cdf6b195ba9e926992e418bb60a833b86b9",
+                "action": "keep",
+                "reason": "Provides the announced restriction; need to verify non-reversal before Sept 1, 2026.",
+                "need_ids": [
+                  "N_no_reversal"
+                ]
+              },
+              {
+                "passage_id": "P65b0fbd731ea36c2ba64aea205357cdf6b195ba9e926992e418bb60a833b86b9",
+                "action": "reject",
+                "reason": "Content pertains to New York, not Pennsylvania; no information on Pennsylvania restrictions.",
+                "need_ids": [
+                  "N_pa_restriction"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0008.json",
+          "record_sha256": "24092d35c7869d216b3c4f551b95f277314d8668df82bb76ce76bacbce8ef5c8",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 18000
+          }
+        },
+        {
+          "record_name": "0009.json",
+          "record_sha256": "a0df68afb299aa4d55ffa2674bb111ecde2604be98e0c8f4449402f1761c89bc",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://lysanderny.gov/sites/default/files/2026-07/summary_of_eo_62_on_data_centers.pdf",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 18000
+          }
+        }
+      ],
+      "passages": {
+        "P15abf8796ee5c775c65bfed4d4a65e5a7e56d163988b0e0c78112de1c54b980e": {
+          "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 2000,
+          "source_version": "1382a8a1be4b1c84c1705d35c24a9b5b1a2c1916dcd7de471d3866d8a9e587f3",
+          "source_sha256": "a026c580b4fae652c2cdc0ca734a38509e768458ffde2fcd44d4e0dc8b2fc68e"
+        },
+        "P65b0fbd731ea36c2ba64aea205357cdf6b195ba9e926992e418bb60a833b86b9": {
+          "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 3982,
+          "source_version": "1382a8a1be4b1c84c1705d35c24a9b5b1a2c1916dcd7de471d3866d8a9e587f3",
+          "source_sha256": "a026c580b4fae652c2cdc0ca734a38509e768458ffde2fcd44d4e0dc8b2fc68e"
+        }
+      },
+      "delivery_passages": {
+        "P15abf8796ee5c775c65bfed4d4a65e5a7e56d163988b0e0c78112de1c54b980e": {
+          "need_ids": [
+            "N_ny_moratorium",
+            "N_pa_restriction",
+            "N_no_reversal"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "P65b0fbd731ea36c2ba64aea205357cdf6b195ba9e926992e418bb60a833b86b9": {
+          "need_ids": [
+            "N_ny_moratorium",
+            "N_pa_restriction",
+            "N_no_reversal"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        }
+      },
+      "read_source_transcript": []
+    },
+    {
+      "id": "43501",
+      "bundle_sha256": "10fdeeb6c5e89a3bd1726dad69e7a322533a4949a4fbecfb4d6f818b3f6286e3",
+      "calls": [
+        {
+          "record_name": "0002.json",
+          "record_sha256": "4f606c027b88842879116cf1747257a72bb9dbd461a2e4a5d8fc620305bb12d2",
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "N_instructure_postMay2026_incident",
+                "condition": "Any cybersecurity incident affecting Instructure or its products (Canvas, Mastery, Parchment, Impact) occurring after May 7, 2026 and before September 1, 2026 that meets at least one of the following: (1) data exfiltration of personal data of at least 10,000 users; (2) service disruption rendering one or more products substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours; (3) ransom or extortion demand related to data or systems access newly obtained from Instructure. Confirmation required from Instructure official communications, credible news reporting, or government disclosures.",
+                "priority": "critical",
+                "expected_source": "Instructure official blog/press releases, reputable news outlets (e.g., The Register, Inside Higher Ed, TechCrunch), government disclosures (e.g., CISA, FBI, Department of Education)",
+                "query": "Instructure cybersecurity incident May June July August 2026",
+                "question_refs": [
+                  "Q_question_9c74c106c80ccd25",
+                  "Q_resolution_criteria_54573dbe4bd291ae",
+                  "Q_background_2b34d578b12eae95"
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Instructure",
+              "identity_checks": "Instructure official communications, credible news reporting, or government disclosures",
+              "required_form": "Reports of cybersecurity incident meeting resolution criteria",
+              "announcement_window": "After May 7, 2026 and before September 1, 2026",
+              "effective_vs_announcement": "Effective date of incident may precede announcement; capture both incident date and announcement date if available"
+            }
+          }
+        },
+        {
+          "record_name": "0003.json",
+          "record_sha256": "82e5fca4cfbb14c998543ccd815b3b8e3b0af2e7fabb6766709974fe6da6feff",
+          "tool": "list_documents",
+          "arguments": {
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft"
+          }
+        },
+        {
+          "record_name": "0004.json",
+          "record_sha256": "d2f918484a31ecdbddfeab4a6d1ab9b58cb554f801e1549d2ab30187e24036cf",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 5000
+          }
+        },
+        {
+          "record_name": "0005.json",
+          "record_sha256": "c93b6f51719e8a9b6d4e7b55dfb426f4a8ea903245ce242e600b36faf3dd1baf",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P227650eccade7ac27601baa73d0fb141fff30d0f66d9e56157368070458b2b02",
+                "action": "reject",
+                "reason": "Passage discusses generic ShinyHunters SaaS data theft tactics via vishing, no mention of Instructure or its products, thus not relevant to need for post-May 2026 Instructure incident.",
+                "need_ids": []
+              },
+              {
+                "passage_id": "P1c2d3d04755a055fd9ebd038e0aff291f6e03e5233bd82bc5199dc30726a9da3",
+                "action": "reject",
+                "reason": "Passage discusses generic ShinyHunters SaaS data theft tactics via vishing, no mention of Instructure or its products, thus not relevant to need for post-May 2026 Instructure incident.",
+                "need_ids": []
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0006.json",
+          "record_sha256": "db05cf708317b623b0a8568d23170df668022180b19e4c7f80e53e01b826e9ec",
+          "tool": "list_documents",
+          "arguments": {
+            "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+            "offset": 0,
+            "limit": 1
+          }
+        },
+        {
+          "record_name": "0007.json",
+          "record_sha256": "e3218cb566e76c1772cdcc1e893241c84c2f7987eb90d9aac5c45c31703500bc",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          }
+        },
+        {
+          "record_name": "0008.json",
+          "record_sha256": "75aaf35d2780ae61614a3f5e3cb079700041e0eccdbfdf7629cfb7249b1c7569",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "Pea49857fd715c2bb19b3c63b3d7591701cdb75dc3398b18a5b2333df2a999347",
+                "action": "keep",
+                "reason": "Provides evidence of ongoing cybersecurity incident after May 7, 2026 involving unauthorized access to usernames, email addresses, course names, enrollment information, and messages; ransomware group ShinyHunters claimed responsibility and defaced login pages with ransom demands; institutions reported receiving ransom messages. This meets resolution criteria for data exfiltration (unauthorized access to personal data of at least 10,000 users) and ransom/extortion demand, confirmed by government source (U.S. Department of Education).",
+                "need_ids": [
+                  "N_instructure_postMay2026_incident"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0009.json",
+          "record_sha256": "1932bbec005e7d95ebe6f34dadd8d52052f0680dc4618d67cba9a8b4e361783b",
+          "tool": "assess_materials",
+          "arguments": {
+            "items": [
+              {
+                "need_id": "N_instructure_postMay2026_incident",
+                "status": "adequate",
+                "source_urls": [
+                  "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system"
+                ],
+                "excerpt_ids": [
+                  "X1"
+                ],
+                "reason": "The excerpt shows a cybersecurity incident after May 7, 2026 (re-entry on May 7) and before September 1, 2026, involving unauthorized access to usernames, email addresses, course names, enrollment information, and messages (personal data of at least 10,000 users) and ransom/extortion demands (login pages defaced with ransom demands), confirmed by U.S. Department of Education government disclosure. This meets at least two resolution criteria: data exfiltration and ransom/extortion demand.",
+                "missing_material": "No further material needed.",
+                "next_action": "Finish collection"
+              }
+            ]
+          }
+        }
+      ],
+      "passages": {
+        "P227650eccade7ac27601baa73d0fb141fff30d0f66d9e56157368070458b2b02": {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 3990,
+          "source_version": "c36c6436be6b7b96f7b256fb349ccd23cfa4f3e6be86e9354ca791c643522510",
+          "source_sha256": "4d5254f20737dc1c2f469f59519f2d7818872c26e21ca396e9b7c66295e148bf"
+        },
+        "P1c2d3d04755a055fd9ebd038e0aff291f6e03e5233bd82bc5199dc30726a9da3": {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft",
+          "document_index": 1,
+          "start_char": 3990,
+          "end_char": 5000,
+          "source_version": "c36c6436be6b7b96f7b256fb349ccd23cfa4f3e6be86e9354ca791c643522510",
+          "source_sha256": "4d5254f20737dc1c2f469f59519f2d7818872c26e21ca396e9b7c66295e148bf"
+        },
+        "Pea49857fd715c2bb19b3c63b3d7591701cdb75dc3398b18a5b2333df2a999347": {
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 2000,
+          "source_version": "681f31089d76a72269a61c16f077f12f7dcc93ec556f99155c0756a10a0cab7b",
+          "source_sha256": "b0da8afc2cecc340339981b273ccaa887217b39be28b63e349849d6487618b17"
+        }
+      },
+      "delivery_passages": {
+        "P227650eccade7ac27601baa73d0fb141fff30d0f66d9e56157368070458b2b02": {
+          "need_ids": [
+            "N_instructure_postMay2026_incident"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "P1c2d3d04755a055fd9ebd038e0aff291f6e03e5233bd82bc5199dc30726a9da3": {
+          "need_ids": [
+            "N_instructure_postMay2026_incident"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "Pea49857fd715c2bb19b3c63b3d7591701cdb75dc3398b18a5b2333df2a999347": {
+          "need_ids": [
+            "N_instructure_postMay2026_incident"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        }
+      },
+      "read_source_transcript": []
+    },
+    {
+      "id": "43991",
+      "bundle_sha256": "aae85164afcfd65aa42740c45433b01852a2100d753c2da5e1e3433dfd50aabc",
+      "calls": [
+        {
+          "record_name": "0001.json",
+          "record_sha256": "d3e58931dc81032a77a005d8b9201a416236fe76279094f91603a10f7ff47617",
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "N1",
+                "condition": "The court decision on July 7, 2026 regarding Marine Le Pen's peine d'inéligibilité (specifically the length of the disqualification and whether it allows her to run in the 2027 French presidential election).",
+                "priority": "critical",
+                "expected_source": "news articles (Euronews, Franceinfo, Le Figaro)",
+                "query": "Marine Le Pen peine d'inéligibilité cour d'appel Paris 7 juillet 2026",
+                "question_refs": [
+                  "Q_question_7232a41312fed209",
+                  "Q_resolution_criteria_a4a6284fa6351dab"
+                ]
+              },
+              {
+                "id": "N2",
+                "condition": "Marine Le Pen's announcement of candidacy for the 2027 French presidential election on July 7, 2026 (or around that date) and any statements about her eligibility.",
+                "priority": "useful",
+                "expected_source": "Euronews article \"Je suis candidate à l'élection présidentielle\", annonce Marine Le Pen sur TF1",
+                "query": "Marine Le Pen candidate présidentielle 2027 annonce TF1 7 juillet 2026",
+                "question_refs": [
+                  "Q_question_7232a41312fed209"
+                ]
+              },
+              {
+                "id": "N3",
+                "condition": "Legal analysis of whether the peine d'inéligibilité as of July 8, 2026 prevents her from being a candidate in the 2027 election (i.e., if the disqualification period includes the election date).",
+                "priority": "critical",
+                "expected_source": "legal commentary articles (Le Figaro, Franceinfo)",
+                "query": "inéligibilité Marine Le Pen 2027 élection présidentielle juillet 2026",
+                "question_refs": [
+                  "Q_resolution_criteria_a4a6284fa6351dab",
+                  "Q_background_3fbbf28b6acdc4ff"
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "Marine Le Pen",
+              "identity_checks": "Full name: Marion Anne Perrine Le Pen; date of birth: 5 August 1968; French politician; leader of Rassemblement National.",
+              "required_form": "Court decision imposing peine d'inéligibilité (disqualification from holding public office) issued by a French judicial authority.",
+              "announcement_window": "Decision announced on July 7, 2026; related coverage and announcements on July 7-8, 2026.",
+              "effective_vs_announcement": "The peine d'inéligibilité is effective immediately upon the court decision (subject to any appeal), determining eligibility for the 2027 presidential election."
+            }
+          }
+        },
+        {
+          "record_name": "0002.json",
+          "record_sha256": "e3dbee9b01bb1629b68bad2e89b8b843b0e67018f618a05a048aa77a5ffb317c",
+          "tool": "read_sources",
+          "arguments": {
+            "urls": [
+              "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+              "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+              "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+              "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707"
+            ],
+            "queries": [
+              {
+                "query": "Je suis candidate à l'élection présidentielle Marine Le Pen TF1 7 juillet 2026",
+                "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                "need_ids": [
+                  "N2"
+                ]
+              },
+              {
+                "query": "peine d'inéligibilité Marine Le Pen cour d'appel 7 juillet 2026",
+                "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                "need_ids": [
+                  "N1"
+                ]
+              },
+              {
+                "query": "pourvoi en cassation pourrait-il empêcher Marine Le Pen de se présenter 2026",
+                "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                "need_ids": [
+                  "N3"
+                ]
+              },
+              {
+                "query": "juge incompatible avec une candidature présidentielle Marine Le Pen 2026",
+                "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                "need_ids": [
+                  "N3"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0003.json",
+          "record_sha256": "ce6cfaa10d7f337dd139f21e0ac07fb462a3541a739c3a846109290552cd5e7f",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P9430f8e3bb1bec6e92c18936e54d5328f7f4306d1d503dbb28b33af295068dbc",
+                "action": "keep",
+                "reason": "Relevant to N1: discusses the reduction of peine d'inéligibilité and the announcement of candidacy.",
+                "need_ids": [
+                  "N1"
+                ]
+              },
+              {
+                "passage_id": "P7c7bb5ac2b50006bc7833564906f221efef3e3b97600c28817192d27a4eec051",
+                "action": "keep",
+                "reason": "Relevant to N1: provides info on timing of Cassation decision, relevant to the court decision timeline.",
+                "need_ids": [
+                  "N1"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0004.json",
+          "record_sha256": "eb67963ccc800e188989132542503c5adfb56faac8d79dbf204876286f750a82",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P15e8f2d58153f43746a1a2754584ff964414f1d9a17d23e300913bf8bb81d8c0",
+                "action": "reject",
+                "reason": "Passage discusses political plans and protests, not the court decision on peine d'inéligibilité or candidacy announcement.",
+                "need_ids": []
+              },
+              {
+                "passage_id": "P3881cf8ab088db59b8960a1a4d70b9049cb6aa5776b31d416dc28352681ff8d8",
+                "action": "reject",
+                "reason": "Passage describes being prevented from speaking by protesters, unrelated to legal eligibility or court ruling.",
+                "need_ids": []
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0005.json",
+          "record_sha256": "6ba4192769c3dc54832e2f802deb29307e0984f6ca98b8f6d0d52a3b094a5a5c",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P50b0cb24a40eac0e695467c23e7230d6e2a9d5eceb26d8662935d8300ef4dbac",
+                "action": "keep",
+                "reason": "Passage discusses legal analysis of the peine d'inéligibilité and the possibility of appeal, relevant to N3.",
+                "need_ids": [
+                  "N3"
+                ]
+              },
+              {
+                "passage_id": "Pda9567f41e2abb6db1c4e27f44418edf63a632d305e4f30941f0f345d67dd028",
+                "action": "keep",
+                "reason": "Passage describes the court decision and legal reasoning, relevant to N3.",
+                "need_ids": [
+                  "N3"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0006.json",
+          "record_sha256": "1db002e9fb5a818bcf717d78b01d887586afe67d538fdd3ac9aabcfa956bfb1c",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P4a1eaef8021874da2b7f5a3a65a7eefe67fe1721d588df04929252d2713321a2",
+                "action": "keep",
+                "reason": "Passage provides information about the court decision reducing peine d'inéligibilité and Marine Le Pen's announcement of candidacy, relevant to N1 and N2.",
+                "need_ids": [
+                  "N1",
+                  "N2"
+                ]
+              },
+              {
+                "passage_id": "P39638f317f19e7e06d07149bd0f4f4db99f30d644ba2e3d931b7d1fa1fc6c761",
+                "action": "keep",
+                "reason": "Passage provides information about the court decision reducing peine d'inéligibilité and Marine Le Pen's announcement of candidacy, relevant to N1 and N2.",
+                "need_ids": [
+                  "N1",
+                  "N2"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0007.json",
+          "record_sha256": "b296850f0a2ea4bc4f752cbc6d97a44b8b77aad0a5104960ad3abd6ab5db8aa4",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P7ad6e3dfe4ee053e73811dc07f32a1ffbc184ef1b2bbb97fb5c5d43e17d66996",
+                "action": "keep",
+                "reason": "Passage provides reactions to the court decision, indicating that the left considers the conviction incompatible with a presidential candidacy, relevant to legal analysis of eligibility (N3).",
+                "need_ids": [
+                  "N3"
+                ]
+              },
+              {
+                "passage_id": "P26784682686711febe537cdadecfb1d7d35598373f69263dd0fde67c07ea6bd7",
+                "action": "keep",
+                "reason": "Passage provides reactions to the court decision, indicating that the left considers the conviction incompatible with a presidential candidacy, relevant to legal analysis of eligibility (N3).",
+                "need_ids": [
+                  "N3"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0008.json",
+          "record_sha256": "2cb906d6807a6ed6e58e10147ca429b1311f0841289f2a9f7e9705b646cddc1a",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "Pf9376d8a951a8c24e89af8c8cfb2acfc89a8d4d8dc5652adb15daf11c057405d",
+                "action": "keep",
+                "reason": "Provides Marine Le Pen's statements regarding her candidacy conditions and potential impact of the court decision on her ability to campaign, relevant to court decision details (N1), candidacy announcement (N2), and legal analysis of eligibility (N3).",
+                "need_ids": [
+                  "N1",
+                  "N2",
+                  "N3"
+                ]
+              },
+              {
+                "passage_id": "P0e5a5388c07b342bf4c58d6899873233893a086afb9ad94061f5d5760fe8ccf1",
+                "action": "keep",
+                "reason": "Provides specifics of the court decision on July 7, 2026, reducing the peine d'inéligibilité to 45 months with 30 suspended, directly addressing N1 and informing N3 legal analysis, and mentions implications for campaign under electronic bracelet relevant to N2.",
+                "need_ids": [
+                  "N1",
+                  "N2",
+                  "N3"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0009.json",
+          "record_sha256": "c5f29d557e2fe7779bb48d9b39134ff80848f988c892ef5464afff4076b876c7",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "Pd17cc529ce6fe72612ae2c215ce3c3d3c3a766b29e2760638b03cd5e7b21658f",
+                "action": "keep",
+                "reason": "Provides details of the court decision reducing peine d'inéligibilité, allowing candidacy in 2027, and mentions prison sentence under electronic bracelet, relevant to court decision specifics (N1), candidacy announcement (N2), and legal analysis of eligibility (N3).",
+                "need_ids": [
+                  "N1",
+                  "N2",
+                  "N3"
+                ]
+              },
+              {
+                "passage_id": "P5da82b2631b2d2c6137306d1404adeb51b89fcba2d974704ef144c82734aa031",
+                "action": "keep",
+                "reason": "Describes Marine Le Pen's anticipated TF1 interview after the appeals court verdict, relevant to her candidacy announcement and statements about eligibility (N2).",
+                "need_ids": [
+                  "N2"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "passages": {
+        "Pd17cc529ce6fe72612ae2c215ce3c3d3c3a766b29e2760638b03cd5e7b21658f": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 187,
+          "end_char": 519,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "P5da82b2631b2d2c6137306d1404adeb51b89fcba2d974704ef144c82734aa031": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 186,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "P0356492f1eece255124daf02803bc6e3800826483993ec45affa9e57576298f1": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 927,
+          "end_char": 1066,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "Paec75002791f75140ca99df45c49a38c866db0c454c97af10748c93ca5c33e09": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 673,
+          "end_char": 926,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "P3a44c3d3be1f3bd3861dae7489c91962c694241660bc1753d94e07ca3d182485": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 520,
+          "end_char": 672,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "Pa230e56de3488de55c3a4a5a8d2751bb3d97e4ad5a4be3de74713d263baf69aa": {
+          "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+          "document_index": 1,
+          "start_char": 1067,
+          "end_char": 1279,
+          "source_version": "3e04e46703ddc7cbc31e596d09b9253ae0aaf0a18ba0785f2eb476839b37e0b0",
+          "source_sha256": "6a33814de3daa43b963e66fda178d953e1fe84eef5b663cca6b0bcdd098a91ec"
+        },
+        "P9430f8e3bb1bec6e92c18936e54d5328f7f4306d1d503dbb28b33af295068dbc": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 375,
+          "end_char": 2017,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P7c7bb5ac2b50006bc7833564906f221efef3e3b97600c28817192d27a4eec051": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 9197,
+          "end_char": 9601,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P4a1eaef8021874da2b7f5a3a65a7eefe67fe1721d588df04929252d2713321a2": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 172,
+          "end_char": 330,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P39638f317f19e7e06d07149bd0f4f4db99f30d644ba2e3d931b7d1fa1fc6c761": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 4279,
+          "end_char": 5238,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P118b1403a6f06ed9f9b4b5c5c772072e4b67d1af869b92a938e9f21857f4378f": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 2568,
+          "end_char": 2889,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P64d68c8f9449b04cb1adff223cd3999eabf9a84ed24b854c301db014fe5e7e07": {
+          "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+          "document_index": 1,
+          "start_char": 2018,
+          "end_char": 2567,
+          "source_version": "02dcf7f55a4c277d0b6d9435cb8911708db899ee7226e3a45b40aff28249875b",
+          "source_sha256": "701c80294c97b83863f2dd3c9ec80de569cae1f6acecd9dbc6bafaabe86267bf"
+        },
+        "P15e8f2d58153f43746a1a2754584ff964414f1d9a17d23e300913bf8bb81d8c0": {
+          "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+          "document_index": 1,
+          "start_char": 2989,
+          "end_char": 3222,
+          "source_version": "d9be5245dcf227914eb88ccbae42ffa297e9488a56676cef66f5f1e334b92e37",
+          "source_sha256": "3cdded3e7560308269a795c1ed7f9d3b04d2c1fa8275bde90bfcf7f269bbfa93"
+        },
+        "P3881cf8ab088db59b8960a1a4d70b9049cb6aa5776b31d416dc28352681ff8d8": {
+          "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+          "document_index": 1,
+          "start_char": 1916,
+          "end_char": 2258,
+          "source_version": "d9be5245dcf227914eb88ccbae42ffa297e9488a56676cef66f5f1e334b92e37",
+          "source_sha256": "3cdded3e7560308269a795c1ed7f9d3b04d2c1fa8275bde90bfcf7f269bbfa93"
+        },
+        "P50b0cb24a40eac0e695467c23e7230d6e2a9d5eceb26d8662935d8300ef4dbac": {
+          "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+          "document_index": 1,
+          "start_char": 823,
+          "end_char": 1297,
+          "source_version": "d9be5245dcf227914eb88ccbae42ffa297e9488a56676cef66f5f1e334b92e37",
+          "source_sha256": "3cdded3e7560308269a795c1ed7f9d3b04d2c1fa8275bde90bfcf7f269bbfa93"
+        },
+        "Pda9567f41e2abb6db1c4e27f44418edf63a632d305e4f30941f0f345d67dd028": {
+          "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+          "document_index": 1,
+          "start_char": 359,
+          "end_char": 822,
+          "source_version": "d9be5245dcf227914eb88ccbae42ffa297e9488a56676cef66f5f1e334b92e37",
+          "source_sha256": "3cdded3e7560308269a795c1ed7f9d3b04d2c1fa8275bde90bfcf7f269bbfa93"
+        },
+        "Pae26196f1b538d4426d9e65ad1958218e261c1ae3c5b2ca302868d7b919a7cbb": {
+          "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+          "document_index": 1,
+          "start_char": 4264,
+          "end_char": 4511,
+          "source_version": "d9be5245dcf227914eb88ccbae42ffa297e9488a56676cef66f5f1e334b92e37",
+          "source_sha256": "3cdded3e7560308269a795c1ed7f9d3b04d2c1fa8275bde90bfcf7f269bbfa93"
+        },
+        "P7ad6e3dfe4ee053e73811dc07f32a1ffbc184ef1b2bbb97fb5c5d43e17d66996": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 147,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        },
+        "P26784682686711febe537cdadecfb1d7d35598373f69263dd0fde67c07ea6bd7": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 1476,
+          "end_char": 1949,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        },
+        "Pf9376d8a951a8c24e89af8c8cfb2acfc89a8d4d8dc5652adb15daf11c057405d": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 6039,
+          "end_char": 6733,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        },
+        "P0e5a5388c07b342bf4c58d6899873233893a086afb9ad94061f5d5760fe8ccf1": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 417,
+          "end_char": 1475,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        },
+        "P62dc9b936cdf92032b9d162d8401c13bd8ccbfc58f4d20a16d58b9ecb8ea24c7": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 2026,
+          "end_char": 2650,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        },
+        "P4816e91ffe3f3d9aec81259b0f33596338dda8657a9d6975dc19e55eec0f4d97": {
+          "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+          "document_index": 1,
+          "start_char": 4953,
+          "end_char": 5277,
+          "source_version": "43a400a755b9c44a1c72d85fe10cccb2a03c0edaeebd575432f7706e34d7e01d",
+          "source_sha256": "163b96ac6a51686325b31c1b90ce7c28a3b28a053f360851d7addf7b411dc5d5"
+        }
+      },
+      "delivery_passages": {},
+      "read_source_transcript": [
+        {
+          "tool": "read_sources",
+          "result": {
+            "version": "tool_result_v1",
+            "tool": "read_sources",
+            "ok": true,
+            "status": "completed",
+            "data": {
+              "reads": [
+                {
+                  "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                  "ok": true,
+                  "source_header_preview": "L'intervention de Marine Le Pen au 20 heures de TF1 était très attendue, après le verdict rendu par la cour d'appel de Paris dans l'affaire des assistants parlementaires européens du FN.\nSi la cour d'appel de Paris a confirmé la condamnation de Marine Le Pen, elle a réduit sa peine d'inéligibilité, lui permettant de se présenter à l'élection présidentielle de 2027. Mais la cheffe de file du Rassemblement national (RN) a été condamnée à trois de prison, dont un an ferme aménageable, donc sous bracelet électronique.\nMarine Le Pen a plusieurs fois répété que les contraintes liées au port du bracelet électronique n'étaient pas compatibles avec une campagne électorale.\nAu JT de TF1, elle annoncé son intention de soumettre \"ce sujet de droit extrêmement sérieux\" à la Cour de Cassation. \"Je veux aller au bout des voies de recours qui me sont offertes pour pouvoir défendre mon innocence dans ce dossier\", a-t-elle ajouté.\n\"Je ferai donc campagne sans bracelet électronique\", a déclaré Marine Le Pen. \"Le pourvoi en cassation suspend la peine\", a-t-elle précisé.\n\"Nous allons très rapidement, Jordan Bardella et moi-même, démarrer cette campagne présidentielle\", a affirmé la cheffe de file du RN, estimant qu’ils offrent aux Français un binôme \"équilibré, cohérent, solide\".\nDe son côté, la procureure générale de la cour d’appel de Paris, Marie-Suzanne Le Quéau, a annoncé sur RTL qu’elle déciderait \"la semaine prochaine\" quant à un éventuel pourvoi en cassation, qui ne se prononce que sur l’application de la règle de droit mais ne rejuge pas l’affaire sur le fond.\n[Accéder aux raccourcis d'accessibilité](https://fr.euronews.com#accessibility-bar__menu)",
+                  "temporal_isolation": {
+                    "blocked_dated_lines": 0,
+                    "cutoff_enforced": false,
+                    "strict_snapshot": false,
+                    "warning": "Current information is permitted; this package is not a cutoff-safe historical backtest."
+                  }
+                },
+                {
+                  "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                  "ok": true,
+                  "source_header_preview": "Condamnation de Marine Le Pen : Marine Tondelier appelle la leader du RN à \"renoncer\" à être candidate à la présidentielle, LR l'accuse de \"prendre la démocratie en otage\"\nMarine Le Pen a annoncé son intention de se présenter à l'élection présidentielle après la réduction de sa peine d'inéligibilité par la cour d'appel de Paris.\nCe qu'il faut savoir\nCe direct est terminé.\nLes premières réactions se font entendre après l'annonce de [la candidature de Marine Le Pen à l'élection présidentielle de 2027](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html), mardi 7 juillet. \"Il lui appartiendra de s'expliquer\" sur son choix, [a estimé l'ancien Premier ministre Edouard Philippe](https://www.franceinfo.fr/politique/marine-le-pen/video-edouard-philippe-estime-que-marine-le-pen-devra-s-expliquer-aux-francais-sur-son-choix-d-etre-candidate-a-la-presidentielle-apres-sa-condamnation-en-appel_8098403.html) sur France 2. De son côté, le secrétaire général des Républicains Othman Nasrou accuse la leader du Rassemblement national de \"prendre la démocratie en otage\". La gauche condamne aussi la décision de Marine Le Pen, [condamnée en appel](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) dans l'affaire des assistants parlementaires européens du FN, mais dont la peine d'inéligibilité a été réduite, et qui compte se pourvoir en cassation. \"Dans un monde normal où le RN aurait le plus petit soupçon de moralité, Marine Le Pen renoncerait d'elle-même à êt",
+                  "temporal_isolation": {
+                    "blocked_dated_lines": 0,
+                    "cutoff_enforced": false,
+                    "strict_snapshot": false,
+                    "warning": "Current information is permitted; this package is not a cutoff-safe historical backtest."
+                  }
+                },
+                {
+                  "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                  "ok": true,
+                  "source_header_preview": "Marine Le Pen a été condamnée à trois ans de prison, dont un an ferme sous bracelet électronique.\nBenoit Tessier / REUTERS\nDÉCRYPTAGE - La décision de la cour d’appel repose largement sur l’hypothèse que le parquet général ne fera pas appel. Néanmoins, si c’était finalement le cas, deux scénarios très sombres se dessineraient pour la potentielle candidate.\nLa décision de la cour d’appel de Paris qui condamne Marine Le Pen à trois ans de prison, dont un an ferme sous bracelet électronique, dans l’affaire des assistants parlementaires du Front national est finement ciselée. L’efficacité que la justice veut lui donner en la fondant sur «la liberté des candidatures» et «le libre choix des électeurs», «condition de l’expression démocratique», repose largement sur l’hypothèse que le parquet général ne fera pas appel.\nCar en vérité, le parquet général ne peut déposer un pourvoi en cassation que pour dénoncer de la part de la Cour d’appel la mauvaise application d’une loi ou une erreur de droit. Contrairement au parquet de la première instance qui peut tout contester car le procès va se rejouer, le parquet général ne peut déposer un pourvoi qu’en soulevant des moyens de droit ou des vices de procédure. On imagine qu’en l’occurrence, les juges d’appel auront été d’une grande vigilance.\nPourvoi en cassation suspensif\nEn aucun cas il ne peut remettre en cause devant les juges du Quai…\nCet article est réservé aux abonnés. Il vous reste 66% à découvrir.\nÇa fait longtemps que certains français ont compris l'acharnement sur MLP, tout comme sur Fillon, le travail pour l'éliminer est atson plus haut niveau mais ce n'est pas pour autant que les voix qui lui étaient destinées iront à Philippe ou Attal encore moins Hollande\nOskar Lafontaine\nConfronté au pouvoir populaire, le pouvoir judici",
+                  "temporal_isolation": {
+                    "blocked_dated_lines": 0,
+                    "cutoff_enforced": false,
+                    "strict_snapshot": false,
+                    "warning": "Current information is permitted; this package is not a cutoff-safe historical backtest."
+                  }
+                },
+                {
+                  "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                  "ok": true,
+                  "source_header_preview": "«En 2027, on les dégage» : la gauche se réjouit de la condamnation de Marine Le Pen mais la juge «incompatible» avec une candidature présidentielle\nCondamnée à un an sous bracelet électronique, Marine Le Pen pourra légalement se présenter à la présidentielle 2027.\n[Passer la publicité](https://www.lefigaro.fr#fig-a11y-skip-main-native_atf)\n[Passer la publicité](https://www.lefigaro.fr#fig-a11y-skip-main-pave_atf)\nLa justice a ouvert mardi la voie à une quatrième candidature à la présidentielle de Marine Le Pen [en réduisant son inéligibilité](https://video.lefigaro.fr/figaro/politique/marine-le-pen-condamnee-a-trois-ans-de-prison-pourrait-se-presenter-a-la-presidentielle-20260707). Mais la dirigeante nationaliste pourrait devoir faire [une partie de sa campagne sous bracelet électronique](https://video.lefigaro.fr/figaro/politique/marine-le-pen-des-l-automne-elle-pourrait-ne-plus-avoir-la-contrainte-du-bracelet-electronique-selon-un-journaliste-politique-du-figaro-20260707) si elle se lançait malgré cette condamnation, ce qu’elle a toujours refusé. Devant la cheffe de file du RN debout à la barre, la présidente de la cour d’appel l’a condamnée à trois ans de prison, dont un an ferme à purger à domicile sous bracelet électronique. Mais elle a drastiquement réduit la peine complémentaire d’inéligibilité à 45 mois dont 30 avec sursis (qui a déjà été purgée), depuis la condamnation en première instance à cinq ans d’inéligibilité avec exécution provisoire.\nDès le couperet tombé, Emmanuel Macron, [en voyage à Damas](http://www.lefigaro.fr/international/elles-visaient-a-faire-du-bruit-malgre-les-explosions-pres-de-son-hotel-a-damas-emmanuel-macron-maintient-son-programme-en-syrie-20260707), a refusé de s’exprimer sur le sujet, affirmant qu’un «président ne commente pas les déc",
+                  "temporal_isolation": {
+                    "blocked_dated_lines": 0,
+                    "cutoff_enforced": false,
+                    "strict_snapshot": false,
+                    "warning": "Current information is permitted; this package is not a cutoff-safe historical backtest."
+                  }
+                }
+              ],
+              "rescue": null,
+              "located_material": [
+                {
+                  "query": "Je suis candidate à l'élection présidentielle Marine Le Pen TF1 7 juillet 2026",
+                  "need_ids": [
+                    "N2"
+                  ],
+                  "passages": [
+                    {
+                      "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                      "text": "Si la cour d'appel de Paris a confirmé la condamnation de Marine Le Pen, elle a réduit sa peine d'inéligibilité, lui permettant de se présenter à l'élection présidentielle de 2027. Mais la cheffe de file du Rassemblement national (RN) a été condamnée à trois de prison, dont un an ferme aménageable, donc sous bracelet électronique.",
+                      "passage_id": "Pd17cc529ce6fe72612ae2c215ce3c3d3c3a766b29e2760638b03cd5e7b21658f",
+                      "matched_terms": [
+                        "l",
+                        "le",
+                        "lection",
+                        "marine",
+                        "pen",
+                        "pr",
+                        "sidentielle"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "document_index": 1,
+                        "start_char": 187,
+                        "end_char": 519,
+                        "need_ids": [
+                          "N2"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                      "text": "L'intervention de Marine Le Pen au 20 heures de TF1 était très attendue, après le verdict rendu par la cour d'appel de Paris dans l'affaire des assistants parlementaires européens du FN.",
+                      "passage_id": "P5da82b2631b2d2c6137306d1404adeb51b89fcba2d974704ef144c82734aa031",
+                      "matched_terms": [
+                        "l",
+                        "le",
+                        "marine",
+                        "pen",
+                        "tf1"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "document_index": 1,
+                        "start_char": 0,
+                        "end_char": 186,
+                        "need_ids": [
+                          "N2"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                      "text": "\"Je ferai donc campagne sans bracelet électronique\", a déclaré Marine Le Pen. \"Le pourvoi en cassation suspend la peine\", a-t-elle précisé.",
+                      "passage_id": "P0356492f1eece255124daf02803bc6e3800826483993ec45affa9e57576298f1",
+                      "matched_terms": [
+                        "je",
+                        "le",
+                        "marine",
+                        "pen",
+                        "pr"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "document_index": 1,
+                        "start_char": 927,
+                        "end_char": 1066,
+                        "need_ids": [
+                          "N2"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                      "text": "Au JT de TF1, elle annoncé son intention de soumettre \"ce sujet de droit extrêmement sérieux\" à la Cour de Cassation. \"Je veux aller au bout des voies de recours qui me sont offertes pour pouvoir défendre mon innocence dans ce dossier\", a-t-elle ajouté.",
+                      "passage_id": "Paec75002791f75140ca99df45c49a38c866db0c454c97af10748c93ca5c33e09",
+                      "matched_terms": [
+                        "je",
+                        "tf1"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+                        "document_index": 1,
+                        "start_char": 673,
+                        "end_char": 926,
+                        "need_ids": [
+                          "N2"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "query": "peine d'inéligibilité Marine Le Pen cour d'appel 7 juillet 2026",
+                  "need_ids": [
+                    "N1"
+                  ],
+                  "passages": [
+                    {
+                      "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                      "text": "Les premières réactions se font entendre après l'annonce de [la candidature de Marine Le Pen à l'élection présidentielle de 2027](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html), mardi 7 juillet. \"Il lui appartiendra de s'expliquer\" sur son choix, [a estimé l'ancien Premier ministre Edouard Philippe](https://www.franceinfo.fr/politique/marine-le-pen/video-edouard-philippe-estime-que-marine-le-pen-devra-s-expliquer-aux-francais-sur-son-choix-d-etre-candidate-a-la-presidentielle-apres-sa-condamnation-en-appel_8098403.html) sur France 2. De son côté, le secrétaire général des Républicains Othman Nasrou accuse la leader du Rassemblement national de \"prendre la démocratie en otage\". La gauche condamne aussi la décision de Marine Le Pen, [condamnée en appel](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) dans l'affaire des assistants parlementaires européens du FN, mais dont la peine d'inéligibilité a été réduite, et qui compte se pourvoir en cassation. \"Dans un monde normal où le RN aurait le plus petit soupçon de moralité, Marine Le Pen renoncerait d'elle-même à être candidate\", dénonce la cheffe des Ecologistes, Marine Tondelier, auprès de France Télévisions. \"Elle n'a plus aucune crédibilité pour garantir l'autorité de l'Etat\", ajoute le patron des socialistes, Olivier Faure.",
+                      "passage_id": "P9430f8e3bb1bec6e92c18936e54d5328f7f4306d1d503dbb28b33af295068dbc",
+                      "matched_terms": [
+                        "7",
+                        "appel",
+                        "d",
+                        "juillet",
+                        "le",
+                        "ligibilit",
+                        "marine",
+                        "peine",
+                        "pen"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "document_index": 1,
+                        "start_char": 375,
+                        "end_char": 2017,
+                        "need_ids": [
+                          "N1"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                      "text": " - Réponse de Robin Prudentfranceinfo Il y a 0 secLes délais de la Cour de cassation sont habituellement compris entre huit mois et un an pour qu'elle se prononce sur un pourvoi formé contre une condamnation en appel. Mais dans le cas de Marine Le Pen, elle a déjà indiqué qu'elle tenterait de se prononcer autour de la fin d'année 2026, compte tenu de l'imminence de la présidentielle 2027 au printemps.",
+                      "passage_id": "P7c7bb5ac2b50006bc7833564906f221efef3e3b97600c28817192d27a4eec051",
+                      "matched_terms": [
+                        "2026",
+                        "appel",
+                        "cour",
+                        "d",
+                        "le",
+                        "marine",
+                        "pen"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "document_index": 1,
+                        "start_char": 9197,
+                        "end_char": 9601,
+                        "need_ids": [
+                          "N1"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                      "text": "Marine Le Pen a annoncé son intention de se présenter à l'élection présidentielle après la réduction de sa peine d'inéligibilité par la cour d'appel de Paris.",
+                      "passage_id": "P4a1eaef8021874da2b7f5a3a65a7eefe67fe1721d588df04929252d2713321a2",
+                      "matched_terms": [
+                        "appel",
+                        "cour",
+                        "d",
+                        "le",
+                        "ligibilit",
+                        "marine",
+                        "peine",
+                        "pen"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "document_index": 1,
+                        "start_char": 172,
+                        "end_char": 330,
+                        "need_ids": [
+                          "N1"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                      "text": " - #LE_PEN Marine Le Pen [est candidate à l'élection présidentielle](https://www.franceinfo.fr/politique/marine-le-pen/je-suis-candidate-a-l-election-presidentielle-marine-le-pen-annonce-son-pourvoi-en-cassation-apres-sa-condamnation-allegee-en-appel_8098361.html) . La cour d'appel de Paris[a confirmé](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/marine-le-pen-bruno-gollnisch-louis-aliot-voici-les-11-condamnations-a-l-issue-du-proces-en-appel-des-assistants-parlementaires-du-fn_8089790.html) sa condamnation dans l'affaire des assistants parlementaires européens du FN, mais a réduit sa peine d'inéligibilité.[Voici les questions qui se posent.](https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/presidentielle-bracelet-electronique-pourvoi-en-cassation-les-questions-qui-se-posent-apres-la-condamnation-reduite-de-marine-le-pen-en-appel_8097893.html)",
+                      "passage_id": "P39638f317f19e7e06d07149bd0f4f4db99f30d644ba2e3d931b7d1fa1fc6c761",
+                      "matched_terms": [
+                        "appel",
+                        "cour",
+                        "d",
+                        "le",
+                        "ligibilit",
+                        "marine",
+                        "peine",
+                        "pen"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.franceinfo.fr/politique/front-national/affaire-des-assistants-fn-au-parlement-europeen/direct-marine-le-pen-pourra-t-elle-se-presenter-a-la-presidentielle-la-decision-cruciale-de-la-cour-d-appel-sur-son-ineligibilite-attendue-cet-apres-midi_8090117.html",
+                        "document_index": 1,
+                        "start_char": 4279,
+                        "end_char": 5238,
+                        "need_ids": [
+                          "N1"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "query": "pourvoi en cassation pourrait-il empêcher Marine Le Pen de se présenter 2026",
+                  "need_ids": [
+                    "N3"
+                  ],
+                  "passages": [
+                    {
+                      "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                      "text": "DÉCRYPTAGE - Marine Le Pen et Jordan Bardella doivent présenter le contre-budget nationaliste la semaine prochaine, et se projeter sur les cinq premières années du quinquennat, si jamais la candidate RN arrivait à conquérir l’Élysée.",
+                      "passage_id": "P15e8f2d58153f43746a1a2754584ff964414f1d9a17d23e300913bf8bb81d8c0",
+                      "matched_terms": [
+                        "le",
+                        "marine",
+                        "pen",
+                        "pr",
+                        "se",
+                        "senter"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "document_index": 1,
+                        "start_char": 2989,
+                        "end_char": 3222,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                      "text": "Marine Le Pen et J. Bardella ont été empêchés de s’exprimer aujourd’hui par la clique des manifestement LFI et la gauche , et ont dû quitter cette ville qui a voté RN… Ceci est une atteinte à la démocratie …!!!!! Nunez et Macron vont ils assumer cette atteinte à la démocratie Française et vont ils se ranger de nouveau avec les LFI …????????",
+                      "passage_id": "P3881cf8ab088db59b8960a1a4d70b9049cb6aa5776b31d416dc28352681ff8d8",
+                      "matched_terms": [
+                        "de",
+                        "emp",
+                        "le",
+                        "marine",
+                        "pen",
+                        "se"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "document_index": 1,
+                        "start_char": 1916,
+                        "end_char": 2258,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                      "text": "Car en vérité, le parquet général ne peut déposer un pourvoi en cassation que pour dénoncer de la part de la Cour d’appel la mauvaise application d’une loi ou une erreur de droit. Contrairement au parquet de la première instance qui peut tout contester car le procès va se rejouer, le parquet général ne peut déposer un pourvoi qu’en soulevant des moyens de droit ou des vices de procédure. On imagine qu’en l’occurrence, les juges d’appel auront été d’une grande vigilance.",
+                      "passage_id": "P50b0cb24a40eac0e695467c23e7230d6e2a9d5eceb26d8662935d8300ef4dbac",
+                      "matched_terms": [
+                        "cassation",
+                        "de",
+                        "en",
+                        "le",
+                        "pourvoi",
+                        "se"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "document_index": 1,
+                        "start_char": 823,
+                        "end_char": 1297,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                      "text": "La décision de la cour d’appel de Paris qui condamne Marine Le Pen à trois ans de prison, dont un an ferme sous bracelet électronique, dans l’affaire des assistants parlementaires du Front national est finement ciselée. L’efficacité que la justice veut lui donner en la fondant sur «la liberté des candidatures» et «le libre choix des électeurs», «condition de l’expression démocratique», repose largement sur l’hypothèse que le parquet général ne fera pas appel.",
+                      "passage_id": "Pda9567f41e2abb6db1c4e27f44418edf63a632d305e4f30941f0f345d67dd028",
+                      "matched_terms": [
+                        "de",
+                        "en",
+                        "le",
+                        "marine",
+                        "pen",
+                        "se"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/actualite-france/election-presidentielle-un-pourvoi-en-cassation-du-parquet-general-pourrait-il-empecher-marine-le-pen-de-se-presenter-20260707",
+                        "document_index": 1,
+                        "start_char": 359,
+                        "end_char": 822,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "query": "juge incompatible avec une candidature présidentielle Marine Le Pen 2026",
+                  "need_ids": [
+                    "N3"
+                  ],
+                  "passages": [
+                    {
+                      "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                      "text": "«En 2027, on les dégage» : la gauche se réjouit de la condamnation de Marine Le Pen mais la juge «incompatible» avec une candidature présidentielle",
+                      "passage_id": "P7ad6e3dfe4ee053e73811dc07f32a1ffbc184ef1b2bbb97fb5c5d43e17d66996",
+                      "matched_terms": [
+                        "avec",
+                        "candidature",
+                        "incompatible",
+                        "juge",
+                        "le",
+                        "marine",
+                        "pen",
+                        "pr",
+                        "sidentielle",
+                        "une"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "document_index": 1,
+                        "start_char": 0,
+                        "end_char": 147,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                      "text": "Dès le couperet tombé, Emmanuel Macron, [en voyage à Damas](http://www.lefigaro.fr/international/elles-visaient-a-faire-du-bruit-malgre-les-explosions-pres-de-son-hotel-a-damas-emmanuel-macron-maintient-son-programme-en-syrie-20260707), a refusé de s’exprimer sur le sujet, affirmant qu’un «président ne commente pas les décisions de justice». La gauche s’est, elle, réjouie en chœur de cette condamnation. Mais l’a estimée incompatible avec une candidature présidentielle.",
+                      "passage_id": "P26784682686711febe537cdadecfb1d7d35598373f69263dd0fde67c07ea6bd7",
+                      "matched_terms": [
+                        "avec",
+                        "candidature",
+                        "incompatible",
+                        "le",
+                        "pr",
+                        "sidentielle",
+                        "une"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "document_index": 1,
+                        "start_char": 1476,
+                        "end_char": 1949,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                      "text": "Sauf que la finaliste des deux dernières courses à l’Élysée avait conditionné une quatrième candidature à une liberté de mouvement totale, incompatible selon elle avec le port d’un bracelet. «S’il s’agit de m’autoriser à être candidate, mais de m’empêcher en réalité de mener une campagne tout à fait librement, vous entendez bien que ça ne sera pas possible», avait-elle insisté mercredi sur LCI. Peut-elle changer d’avis ? Le jeu des remises de peine pourrait réduire le quantum d’environ six mois, ce qui retarderait une pleine entrée en campagne en janvier. À défaut, elle devrait introniser ce soir en bonne et due forme Jordan Bardella comme candidat du RN pour la présidentielle de 2027.",
+                      "passage_id": "Pf9376d8a951a8c24e89af8c8cfb2acfc89a8d4d8dc5652adb15daf11c057405d",
+                      "matched_terms": [
+                        "avec",
+                        "candidature",
+                        "incompatible",
+                        "le",
+                        "pr",
+                        "sidentielle",
+                        "une"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "document_index": 1,
+                        "start_char": 6039,
+                        "end_char": 6733,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    },
+                    {
+                      "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                      "text": "La justice a ouvert mardi la voie à une quatrième candidature à la présidentielle de Marine Le Pen [en réduisant son inéligibilité](https://video.lefigaro.fr/figaro/politique/marine-le-pen-condamnee-a-trois-ans-de-prison-pourrait-se-presenter-a-la-presidentielle-20260707). Mais la dirigeante nationaliste pourrait devoir faire [une partie de sa campagne sous bracelet électronique](https://video.lefigaro.fr/figaro/politique/marine-le-pen-des-l-automne-elle-pourrait-ne-plus-avoir-la-contrainte-du-bracelet-electronique-selon-un-journaliste-politique-du-figaro-20260707) si elle se lançait malgré cette condamnation, ce qu’elle a toujours refusé. Devant la cheffe de file du RN debout à la barre, la présidente de la cour d’appel l’a condamnée à trois ans de prison, dont un an ferme à purger à domicile sous bracelet électronique. Mais elle a drastiquement réduit la peine complémentaire d’inéligibilité à 45 mois dont 30 avec sursis (qui a déjà été purgée), depuis la condamnation en première instance à cinq ans d’inéligibilité avec exécution provisoire.",
+                      "passage_id": "P0e5a5388c07b342bf4c58d6899873233893a086afb9ad94061f5d5760fe8ccf1",
+                      "matched_terms": [
+                        "avec",
+                        "candidature",
+                        "le",
+                        "marine",
+                        "pen",
+                        "pr",
+                        "sidentielle",
+                        "une"
+                      ],
+                      "location": {
+                        "format": "html",
+                        "source": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "truncated": false
+                      },
+                      "excerpt_args": {
+                        "url": "https://www.lefigaro.fr/politique/en-2027-on-les-degage-la-gauche-se-rejouit-de-la-condamnation-de-marine-le-pen-mais-la-juge-incompatible-avec-une-candidature-presidentielle-20260707",
+                        "document_index": 1,
+                        "start_char": 417,
+                        "end_char": 1475,
+                        "need_ids": [
+                          "N3"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "scope": "Lexical candidates only; associations do not resolve a requirement."
+            },
+            "error": null,
+            "budget_remaining": {
+              "tavily_basic_remaining": 0,
+              "exa_search_remaining": 0,
+              "page_fetch_remaining": 8,
+              "update_http_remaining": 24,
+              "update_http_today_remaining": 3,
+              "basic_extract_batches_remaining": 1
+            },
+            "provenance": {
+              "channel_ids": [],
+              "truth_verified": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "44801",
+      "bundle_sha256": "fe1221a3a7fc9ebcf87a2bf44b5db426060a9c5b537f877f5332f6f6d03fcb3f",
+      "calls": [
+        {
+          "record_name": "0001.json",
+          "record_sha256": "0b4a6d321ab51827ca4bd8253ab60a90a2033c550ad7831f1f2bfecfdd04abf8",
+          "tool": "plan_evidence",
+          "arguments": {
+            "needs": [
+              {
+                "id": "N_gas_price_history",
+                "condition": "Collect the national average price of regular unleaded gasoline (USD per gallon) as reported by AAA for each available time point (weekly/monthly) from January 1, 2026 up to September 6, 2026.",
+                "priority": "critical",
+                "expected_source": "AAA gasprices.aaa.com",
+                "query": "\"national average\" regular gasoline price AAA 2026",
+                "question_refs": [
+                  "Q_question_c93e9d779f396a23",
+                  "Q_resolution_criteria_0c29be6b4e38dd0a"
+                ]
+              }
+            ],
+            "entity_card": {
+              "subject": "U.S. national average price of regular unleaded gasoline",
+              "identity_checks": "AAA-reported national average for regular unleaded gasoline",
+              "required_form": "Numeric value in USD per gallon (e.g., $4.41)",
+              "announcement_window": "AAA publishes updates typically weekly; each observation is effective as of the announcement date",
+              "effective_vs_announcement": "The price is effective on the date of the announcement (same day)"
+            }
+          }
+        },
+        {
+          "record_name": "0002.json",
+          "record_sha256": "b4824104272d066bb515c65be213592339ae91b7d57ce4fb6510b666fd9fb2d4",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://gasprices.aaa.com/2026/03",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 1394
+          }
+        },
+        {
+          "record_name": "0003.json",
+          "record_sha256": "8d283375a231b8de538ced90e0cdb0ac4e00e5e2030e1da28c583a44c04e3af8",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P01ce9cc085a0adae1ccf12e3b27c6403caff5b81965964bcd0b542c824274237",
+                "action": "keep",
+                "reason": "Contains March 2026 weekly updates with explicit national average prices for March 5, 12, 19, 26, 2026.",
+                "need_ids": [
+                  "N_gas_price_history"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0004.json",
+          "record_sha256": "8207e98dcf59fc021771ba93793e7828d998eda7b6b1ed0972bec7e784915019",
+          "tool": "list_documents",
+          "arguments": {
+            "url": "https://gasprices.aaa.com/2026/03"
+          }
+        },
+        {
+          "record_name": "0005.json",
+          "record_sha256": "2067dfaaa7bfd3d67a8ce04c7493ad9290b5365b18fe81f446864c23c8121e7d",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://gasprices.aaa.com/2026",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 18000
+          }
+        },
+        {
+          "record_name": "0006.json",
+          "record_sha256": "05067c0db1dfb01c6b58de7239cccacce3c04f2327febb5ac79cf3bba4133fc7",
+          "tool": "review_passages",
+          "arguments": {
+            "items": [
+              {
+                "passage_id": "P691ab554316813b43d4c34f76b0dedc344a8d8149fa8b63b73951f928ebbd60c",
+                "action": "keep",
+                "reason": "Contains weekly national average gas prices for Sep-Aug 2026 (though after cutoff? Actually dates are Sep 2026 onward, but we need up to Sep 6 2026. This includes Sep 3, Sep 10, etc. Some are before Sep 6? Sep 3 is before Sep 6, Sep 10 after. We'll keep for now.",
+                "need_ids": [
+                  "N_gas_price_history"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "record_name": "0007.json",
+          "record_sha256": "4fe9a899e126ea552d2228b0d8c337dcb358ebcaba5a658997f76dbfafa1a3f9",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://gasprices.aaa.com/2026/03",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          }
+        },
+        {
+          "record_name": "0008.json",
+          "record_sha256": "fea09e6efaf1b394fdc0582968517377b82514d8de767134b58090536f081aa4",
+          "tool": "read_document",
+          "arguments": {
+            "url": "https://gasprices.aaa.com/2026",
+            "document_index": 1,
+            "start_char": 0,
+            "max_chars": 2000
+          }
+        },
+        {
+          "record_name": "0009.json",
+          "record_sha256": "34caa44e5ab927d43bc8c13ad88650192c1c44e867a8c9d031fcc0fbd69c1f24",
+          "tool": "inspect_materials",
+          "arguments": {
+            "offset": 0,
+            "limit": 20
+          }
+        }
+      ],
+      "passages": {
+        "P01ce9cc085a0adae1ccf12e3b27c6403caff5b81965964bcd0b542c824274237": {
+          "url": "https://gasprices.aaa.com/2026/03",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 1394,
+          "source_version": "b64410e6c450318c0b8e2b1fa6a5192e294a1c668a524146da2b281a137cf72c",
+          "source_sha256": "bb181ef2c42f86cc584f274d78e900ba4f94df29d399519ae56b3deb93f7c3f0"
+        },
+        "P691ab554316813b43d4c34f76b0dedc344a8d8149fa8b63b73951f928ebbd60c": {
+          "url": "https://gasprices.aaa.com/2026",
+          "document_index": 1,
+          "start_char": 0,
+          "end_char": 1687,
+          "source_version": "333cc4cea88d7606129c23c5c08d8322365602757167a1bb3a3fb6f39cecb1da",
+          "source_sha256": "77d68c6aceae1868719b4af3ff24ebfb2dc4ebaa2fd29375a914a7c888daa103"
+        }
+      },
+      "delivery_passages": {
+        "P01ce9cc085a0adae1ccf12e3b27c6403caff5b81965964bcd0b542c824274237": {
+          "need_ids": [
+            "N_gas_price_history"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        },
+        "P691ab554316813b43d4c34f76b0dedc344a8d8149fa8b63b73951f928ebbd60c": {
+          "need_ids": [
+            "N_gas_price_history"
+          ],
+          "origin": "exact_source_read",
+          "association_warning": "Available need IDs are choices, not automatic relevance assignments."
+        }
+      },
+      "read_source_transcript": []
+    }
+  ]
+}

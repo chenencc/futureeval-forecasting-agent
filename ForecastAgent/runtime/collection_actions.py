@@ -63,7 +63,7 @@ def named_primary(task, url):
         and labels & set(re.findall(r'[a-z0-9]{4,}',n.get('expected_source','').lower()))]
 
 
-def pending_passages(task, limit=8):
+def pending_passages(task, limit=8, *, include_deferred=False):
     """Expose only surfaced, version-valid candidates, never auto-accept relevance."""
     b=task.bundle
     surfaced={}
@@ -87,7 +87,8 @@ def pending_passages(task, limit=8):
     result=[]
     for pid, row in surfaced.items():
         passage=b.get('passages',{}).get(pid)
-        if not passage or pid in dispositions:
+        disposition = dispositions.get(pid)
+        if not passage or (disposition and (disposition.get('action') != 'defer' or not include_deferred)):
             continue
         page=b['pages'].get(canonical_url(passage['url']))
         if not page or version_digest(page)!=passage['source_version'] or page.get('sha256')!=passage.get('source_sha256'):
@@ -131,7 +132,7 @@ def next_action(task):
         if repaired(task):
             focus = review_focus(task)
             passages = focus['passages'] if focus else []
-            if passages:
+            if passages and focus.get('mandatory', True):
                 return {'tool': 'review_passages', 'candidates': passages,
                     'instruction': 'Keep or explicitly reject these exact delivered spans before more navigation. Choose actual associated need IDs; availability is not relevance. Text remains pinned until disposition or forced closure, with remaining work exported as gaps.'}
         # Preserve release repair and discovery-to-read gates. Remaining local
@@ -192,19 +193,25 @@ def review_focus(task):
     from ForecastAgent.runtime.intelligent_acquisition import repaired
     if not repaired(task) or task.bundle.get('control', {}).get('forced_close'):
         return None
-    candidates = pending_passages(task, limit=2)
+    from ForecastAgent.runtime.material_protocol import enabled as v3, REVIEW_ROUNDS
+    modern = v3(task)
+    candidates = pending_passages(task, limit=8 if modern else 2)
     rows = []
     for candidate in candidates:
         passage = task.bundle['passages'][candidate['passage_id']]
         # pending_passages already verifies version, eligibility and coordinates.
         _, text, _ = select(task.bundle['pages'], passage['url'], passage.get('document_index'))
         exact = text[passage['start_char']:passage['end_char']]
-        if rows and sum(len(r['text']) for r in rows) + len(exact) > 6000:
-            break
+        if sum(len(r['text']) for r in rows) + len(exact) > 6000:
+            continue
         rows.append({**candidate, **passage, 'text': exact})
+        if len(rows) >= (4 if modern else 2):
+            break
     if not rows:
         return None
+    mandatory = not modern or len(task.bundle.get('material_review_batches', [])) < REVIEW_ROUNDS
     return {'kind': 'pending_material_review', 'passages': rows,
+            **({'mandatory':mandatory, 'review_rounds_remaining':max(0, REVIEW_ROUNDS-len(task.bundle.get('material_review_batches', [])))} if modern else {}),
             'instruction': 'These are exact saved spans previously surfaced for review, with immutable versions and coordinates. Use review_passages keep/reject; do not retype text. Need IDs are choices, not verified associations. Remaining spans stay on disk.',
             'semantic_verified': False}
 

@@ -1,0 +1,127 @@
+{
+  "schema": "materials-v3-offline-control-audit-v1",
+  "parent_run_id": 37297914625,
+  "fixture_sha256": "994426d9bec4c1997de13750ff886bbe06b593a04feca20a46f999da2647ae27",
+  "verified_original_provider_records": 42,
+  "original_pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+  "source_count": 33,
+  "frozen_release_dependencies_verified": 47,
+  "new_provider_http_attempts": 0,
+  "new_search_attempts": 0,
+  "forecast_submissions": 0,
+  "cases": [
+    {
+      "question_id": "36871",
+      "original_tool_calls": 8,
+      "v3_plan_check": {
+        "accepted": true
+      },
+      "translation": "Adds explicit rule_time_fields=[] only; target prose is unchanged.",
+      "reservations_unchanged": true,
+      "original_pages_unchanged": true
+    },
+    {
+      "question_id": "43494",
+      "original_tool_calls": 8,
+      "v3_plan_check": {
+        "accepted": true
+      },
+      "translation": "Adds explicit rule_time_fields=[] only; target prose is unchanged.",
+      "reservations_unchanged": true,
+      "original_pages_unchanged": true
+    },
+    {
+      "question_id": "43501",
+      "original_tool_calls": 8,
+      "v3_plan_check": {
+        "accepted": false,
+        "error": {
+          "code": "unsupported_target_date",
+          "field": "needs[0].condition",
+          "instruction": "Target dates must occur in immutable question text or platform metadata. Keep unknown boundaries symbolic; source-event dates may be research queries only. Unsupported: 2026-05-07"
+        }
+      },
+      "translation": "Adds explicit rule_time_fields=[] only; target prose is unchanged.",
+      "reservations_unchanged": true,
+      "original_pages_unchanged": true
+    },
+    {
+      "question_id": "43991",
+      "original_tool_calls": 9,
+      "v3_plan_check": {
+        "accepted": true
+      },
+      "translation": "Adds explicit rule_time_fields=[] only; target prose is unchanged.",
+      "reservations_unchanged": true,
+      "original_pages_unchanged": true
+    },
+    {
+      "question_id": "44801",
+      "original_tool_calls": 9,
+      "v3_plan_check": {
+        "accepted": false,
+        "error": {
+          "code": "unsupported_target_date",
+          "field": "needs[0].condition",
+          "instruction": "Target dates must occur in immutable question text or platform metadata. Keep unknown boundaries symbolic; source-event dates may be research queries only. Unsupported: 2026-01-01"
+        }
+      },
+      "translation": "Adds explicit rule_time_fields=[] only; target prose is unchanged.",
+      "reservations_unchanged": true,
+      "original_pages_unchanged": true
+    }
+  ],
+  "court_queue_control": {
+    "original_review_requests": 7,
+    "scripted_control_batches": [
+      {
+        "spans": 4,
+        "text_chars": 3163,
+        "mandatory": true
+      },
+      {
+        "spans": 4,
+        "text_chars": 1512,
+        "mandatory": true
+      }
+    ],
+    "initial_candidate_count": 16,
+    "remaining_pending_count": 8,
+    "further_review_forced": false,
+    "deferred_count": 8,
+    "scripted_decision_scope": "Deferral demonstrates routing and retention only. No model decisions or semantic coverage gains are claimed."
+  },
+  "stablecoin_control": {
+    "saved_v2_requests": 8,
+    "replayed_request_decisions_to_export": 6,
+    "evidence": "test_stablecoin_saved_trace_exports_after_assessment_without_two_extra_requests",
+    "translation": "Exact saved tool arguments; V3 explicitly adds missing_items=[] and rule_time_fields=[]. Raw legacy None remains in the audit record.",
+    "scope": "Mocked request-loop mechanics, not a new paid model run or measured token reduction."
+  },
+  "limitations": [
+    "No live quality/generalization result. V3 is opt-in; V1/V2 tasks are not migrated.",
+    "Explicit date recognition covers ISO and English calendar dates, not all natural-language semantics.",
+    "Rule-time dependencies and excerpt relevance remain agent declarations. Unknown omitted dependencies cannot be semantically certified.",
+    "Deferred and unreviewed candidates remain recall limitations. Automatic export never implies factual verification."
+  ],
+  "validation": {
+    "targeted_regressions": 14,
+    "full_offline_tests": 477,
+    "full_suite_status": "passed",
+    "full_test_log_sha256": "fcd346fc718802e15fee62a168fc00119f0065c008678df0f8ccd06e62f2390f",
+    "experimental_workflow_state": "disabled_manually",
+    "live_provider_pilot_started": false,
+    "default_strategy": "intelligent_materials_v2",
+    "new_opt_in_strategy": "intelligent_materials_v3"
+  },
+  "candidate_code_sha256": {
+    "ForecastAgent/runtime/material_protocol.py": "2e1831c4fdd147745a2e616ab86a81020ee408a6139591b25f575199a01446e3",
+    "ForecastAgent/runtime/intelligent_acquisition.py": "cf5f0e3d1ab48f3364e30a470302ee841fed86ad112ef8cf685e4bcade59ec5e",
+    "ForecastAgent/runtime/retrieval.py": "80fb35ced33bafb3dffab1052ac80c935bc7476c995a887886054ec1b407d14e",
+    "ForecastAgent/runtime/collection_actions.py": "7767e1f72585cbd92df779ddaf9b162c45f642daa34239c9d727931b0240b3c1",
+    "ForecastAgent/runtime/context.py": "d8256495b5de8bc62b5d899cef245299b7eae856f09b2baadd53470e5d524762",
+    "ForecastAgent/runtime/contracts.py": "ac3c71c83c09cab5405747fbd475476acf315228242267561a57dc1d1c3b7dcd",
+    "ForecastAgent/runtime/guidance.py": "636a34a08f44c71d27e1cfabba46a3b1e9102e348625b49658c488201f86d387",
+    "ForecastAgent/acquisition/pipeline.py": "e52497efc883fb7afc6b9c800cb6ae238941467a661a6b5869b18cc86fe7440c"
+  }
+}

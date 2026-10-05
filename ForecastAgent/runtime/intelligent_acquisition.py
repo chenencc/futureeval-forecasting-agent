@@ -35,11 +35,13 @@ TOOLS = [
 
 
 def enabled(task):
-    return task.bundle['request'].get('acquisition_strategy') in {STRATEGY, CURRENT_STRATEGY}
+    from ForecastAgent.runtime.material_protocol import STRATEGY as V3
+    return task.bundle['request'].get('acquisition_strategy') in {STRATEGY, CURRENT_STRATEGY, V3}
 
 
 def repaired(task):
-    return task.bundle['request'].get('acquisition_strategy') == CURRENT_STRATEGY
+    from ForecastAgent.runtime.material_protocol import enabled as v3
+    return task.bundle['request'].get('acquisition_strategy') == CURRENT_STRATEGY or v3(task)
 
 
 def question_handles(task):
@@ -87,11 +89,23 @@ def configure_tools(task, tools):
     if not enabled(task):
         return tools
     tools = copy.deepcopy(tools) + copy.deepcopy(TOOLS)
+    from ForecastAgent.runtime.material_protocol import enabled as v3, TIME_FIELDS, assessment_schema
     for entry in tools:
+        if v3(task) and entry['function']['name'] == 'assess_materials':
+            entry['function']['parameters'] = assessment_schema(entry['function']['parameters'])
+            entry['function']['description'] += ' Use missing_items=[] for adequate. List actual gaps for other statuses. All adequate targets automatically export without another model closing request.'
+        if v3(task) and entry['function']['name'] == 'review_passages':
+            entry['function']['parameters']['properties']['items']['items']['properties']['action']['enum'].append('defer')
+            entry['function']['description'] += ' V3 permits defer with a reason and need_ids=[]: preserve unresolved material without rejecting it. Only two review batches are mandatory across task resumes; additional reviews are voluntary.'
         if entry['function']['name'] == 'plan_evidence':
             spec = entry['function']['parameters']['properties']['needs']
             spec.update(minItems=1, maxItems=8)
             item = spec['items']
+            if v3(task):
+                item['properties']['rule_time_fields'] = {'type':'array', 'maxItems':len(TIME_FIELDS),
+                    'items':{'type':'string', 'enum':list(TIME_FIELDS)},
+                    'description':'Required platform timing dependencies; [] if none. Values come from immutable_rule_metadata, including unknowns. Observation/event dates belong in query, never inferred target boundaries.'}
+                item['required'] = list(item['required']) + ['rule_time_fields']
             if repaired(task):
                 item['properties']['question_refs'] = {'type': 'array', 'minItems': 1, 'maxItems': 3,
                     'items': {'type': 'string', 'enum': [r['id'] for r in question_handles(task)]}}
@@ -134,6 +148,9 @@ def validate_plan(task, needs):
                 raise ContractError('invalid_rule_binding', f'needs[{index}].question_spans[{position}]',
                     'Copy exact original text from its named field. Matching fields: '+(', '.join(matching) or 'none; preserve punctuation and hyperlinks.'), matching)
     # Expand only after every reference validates; never partly mutate a plan.
+    from ForecastAgent.runtime.material_protocol import enabled as v3, validate_targets
+    if v3(task):
+        validate_targets(task, needs)
     if repaired(task):
         for need, spans in zip(needs, expanded):
             need['question_spans'] = spans
@@ -142,15 +159,20 @@ def validate_plan(task, needs):
 def assess(task, args):
     if not enabled(task) or task.bundle.get('result'):
         raise ContractError('material_assessment_unavailable', 'tool', 'Use this tool only in an unfinished intelligent collection.')
-    check_schema(args, TOOLS[1]['function']['parameters'])
+    from ForecastAgent.runtime.material_protocol import enabled as v3, assessment_schema, normalize_assessment
+    schema = TOOLS[1]['function']['parameters']
+    check_schema(args, assessment_schema(schema) if v3(task) else schema)
     needs = {n['id']: n for n in task.bundle.get('plan') or []}
     if not needs:
         raise ContractError('material_plan_missing', 'tool', 'Freeze the material plan first.')
     proposed = []
     for item in args['items']:
+        wire_declaration = copy.deepcopy(item)
         ident = item['need_id']
         if ident not in needs or any(r['need_id'] == ident for r in proposed):
             raise ContractError('invalid_material_need', 'need_id', 'Use each existing need ID at most once per batch.', list(needs))
+        if v3(task):
+            item = normalize_assessment(item, needs[ident])
         if item['status'] != 'adequate' and not item['missing_material'].strip():
             raise ContractError('missing_material_gap', 'missing_material', 'Name the missing date, row, document, identity or independent material.')
         if item['status'] == 'adequate' and item['missing_material'].strip():
@@ -178,7 +200,8 @@ def assess(task, args):
                 raise ContractError('stale_material_excerpt', 'excerpt_ids', 'Locate and bank material from the current saved version.')
         if item['status'] == 'adequate' and (not item['excerpt_ids'] or any(not body_diagnostics(task.bundle['pages'][url].get('content', ''))['usable_text'] for url in refs)):
             raise ContractError('unbanked_material', 'excerpt_ids', 'Adequate requires readable original material and at least one exact associated excerpt; a search snippet or body count is insufficient.')
-        proposed.append({**copy.deepcopy(item), 'source_versions': refs, 'semantic_verified': False})
+        proposed.append({**copy.deepcopy(item), 'source_versions': refs, 'semantic_verified': False,
+                         **({'wire_declaration':wire_declaration} if v3(task) else {})})
     # Validate the entire batch before mutating durable state.
     stored = task.bundle.setdefault('material_assessments', {})
     events = task.bundle.setdefault('material_assessment_events', [])
@@ -216,6 +239,10 @@ def frontier(task, offset=0, limit=8):
                                          if repaired(task) else need.get('question_spans', [])),
                       'banked_excerpt_ids': [e['id'] for e in b.get('excerpts', []) if need['id'] in e.get('need_ids', [])],
                       'agent_assessment': row, 'assessment_stale': stale})
+        from ForecastAgent.runtime.material_protocol import enabled as v3, unknown_dependencies
+        if v3(task):
+            needs[-1]['unknown_rule_fields'] = unknown_dependencies(need)
+            needs[-1]['rule_metadata_bindings'] = copy.deepcopy(need['rule_metadata_bindings'])
     return {'schema': b['request']['acquisition_strategy'], 'needs': needs, 'sources': rows[offset:offset+limit], 'source_total': len(rows),
             'next_offset': offset+limit if offset+limit < len(rows) else None,
             'budget_remaining': task.budget(), 'semantic_verified': False,
@@ -233,7 +260,16 @@ def terminal_report(task):
                                'status': 'stale' if need['assessment_stale'] else row['status'] if row else 'unreviewed',
                                'missing_material': row['missing_material'] if row else 'Material adequacy was not assessed by the agent.',
                                'next_action': row['next_action'] if row else ''})
-    return {**view, 'unresolved_material_targets': unresolved,
+    from ForecastAgent.runtime.material_protocol import enabled as v3, rule_metadata, REVIEW_ROUNDS
+    extra = {}
+    if v3(task):
+        deferred = [p for p in pending_passages(task, limit=len(task.bundle.get('passages', {})), include_deferred=True)
+                    if task.bundle.get('passage_dispositions', {}).get(p['passage_id'], {}).get('action') == 'defer']
+        extra = {'immutable_rule_metadata':rule_metadata(task),
+                 'deferred_passages':deferred, 'deferred_passage_count':len(deferred),
+                 'mandatory_review_round_limit':REVIEW_ROUNDS,
+                 'review_batches':copy.deepcopy(task.bundle.get('material_review_batches', []))}
+    return {**view, **extra, 'unresolved_material_targets': unresolved,
             'plan_missing': task.bundle.get('plan') is None,
             'plan_failures': copy.deepcopy(task.bundle.get('control', {}).get('material_plan_failures', [])),
             'pending_passage_count': len(pending_passages(task, limit=len(task.bundle.get('passages', {})))),

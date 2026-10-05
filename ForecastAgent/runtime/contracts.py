@@ -96,7 +96,8 @@ def validate(task, name, args, tools=None):
         if isinstance(value, dict):
             if 'need_ids' in value:
                 ids = value['need_ids']
-                if name=='review_passages' and value.get('action')=='reject' and ids==[]:
+                from ForecastAgent.runtime.material_protocol import enabled as v3
+                if name=='review_passages' and (value.get('action')=='reject' or v3(task) and value.get('action')=='defer') and ids==[]:
                     return
                 if not isinstance(ids, list) or not ids or any(not isinstance(n, str) or n not in known for n in ids):
                     raise ContractError('unknown_need_id', path+'.need_ids',

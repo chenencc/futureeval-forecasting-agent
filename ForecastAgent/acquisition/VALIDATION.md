@@ -68,3 +68,13 @@ zero provider requests. At that stage V2 had no measured live model or recall
 result. The subsequent [fixed-frontier V2 paired run](MATERIALS_V2_RESULTS.md)
 improved banked anchors in this repaired cohort but exposed review fan-out,
 status/closure and interpretation defects; it remains ineligible for promotion.
+
+## Subsequent opt-in V3 control repair
+
+The [V3 protocol](MATERIALS_V3_REPAIRS.md) repairs compulsory review fan-out,
+no-gap declarations, program closure and immutable temporal metadata. Fourteen
+targeted offline regressions and the full 477-test suite pass. The replay verifies
+42 original V2 provider records, five original bundle hashes, 33 original sources
+and 47 frozen release dependencies, with zero new provider requests. Request-loop
+and queue results are scripted mechanical checks, not measured model cost or
+semantic coverage. V2 remains the default and production remains release v1.0.1.
