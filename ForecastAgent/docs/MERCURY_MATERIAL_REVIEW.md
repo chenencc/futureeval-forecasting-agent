@@ -722,3 +722,51 @@ and production promotion. The pilot must report regressions as well as gains;
 later batches retain partial sources, conflicts, missing fields and failed
 cases rather than claiming those tasks fully verified. Acquisition, forecasts
 and production monitoring are unchanged.
+
+### V7 frozen pilot result
+
+[Run 37264261076](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37264261076)
+completed on frozen implementation `bab9e21`. The 71 focused tests and five
+paired cases/19 original needs completed. Raw provider replay, exact original
+spans, full selection-material equality, archived manifest/ZIP identity,
+uniform program-conflict status and unchanged previous histories passed.
+All provider responses identify `inception/mercury-decide-20260930`.
+The English structured audit is
+`E:/metaculus_data/reports/mercury-field-scopes-audit-37264261076.json`.
+
+| Actual usage | Fresh V5 | V7 |
+| --- | ---: | ---: |
+| HTTP/logical requests | 10 | 14 |
+| Known input tokens | 345,857 | 495,985 |
+| Known output tokens | 120 | 115 |
+| Unknown usage attempts | 0 | 0 |
+| Provider-reported USD | 0 | 0 |
+
+V7 used five selection, five assessment and four conditional-review calls.
+Its reported input tokens are about 43.4% above this V5 baseline, and about
+43.1% below the previous V6 run; the latter is exploratory across-run evidence.
+Per-head provider usage is not unique context length. No call efficiency gain
+against V5 is established. The complete trial took about 36 seconds of runner
+time, excluding workflow setup/download overhead.
+
+The legal reference date now remains literal-only without event-effect review.
+The erroneous active-ban support proposal receives a refutation review and
+stays open with its original evidence. Energy's useful official directive is
+retained, and review changes its initial record failure to partial context.
+All four crypto temporal conflicts have consistent pending status. All 19
+independent observation ledgers survive; no world verdict or forecast is emitted.
+
+Semantic acceptance fails. The August 3 energy directive is still incorrectly
+called outside the before-September-1 interval. Fuel routing selects one NONE
+and three rules, losing the previously delivered AAA price context from its
+assessment. Legal person identity still receives an unrelated effect review
+after a false support choice. Cyber counts/duration and crypto historical values
+remain gaps. No actual source numeric/date literal is selected in the pilot;
+arithmetic has local test coverage but no successful live value-selection case.
+
+As explicitly requested, freeze V7 for subsequent batches regardless of these
+quality findings. Runtime/preservation acceptance is distinct from semantic
+acceptance. Do not continue tuning this fixed five-case set or promote the
+experiment to production forecasting. Later batches use this exact code,
+V7-only arms, at most five cases per dispatch and unchanged cumulative state;
+their reports must retain incomplete fields and failures.
