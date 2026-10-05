@@ -104,20 +104,19 @@ jobs:
           fi
       - name: Restore exact previous full-chain case
         if: inputs.resume_run != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: intelligent-full-chain-ten-${{ matrix.question }}
-          run-id: ${{ inputs.resume_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/full-chain-ten/${{ matrix.question }}
+        run: python -m ForecastAgent.acquisition.full_chain_ten_resume --output snapshots/full-chain-ten --question-id "$CASE_ID" --restore-run "$PARENT_RUN"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CASE_ID: ${{ matrix.question }}
+          PARENT_RUN: ${{ inputs.resume_run }}
       - name: Offline source, budget and decision checks
         run: |
-          python -m unittest ForecastAgent.tests.test_full_chain_ten ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
-          python -m ForecastAgent.acquisition.full_chain_ten --output snapshots/full-chain-ten --question-id "$CASE_ID" --dry-run
+          python -m unittest ForecastAgent.tests.test_full_chain_ten ForecastAgent.tests.test_full_chain_ten_resume ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
+          python -m ForecastAgent.acquisition.full_chain_ten_resume --output snapshots/full-chain-ten --question-id "$CASE_ID" --dry-run
         env:
           CASE_ID: ${{ matrix.question }}
       - name: Fresh acquisition, independent supplement, first and reread scores
-        run: python -u -m ForecastAgent.acquisition.full_chain_ten --output snapshots/full-chain-ten --question-id "$CASE_ID"
+        run: python -u -m ForecastAgent.acquisition.full_chain_ten_resume --output snapshots/full-chain-ten --question-id "$CASE_ID"
         env:
           CASE_ID: ${{ matrix.question }}
           FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free

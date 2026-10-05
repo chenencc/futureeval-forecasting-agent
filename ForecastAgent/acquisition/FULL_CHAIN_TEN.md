@@ -59,3 +59,25 @@ These resolved historical questions use current unrestricted web material and
 may expose outcomes. The resulting scores are engineering diagnostics, not a
 leakage-free historical forecast benchmark. Opening and closing timestamps are
 copied from archived platform metadata; absent fine print is not inferred.
+
+## Budget-censored handoff amendment
+
+Initial run `37390438288` exposed a stage gate: the collector exported readable
+raw captures with `status=collected`, but a program budget stop also marked the
+result incomplete. The original pipeline blocked those snapshots before the
+supplement. The stopped run preserved four executed case artifacts; the remaining
+six cases never executed collection. Its one fully scored case is reused.
+
+`full_chain_ten_resume` admits only collected, readable snapshots closed by an
+explicit program budget/stall stop, with `execution_report.interrupted=false`.
+It verifies the original pipeline identity, archives the exact native ledger,
+records the original unresolved result and counters, then advances to the
+existing supplement stage. It does not declare semantic completeness, rewrite
+gaps, renew searches, or call the collection model again.
+
+The original first/reread scoring code, question inputs, Mercury registry and
+original protocol remain frozen. A separately hashed amendment records the
+adapter and exact canceled parent run. Restoration refuses an empty ledger if
+collection started without a recoverable artifact. A case may start fresh only
+when its exact parent job proves collection never executed. Failed provider
+transports and shared account quotas are not eligible for this handoff.

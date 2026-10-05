@@ -1,0 +1,13 @@
+{
+  "schema": "full-chain-ten-budget-handoff-amendment-v1",
+  "original_protocol_sha256_lf": "7c1feeb055e2e08c1b002406f2fdafde375f3cbe68a8af45c53ed8f85aeae847",
+  "adapter_sha256_lf": "56fa0a50352ff4fb2c25c51f74bdb4dcb4a800de19bf135631665dc0694c591b",
+  "exact_parent_run_id": 37390438288,
+  "exact_parent_commit": "c5fb8caae844a594d4f1c6d56eb8d79d27c23e37",
+  "repo": "chenencc/futureeval-forecasting-agent",
+  "reason": "Collected raw snapshots at explicit program budget/stall closure may proceed to supplement and analysis with their unresolved gaps retained. Incomplete transport attempts do not qualify.",
+  "changes": "Stage handoff only; original collection policy, inputs, model routing, source and provider budgets, original score code, first/reread registry and protocol are unchanged.",
+  "prior_scored_cases_may_repeat": false,
+  "budget_reset": false,
+  "submitted": false
+}
