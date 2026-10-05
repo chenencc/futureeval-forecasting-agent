@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import time
 from pathlib import Path
 from ForecastAgent.analysis.pilot import load, save
@@ -12,6 +13,7 @@ from ForecastAgent.supplement import acquisition_contract as base
 from ForecastAgent.supplement import acquisition_ids as ids
 from ForecastAgent.supplement import mercury_material_v3 as v3
 from ForecastAgent.supplement import mercury_material_v4 as v4
+from ForecastAgent.supplement import mercury_candidate_groups as groups
 from ForecastAgent.supplement.research_loop import decode
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,7 +21,7 @@ MANIFEST = Path(__file__).with_name('MERCURY_MATERIAL_OBLIGATIONS13.json')
 SUPER = 'nvidia/nemotron-3-super-120b-a12b:free'
 
 
-def run(output, key, manifest=MANIFEST):
+def run(output, key, manifest=MANIFEST, *, resume=None):
     data = load(manifest)
     if os.environ.get('FORECAST_MODEL') != SUPER or os.environ.get('FORECAST_MODEL_FALLBACK_SUPER') != '0':
         raise ValueError('fixed_super_without_fallback_required')
@@ -28,14 +30,29 @@ def run(output, key, manifest=MANIFEST):
             raise ValueError('frozen_code_changed')
     output = Path(output)
     if output.exists():raise ValueError('existing_trial_cannot_reset_budget')
-    output.mkdir(parents=True)
-    state = {'trial_id':data['trial_id'],'limits':data['limits'],'prior_experiments':data['prior_experiments'],
-             'attempts':[],'calls':[],'cases':[],'blocked':False}
+    if data.get('resume_required') and not resume:raise ValueError('frozen_parent_required')
+    if resume:
+        parent=Path(resume)
+        identity=load(parent/'identity.json')
+        if identity['manifest_sha256']!=data['resume_parent_manifest_sha256']:raise ValueError('wrong_parent_identity')
+        state=load(parent/'state.json')
+        if state['trial_id']!=data['trial_id'] or state['limits']!=data['limits'] or state['prior_experiments']!=data['prior_experiments']:
+            raise ValueError('resume_cannot_change_limits_or_lineage')
+        shutil.copytree(parent,output)
+        shutil.copytree(parent,output/'parent_snapshot')
+        state.setdefault('continuations',[]).append({'parent_run':data['resume_parent_run'],
+            'parent_attempts':len(state['attempts']),'parent_calls':len(state['calls']),
+            'reason':'Preserve completed arms; accept threshold role and group contiguous candidate units without dropping reading.'})
+        state['blocked']=False
+    else:
+        output.mkdir(parents=True)
+        state = {'trial_id':data['trial_id'],'limits':data['limits'],'prior_experiments':data['prior_experiments'],
+                 'attempts':[],'calls':[],'cases':[],'blocked':False}
     save(output/'identity.json',{'manifest_sha256':hashlib.sha256(Path(manifest).read_bytes()).hexdigest(),
         'frozen_code_sha256':data['frozen_code_sha256'],'scope':data['scope'],
         'independent_trial_no_old_quota_reset':True})
     active, starts = {}, {}
-    deadline = time.monotonic()+data['limits']['seconds']
+    deadline = time.monotonic()+data['limits']['seconds']-data.get('parent_elapsed_seconds',0)
 
     def observer(event,record,token=None):
         if event == 'reserve':
@@ -60,6 +77,8 @@ def run(output, key, manifest=MANIFEST):
         if len(json.dumps({'state':prepared['state'],'questions':prepared['questions']}).encode()) > data['limits']['request_bytes']:
             raise ValueError('request_byte_guard_exceeded')
         active['phase'] = phase
+        active['prepared_file']=f'request-{len(state["calls"])+1:04d}.json'
+        save(output/active['prepared_file'],prepared)
         call = {**active,'status':'reserved'}
         state['calls'].append(call); save(output/'state.json',state)
         try:
@@ -85,10 +104,19 @@ def run(output, key, manifest=MANIFEST):
     save(output/'state.json',state)
     for case in data['cases']:
         active.clear(); active['case_id'] = case['id']
-        row = {'case_id':case['id'],'question_id':case['question_id'],'cohort':case['cohort'],'arms':{}}
-        state['cases'].append(row)
+        row=next((r for r in state['cases'] if r['case_id']==case['id']),None)
+        if row and row.get('pair_complete'):continue
+        if row is None:
+            row = {'case_id':case['id'],'question_id':case['question_id'],'cohort':case['cohort'],'arms':{}}
+            state['cases'].append(row)
         bundle,plan = case['bundle'],case.get('plan')
         try:
+            frozen=output/(case['id']+'-frozen-input.json')
+            if frozen.exists():
+                previous=load(frozen)
+                if previous['bundle']!=bundle or plan is not None and previous['plan']!=plan:
+                    raise ValueError('resume_input_changed')
+                plan=previous['plan']
             if plan is None:
                 p = {'state':{'question':bundle['request'],'rule_catalog':ids.rule_catalog(bundle['request'])},'questions':{}}
                 save(output/(case['id']+'-planning-prepared.json'),p)
@@ -109,23 +137,27 @@ def run(output, key, manifest=MANIFEST):
             continue
         row.update(need_count=len(plan['needs']),reading_sha256=base.sha(json.dumps(baseline['state']['reading'],sort_keys=True)))
         for arm in case['arm_order']:
+            if row['arms'].get(arm,{}).get('application_status')=='typed_review_complete':continue
             active['arm'] = arm
             try:
                 if arm == 'v3':
                     unit_request = v3.prepare_units(bundle,plan)
                     save(output/(case['id']+'-units-prepared.json'),unit_request)
-                    units = execute('units',unit_request)
+                    units_file=output/(case['id']+'-unit-response.json')
+                    units = load(units_file) if units_file.exists() else execute('units',unit_request)
                     save(output/(case['id']+'-unit-response.json'),units)
                     prepared = v3.prepare(bundle,plan,units)
                     for field in ('question','needs','reading','rule_catalog'):
                         if prepared['state'][field] != baseline['state'][field]:
                             raise ValueError('paired_input_coverage_changed')
+                    prepared=groups.prepare(prepared)
                     save(output/(case['id']+'-v3-prepared.json'),prepared)
                     result = v3.bind(prepared,execute('evidence',prepared),bundle)
                 else:
                     compiler = {'state':v4.compile_payload(bundle,plan),'questions':{}}
                     save(output/(case['id']+'-compiler-prepared.json'),compiler)
-                    reply = execute('compile',compiler,tool=v4.compile_tool(),prompt=v4.COMPILE_PROMPT)
+                    reply_file=output/(case['id']+'-compiler-reply.json')
+                    reply = load(reply_file) if reply_file.exists() else execute('compile',compiler,tool=v4.compile_tool(),prompt=v4.COMPILE_PROMPT)
                     save(output/(case['id']+'-compiler-reply.json'),reply)
                     contracts = v4.bind_contracts(bundle,plan,reply)
                     prepared = v4.prepare(bundle,plan,contracts)
@@ -134,6 +166,7 @@ def run(output, key, manifest=MANIFEST):
                     for field in ('question','needs','reading','rule_catalog'):
                         if prepared['state'][field] != baseline['state'][field]:
                             raise ValueError('paired_input_coverage_changed')
+                    prepared=groups.prepare(prepared)
                     save(output/(case['id']+'-v4-prepared.json'),prepared)
                     result = v4.bind(prepared,execute('proof',prepared),bundle)
                     save(output/(case['id']+'-v4-initial-result.json'),result)
@@ -163,7 +196,8 @@ def run(output, key, manifest=MANIFEST):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',required=True)
+    parser.add_argument('--resume')
     args = parser.parse_args()
-    r = run(args.output,os.environ['OPENROUTER_API_KEY'])
+    r = run(args.output,os.environ['OPENROUTER_API_KEY'],resume=args.resume)
     print(json.dumps({k:r[k] for k in ('actual_http_attempts','logical_decisions','blocked','business_gate_passed')}))
     if r['blocked'] or not r['business_gate_passed']:raise SystemExit(1)

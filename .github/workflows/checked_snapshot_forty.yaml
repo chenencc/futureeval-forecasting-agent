@@ -43,8 +43,15 @@ jobs:
       - run: test "$GITHUB_RUN_ATTEMPT" = 1
       - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
       - run: python -m unittest ForecastAgent.tests.test_mercury_material_v4 ForecastAgent.tests.test_mercury_material_obligations_trial ForecastAgent.tests.test_mercury_material_v3 ForecastAgent.tests.test_mercury_material_units_trial
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: mercury-material-obligations
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+          path: snapshots/obligations-parent
       - name: Frozen regression and repair-heldout observation obligations
-        run: python -u -m ForecastAgent.experiments.mercury_material_obligations_trial --output snapshots/mercury-material-obligations
+        run: python -u -m ForecastAgent.experiments.mercury_material_obligations_trial --output snapshots/mercury-material-obligations ${{ inputs.resume_run != '' && '--resume snapshots/obligations-parent' || '' }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
           FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free

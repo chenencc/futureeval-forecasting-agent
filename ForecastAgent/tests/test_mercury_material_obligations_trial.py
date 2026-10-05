@@ -16,7 +16,7 @@ class Trial(unittest.TestCase):
         bundle,plan,_=MercuryMaterial().fixture()
         manifest={'trial_id':'offline','scope':'offline','frozen_code_sha256':{},
             'prior_experiments':[{'http':24,'unchanged':True}],
-            'limits':{'logical':4,'http':4,'seconds':30,'request_bytes':250000,
+            'limits':{'logical':8,'http':8,'seconds':30,'request_bytes':250000,
                       'needs_per_case':16,'proof_heads_per_case':100},
             'cases':[{'id':'fixed','question_id':'fixture','cohort':'regression',
                       'bundle':bundle,'plan':plan,'arm_order':['v3','v4']}]}
@@ -58,6 +58,38 @@ class Trial(unittest.TestCase):
             with patch.object(trial.decisions,'decide',fail):r=trial.run(root/'out','dummy',manifest)
             self.assertTrue(r['blocked']);self.assertEqual(r['actual_http_attempts'],1)
             self.assertEqual(r['attempts'][0]['status'],'reserved')
+
+    def test_continuation_reuses_completed_arms_and_preserves_caps(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'FORECAST_MODEL':trial.SUPER,'FORECAST_MODEL_FALLBACK_SUPER':'0'}):
+            root=Path(d);manifest=self.fixture(root)
+            with patch.object(trial.decisions,'decide',self.decide),patch.object(trial,'ask_model',self.compile):
+                old=trial.run(root/'out','dummy',manifest)
+            amended=load(manifest);amended.update(resume_required=True,
+                resume_parent_manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),resume_parent_run='offline')
+            save(root/'resume.json',amended)
+            with patch.object(trial.decisions,'decide',side_effect=AssertionError('must not rerun')),patch.object(trial,'ask_model',side_effect=AssertionError('must not rerun')):
+                new=trial.run(root/'resumed','dummy',root/'resume.json',resume=root/'out')
+            self.assertTrue(new['business_gate_passed']);self.assertEqual(new['attempts'],old['attempts'])
+            self.assertEqual(new['calls'],old['calls']);self.assertEqual(new['limits'],old['limits'])
+
+    def test_grouping_keeps_all_delivered_units_and_binds_real_source_span(self):
+        from ForecastAgent.supplement import mercury_candidate_groups as groups
+        from ForecastAgent.supplement import mercury_material_v3 as v3
+        bundle,plan,_=MercuryMaterial().fixture()
+        url=next(iter(bundle['pages']))
+        bundle['pages'][url]['content']='Texas observed source '+('x'*1450)+'\n'
+        bundle['pages'][url]['content']*=30
+        unit=v3.prepare_units(bundle,plan)
+        prepared=v3.prepare(bundle,plan,answers(unit['questions'],{'unit_0':'entity_identity'}))
+        compact=groups.prepare(prepared)
+        self.assertEqual(compact['state']['reading'],prepared['state']['reading'])
+        self.assertLess(compact['candidate_group_audit']['grouped_candidates'],compact['candidate_group_audit']['original_source_units'])
+        refs={r for g in compact['state']['candidate_groups'] for r in g['member_passage_ids']}
+        self.assertEqual(refs,{r['passage_id'] for r in prepared['candidates'].values() if r['kind']=='source'})
+        choice=next(c for c in compact['questions']['evidence_0']['criteria'] if c.startswith('field_match|'))
+        result=v3.bind(compact,answers(compact['questions'],{'evidence_0':choice}),bundle)
+        self.assertTrue(result['rows'][0]['text_identity_verified'])
 
 
 if __name__=='__main__':unittest.main()

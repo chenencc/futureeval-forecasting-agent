@@ -377,3 +377,23 @@ qualifiers, loss of independently valid source/entity facts, common-observation
 coherence, reading omissions and actual provider attempts/tokens separately.
 Format success and fewer available enums do not establish semantic quality.
 Production remains unchanged pending the paired audit.
+
+### Preserved-state runtime amendment
+
+Initial run `37253179126` preserved 36 physical/logical attempts in artifact
+`11321882212`, then stopped on an upstream Mercury `422` for the first larger
+packet. Its baseline evidence heads each had 225 choices; the error did not
+document a hard option limit, so size is a working diagnosis rather than a
+verified service contract. Seven regression pairs completed. The energy V4
+compiler also emitted the meaningful but undeclared `threshold` role.
+
+The continuation keeps the same 70/74 cumulative caps and records 96 seconds
+already elapsed. Completed arms, original replies and the failed request stay
+preserved; cached plans, unit decisions and compiler replies are reused.
+The taxonomy explicitly adds threshold without converting parameters to facts.
+For large candidate inventories, both arms group contiguous delivered units
+from the same body, with exact member IDs and span hashes. The complete reading
+is unchanged and no units are dropped. The crypto case's 56 units become seven
+source candidates (29 choices per baseline head). Candidate granularity changes
+jointly for the heldout cohort, which must be distinguished from the unchanged
+regression pairs. No attempt or token history is reset.

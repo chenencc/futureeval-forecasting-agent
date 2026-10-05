@@ -6,7 +6,7 @@ from ForecastAgent.supplement import acquisition_ids as ids
 from ForecastAgent.supplement import mercury_material_v3 as v3
 
 PROTOCOL = 'mercury-material-obligations-v4'
-ROLES = ('entity','measure','occurrence','time','scope','source','interval')
+ROLES = ('entity','measure','threshold','occurrence','time','scope','source','interval')
 COMPILE_PROMPT = '''Compile atomic evidence obligations for the supplied existing
 needs using ONLY original question rules and the rule_catalog. Original needs
 are immutable. Return conditions: one row for EVERY need_id, with qualifiers.

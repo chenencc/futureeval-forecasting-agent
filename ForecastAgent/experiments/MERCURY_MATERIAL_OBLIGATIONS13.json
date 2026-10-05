@@ -9,10 +9,13 @@
     "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0",
     "ForecastAgent/supplement/acquisition_ids.py": "0f7980f80115631fd602f97698b7a22be62117cd1d76062dac7c295200d8438f",
     "ForecastAgent/providers/decisions.py": "f72564842eecec5b3801b888187c42a97da810f2b67aa90986d0fe1dc161d579",
-    "ForecastAgent/supplement/mercury_material_v4.py": "8b4311f061c4101fa3c91b6a5dbbff58816132aecccc0a797340b36a5748d6c8",
+    "ForecastAgent/supplement/mercury_material_v4.py": "a218b77f957eacb4398a928bc29508ac4eb394ec925f47dd0af7a22912ce98b5",
     "ForecastAgent/providers/model.py": "6efc3cec8c304e38aab944ad80f95cde13f1ef0af9ade0fe2f69e97475ce3f02",
     "ForecastAgent/supplement/research_loop.py": "5c19b36e45dc8a1566e2b6ddb26c41b2c06598e87231ed3ea68b07fba3fe4117",
-    "ForecastAgent/experiments/mercury_material_obligations_trial.py": "41df6d693a3d5f3e3183707a4f1bb04c02e1356d4803cfe1ca38b242c0086262"
+    "ForecastAgent/experiments/mercury_material_obligations_trial.py": "b51d8b605921739864161e320daae4bc99f586d681b0f0d7b5f3eae73122e5f2",
+    "ForecastAgent/supplement/mercury_candidate_groups.py": "ded37df1290a7033b7268f143e2e25a3d62fe636d562d29d7f0f7d24b4f51352",
+    "ForecastAgent/readers/material_passages.py": "171051b3c9a1ed0b94c7081907ae4e230fc23028fe3862e44faaf78aaaf6e77d",
+    "ForecastAgent/readers/quality.py": "10f09d07d3498c66e7164ddc31b16befdd3ec2b601192a403cdf5e181f7919ef"
   },
   "parent_run_id": "37251487304",
   "parent_artifact_id": "11320009651",
@@ -4453,5 +4456,11 @@
         "v4"
       ]
     }
-  ]
+  ],
+  "resume_required": true,
+  "resume_parent_run": "37253179126",
+  "resume_parent_artifact": "11321882212",
+  "resume_parent_manifest_sha256": "098b223305efe75e2537018c70d8c22a0993bcc792dac955af8bbca5362299c5",
+  "parent_elapsed_seconds": 96,
+  "protocol_amendment": "Resume the same trial and unchanged caps. Accept threshold qualifier role explicitly. Coalesce only contiguous delivered source spans to bound candidate growth; retain identical complete reading across both arms. No completed arm is rerun. Candidate granularity changes jointly for the repair-heldout cohort, not regression policy."
 }
