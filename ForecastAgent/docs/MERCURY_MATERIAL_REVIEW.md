@@ -423,3 +423,64 @@ must preserve every need ID, condition, target and rule ID verbatim; it cannot
 invent observations, remove needs or see source bodies. The failed proposals
 remain archived. Crypto's projected largest head estimates 27,474 proxy tokens.
 The same cumulative 70/74 caps remain unchanged.
+
+## V4 paired outcome
+
+[Final run 37254987807](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37254987807)
+completed on `e8258d9`, continuing the exact journals of `37253179126`,
+`37253866137` and `37254353088`. All 13 cases and 50 shared needs now have
+complete typed outputs for both arms. The 72 focused tests passed locally and
+in Actions. Original provider-response binding replay, actual semantic input
+coverage and the unchanged parent attempt/call/provider-file prefixes passed.
+All four original artifacts were imported and SHA-256 verified in the local
+archive. The final original ZIP hash is
+`a4d6e71030c3bfdffc6be1c2692b49301ec10bd7c59d8ae0a654218359df4b36`.
+
+| Actual cumulative usage, including failed attempts | V3 | V4 | Shared planning/repair |
+| --- | ---: | ---: | ---: |
+| HTTP attempts | 28 | 31 | 6 |
+| Known input tokens | 824,969 | 2,517,577 | 8,013 |
+| Known output tokens | 141 | 14,092 | 5,204 |
+| Attempts with unknown usage | 2 | 1 | 0 |
+| Provider-reported USD | 0 | 0 | 0 |
+
+The total is 65 physical and 65 logical calls within the unchanged 74/70 caps.
+No search, capture or forecast ran, and no prior journal was reset. V4 reported
+about 3.05 times V3's input tokens; the richer proof heads have a material
+consumption cost even though both endpoints are free. Provider input accounting
+can expand per head and is not the unique context size. Missing usage on three
+HTTP failures is not zero.
+
+The cyber before-deadline and missile target-hit overclaims become explicit
+gaps/inferences. Both fuel observation roots survive instead of disappearing
+into rule definitions. Six needs have `complete_model_candidate_unverified`,
+two have `coherence_unestablished` and 42 are partial/unassessed. No semantic
+truth or automatic condition closure is granted by any of these statuses.
+
+The heldout questions expose transferable limitations:
+
+- Crypto's shared planner changes an any-time "by" condition to an as-of
+  snapshot. The common reader also omits captured USDC pages while allocating
+  20,509 characters to Ethereum. Exact same coverage across arms does not make
+  that coverage adequate.
+- The music article reports a weekly peak #42 dated July 18, not the final
+  peak through July 31. Conditional coherence blocks apparent completeness,
+  but also conflates valid publisher identity with usable chart records.
+- The legal case distinguishes the candidacy-blocking effect from an issued
+  court penalty incompletely: an active prohibition on the specified date
+  cannot be certified merely from the existence of an earlier sentence.
+- IAEA source authority retained by V3 is lost in V4's broader credibility
+  interpretation. The original Linux rule's August prose versus July URL
+  remains ambiguous, while the constant 8% again becomes an external-data gap.
+- The energy compiler changes a non-reversal obligation into a positive
+  reversal qualifier. Its immutable root prevents replacement, but does not
+  prove that the qualifier tree is semantically equivalent.
+
+Consequently structural acceptance passes and semantic acceptance fails.
+Production remains unchanged. The next improvements should preserve typed
+Boolean/temporal operators, separate literal parameters/identities from
+observations, and allocate reading by need rather than insertion order.
+The full English per-question audit is
+`E:/metaculus_data/reports/mercury-material-obligations-audit-37254987807.json`.
+This is a saved-material system experiment, not a forecasting/Brier result,
+a fully blinded review, or a homogeneous model-only A/B.
