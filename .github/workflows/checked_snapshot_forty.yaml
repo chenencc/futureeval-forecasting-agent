@@ -5,7 +5,7 @@ on:
       experiment:
         description: Legacy handoff replay or frozen identical-body selector comparison
         type: choice
-        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes]
+        options: [legacy, enhanced_pair40, solid_collection, material_review_only, material_heldout_ten, material_benchmark, material_benchmark_round2, material_benchmark_round3, material_review_batches, material_research_loop, material_contract_pair, material_contract_heldout, material_field_regression, material_field_spans, material_field_paired_unseen, acquisition_contract_live, acquisition_ids_pilot, acquisition_provenance_pair, mercury_material_pilot, mercury_material_two_rounds, mercury_material_units, mercury_material_obligations, mercury_typed_roots, mercury_operator_ledgers, mercury_field_scopes, unified_acquisition]
         default: legacy
       resume_run:
         description: Restore exact experiment journals without resetting allowances
@@ -35,6 +35,49 @@ concurrency:
   group: checked-snapshot-forty
   cancel-in-progress: false
 jobs:
+  unified-acquisition:
+    if: inputs.experiment == 'unified_acquisition'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: test "$GITHUB_RUN_ATTEMPT" = 1
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m unittest ForecastAgent.tests.test_unified_acquisition ForecastAgent.tests.test_unified_acquisition_trial ForecastAgent.tests.test_mercury_material_v7 ForecastAgent.tests.test_mercury_field_scopes_trial
+      - name: Verify exact completed parent before restoration
+        if: inputs.resume_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT_RUN: ${{ inputs.resume_run }}
+        run: test "$(gh run view "$PARENT_RUN" --json status --jq .status)" = completed
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: unified-acquisition-five
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ github.token }}
+          path: snapshots/unified-acquisition-parent
+      - name: Fresh collection, enhanced independent repair and frozen V7 review
+        run: python -u -m ForecastAgent.experiments.unified_acquisition_trial --output snapshots/unified-acquisition-five ${{ inputs.resume_run != '' && '--resume snapshots/unified-acquisition-parent' || '' }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ inputs.resume_run }}
+          FORECAST_RESTORED_STATE_ROOT: ${{ github.workspace }}/snapshots/unified-acquisition-five
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-acquisition-five
+          path: snapshots/unified-acquisition-five
+          if-no-files-found: error
+          retention-days: 90
   mercury-field-scopes:
     if: inputs.experiment == 'mercury_field_scopes'
     runs-on: ubuntu-latest

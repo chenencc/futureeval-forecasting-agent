@@ -1,0 +1,1270 @@
+{
+  "schema": "unified-acquisition-trial-v1",
+  "trial_id": "unified-acquisition-five-20261005",
+  "scope": "Fresh current acquisition followed by independent free repair and frozen V7 evidence review. No probabilities or submissions. Same five questions and requirements; no old bodies or searches.",
+  "budget_authorization": "User authorized independent refreshed experiment budgets; existing ledgers and provider account quotas remain unchanged.",
+  "repair_limits": {
+    "http": 10,
+    "browser": 4,
+    "saved_reparse": 8,
+    "executions": 3
+  },
+  "review_limits": {
+    "logical": 20,
+    "http": 22,
+    "seconds": 1800,
+    "request_bytes": 500000
+  },
+  "prior_experiments": [
+    {
+      "run_id": 37264261076,
+      "scope": "saved-packet V7 baseline",
+      "not_reset": true
+    }
+  ],
+  "review_code_sha256": {
+    "ForecastAgent/supplement/mercury_material.py": "cee9681bcd32646abff1e5c6985de5d8b91c5f6eaa3c2342d5bf44e02aa49318",
+    "ForecastAgent/supplement/mercury_material_v2.py": "a9dfecaafc5b67a9e56eec58ad7474024023b52b4d13573b04d54d435c2ba45e",
+    "ForecastAgent/supplement/mercury_material_v3.py": "d6ccc578e04c66d77bcd2d08c0c16faa06d0e9e5477b5855b6c4b846f2574ee8",
+    "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0",
+    "ForecastAgent/supplement/acquisition_ids.py": "0f7980f80115631fd602f97698b7a22be62117cd1d76062dac7c295200d8438f",
+    "ForecastAgent/providers/decisions.py": "f72564842eecec5b3801b888187c42a97da810f2b67aa90986d0fe1dc161d579",
+    "ForecastAgent/supplement/mercury_material_v4.py": "a218b77f957eacb4398a928bc29508ac4eb394ec925f47dd0af7a22912ce98b5",
+    "ForecastAgent/providers/model.py": "6efc3cec8c304e38aab944ad80f95cde13f1ef0af9ade0fe2f69e97475ce3f02",
+    "ForecastAgent/supplement/research_loop.py": "5c19b36e45dc8a1566e2b6ddb26c41b2c06598e87231ed3ea68b07fba3fe4117",
+    "ForecastAgent/experiments/mercury_material_obligations_trial.py": "9ca2bf2f84572600196e7978b82905ba9a8e4e22fa11f424ca5b17ee66ba1702",
+    "ForecastAgent/supplement/mercury_candidate_groups.py": "ded37df1290a7033b7268f143e2e25a3d62fe636d562d29d7f0f7d24b4f51352",
+    "ForecastAgent/readers/material_passages.py": "171051b3c9a1ed0b94c7081907ae4e230fc23028fe3862e44faaf78aaaf6e77d",
+    "ForecastAgent/readers/quality.py": "10f09d07d3498c66e7164ddc31b16befdd3ec2b601192a403cdf5e181f7919ef",
+    "ForecastAgent/supplement/mercury_wire.py": "025a731519399f7a9a853eb5d96c363c8b737012794677740585da485feb96d6",
+    "ForecastAgent/supplement/mercury_material_v5.py": "c96a980f0a79cd12a375e9624bb8ea09d9eba714c98796cd9b02e8ec401d9174",
+    "ForecastAgent/experiments/mercury_typed_roots_trial.py": "788e0f3a14334cb2866e9b04cc2a54e3219b6055db5c5948fcbb90665c908d12",
+    "ForecastAgent/supplement/rule_operator_contracts.py": "485bdbedf3a9e391eaf91d16a246c71338809dd90167b60063d53b89fabd0a14",
+    "ForecastAgent/supplement/mercury_material_v6.py": "544acbf39b08fd2e705b726ed20c71759fefd1afeb032d0bc7459b2e953b24a5",
+    "ForecastAgent/experiments/mercury_operator_ledgers_trial.py": "8c1bc70fb84fc7966953f9d8ff98c156e6ab43c628778c1f3de95fe5a9a12873",
+    "ForecastAgent/supplement/field_observations.py": "ef35e3065feef1c70acd5d86abc75f86a83ed24340a9f2c62c773a038404f2c1",
+    "ForecastAgent/supplement/mercury_material_v7.py": "bf44ab816cae7d844d852e349db8903de5777230c6226f161657d99ae7d8845f",
+    "ForecastAgent/experiments/mercury_field_scopes_trial.py": "a3c41be3b9731a585b572c8d386515ef43951efef2cc100a74ad5f87e52a34fd"
+  },
+  "integration_code_sha256": {
+    "ForecastAgent/acquisition/pipeline.py": "56228c0f5e0db7c1bf23e39238b880da5db2d53c15d55d313c769c0300eed80b",
+    "ForecastAgent/experiments/unified_acquisition_trial.py": "94287949ddea7da0cb105f4c3591cfd97b7897c3ee5481af9c5209cb518000e9"
+  },
+  "cases": [
+    {
+      "id": "unseen-01",
+      "question_id": "43494",
+      "request": {
+        "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+        "resolution_criteria": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\nLarge-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+        "fine_print": "",
+        "id": "43494",
+        "pipeline": "collection",
+        "mode": "live",
+        "acquisition_profile": "collection_v3",
+        "acquisition_focus": "raw_recall",
+        "exa_search_policy": "required",
+        "experiment_id": "unified-acquisition-five-20261005",
+        "budget_profile": "default"
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "need1",
+            "condition": "A U.S. state or EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "U.S. state or EU member state",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need2",
+            "condition": "The restriction is not officially reversed or rescinded before September 1, 2026.",
+            "critical": true,
+            "dimension": "effective_time",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "effective_time": {
+                "value": "September 1, 2026",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need3",
+            "condition": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-5b9b9c887609cfb5"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 427,
+                "end": 537,
+                "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-5b9b9c887609cfb5"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "50 MW",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 427,
+                    "end": 537,
+                    "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-5b9b9c887609cfb5"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 111,
+            "text": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+            "field_sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+            "rule_id": "R-a25ed39e20fc7e6e"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 427,
+            "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-64fba5779618af19"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 427,
+            "end": 537,
+            "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-5b9b9c887609cfb5"
+          }
+        ],
+        "semantic_completeness_verified": false
+      }
+    },
+    {
+      "id": "unseen-04",
+      "question_id": "43501",
+      "request": {
+        "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+        "resolution_criteria": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\nAll conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. An attacker's public claim alone will not be sufficient.",
+        "fine_print": "",
+        "id": "43501",
+        "pipeline": "collection",
+        "mode": "live",
+        "acquisition_profile": "collection_v3",
+        "acquisition_focus": "raw_recall",
+        "exa_search_policy": "required",
+        "experiment_id": "unified-acquisition-five-20261005",
+        "budget_profile": "default"
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "N1",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident resulting in unauthorized acquisition of personal data of at least 10,000 users before September 1, 2026.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-489bc4cec69b3c0f"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 339,
+                "end": 530,
+                "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-489bc4cec69b3c0f"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Instructure",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 339,
+                    "end": 530,
+                    "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-489bc4cec69b3c0f"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N2",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident causing substantial unavailability to at least 100 institutional customers for a continuous period of at least 4 hours before September 1, 2026.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-04a3a53a95d68aea"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 530,
+                "end": 754,
+                "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-04a3a53a95d68aea"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "100 institutional customers",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 530,
+                    "end": 754,
+                    "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-04a3a53a95d68aea"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N3",
+            "condition": "A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure before September 1, 2026.",
+            "critical": true,
+            "dimension": "artifact",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-0f4aa76caf99d7c1"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 754,
+                "end": 908,
+                "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-0f4aa76caf99d7c1"
+              }
+            ],
+            "targets": {
+              "artifact": {
+                "value": "ransom or extortion demand",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 754,
+                    "end": 908,
+                    "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-0f4aa76caf99d7c1"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N4",
+            "condition": "Confirmation of the incident is obtained from Instructure official communications, credible news reporting, or government disclosures before September 1, 2026.",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-b851219695e1a418",
+              "R-77bf8eae3030b30d"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 908,
+                "end": 1069,
+                "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-b851219695e1a418"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 1069,
+                "end": 1125,
+                "text": "An attacker's public claim alone will not be sufficient.",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-77bf8eae3030b30d"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Instructure official communications, credible news reporting, or government disclosures",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 908,
+                    "end": 1069,
+                    "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-b851219695e1a418"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 1069,
+                    "end": 1125,
+                    "text": "An attacker's public claim alone will not be sufficient.",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-77bf8eae3030b30d"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 75,
+            "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+            "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+            "rule_id": "R-f1bcb090005481ae"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 339,
+            "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-2b571ba23fedbe73"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 339,
+            "end": 530,
+            "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-489bc4cec69b3c0f"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 530,
+            "end": 754,
+            "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-04a3a53a95d68aea"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 754,
+            "end": 908,
+            "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-0f4aa76caf99d7c1"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 908,
+            "end": 1069,
+            "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-b851219695e1a418"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 1069,
+            "end": 1125,
+            "text": "An attacker's public claim alone will not be sufficient.",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-77bf8eae3030b30d"
+          }
+        ],
+        "semantic_completeness_verified": false
+      }
+    },
+    {
+      "id": "unseen-10",
+      "question_id": "44801",
+      "request": {
+        "question": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+        "resolution_criteria": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+        "fine_print": "",
+        "id": "44801",
+        "pipeline": "collection",
+        "mode": "live",
+        "acquisition_profile": "collection_v3",
+        "acquisition_focus": "raw_recall",
+        "exa_search_policy": "required",
+        "experiment_id": "unified-acquisition-five-20261005",
+        "budget_profile": "default"
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "national average price of Regular Unleaded gasoline",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-a4b8f5c630731677",
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 79,
+                "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+                "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+                "rule_id": "R-a4b8f5c630731677"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "national average price of Regular Unleaded gasoline",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 79,
+                    "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+                    "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+                    "rule_id": "R-a4b8f5c630731677"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "price greater than $5.016",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "$5.016",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "observation before September 6, 2026",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "2026-09-06",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "source is AAA",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "gasprices.aaa.com",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [
+              "gasprices.aaa.com"
+            ],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 79,
+            "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+            "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+            "rule_id": "R-a4b8f5c630731677"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 197,
+            "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+            "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+            "rule_id": "R-5a266de532a77242"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      }
+    },
+    {
+      "id": "heldout-36871",
+      "question_id": "36871",
+      "request": {
+        "question": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+        "resolution_criteria": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+        "fine_print": "",
+        "id": "36871",
+        "pipeline": "collection",
+        "mode": "live",
+        "acquisition_profile": "collection_v3",
+        "acquisition_focus": "raw_recall",
+        "exa_search_policy": "required",
+        "experiment_id": "unified-acquisition-five-20261005",
+        "budget_profile": "default"
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "N1",
+            "condition": "Acquire the market capitalization of USDT stablecoin in USD as of June 30, 2026 from either CoinGecko or CoinMarketCap.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-ac99250ee9f51980",
+              "R-403bcd0ff5e4cd44"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 101,
+                "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                "rule_id": "R-ac99250ee9f51980"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 191,
+                "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                "rule_id": "R-403bcd0ff5e4cd44"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "USDT market cap",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 101,
+                    "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                    "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "rule_id": "R-ac99250ee9f51980"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 191,
+                    "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                    "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "rule_id": "R-403bcd0ff5e4cd44"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N2",
+            "condition": "Acquire the market capitalization of USDC stablecoin in USD as of June 30, 2026 from either CoinGecko or CoinMarketCap.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-ac99250ee9f51980",
+              "R-403bcd0ff5e4cd44"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 101,
+                "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                "rule_id": "R-ac99250ee9f51980"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 191,
+                "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                "rule_id": "R-403bcd0ff5e4cd44"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "USDC market cap",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 101,
+                    "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                    "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "rule_id": "R-ac99250ee9f51980"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 191,
+                    "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                    "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "rule_id": "R-403bcd0ff5e4cd44"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N3",
+            "condition": "If data for USDT and USDC are obtained separately, compute the sum of their market capitals as of June 30, 2026.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-ac99250ee9f51980",
+              "R-403bcd0ff5e4cd44"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 101,
+                "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                "rule_id": "R-ac99250ee9f51980"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 191,
+                "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                "rule_id": "R-403bcd0ff5e4cd44"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Combined market cap",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 101,
+                    "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                    "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "rule_id": "R-ac99250ee9f51980"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 191,
+                    "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                    "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "rule_id": "R-403bcd0ff5e4cd44"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N4",
+            "condition": "Alternatively, acquire the combined market capitalization of USDT and USDC stablecoins in USD as of June 30, 2026 directly from either CoinGecko or CoinMarketCap.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-ac99250ee9f51980",
+              "R-403bcd0ff5e4cd44"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 101,
+                "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                "rule_id": "R-ac99250ee9f51980"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 191,
+                "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                "rule_id": "R-403bcd0ff5e4cd44"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Combined market cap",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 101,
+                    "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+                    "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+                    "rule_id": "R-ac99250ee9f51980"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 191,
+                    "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+                    "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+                    "rule_id": "R-403bcd0ff5e4cd44"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 101,
+            "text": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+            "field_sha256": "84f7f623ad314317d0d0d887f5e637394dadb2b5e112365030f9dec3dd2e76cc",
+            "rule_id": "R-ac99250ee9f51980"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 191,
+            "text": "This question will resolve to YES if by June 30th, 2026, the total market cap for both USDT and USDC stablecoins - according to CoinGecko OR CoinMarketCap - is greater than \\$300 billion USD.",
+            "field_sha256": "91fdd0bb82b2e4b2f3b5ddbe101f1c559a0ab9e77f987c46d0a650554960a969",
+            "rule_id": "R-403bcd0ff5e4cd44"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      }
+    },
+    {
+      "id": "heldout-43991",
+      "question_id": "43991",
+      "request": {
+        "question": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+        "resolution_criteria": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+        "fine_print": "",
+        "id": "43991",
+        "pipeline": "collection",
+        "mode": "live",
+        "acquisition_profile": "collection_v3",
+        "acquisition_focus": "raw_recall",
+        "exa_search_policy": "required",
+        "experiment_id": "unified-acquisition-five-20261005",
+        "budget_profile": "default"
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "The observation date is July 8, 2026.",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-483bf53e350220e6",
+              "R-034bbc6febf7c215"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 98,
+                "text": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+                "field_sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                "rule_id": "R-483bf53e350220e6"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 398,
+                "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                "rule_id": "R-034bbc6febf7c215"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "2026-07-08",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 98,
+                    "text": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+                    "field_sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                    "rule_id": "R-483bf53e350220e6"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 398,
+                    "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                    "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "rule_id": "R-034bbc6febf7c215"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "Marine Le Pen is the subject of the disqualification check.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-483bf53e350220e6",
+              "R-034bbc6febf7c215"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 98,
+                "text": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+                "field_sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                "rule_id": "R-483bf53e350220e6"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 398,
+                "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                "rule_id": "R-034bbc6febf7c215"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Marine Le Pen",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 98,
+                    "text": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+                    "field_sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+                    "rule_id": "R-483bf53e350220e6"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 398,
+                    "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                    "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "rule_id": "R-034bbc6febf7c215"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "There exists a court-imposed disqualification (peine d'inéligibilité) applicable to Marine Le Pen.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-034bbc6febf7c215"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 398,
+                "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                "rule_id": "R-034bbc6febf7c215"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "court-imposed disqualification",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 398,
+                    "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                    "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "rule_id": "R-034bbc6febf7c215"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "The disqualification prevents Marine Le Pen from being a candidate in the 2027 French presidential election.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-034bbc6febf7c215"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 398,
+                "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                "rule_id": "R-034bbc6febf7c215"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "prevents candidacy in 2027 French presidential election",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 398,
+                    "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+                    "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+                    "rule_id": "R-034bbc6febf7c215"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 98,
+            "text": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+            "field_sha256": "7232a41312fed2096823764d2ea2110793964228e7c68ba8f5322b3486efcbaa",
+            "rule_id": "R-483bf53e350220e6"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 398,
+            "text": "This question resolves as **Yes** if, on July 8, 2026, Marine Le Pen is subject to a court-imposed disqualification from running for public office ([peine d’inéligibilité](https://libdedroit.fr/blogs/fiches-grand-oral-crfpa/la-peine-d-ineligibilite?srsltid=AfmBOoopwrMhMXuXIc875nwjrfSFvRFyrDV7pEIPimeNPbydTFiBFzps)) that prevents her from being a candidate in the 2027 French presidential election.",
+            "field_sha256": "a4a6284fa6351dab5e048cbc72ea5238439a1798a78ebbf2a31301d9c834b43a",
+            "rule_id": "R-034bbc6febf7c215"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": [],
+        "planning_repair": "one_bounded_schema_only_repair_original_proposal_retained"
+      }
+    }
+  ]
+}

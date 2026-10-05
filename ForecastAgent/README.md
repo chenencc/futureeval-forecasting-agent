@@ -31,6 +31,11 @@ existing task quotas or submits forecasts.
 
 ## Acquisition pipeline
 
+The development [unified acquisition module](acquisition/README.md) packages the
+original collector, deterministic body checks and enhanced independent repair
+behind one durable interface. Its fresh five-question pilot connects the checked
+body package to the frozen V7 material reviewer without submitting forecasts.
+
 See the [Crawl README](CRAWL_README.md) for collection tools, capture states, supplement budgets, saved data, PDF diagnostics and paired acceptance results.
 
 The development-only [checked collection handoff](docs/COLLECTION_HANDOFF.md) preserves the original collector, then adds deterministic body inspection and exact deduplication around independent supplementation before Mercury analysis. It is opt-in; release 1.0.1 remains unchanged.
