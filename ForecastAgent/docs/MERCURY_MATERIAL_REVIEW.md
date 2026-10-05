@@ -188,3 +188,66 @@ These reviewer expectations are not present in either model's request.
 Report paired completion, semantic overclaims and lost positive components
 separately from token consumption and reference identity. Independent typed
 decisions cannot supply arbitrary values or a coherent free-form rationale.
+
+## Two-round results
+
+[Run 37246658675](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37246658675)
+completed successfully on frozen commit `7a7e2b5`. All eight pairs returned
+complete valid typed outputs. The experiment reviewed 33 material needs:
+132 V1 decisions and 99 V2 decisions. The workflow's 86 focused tests passed.
+Actual consumption was 21 logical calls and 21 HTTP attempts (16 Mercury
+reviews and five Super plans), with no retries, searches, captures or forecasts.
+Input/reading identity, binding replay, prior counters and trial caps all passed
+the offline audit. The two protocols and cohorts were frozen before either
+round; no tuning occurred between them.
+
+| Manual semantic check | V1 | V2 |
+| --- | ---: | ---: |
+| Unsupported negative judgments, three regression cases | 3 | 0 |
+| Unsupported negative judgments, five repair-heldout cases | 4 | 1 |
+| Rows with program consistency flags, across 33 needs | 4 | 13 |
+
+Unsupported negatives are manually audited material-need claims, not event
+forecast accuracy. The answer spaces changed: record exclusion in V2 is
+deliberately distinct from event refutation. More flags do not demonstrate
+more model errors or greater accuracy by themselves; several flags expose
+different scopes being used by independently answered heads.
+
+The security case now selects the official source for confirmation. The ILS
+case excludes wrong-window records without rejecting all possible qualifying
+events. Defense retains positive launch/flight and date components. Trade and
+sports remain conservative about missing qualifications. However, the politics
+case still turns a May current-office article into an exhaustive departure
+refutation and mistakes article timing for event timing. V2 flags these claims
+but does not repair their semantics. The fuel case excludes wrong-window prices
+appropriately while still mishandling the otherwise valid AAA source identity.
+The ILS source-authority/ticker heads likewise disagree with their own global
+time/measure applicability. The remaining issue includes inconsistent judgment
+units, rather than only a model's failure to follow a negative-evidence warning.
+
+| Actual provider-reported usage | V1 Mercury | V2 Mercury | Shared Super planning |
+| --- | ---: | ---: | ---: |
+| HTTP attempts | 8 | 8 | 5 |
+| Input tokens | 674,974 | 517,707 | 5,641 |
+| Output tokens | 123 | 99 | 4,291 |
+| Reported cost, USD | 0 | 0 | 0 |
+| Attempts with unknown token usage | 0 | 0 | 0 |
+
+V2 reduced independent decisions by 25% and reported input usage by 23.3%.
+Provider attempt times are preserved, but one paired observation per case
+does not establish a stable latency advantage. Reported token counts may be
+expanded across independent heads, not unique input text lengths.
+
+The original artifact `11319387032` is locally imported and hash-verified at
+`E:/metaculus_data`, original ZIP SHA-256:
+`f89a0ebd905f12cc2434cd22a68c793b617f6968cb2a21f28d9f9bc6147e6adb`.
+The English audit is
+`E:/metaculus_data/reports/mercury-material-two-rounds-audit-37246658675.json`.
+Review used visible protocol labels, so it was not fully blinded. No resolved
+answers were used and no accuracy/Brier metric was produced.
+
+Keep the protocol experimental. A next design must make field and condition
+judgment units explicit: source authority or ticker validity must not inherit
+an event window, and event-time support requires a real event witness. Preserve
+all material and exact rule bindings. Detection of a disagreement is a separate
+result from correcting it; production remains unchanged.
