@@ -1,0 +1,2198 @@
+{
+  "trial_id": "mercury-material-units8-20261005-v3",
+  "schema": "mercury-material-units8-manifest-v1",
+  "scope": "Fresh V2 versus V3 Mercury protocol regression on eight saved question packets and the SAME 33 prior needs. V3 classifies judgment units from rules/needs, then jointly selects evidence relation and reference over the full original reading. V2 sees identical source coverage. Not unseen generalization or model-only comparison. No collection, Super replanning or forecasts.",
+  "frozen_code_sha256": {
+    "ForecastAgent/supplement/mercury_material.py": "cee9681bcd32646abff1e5c6985de5d8b91c5f6eaa3c2342d5bf44e02aa49318",
+    "ForecastAgent/supplement/mercury_material_v2.py": "a9dfecaafc5b67a9e56eec58ad7474024023b52b4d13573b04d54d435c2ba45e",
+    "ForecastAgent/supplement/mercury_material_v3.py": "d6ccc578e04c66d77bcd2d08c0c16faa06d0e9e5477b5855b6c4b846f2574ee8",
+    "ForecastAgent/supplement/acquisition_contract.py": "f0da540939e9c0ca52b0605f0b88a306ba4b06b1fa90ceb9410fe319d2bc8de0",
+    "ForecastAgent/supplement/acquisition_ids.py": "0f7980f80115631fd602f97698b7a22be62117cd1d76062dac7c295200d8438f",
+    "ForecastAgent/providers/decisions.py": "f72564842eecec5b3801b888187c42a97da810f2b67aa90986d0fe1dc161d579",
+    "ForecastAgent/experiments/mercury_material_units_trial.py": "8b59c3df10afe0e3a697984e9e0e9eeda33beb43e858079f060ba397772477af"
+  },
+  "parent_run_id": "37246658675",
+  "parent_artifact_id": "11319387032",
+  "parent_input_sha256": {
+    "round1-unseen-01-frozen-input.json": "83b7d8dcce4ba32d86c013c8592656ee0d457d2ac4c655cbb91f59b74c21cea3",
+    "round1-unseen-04-frozen-input.json": "2267c9853a39351bb2f80624996ed1e23273a578e182952d67f9840b8f25e159",
+    "round1-unseen-07-frozen-input.json": "80d145fa4791076b16dac5c7eb3e3dd9e3490408687c5d4741a2ef0facf216fc",
+    "round2-unseen-03-frozen-input.json": "94e55b49aa17faad1f727c47375ce2a3103311c0e8134edcd1facf984a16283f",
+    "round2-unseen-06-frozen-input.json": "2110d4efa9e098613f4c46136e764391d7e519cb4a5253c4758a6d3e7727200e",
+    "round2-unseen-08-frozen-input.json": "62f030f20d22d334fbf0dddbaa527a69bd38a450e773f3fff0795f63cb230cd3",
+    "round2-unseen-09-frozen-input.json": "e4371ffc0d08ca0e691ceac76e7301889504c932f8244900a36033b80be8e3b1",
+    "round2-unseen-10-frozen-input.json": "19f6c84ed05e35e3d83de574fdb45087a155c6595cf638cfbe81358a480f1e2e"
+  },
+  "prior_experiments": [
+    {
+      "run_id": "37220371858",
+      "logical": 16,
+      "http": 16,
+      "known_tokens": 67728
+    },
+    {
+      "run_id": "37244250484",
+      "cumulative_logical": 19,
+      "cumulative_http": 19,
+      "cumulative_known_tokens": 89122,
+      "remaining_original_logical": 1,
+      "unchanged": true
+    },
+    {
+      "run_id": "37245414693",
+      "http": 6,
+      "logical": 6,
+      "known_tokens_super": 21822,
+      "known_tokens_mercury": 346715,
+      "unchanged": true
+    },
+    {
+      "run_id": "37246658675",
+      "http": 21,
+      "logical": 21,
+      "input_tokens_v1": 674974,
+      "input_tokens_v2": 517707,
+      "input_tokens_planning": 5641,
+      "unchanged": true
+    }
+  ],
+  "limits": {
+    "logical": 24,
+    "http": 24,
+    "seconds": 600,
+    "request_bytes": 200000
+  },
+  "preregistered_checks": [
+    "Source identity is not invalidated by an unrelated event window or record measure.",
+    "Entity/ticker facts survive unrelated temporal incompatibility.",
+    "Event-time witness requires actual occurrence, not publication or current-status date.",
+    "No interval-wide absence is concluded from snapshots or silence.",
+    "Rule constants bind to original rules without requesting external observations.",
+    "Joint evidence/reference choice has no positive claim with NONE citation.",
+    "All original bodies and rules remain available; partial/negative/context records are retained.",
+    "Unit classification is a model claim; count misclassification and witness error separately.",
+    "Keep source/need/code identity and actual usage; do not interpret fewer enum choices as better accuracy."
+  ],
+  "cases": [
+    {
+      "id": "unseen-01",
+      "question_id": "43494",
+      "bundle": {
+        "request": {
+          "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\nLarge-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://gov.texas.gov/uploads/files/press/Thomas_Gleeson_Pablo_Vegas_Data_Centers_Directive_Letter_to_PUCT_ERCOT_August_2026_.pdf": {
+            "content": "[PDF page 1]\n August 3, 2026\n Mr. Thomas Gleeson\n Chairman\n Public Utility Commission of Texas\n P.O. Box 13326\n Austin, Texas 78711-3326\n Mr. Pablo Vegas\n President and Chief Executive Officer\n Electric Reliability Council of Texas\n 8000 Metropolis Drive, Building E, Suite 100\n Austin, Texas 78744\n Dear Chairman Gleeson and Chief Executive Officer Vegas:\n Our top priority is to protect Texans’ safety and quality of life. That includes providing affordable\n energy, maintaining a reliable electric grid, preserving water for our communities, and\n championing Texas values. Those priorities can, and must, be achieved while also creating the\n jobs and providing the economic opportunity that comes with our national leadership in\n technological innovation and investment.\n The Electric Reliability Council of Texas (ERCOT) is currently considering approximately 474\n gigawatts of requests to connect to the Texas grid. That is more than five times Texas’ record peak\n electricity demand for ERCOT. Approximately 90 percent of the new power requests are data\n centers. That unprecedented load growth could endanger the reliability and stability of the Texas\n electric grid.\n To keep the grid stable and reliable, I am issuing the following directive:\n The Public Utility Commission of Texas (PUC) and ERCOT must conduct a comprehensive\n verification and audit of all data centers advancing through ERCOT’s interconnection process\n before any additional data centers are approved to move forward. Any project that fails to comply\n with the requirements set forth by the PUC and ERCOT, and by state law, must be denied\n connection to the Texas grid.\n The failure of some data centers to comply with the PUC’s survey measuring water and power\n usage under the General Appropriations Act makes this necessary. Failure to fully comply with\n that law hinders your ability to make fully informed decisions.\n[PDF page 2]\nChairman Gleeson and Chief Executive Officer Vegas\nAugust 3, 2026\nPage 2\nAdditionally, recent legislative hearings and public meetings raised important questions regarding\nthe impact of data centers on the grid and on the local communities in which they operate or seek\nto operate.\nAlong those lines, in my June 10th letter I noted I would work with the legislature to address\nTexans’ concerns about data centers. To inform these efforts, the PUC and ERCOT must also\nobtain the following information from each data center project:\n• Information detailing the extent to which data centers are paying their own way or depending\n on the state for financial assistance. That would include all state and local tax incentives,\n grants, abatements, or other public financial assistance received or expected to be received;\n and\n• The extent to which data centers are providing their own power or depending on the ERCOT\n grid for that power. Details should include projected annual and peak electricity consumption;\n and any effort and progress to construct or procure on-site electric generation, including\n generation type, or other measures to reduce demand on the ERCOT grid; and\n• The extent to which data centers are bringing their own water and reusing their own water as\n opposed to using water needed by local communities. The details should include projected\n annual and peak water consumption and anticipated sources of water supply. You must also\n obtain information about the cooling technology that will be utilized, including whether the\n facility will employ air-cooled, closed-loop, or another water-efficient cooling system; and\n• The extent to which data centers are using measures to reduce impacts on neighboring property\n owners and communities, including noise mitigation, light controls, setbacks, traffic\n improvements, emergency response coordination, and other community protection measures,\n understanding that each community is unique; and\n• Information detailing the ownership and controlling interests in the project.\nAny data center project that fails to comply with the verification and audit process to protect the\nreliability and resilience of the Texas electric grid must be denied. Simply put, Texans must come\nfirst.\nThank you for your continued efforts to protect the Texas electric grid and the interests of the\npeople of our state.\nSincerely,\nGreg Abbott\nGovernor"
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "need1",
+            "condition": "A U.S. state or EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "U.S. state or EU member state",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need2",
+            "condition": "The restriction is not officially reversed or rescinded before September 1, 2026.",
+            "critical": true,
+            "dimension": "effective_time",
+            "rule_ids": [
+              "R-64fba5779618af19"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 427,
+                "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-64fba5779618af19"
+              }
+            ],
+            "targets": {
+              "effective_time": {
+                "value": "September 1, 2026",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 427,
+                    "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-64fba5779618af19"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "need3",
+            "condition": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-5b9b9c887609cfb5"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 427,
+                "end": 537,
+                "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                "rule_id": "R-5b9b9c887609cfb5"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "50 MW",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 427,
+                    "end": 537,
+                    "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+                    "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+                    "rule_id": "R-5b9b9c887609cfb5"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 111,
+            "text": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+            "field_sha256": "2b6d1d71f6522f00277db51b401139cfbe553abd619c645b30445ba85d9ba4db",
+            "rule_id": "R-a25ed39e20fc7e6e"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 427,
+            "text": "This question will resolve as **Yes** if, at any point before September 1, 2026, either a U.S. state or an EU member state announces a new moratorium, suspension, or binding restrictive rule applying to new grid connection requests from large-scale data centers, and the restriction is not officially reversed or rescinded before September 1, 2026, according to [credible sources](https://www.metaculus.com/faq/#definitions).\n\n",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-64fba5779618af19"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 427,
+            "end": 537,
+            "text": "Large-scale datacenters are defined as facilities with contracted or requested grid capacity of 50 MW or more.",
+            "field_sha256": "e7c0d57b1112855337f66e1683a98a93d3b7d46bd85b42fd958eac663447c7e1",
+            "rule_id": "R-5b9b9c887609cfb5"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "v2",
+        "v3"
+      ],
+      "parent_input_file": "round1-unseen-01-frozen-input.json",
+      "parent_round": "round1"
+    },
+    {
+      "id": "unseen-04",
+      "question_id": "43501",
+      "bundle": {
+        "request": {
+          "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\nAll conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. An attacker's public claim alone will not be sufficient.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.instructure.com/incident-update/students-and-families": {
+            "content": "We understand the disruption to Canvas during what we know is an especially busy time of year, caused challenges for the students and families who rely on us. First and foremost, we’re sorry for how this has impacted your learning. The end of the semester can be a stressful time, and the last thing we would ever want is to make that pressure worse. We know you rely on Canvas to keep up with your classes, and we’re committed to doing better in the future.\nWe’ve collected the FAQs and resources below to support you as we continue to respond to this incident. If you have any further questions, please contact your institution. They are best equipped to contact us directly.\nYes. Canvas is fully back online and available for use. Our external forensic partner has reviewed the known indicators and found no evidence that the threat actor currently has access to the platform.\nWe’re also in conversations with government leaders, technology and integration partners, and institutions about how we can collectively build something stronger, together. As part of that, we are organizing an Advisory Board focused on security and resilience, led by our Chief Academic Officer, Melissa Loble.\nWas any of my personal data involved in this incident?\nOur comprehensive review of the data involved is ongoing, but none of the data fields we understand to be involved are designed to store information like passwords, dates of birth, healthcare information, social security numbers, financial information, student grades or disciplinary records.\nWas any of my coursework, including correspondence with my teachers, involved in this incident?\nOur investigation so far indicates that the data fields involved include information like usernames, email addresses, course names, enrollment information and messages. Our investigation has not identified any core learning data (course content, submissions, credentials) as involved.\nWill this incident further impact my ability to study for final exams or submit final assignments for this semester?\nCanvas is fully back online and available for use. We apologize for the disruption this incident has already caused and are here to support as you finish your semester.\nWho at my institution should I be in touch with to discuss this further?\nYour IT or Teaching & Learning professionals at your school are the best people to contact to discuss this further."
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "N1",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident resulting in unauthorized acquisition of personal data of at least 10,000 users before September 1, 2026.",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-489bc4cec69b3c0f"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 339,
+                "end": 530,
+                "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-489bc4cec69b3c0f"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Instructure",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 339,
+                    "end": 530,
+                    "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-489bc4cec69b3c0f"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N2",
+            "condition": "Instructure or any of its products experiences a cybersecurity incident causing substantial unavailability to at least 100 institutional customers for a continuous period of at least 4 hours before September 1, 2026.",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-04a3a53a95d68aea"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 530,
+                "end": 754,
+                "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-04a3a53a95d68aea"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "100 institutional customers",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 530,
+                    "end": 754,
+                    "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-04a3a53a95d68aea"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N3",
+            "condition": "A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure before September 1, 2026.",
+            "critical": true,
+            "dimension": "artifact",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-0f4aa76caf99d7c1"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 754,
+                "end": 908,
+                "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-0f4aa76caf99d7c1"
+              }
+            ],
+            "targets": {
+              "artifact": {
+                "value": "ransom or extortion demand",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 754,
+                    "end": 908,
+                    "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-0f4aa76caf99d7c1"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "N4",
+            "condition": "Confirmation of the incident is obtained from Instructure official communications, credible news reporting, or government disclosures before September 1, 2026.",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-f1bcb090005481ae",
+              "R-2b571ba23fedbe73",
+              "R-b851219695e1a418",
+              "R-77bf8eae3030b30d"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 75,
+                "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                "rule_id": "R-f1bcb090005481ae"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 339,
+                "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-2b571ba23fedbe73"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 908,
+                "end": 1069,
+                "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-b851219695e1a418"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 1069,
+                "end": 1125,
+                "text": "An attacker's public claim alone will not be sufficient.",
+                "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                "rule_id": "R-77bf8eae3030b30d"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Instructure official communications, credible news reporting, or government disclosures",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 75,
+                    "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+                    "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+                    "rule_id": "R-f1bcb090005481ae"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 339,
+                    "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-2b571ba23fedbe73"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 908,
+                    "end": 1069,
+                    "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-b851219695e1a418"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 1069,
+                    "end": 1125,
+                    "text": "An attacker's public claim alone will not be sufficient.",
+                    "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+                    "rule_id": "R-77bf8eae3030b30d"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 75,
+            "text": "Will Instructure be subject to another major hack before September 1, 2026?",
+            "field_sha256": "9c74c106c80ccd251737754b2902c3b604d1cf52b403e2ffdf98efe633636066",
+            "rule_id": "R-f1bcb090005481ae"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 339,
+            "text": "This question will resolve as **Yes** if, after the question's opening and before September 1, 2026, Instructure or any of its [products](https://www.instructure.com/products) (including but not limited to Canvas, Mastery, Parchment, and Impact) experiences at least one cybersecurity incident that meets any of the following conditions:\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-2b571ba23fedbe73"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 339,
+            "end": 530,
+            "text": "1. **Data exfiltration:** An unauthorized party obtains personal data (such as names, email addresses, student IDs, messages, credentials, or financial information) of at least 10,000 users.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-489bc4cec69b3c0f"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 530,
+            "end": 754,
+            "text": "2. **Service disruption:** One or more Instructure products are rendered substantially unavailable to at least 100 institutional customers for a continuous period of at least 4 hours as a direct result of a security breach.\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-04a3a53a95d68aea"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 754,
+            "end": 908,
+            "text": "3. **Ransom or extortion demand:** A threat actor issues a ransom or extortion demand related to data or systems access newly obtained from Instructure.\n\n",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-0f4aa76caf99d7c1"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 908,
+            "end": 1069,
+            "text": "All conditions require confirmation from at least one of the following: Instructure official communications, credible news reporting, or government disclosures. ",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-b851219695e1a418"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 1069,
+            "end": 1125,
+            "text": "An attacker's public claim alone will not be sufficient.",
+            "field_sha256": "54573dbe4bd291ae7ac259c1838af1b26d70a875b7dea9b0edc5a784003be199",
+            "rule_id": "R-77bf8eae3030b30d"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "v3",
+        "v2"
+      ],
+      "parent_input_file": "round1-unseen-04-frozen-input.json",
+      "parent_round": "round1"
+    },
+    {
+      "id": "unseen-07",
+      "question_id": "43824",
+      "bundle": {
+        "request": {
+          "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://finance.yahoo.com/quote/ILS": {
+            "content": "Yahoo Finance daily history: ILS; cutoff 2026-10-03T05:21:31.455941+00:00\nDaily closes conservatively exclude the cutoff UTC day. Current-vintage/adjustment revisions remain possible; not a verified historical capture.\n{\"close\": 20.389999389648438, \"conservative_available_at\": \"2026-09-16T23:59:59+00:00\", \"date\": \"2026-09-16\"}\n{\"close\": 20.399999618530273, \"conservative_available_at\": \"2026-09-17T23:59:59+00:00\", \"date\": \"2026-09-17\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-21T23:59:59+00:00\", \"date\": \"2026-09-21\"}\n{\"close\": 20.440000534057617, \"conservative_available_at\": \"2026-09-22T23:59:59+00:00\", \"date\": \"2026-09-22\"}\n{\"close\": 20.030000686645508, \"conservative_available_at\": \"2026-09-23T23:59:59+00:00\", \"date\": \"2026-09-23\"}\n{\"close\": 20.079999923706055, \"conservative_available_at\": \"2026-09-25T23:59:59+00:00\", \"date\": \"2026-09-25\"}"
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Adjusted Close price of Brookmont Catastrophic Bond ETF (ILS) on a trading day after June 15, 2026 and before September 1, 2026",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Adjusted Close price",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "Adjusted Close price of ILS on the most recent trading day at least two calendar days earlier than the trading day in condition n1",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "Adjusted Close price",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "Date of observation for the trading day in condition n1",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "trading day date",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "Date of observation for the prior trading day (at least two calendar days earlier) in condition n2",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "prior trading day date",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n5",
+            "condition": "Source authority for the Adjusted Close price data",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Yahoo Finance",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n6",
+            "condition": "Threshold price drop amount",
+            "critical": true,
+            "dimension": "unit",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "unit": {
+                "value": "$0.25",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n7",
+            "condition": "Ticker symbol for the ETF",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-fdfd94e8e09685ed",
+              "R-aae7e3f905b14141"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 99,
+                "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                "rule_id": "R-fdfd94e8e09685ed"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 377,
+                "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                "rule_id": "R-aae7e3f905b14141"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "ILS",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 99,
+                    "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+                    "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+                    "rule_id": "R-fdfd94e8e09685ed"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 377,
+                    "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+                    "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+                    "rule_id": "R-aae7e3f905b14141"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 99,
+            "text": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+            "field_sha256": "f46a84b978e0945527eb698fc96bd3b96e3e8e09f55e3dc7e599bfe93fdcc138",
+            "rule_id": "R-fdfd94e8e09685ed"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 377,
+            "text": "This question will resolve as **Yes** if, on any trading day after June 15, 2026 and before September 1, 2026, the Adjusted Close price of the Brookmont Catastrophic Bond ETF (NYSEARCA: ILS), as reported by [Yahoo Finance](https://finance.yahoo.com/quote/ILS/), is at least \\$0.25 lower than its Adjusted Close on the most recent trading day at least two calendar days earlier.",
+            "field_sha256": "2cd384845792af8000fad9e289b074604032ff4d368b68e6b2ec7ae2c8199efd",
+            "rule_id": "R-aae7e3f905b14141"
+          }
+        ],
+        "semantic_completeness_verified": false
+      },
+      "arm_order": [
+        "v2",
+        "v3"
+      ],
+      "parent_input_file": "round1-unseen-07-frozen-input.json",
+      "parent_round": "round1"
+    },
+    {
+      "id": "unseen-03",
+      "question_id": "43343",
+      "bundle": {
+        "request": {
+          "question": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+          "resolution_criteria": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/france-spain-match-report-highlights": {
+            "content": "France v Spain | Semi-final | FIFA World Cup 2026™ | Highlights France v Spain | Semi-final | FIFA World Cup 2026™ | Highlights\n\nWatch highlights of the match between France and Spain played at Dallas Stadium on Tuesday 14 July at 14:00 (local time).Watch highlights of the match between France and Spain played at Dallas Stadium on Tuesday 14 July at 14:00 (local time).\n\nClose Related Content\n\nClose Share\n\nGoals from Mikel Oyarzabal and Pedro Porro earned Spain a deserved 2-0 win over France at Dallas Stadium in their FIFA World Cup 2026 semi-final.\n\n## [France 0-2 Spain](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021541)[France 0-2 Spain](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021541)\n\n**Spain goals:**Oyarzabal pen (22), Porro (58)\n\n![Image 3: ARLINGTON, TEXAS - JULY 14: Pau Cubarsi #22 of Spain and teammates applaud fans after the 2-0 victory during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Maja Hitij - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/7d1e758f-a94f-4b41-8c68-f6dafd88a978/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.71,0.42&io=transform:fill,width:768&quality=75)\n\nSpain frustrated France at one end and punished them at the other to deservedly win their [FIFA World Cup 2026™](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026) semi-final at Dallas Stadium. _La Roja_ limited _Les Bleus’_ chances though some flawless defending, and scored thorough Mikel Oyarzabal and Pedro Porro.   \n  \nSpain will now face the [England-Argentina](https://www.fifa.com/en/match-centre/match/17/285023/289290/400021540) victors at New York New Jersey Stadium on Sunday. They emerged triumphant in their only previous appearance in the fixture, Andres Iniesta sinking the Netherlands at Soccer City in 2010.   \n  \nFrance started as the slight favourites and, though Kylian Mbappe threatened on the break, Lamine Yamal gave Luis de la Fuente’s side the game’s first big chance. The winger, a day after his 19th birthday, got to the ball before Lucas Digne and was clipped inside the box. Oyarzabal struck the resulting penalty past spot-kick-saving specialist Mike Maignan.\n\n![Image 4: ARLINGTON, TEXAS - JULY 14: (EDITOR'S NOTE: Image was captured using a remote camera positioned above the field of play.) General view during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Dan Mullan - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/28e0e10e-f86d-4d56-ab93-b011d6041eff/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.49,0.41&io=transform:fill,width:768&quality=75)\n\nThe advantage was amplified when Porro played a palatial one-two with Dani Olmo, taking the return impeccably and burying the ball in the bottom corner.\n\nFrance, with Desire Doue and Rayan Cherki on, pushed to get back into a game, but goalkeeper Unai Simon acted astutely as a sweeper-keeper and Marc Cucurella made an excellent challenge on Mbappe.   \n  \nThe final whistle sparked ecstasy for the Spaniards and agony for the French. Didier Deschamps’ team will have a shot at bronze on Saturday, when Mbappe could boost his hopes for another adidas Golden Boot.\n\n* * *\n\n#### Key stats Key stats\n\n*   Mikel Oyarzabal has scored 18 goals in his last 20 games for Spain. His penalty made him the sixth man to reach 30 goals for Spain after David Silva (35), Alvaro Morata (37), Fernando Torres (38), Raul (44) and David Villa (59).\n\n![Image 5: ARLINGTON, TEXAS - JULY 14: Mikel Oyarzabal #21 of Spain celebrates with teammates after converting a penalty to score the team's first goal during the FIFA World Cup 2026 Semi Final match between France and Spain at Dallas Stadium on July 14, 2026 in Arlington, Texas. (Photo by Hector Vivas - FIFA/FIFA via Getty Images)](https://digitalhub.fifa.com/transform/5fb850ff-2085-4b32-b306-5007d0d7413d/France-v-Spain-Semi-Final-FIFA-World-Cup-2026?focuspoint=0.56,0.37&io=transform:fill,width:768&quality=75)\n\n*   Spain kept their sixth clean sheet in seven matches at this tournament. They have conceded just two goals in North America. The record for a triumphant team in a World Cup is two shared by France in 1998, Italy in 2006 and Spain themselves in 2010.\n\n* * *\n\n#### Michelob Ultra Superior Player of the Match Michelob Ultra Superior Player of the Match\n\n**Pedro P"
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Identify the host nations for the 2026 FIFA World Cup",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-ae381bd35a98db43",
+              "R-e19a458bc6c237a8"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 88,
+                "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                "rule_id": "R-ae381bd35a98db43"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 154,
+                "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                "rule_id": "R-e19a458bc6c237a8"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "USA, Mexico, Canada",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 88,
+                    "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                    "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                    "rule_id": "R-ae381bd35a98db43"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 154,
+                    "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                    "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                    "rule_id": "R-e19a458bc6c237a8"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "Determine whether the USA reached the semifinals of the 2026 FIFA World Cup",
+            "critical": false,
+            "dimension": "stage",
+            "rule_ids": [
+              "R-ae381bd35a98db43",
+              "R-e19a458bc6c237a8"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 88,
+                "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                "rule_id": "R-ae381bd35a98db43"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 154,
+                "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                "rule_id": "R-e19a458bc6c237a8"
+              }
+            ],
+            "targets": {
+              "stage": {
+                "value": "semifinals",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 88,
+                    "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                    "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                    "rule_id": "R-ae381bd35a98db43"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 154,
+                    "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                    "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                    "rule_id": "R-e19a458bc6c237a8"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "Determine whether Mexico reached the semifinals of the 2026 FIFA World Cup",
+            "critical": false,
+            "dimension": "stage",
+            "rule_ids": [
+              "R-ae381bd35a98db43",
+              "R-e19a458bc6c237a8"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 88,
+                "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                "rule_id": "R-ae381bd35a98db43"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 154,
+                "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                "rule_id": "R-e19a458bc6c237a8"
+              }
+            ],
+            "targets": {
+              "stage": {
+                "value": "semifinals",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 88,
+                    "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                    "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                    "rule_id": "R-ae381bd35a98db43"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 154,
+                    "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                    "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                    "rule_id": "R-e19a458bc6c237a8"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "Determine whether Canada reached the semifinals of the 2026 FIFA World Cup",
+            "critical": false,
+            "dimension": "stage",
+            "rule_ids": [
+              "R-ae381bd35a98db43",
+              "R-e19a458bc6c237a8"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 88,
+                "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                "rule_id": "R-ae381bd35a98db43"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 154,
+                "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                "rule_id": "R-e19a458bc6c237a8"
+              }
+            ],
+            "targets": {
+              "stage": {
+                "value": "semifinals",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 88,
+                    "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+                    "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+                    "rule_id": "R-ae381bd35a98db43"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 154,
+                    "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+                    "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+                    "rule_id": "R-e19a458bc6c237a8"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 88,
+            "text": "Will any host nation (USA, Mexico or Canada) reach the semifinals of the 2026 World Cup?",
+            "field_sha256": "4f43923e3211c943d706a96f0e1781fee6d82f59d955f0c01f445d0443e08586",
+            "rule_id": "R-ae381bd35a98db43"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 154,
+            "text": "This question will resolve as **Yes** if one or more of the three host nations (the U.S., Canada, or Mexico) reaches the semifinals of the 2026 World Cup.",
+            "field_sha256": "f4556fc484c49c6bfd5a8b4bb8bed9c069a022fd593c09733bc232e1aedfb9a5",
+            "rule_id": "R-e19a458bc6c237a8"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      },
+      "arm_order": [
+        "v3",
+        "v2"
+      ],
+      "parent_input_file": "round2-unseen-03-frozen-input.json",
+      "parent_round": "round2"
+    },
+    {
+      "id": "unseen-06",
+      "question_id": "14025",
+      "bundle": {
+        "request": {
+          "question": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+          "resolution_criteria": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\nTested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.navalnews.com/naval-news/2026/07/japan-conducts-first-tomahawk-live-fire-aboard-js-chokai": {
+            "content": "Japan’s Ministry of Defense announced on July 30 that the Japan Maritime Self-Defense Force (JMSDF) had conducted its first live-fire test of a Tomahawk cruise missile aboard the Aegis guided-missile destroyer JS Chokai (DDG-176).\nThe test was carried out in the Pacific Ocean on July 29, Japan time, while Chokai was deployed to the United States as part of Japan’s Tomahawk acquisition program, with support from the U.S. Navy. The launch made Japan the third country outside the United States, after Australia and the Netherlands, to fire a Tomahawk from a surface combatant, and the fourth outside the United States overall, following the United Kingdom, which has fired the missile only from submarines.\nOfficials from Japan’s Acquisition, Technology & Logistics Agency (ATLA) said the test confirmed that the ship and its crew could successfully carry out the launch sequence, including required crew procedures. They added that the test also verified the missile’s flight to its intended target.\nATLA declined to disclose several operational details, citing coordination with the U.S. Navy and the need to protect Japan’s defense capabilities. Withheld details included the precise test location beyond the Pacific Ocean, the target type, flight range, guidance procedures, the number of missiles fired, and whether a Block IV or Block V Tomahawk was used.\nFour Months of Preparation\nThe Ministry of Defense announced in March that Chokai had acquired Tomahawk launch capability. Asked why the live-fire test took place several months later, officials said the intervening period was used to verify newly installed equipment and train the crew in launch procedures.\nChokai is expected to return to Japan around September 2026, with Sasebo identified as its homeport. Officials declined to discuss when the Tomahawk capability would enter operational service, saying such information could reveal Japan’s defense readiness.\nOfficials said the U.S. Navy provided the test range, monitored the surrounding sea and airspace, and supported test planning. They emphasized, however, that the launch itself was carried out by the Japanese crew.\nNo Further Live-Fire Tests Planned\nATLA officials said Japan currently has no plans to conduct similar live-fire tests aboard other JMSDF Aegis ships being modified to operate Tomahawks.\nOfficials said further shipboard live-fire tests are not considered necessary because the Mk 41 Vertical Launching System and Tomahawk launch equipment already have extensive operational records with the U.S. Navy. They added that the Chokai test confirmed integration between the Tomahawk system and Japan’s combat system.\nFunding approved through fiscal year 2026 includes about 113.6 billion yen(about $694 million) for adding Tomahawk launch capability to five JMSDF Aegis destroyers: Chokai, Kirishima, Haguro, Myoko, and Atago.\nModification work on Haguro and Kirishima began during fiscal year 2025. For Atago and Myoko, contracts for the required equipment have already been awarded, with modification work scheduled to begin during fiscal year 2026. Funding for the remaining three Aegis destroyers will be considered from fiscal year 2027 onward, and officials said it is too early to estimate costs.\nSeparately, Japan is also building two new Aegis System Equipped Vessels (ASEVs), scheduled to enter service in fiscal years 2027 and 2028, respectively. Although the ships are intended to operate Tomahawk missiles in the future, ministry officials said they are not expected to have Tomahawk launch capability when they enter service.\nStatus of Tomahawk procurement by Japan\nJapan plans to acquire up to 400 Tomahawk missiles through the U.S. Foreign Military Sales (FMS) program at a total cost of about 169.4 billion yen(about $1.03 billion).\nThe acquisition schedule remains unchanged: up to 200 Block IV missiles are scheduled for delivery between fiscal years 2025 and 2027, followed by up to 200 Block V missiles between fiscal years 2026 and 2027.\nDeliveries began during fiscal year 2025. Officials declined to disclose the number of missiles already delivered or the delivery schedule, citing operational security, but emphasized the program remains on schedule.\nATLA officials also said Japan has no plans to procure additional Tomahawk missiles beyond the 400 already approved. Future expansion of Japan’s stand-off strike capability is expected to rely primarily on domestically developed long-range missiles currently under development.\nOfficia"
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Japan Self-Defense Forces conduct a full, integrated flight test of a Tomahawk missile",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-5c995d5ba2f57fff",
+              "R-f9061873901e3717",
+              "R-4b88ec68095cdd7a"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 78,
+                "text": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+                "field_sha256": "fdf9110eb7ca925d0b9269484d1cf415b6399b0fdc300eb296b9822bb463960f",
+                "rule_id": "R-5c995d5ba2f57fff"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 216,
+                "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                "rule_id": "R-f9061873901e3717"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 216,
+                "end": 340,
+                "text": "Tested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+                "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                "rule_id": "R-4b88ec68095cdd7a"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Japan Self-Defense Forces",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 78,
+                    "text": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+                    "field_sha256": "fdf9110eb7ca925d0b9269484d1cf415b6399b0fdc300eb296b9822bb463960f",
+                    "rule_id": "R-5c995d5ba2f57fff"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 216,
+                    "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                    "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                    "rule_id": "R-f9061873901e3717"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 216,
+                    "end": 340,
+                    "text": "Tested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+                    "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                    "rule_id": "R-4b88ec68095cdd7a"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "The test occurs on or before 2027-06-30",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-5c995d5ba2f57fff",
+              "R-f9061873901e3717",
+              "R-4b88ec68095cdd7a"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 78,
+                "text": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+                "field_sha256": "fdf9110eb7ca925d0b9269484d1cf415b6399b0fdc300eb296b9822bb463960f",
+                "rule_id": "R-5c995d5ba2f57fff"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 216,
+                "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                "rule_id": "R-f9061873901e3717"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 216,
+                "end": 340,
+                "text": "Tested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+                "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                "rule_id": "R-4b88ec68095cdd7a"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "2027-06-30",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 78,
+                    "text": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+                    "field_sha256": "fdf9110eb7ca925d0b9269484d1cf415b6399b0fdc300eb296b9822bb463960f",
+                    "rule_id": "R-5c995d5ba2f57fff"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 216,
+                    "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                    "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                    "rule_id": "R-f9061873901e3717"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 216,
+                    "end": 340,
+                    "text": "Tested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+                    "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                    "rule_id": "R-4b88ec68095cdd7a"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "Credible published sources or self-reports from Japan Self-Defense Forces, Japan Defense Agency, or Japanese government confirm the test",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-f9061873901e3717"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 216,
+                "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                "rule_id": "R-f9061873901e3717"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "Japan Self-Defense Forces, Japan Defense Agency, Japanese government",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 216,
+                    "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+                    "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+                    "rule_id": "R-f9061873901e3717"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 78,
+            "text": "Will the Japan Self-Defense Forces have tested a Tomahawk missile by mid-2027?",
+            "field_sha256": "fdf9110eb7ca925d0b9269484d1cf415b6399b0fdc300eb296b9822bb463960f",
+            "rule_id": "R-5c995d5ba2f57fff"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 216,
+            "text": "Metaculus admins will resolve this question as **Yes** or **No** according to credible published sources and the self-reports of the Japan Self-Defense Forces, the Japan Defense Agency, and the Japanese government.\n\n",
+            "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+            "rule_id": "R-f9061873901e3717"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 216,
+            "end": 340,
+            "text": "Tested means a full, integrated flight test in which a Tomahawk missile is launched, navigates towards a target, and hits it",
+            "field_sha256": "b3b1df230d43425d095d9b145b35af824a07ede75009a117a09dd406b2f0c06a",
+            "rule_id": "R-4b88ec68095cdd7a"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      },
+      "arm_order": [
+        "v2",
+        "v3"
+      ],
+      "parent_input_file": "round2-unseen-06-frozen-input.json",
+      "parent_round": "round2"
+    },
+    {
+      "id": "unseen-08",
+      "question_id": "43911",
+      "bundle": {
+        "request": {
+          "question": "Will the US and India finalise a new bilateral trade agreement before August 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. Government officials from both countries must officially announce the trade agreement.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://timesofindia.indiatimes.com/business/india-business/we-literally-have-the-paper-us-says-india-trade-deal-could-be-signed-in-months/articleshow/132557274.cms": {
+            "content": "A long-awaited India-US trade agreement could be signed within the next three to four months, with negotiations between the two countries now virtually complete, a senior US official said on Wednesday.\nSpeaking on the sidelines of the Asean Foreign Ministers' meeting in Manila, the official said the text of the agreement has effectively been finalised and that the remaining delay is linked to ongoing US trade investigations rather than unresolved issues between Washington and New Delhi.\n\"The deal... is there. We literally have the paper,\" the official told Reuters on condition of anonymity.\nAsked when the agreement could be concluded, the official said: \"Maybe another three, four months.\"\nSection 301 probes remain the final hurdle\nAccording to Reuters, the key obstacle to signing the agreement is Washington's completion of its ongoing Section 301 trade investigations, which examine alleged unfair trade practices and empower the US government to impose tariffs or other retaliatory measures.\nThe official said one of the Section 301 investigations, covering around 60 countries, is expected to conclude this week or next.\n\"Once that and other ongoing investigations are completed, we'll start seeing progress, not just in India but in other places,\" the official said, as quoted by Reuters.\nThe official stressed that the bilateral trade agreement itself is nearly complete and that the remaining delay is procedural rather than the result of differences between the two countries.\nIndia and the US have been negotiating a bilateral trade agreement aimed at expanding market access, lowering trade barriers and deepening economic ties.\nTariffs and pharma exports remain key concerns\nThe comments come even as trade tensions continue over separate US tariff measures.\nWashington has already proposed new tariffs of up to 12.5% on dozens of countries, including India, over allegations that they failed to curb trade in goods produced using forced labour.\nThe proposal is linked to the ongoing Section 301 investigations and has not yet been finalised.\nSeparately, US President Donald Trump announced on Tuesday that generic medicines imported into the United States will remain exempt from tariffs for two years beginning August 1.\nAfter that period, such imports would face tariffs of 100% for one year and 200% thereafter.\nThe move could significantly affect India's pharmaceutical sector as New Delhi is the most exposed among generic drug exporters.\nThe United States accounted for nearly $9.7 billion, or about 38%, of India's total pharmaceutical exports worth $25.8 billion in 2025.\nFramework agreement already ready\nThe latest timeline broadly aligns with statements made by Indian officials in recent weeks.\nEarlier this month, an Indian official quoted by news agency PTI had said the framework agreement between the two countries was ready and awaiting signing \"at the right time\", while negotiations on the broader Bilateral Trade Agreement (BTA) were progressing smoothly.\nThe official had also said both sides clearly understood the contents of the framework agreement and the issues being negotiated under the wider BTA, adding that there were no major differences holding up the talks.\nThe report also noted that India is seeking a tariff structure under the proposed agreement that would give it a comparative advantage over competing exporting nations while securing better market access for Indian businesses."
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Existence of a new bilateral trade agreement between the United States and India",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-9b3a5c5718361068",
+              "R-fe60e61cf8017190",
+              "R-ad9095010bc8de8c"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 82,
+                "text": "Will the US and India finalise a new bilateral trade agreement before August 2026?",
+                "field_sha256": "2cc7ede69a062c9925eb4a28acbb897f610ac68b62b99fb2399a3af0ce59eb4c",
+                "rule_id": "R-9b3a5c5718361068"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 166,
+                "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                "rule_id": "R-fe60e61cf8017190"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 166,
+                "end": 252,
+                "text": "Government officials from both countries must officially announce the trade agreement.",
+                "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                "rule_id": "R-ad9095010bc8de8c"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "US-India bilateral trade agreement",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 82,
+                    "text": "Will the US and India finalise a new bilateral trade agreement before August 2026?",
+                    "field_sha256": "2cc7ede69a062c9925eb4a28acbb897f610ac68b62b99fb2399a3af0ce59eb4c",
+                    "rule_id": "R-9b3a5c5718361068"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 166,
+                    "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                    "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                    "rule_id": "R-fe60e61cf8017190"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 166,
+                    "end": 252,
+                    "text": "Government officials from both countries must officially announce the trade agreement.",
+                    "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                    "rule_id": "R-ad9095010bc8de8c"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "The agreement is signed or finalised",
+            "critical": true,
+            "dimension": "stage",
+            "rule_ids": [
+              "R-fe60e61cf8017190"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 166,
+                "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                "rule_id": "R-fe60e61cf8017190"
+              }
+            ],
+            "targets": {
+              "stage": {
+                "value": "signed or finalised",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 166,
+                    "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                    "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                    "rule_id": "R-fe60e61cf8017190"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "Government officials from both the United States and India officially announce the agreement jointly",
+            "critical": true,
+            "dimension": "artifact",
+            "rule_ids": [
+              "R-ad9095010bc8de8c"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 166,
+                "end": 252,
+                "text": "Government officials from both countries must officially announce the trade agreement.",
+                "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                "rule_id": "R-ad9095010bc8de8c"
+              }
+            ],
+            "targets": {
+              "artifact": {
+                "value": "joint official announcement",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 166,
+                    "end": 252,
+                    "text": "Government officials from both countries must officially announce the trade agreement.",
+                    "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                    "rule_id": "R-ad9095010bc8de8c"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "The joint official announcement occurs on or before July 31, 2026",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-fe60e61cf8017190"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 166,
+                "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                "rule_id": "R-fe60e61cf8017190"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "2026-07-31",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 166,
+                    "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+                    "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+                    "rule_id": "R-fe60e61cf8017190"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 82,
+            "text": "Will the US and India finalise a new bilateral trade agreement before August 2026?",
+            "field_sha256": "2cc7ede69a062c9925eb4a28acbb897f610ac68b62b99fb2399a3af0ce59eb4c",
+            "rule_id": "R-9b3a5c5718361068"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 166,
+            "text": "This question will resolve as **Yes** if a new bilateral trade agreement between the US and India is signed or finalised and jointly announced before August 1, 2026. ",
+            "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+            "rule_id": "R-fe60e61cf8017190"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 166,
+            "end": 252,
+            "text": "Government officials from both countries must officially announce the trade agreement.",
+            "field_sha256": "2e56da50466f07f54a4359cacb3b1184260035271022ef9e9c317c67847718ec",
+            "rule_id": "R-ad9095010bc8de8c"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      },
+      "arm_order": [
+        "v3",
+        "v2"
+      ],
+      "parent_input_file": "round2-unseen-08-frozen-input.json",
+      "parent_round": "round2"
+    },
+    {
+      "id": "unseen-09",
+      "question_id": "40967",
+      "bundle": {
+        "request": {
+          "question": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+          "resolution_criteria": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://www.theguardian.com/politics/2026/may/09/british-leader-keir-starmer-under-pressure-after-heavy-election-losses": {
+            "content": "Keir Starmer, the British prime minister, is facing increasing pressure to set a date for his departure after elections across much of the country resulted in massive losses for his ruling Labour party.\nWith the bulk of results now counted after voting on Thursday, [Labour](https://www.theguardian.com/politics/labour) had lost more than 1,400 representatives from English councils, the local government structures that deliver many neighbourhood services.\nStarmer’s party also crashed to [defeat in the election for the devolved parliament of Wales](https://www.theguardian.com/uk-news/2026/may/08/plaid-cymru-biggest-party-wales-senedd-labour-reform), where it had dominated the country’s politics for a century, and [went backwards in representation in the Scottish parliament](https://www.theguardian.com/politics/2026/may/09/starmers-unpopularity-was-insurmountable-for-scottish-labour-and-a-boon-for-reform).\nAdding to the panic in Labour, the party lost to a series of challengers, including the rightwing populist Reform UK party, the leftwing Greens, and pro-independence nationalists in Wales and Scotland.\nThe elections, the biggest since Starmer won power in mid-2024, showed how the UK’s traditional two-party system of Labour and the Conservatives has been smashed, with Reform taking the most votes, and the Greens, Conservatives, Labour and the centrist Liberal Democrats bunched up behind.\nWhile Starmer does not have to face an election to the national parliament in Westminster for three years, increasing numbers of his MPs want him to announce a timetable for his departure, believing he is [too politically damaged](https://www.theguardian.com/politics/2026/may/09/labour-members-keir-starmer-party-fortunes-poll) to turn things around.\nSpeaking on Saturday morning, Debbie Abrahams, the MP for Oldham East and Saddleworth, an area in the north of England that used to be solidly Labour but has increasingly turned to Reform, said Starmer must “put the country first”.\nShe said: “We have to recognise the dangers that we’re in now, that on this trajectory it doesn’t look good.” Asked how quickly Starmer should go, she said: “I think it is a matter of months.”\nFor now, however, Starmer has the backing of his senior ministers, at least in public, including the two routinely named as likely challengers: Wes Streeting, the health minister, and Angela Rayner, who was deputy prime minister until last year.\nComplicating matters for any plotters is that the person viewed by many in Labour as the best potential replacement for Starmer, Andy Burnham, is not in parliament. He is the mayor of Greater Manchester and could only return to the House of Commons if another MP stood down and he fought the election to replace them.\nStarmer has vowed to fight on. In [an opinion article](https://www.theguardian.com/commentisfree/2026/may/08/election-results-left-right-uk-keir-starmer) for the Guardian on Saturday, the prime minister said he accepted the results were “very tough”, and that lessons needed to be learned.\nBut he rejected the argument from some MPs that to recover, Labour must do more to bring back left-leaning voters who have shifted their allegiance to the Greens. He wrote: “While we must respond to the message that voters have sent us, that doesn’t mean tacking right or left. It means bringing together a broad political movement.”\nThere is a consensus, even among his closest allies, that while Starmer has had some policy successes, and has dealt adeptly with Donald Trump and the wider international situation, his government has made too many missteps and U-turns.\nMore broadly, many in Labour worry that Starmer is unable to properly challenge either Reform UK, led by Nigel Farage, the politician best known for pushing the UK to vote to leave the European Union in 2016, or the Greens, who have surged in the polls under the leadership of the self-styled “eco-populist” Zack Polanski.\nHowever others in the party argue that changing prime ministers mid-government annoys voters just as much. From 2016 to 2022, the then-ruling Conservatives switched prime ministers four times, and were heavily punished by the electorate at the next election.\nUnder their new leader, Kemi Badenoch, the [Conservatives fared badly](https://www.theguardian.com/politics/2026/may/08/badenoch-claims-tories-coming-back-despite-widespread-losses-in-local-elections) in Thursday’s voting, losing more than 500 councillors and giving ground in Scotland and Wales."
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "Keir Starmer is the subject",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-b49e06f12d3b47ff",
+              "R-e397262760dfb6e7"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 67,
+                "text": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+                "field_sha256": "a0af967bba6202a81d78c40d20ad801a394693f8d602e0b2b96a4d9721fe92a5",
+                "rule_id": "R-b49e06f12d3b47ff"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 142,
+                "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                "rule_id": "R-e397262760dfb6e7"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "Keir Starmer",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 67,
+                    "text": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+                    "field_sha256": "a0af967bba6202a81d78c40d20ad801a394693f8d602e0b2b96a4d9721fe92a5",
+                    "rule_id": "R-b49e06f12d3b47ff"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 142,
+                    "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                    "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                    "rule_id": "R-e397262760dfb6e7"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "The event of ceasing to be Prime Minister occurs",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-b49e06f12d3b47ff",
+              "R-e397262760dfb6e7"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 67,
+                "text": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+                "field_sha256": "a0af967bba6202a81d78c40d20ad801a394693f8d602e0b2b96a4d9721fe92a5",
+                "rule_id": "R-b49e06f12d3b47ff"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 142,
+                "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                "rule_id": "R-e397262760dfb6e7"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "cease to be Prime Minister",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 67,
+                    "text": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+                    "field_sha256": "a0af967bba6202a81d78c40d20ad801a394693f8d602e0b2b96a4d9721fe92a5",
+                    "rule_id": "R-b49e06f12d3b47ff"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 142,
+                    "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                    "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                    "rule_id": "R-e397262760dfb6e7"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "The event occurs before January 1, 2027",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-e397262760dfb6e7"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 142,
+                "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                "rule_id": "R-e397262760dfb6e7"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "before 2027-01-01",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 142,
+                    "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                    "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                    "rule_id": "R-e397262760dfb6e7"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "The jurisdiction is the United Kingdom",
+            "critical": true,
+            "dimension": "scope",
+            "rule_ids": [
+              "R-e397262760dfb6e7"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 142,
+                "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                "rule_id": "R-e397262760dfb6e7"
+              }
+            ],
+            "targets": {
+              "scope": {
+                "value": "United Kingdom",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 142,
+                    "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+                    "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+                    "rule_id": "R-e397262760dfb6e7"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 67,
+            "text": "Will Keir Starmer cease to be Prime Minister of the UK during 2026?",
+            "field_sha256": "a0af967bba6202a81d78c40d20ad801a394693f8d602e0b2b96a4d9721fe92a5",
+            "rule_id": "R-b49e06f12d3b47ff"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 142,
+            "text": "This question will resolve as **Yes** if, at any point before January 1, 2027, Keir Starmer ceases to be Prime Minister of the United Kingdom.",
+            "field_sha256": "3eb4f436dddb514b75bc927fd0079ea0a80eaf2a86bb2fa8e40b76aa4e5bd135",
+            "rule_id": "R-e397262760dfb6e7"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      },
+      "arm_order": [
+        "v2",
+        "v3"
+      ],
+      "parent_input_file": "round2-unseen-09-frozen-input.json",
+      "parent_round": "round2"
+    },
+    {
+      "id": "unseen-10",
+      "question_id": "44801",
+      "bundle": {
+        "request": {
+          "question": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+          "resolution_criteria": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+          "fine_print": ""
+        },
+        "pages": {
+          "https://newsroom.aaa.com/2026/10/national-average-dips-following-record-setting-september": {
+            "content": "WASHINGTON, DC (October 1, 2026) – The national average for a gallon of regular gasoline dropped nearly 7 cents from last week to $4.41. This follows a record-setting September at the pump. The monthly average was $4.33, 50 cents higher than the previous September record of $3.83 set in 2023. Crude oil prices have dipped back into the $90 per barrel range, lowering the national average, but overall gas prices remain the highest they’ve ever been for this time of year.\nThe national average per kilowatt hour of electricity at a public EV charging station stayed the same this past week at 42 cents.\nFor the complete fuel report, including the latest EIA data, state gas and EV charging price trends, and oil market dynamics, please visit [AAA Fuel Site](https://gasprices.aaa.com/news/)."
+          }
+        }
+      },
+      "plan": {
+        "needs": [
+          {
+            "id": "n1",
+            "condition": "national average price of Regular Unleaded gasoline",
+            "critical": true,
+            "dimension": "entity",
+            "rule_ids": [
+              "R-a4b8f5c630731677",
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "question",
+                "start": 0,
+                "end": 79,
+                "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+                "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+                "rule_id": "R-a4b8f5c630731677"
+              },
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "entity": {
+                "value": "national average price of Regular Unleaded gasoline",
+                "origins": [
+                  {
+                    "field": "question",
+                    "start": 0,
+                    "end": 79,
+                    "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+                    "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+                    "rule_id": "R-a4b8f5c630731677"
+                  },
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n2",
+            "condition": "price greater than $5.016",
+            "critical": true,
+            "dimension": "measure",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "measure": {
+                "value": "$5.016",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n3",
+            "condition": "observation before September 6, 2026",
+            "critical": true,
+            "dimension": "observation_time",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "observation_time": {
+                "value": "2026-09-06",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [],
+            "target_semantics_verified": false
+          },
+          {
+            "id": "n4",
+            "condition": "source is AAA",
+            "critical": true,
+            "dimension": "source",
+            "rule_ids": [
+              "R-5a266de532a77242"
+            ],
+            "rule_bindings": [
+              {
+                "field": "resolution_criteria",
+                "start": 0,
+                "end": 197,
+                "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                "rule_id": "R-5a266de532a77242"
+              }
+            ],
+            "targets": {
+              "source": {
+                "value": "gasprices.aaa.com",
+                "origins": [
+                  {
+                    "field": "resolution_criteria",
+                    "start": 0,
+                    "end": 197,
+                    "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+                    "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+                    "rule_id": "R-5a266de532a77242"
+                  }
+                ]
+              }
+            },
+            "required_source_domains": [
+              "gasprices.aaa.com"
+            ],
+            "target_semantics_verified": false
+          }
+        ],
+        "rejected_needs": [],
+        "rule_catalog": [
+          {
+            "field": "question",
+            "start": 0,
+            "end": 79,
+            "text": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+            "field_sha256": "c93e9d779f396a235023f22501e945c4ae89e260c6df3938bc75fce870a970d4",
+            "rule_id": "R-a4b8f5c630731677"
+          },
+          {
+            "field": "resolution_criteria",
+            "start": 0,
+            "end": 197,
+            "text": "This question resolves as **Yes** if, before September 6, 2026, the national average price of Regular Unleaded gasoline is greater than \\$5.016 according to [AAA](https://gasprices.aaa.com/).&#x20;",
+            "field_sha256": "0c29be6b4e38dd0a6db9df78092b6aca1b9e0e9a8f0493d5abf3d5dc1eab5c79",
+            "rule_id": "R-5a266de532a77242"
+          }
+        ],
+        "semantic_completeness_verified": false,
+        "compatibility_repairs": []
+      },
+      "arm_order": [
+        "v3",
+        "v2"
+      ],
+      "parent_input_file": "round2-unseen-10-frozen-input.json",
+      "parent_round": "round2"
+    }
+  ]
+}

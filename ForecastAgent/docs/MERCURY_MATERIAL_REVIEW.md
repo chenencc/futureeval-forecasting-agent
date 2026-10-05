@@ -251,3 +251,31 @@ judgment units explicit: source authority or ticker validity must not inherit
 an event window, and event-time support requires a real event witness. Preserve
 all material and exact rule bindings. Detection of a disagreement is a separate
 result from correcting it; production remains unchanged.
+
+## Unit-aware V3 follow-up
+
+The next authorized development trial reuses all eight previous original
+packets and the exact 33 saved needs. It makes no new Super plans. Both V2 and
+V3 receive the same complete original question/rules/reading at evidence review.
+V3 adds a first Mercury request that classifies what each need asks using only
+rules/needs: source identity, entity identity, rule definition, observed
+attribute, occurrence, occurrence time, interval coverage, compound condition
+or unclear scope. A dimension alone cannot redefine a compound condition.
+These unit choices are model claims and can themselves be wrong.
+
+The second V3 request explicitly receives those unit choices and selects a
+joint relation/reference option. Source identity ignores unrelated event-window
+failures; event-time evidence requires a reported actual event. Rule definitions
+select original rule references. Partial, excluded, opposing and contextual
+records remain available. The choice schema cannot claim a positive witness
+while simultaneously selecting NONE, and it makes no whole-event refutation.
+Literal binding and scope classification do not certify entailment or truth.
+
+The trial freezes V2/V3 alternating arm order, input hashes and code before
+dispatch. Limits are 24 logical calls and 24 physical attempts: eight V2
+reviews plus eight V3 unit requests and eight V3 evidence requests. Prior
+consumption is recorded unchanged. There are no searches, captures, forecasts,
+paid fallback, or automatic journal restarts. Source/reference completeness,
+unit errors, lost positive components, event-time overclaims and actual token
+consumption are audited independently. Fewer event-refutation options cannot
+by themselves count as a semantic improvement. Production remains unchanged.
