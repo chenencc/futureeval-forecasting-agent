@@ -624,3 +624,52 @@ Audit exact spans, paired coverage, journals, usage, false entailment and lost
 useful context separately. Structural safeguards and semantic improvement
 are separate acceptance claims. These cases are repair regressions and do
 not establish unseen generalization or forecasting accuracy.
+
+### V6 paired result and manual review
+
+[Run 37262674376](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37262674376)
+completed on `e48d228`. All five pairs and 19 unchanged needs completed; 62
+focused tests passed. Original provider replay, exact source/rule/operator
+spans, paired delivered materials, preserved prior budgets and the locally
+archived original ZIP hash passed. All responses identify
+`inception/mercury-decide-20260930`. The English structured review is
+`E:/metaculus_data/reports/mercury-operator-ledgers-audit-37262674376.json`.
+
+| Actual usage | Fresh V5 | V6 |
+| --- | ---: | ---: |
+| HTTP/logical requests | 10 | 11 |
+| Known input tokens | 350,298 | 871,483 |
+| Known output tokens | 119 | 140 |
+| Unknown usage attempts | 0 | 0 |
+| Provider-reported USD | 0 | 0 |
+
+V6 used five contract calls, five proof calls and one conditional scope review.
+Its reported input usage is 2.49 times V5. Per-head provider accounting is not
+unique context length. No call or token efficiency improvement is established.
+No search, fetch, forecast or production promotion occurred.
+
+Structural safeguards pass: all 19 durable observation objects remain even
+under parameter/identity choices, and literal bindings cannot supply observed
+values. All four crypto snapshot paraphrases receive an explicit original-rule
+conflict flag. Fuel's greater-than and observed-time roots no longer become
+pure parameters. The legal source's already-served term and legally possible
+candidacy lead the scope review to reject the earlier explicit active-ban
+candidate, retaining its original evidence and decision for audit. AAA/person
+identity context and the original negative non-reversal root remain available.
+
+Semantic acceptance still fails. Energy's official August 3 directive changes
+from inferred to excluded despite providing useful restrictive-rule context;
+the selected span does not establish the 50 MW condition, so this is context
+loss rather than a certified false rejection of a complete event. Its negative
+interval also becomes any-time-by. The legal literal date receives contradicted
+instead of literal-only: the effect check contaminates a date-only field.
+Fuel's October price cannot refute an earlier threshold crossing, and measure
+identity is still conflated with temporal applicability. Crypto need3 retains
+an aligned/partial summary despite its explicit program conflict. Consumers
+must inspect the flags. Saved USDC omissions remain unchanged.
+
+Do not promote V6. Retain the non-destructive ledgers and exact provenance,
+but separate independent field identity from event scope, normalize conflict
+status precedence and compress repeated operator choices before another
+bounded experiment. These five repair cases do not establish unseen quality,
+truth certification or forecasting accuracy.
