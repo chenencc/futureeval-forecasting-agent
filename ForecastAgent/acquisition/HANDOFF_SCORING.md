@@ -70,3 +70,43 @@ name `OPENROUTER2`; credentials never enter request records or artifacts.
 `routing.json`, `result.json`, and `seal.json` make prepared, attempted, failed,
 first-only and conditionally reread states distinguishable. Do not interpret a
 successful workflow as proof that either prediction is correct.
+
+## Completed paired run
+
+Run [37332005193](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37332005193)
+completed all five pairs on experiment commit `f3811da`. Reproducible input
+hashes, original source spans, sealed probabilities, actual request journals
+and an independent metric calculation passed. The response model was
+`inception/mercury-decide-20260930` for all seventeen HTTP requests.
+
+| Metric, clipped probabilities | Old packing | New packing |
+| --- | ---: | ---: |
+| First-pass Brier, primary | 0.101012 | 0.039169 |
+| Final Brier, after conditional reread | 0.139380 | 0.055040 |
+| Final natural-log loss | 0.396187 | 0.214439 |
+| Final accuracy at 0.5 | 4/5 | 5/5 |
+| HTTP attempts | 9 | 8 |
+| Provider-reported input and output tokens | 455300 | 338462 |
+
+The main improvement is question 36871: the June 30 snapshot date, table
+header and both stablecoin rows reach the new first request, changing the
+final Yes probability from 0.817574 to 0.294215 on a No label. An end-of-window
+snapshot alone does not prove that no earlier crossing occurred, and does
+not cover every alternative resolution provider. The model's sufficiency
+score must not be treated as verified temporal coverage.
+
+Question 43494 regresses from 0.924142 to 0.592667 on a Yes label. Its captures
+describe environmental permits and include a 50 MW definition; grid connection
+restrictions, dates and rescission still require separate interpretation.
+Question 43501 retains missing opening-time and incident-condition gaps.
+Questions 43991 and 44801 both remain No and clip to 0.02 in either route.
+
+In both arms, conditional rereading worsens aggregate Brier compared with the
+first pass. This is evidence against assuming that a second score is always
+better, not sufficient evidence for tuning a replacement gate on these five
+cases. The candidate remains isolated pending a larger held-out paired test.
+
+See `../experiments/materials_handoff_score_results.json` for probabilities,
+consumption and limitations. The full audited report and original artifacts
+are archived under `E:\metaculus_data\reports\materials-handoff-score-37332005193`.
+No new collection, submission or production promotion occurred.
