@@ -91,5 +91,31 @@ class Trial(unittest.TestCase):
         result=v3.bind(compact,answers(compact['questions'],{'evidence_0':choice}),bundle)
         self.assertTrue(result['rows'][0]['text_identity_verified'])
 
+    def test_wire_projection_keeps_semantic_text_and_marks_omissions(self):
+        from ForecastAgent.supplement import mercury_wire as wire
+        bundle,plan,_=MercuryMaterial().fixture()
+        prepared=trial.v3.v2.prepare(bundle,plan)
+        original=prepared['state']['reading']
+        projected=wire.prepare(prepared)
+        semantic=lambda p:[{k:v for k,v in row.items() if k in ('passage_id','url','start','end','text','context_spans')} for row in p]
+        self.assertEqual(projected['state']['reading']['passages'],semantic(original['passages']))
+        self.assertNotIn('inventory',projected['state']['reading'])
+        self.assertIn('inventory',original)
+        self.assertTrue(projected['state']['reading_coverage_notice']['omission_does_not_prove_absence'])
+
+    def test_invalid_request_is_local_to_case_and_does_not_block_other_arm(self):
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'FORECAST_MODEL':trial.SUPER,'FORECAST_MODEL_FALLBACK_SUPER':'0'}):
+            root=Path(d);manifest=self.fixture(root)
+            first=[True]
+            def invalid(state,questions,key,observer):
+                if first[0]:
+                    first[0]=False
+                    observer('reserve',{'request':{'model':trial.decisions.MODEL},'status':'reserved'})
+                    raise RuntimeError('Decision endpoint HTTP 422')
+                return self.decide(state,questions,key,observer)
+            with patch.object(trial.decisions,'decide',invalid),patch.object(trial,'ask_model',self.compile):
+                r=trial.run(root/'out','dummy',manifest)
+            self.assertFalse(r['blocked']);self.assertEqual(r['cases'][0]['arms']['v4']['status'],'received')
+
 
 if __name__=='__main__':unittest.main()

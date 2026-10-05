@@ -12,10 +12,11 @@
     "ForecastAgent/supplement/mercury_material_v4.py": "a218b77f957eacb4398a928bc29508ac4eb394ec925f47dd0af7a22912ce98b5",
     "ForecastAgent/providers/model.py": "6efc3cec8c304e38aab944ad80f95cde13f1ef0af9ade0fe2f69e97475ce3f02",
     "ForecastAgent/supplement/research_loop.py": "5c19b36e45dc8a1566e2b6ddb26c41b2c06598e87231ed3ea68b07fba3fe4117",
-    "ForecastAgent/experiments/mercury_material_obligations_trial.py": "b51d8b605921739864161e320daae4bc99f586d681b0f0d7b5f3eae73122e5f2",
+    "ForecastAgent/experiments/mercury_material_obligations_trial.py": "6360314c11264d5b0b547fb8dd07187950fc5f11a6bd395a6e2ec3a6f5567580",
     "ForecastAgent/supplement/mercury_candidate_groups.py": "ded37df1290a7033b7268f143e2e25a3d62fe636d562d29d7f0f7d24b4f51352",
     "ForecastAgent/readers/material_passages.py": "171051b3c9a1ed0b94c7081907ae4e230fc23028fe3862e44faaf78aaaf6e77d",
-    "ForecastAgent/readers/quality.py": "10f09d07d3498c66e7164ddc31b16befdd3ec2b601192a403cdf5e181f7919ef"
+    "ForecastAgent/readers/quality.py": "10f09d07d3498c66e7164ddc31b16befdd3ec2b601192a403cdf5e181f7919ef",
+    "ForecastAgent/supplement/mercury_wire.py": "aad71237733e72fe692bbd126742d59b44cdca7a5305c57a3b198602ce22f462"
   },
   "parent_run_id": "37251487304",
   "parent_artifact_id": "11320009651",
@@ -4458,9 +4459,9 @@
     }
   ],
   "resume_required": true,
-  "resume_parent_run": "37253179126",
-  "resume_parent_artifact": "11321882212",
-  "resume_parent_manifest_sha256": "098b223305efe75e2537018c70d8c22a0993bcc792dac955af8bbca5362299c5",
-  "parent_elapsed_seconds": 96,
-  "protocol_amendment": "Resume the same trial and unchanged caps. Accept threshold qualifier role explicitly. Coalesce only contiguous delivered source spans to bound candidate growth; retain identical complete reading across both arms. No completed arm is rerun. Candidate granularity changes jointly for the repair-heldout cohort, not regression policy."
+  "resume_parent_run": "37253866137",
+  "resume_parent_artifact": "11321402577",
+  "resume_parent_manifest_sha256": "f0bbcfd921ef7034662c600a94b9cbfd4b2e5529a18cd1bd0e49ddc45fec368d",
+  "parent_elapsed_seconds": 99,
+  "protocol_amendment": "Resume the same trial and unchanged caps. Accept threshold qualifier role explicitly. Coalesce only contiguous delivered source spans to bound candidate growth; retain identical complete reading across both arms. No completed arm is rerun. Candidate granularity changes jointly for the repair-heldout cohort, not regression policy. Second bounded continuation removes only audit inventories/omitted ledgers and duplicate claim text from wire state, preserving every delivered source passage and all original prepared state. HTTP 422 is isolated to a case, while account/auth/service errors still stop the trial."
 }

@@ -14,6 +14,7 @@ from ForecastAgent.supplement import acquisition_ids as ids
 from ForecastAgent.supplement import mercury_material_v3 as v3
 from ForecastAgent.supplement import mercury_material_v4 as v4
 from ForecastAgent.supplement import mercury_candidate_groups as groups
+from ForecastAgent.supplement import mercury_wire as wire
 from ForecastAgent.supplement.research_loop import decode
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,10 +40,12 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
         if state['trial_id']!=data['trial_id'] or state['limits']!=data['limits'] or state['prior_experiments']!=data['prior_experiments']:
             raise ValueError('resume_cannot_change_limits_or_lineage')
         shutil.copytree(parent,output)
-        shutil.copytree(parent,output/'parent_snapshot')
+        snapshot='parent_snapshot-'+data['resume_parent_run']
+        shutil.copytree(parent,output/snapshot)
         state.setdefault('continuations',[]).append({'parent_run':data['resume_parent_run'],
             'parent_attempts':len(state['attempts']),'parent_calls':len(state['calls']),
-            'reason':'Preserve completed arms; accept threshold role and group contiguous candidate units without dropping reading.'})
+            'snapshot_directory':snapshot,
+            'reason':'Preserve completed arms and cumulative limits; apply explicitly frozen request projection without dropping semantic reading.'})
         state['blocked']=False
     else:
         output.mkdir(parents=True)
@@ -72,6 +75,7 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
         return token
 
     def execute(phase,prepared,*,tool=None,prompt=None):
+        prepared=wire.prepare(prepared) if not tool else prepared
         if len(state['calls']) >= data['limits']['logical'] or time.monotonic() >= deadline:
             raise RuntimeError('frozen_trial_limit_exhausted')
         if len(json.dumps({'state':prepared['state'],'questions':prepared['questions']}).encode()) > data['limits']['request_bytes']:
@@ -97,7 +101,7 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
             return response
         except Exception as exc:
             call.update(status='failed',error=str(exc)[:240])
-            if not isinstance(exc,ValueError):state['blocked'] = True
+            if not isinstance(exc,ValueError) and str(exc)!='Decision endpoint HTTP 422':state['blocked'] = True
             raise
         finally:save(output/'state.json',state)
 
@@ -179,7 +183,7 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
                 row['arms'][arm] = {'status':'received','file':filename,'application_status':result['application_status']}
             except Exception as exc:
                 row['arms'][arm] = {'status':'failed','error':str(exc)[:240]}
-                if not isinstance(exc,ValueError):state['blocked'] = True
+                if not isinstance(exc,ValueError) and str(exc)!='Decision endpoint HTTP 422':state['blocked'] = True
             save(output/'state.json',state)
             if state['blocked']:break
         row['pair_complete'] = set(row['arms']) == {'v3','v4'} and all(a.get('application_status') == 'typed_review_complete' for a in row['arms'].values())

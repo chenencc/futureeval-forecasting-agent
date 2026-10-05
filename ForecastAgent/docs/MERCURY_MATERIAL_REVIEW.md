@@ -397,3 +397,18 @@ is unchanged and no units are dropped. The crypto case's 56 units become seven
 source candidates (29 choices per baseline head). Candidate granularity changes
 jointly for the heldout cohort, which must be distinguished from the unchanged
 regression pairs. No attempt or token history is reset.
+
+Run `37253866137` completed the energy pair without another compiler call, then
+preserved the same crypto `422` at cumulative 38 attempts. Candidate count was
+not a sufficient explanation. A local `cl100k_base` proxy estimated 38,411
+tokens for the common state alone; the public Mercury page specifies 32,768
+context tokens. This is supporting evidence, not its exact provider tokenizer.
+The second continuation keeps the full local prepared state but sends only
+verbatim source text, URLs, span coordinates, separately saved headers, rules
+and relevant claims. Inventories, omission coordinates, source hashes and
+duplicate claim quotations/distributions stay in the artifact. Omission counts
+and an explicit absence warning remain in model state. The same crypto proxy
+falls to 26,007 common-state / 28,051 maximum single-head tokens. Both paired
+arms receive the same projection. Invalid-request `422` failures are isolated
+to their case; authentication, account limits and service failures still stop
+the trial. No hard provider option limit or guaranteed context fit is claimed.
