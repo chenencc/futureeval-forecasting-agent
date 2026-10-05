@@ -1,8 +1,15 @@
 name: Frozen frontier paired acquisition experiment
+run-name: Frozen frontier ${{ inputs.candidate_policy || 'v1' }} paired acquisition
 
 on:
   workflow_dispatch:
     inputs:
+      candidate_policy:
+        description: 'Separately frozen candidate strategy; never migrate prior case state'
+        type: choice
+        options: ['v1', 'v2']
+        default: 'v1'
+        required: true
       resume_run:
         description: 'Exact prior run to restore; no automatic quota restart'
         required: false
@@ -13,7 +20,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: intelligent-frontier-five-v1
+  group: intelligent-frontier-five-${{ inputs.candidate_policy || 'v1' }}
   cancel-in-progress: false
 
 jobs:
@@ -41,18 +48,22 @@ jobs:
         if: inputs.resume_run != ''
         uses: actions/download-artifact@v4
         with:
-          name: intelligent-frontier-${{ matrix.question }}
+          name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/intelligent-frontier/${{ matrix.question }}
+          path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}
       - name: Frozen input and offline contract checks
         run: |
           python -m ForecastAgent.acquisition.frontier_compare --preflight
-          python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_frontier_compare
+          python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_intelligent_repairs ForecastAgent.tests.test_frontier_compare
       - name: Compare two model policies over identical saved sources
-        run: python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier/$CASE_ID" --replicate-super
+        run: |
+          EXTRA=()
+          if [ "$CANDIDATE_POLICY" = 'v2' ]; then EXTRA+=(--repair-v2); fi
+          python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier-$CANDIDATE_POLICY/$CASE_ID" --replicate-super "${EXTRA[@]}"
         env:
           CASE_ID: ${{ matrix.question }}
+          CANDIDATE_POLICY: ${{ inputs.candidate_policy }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
           FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
           FORECAST_MODEL_FALLBACK_SUPER: '0'
@@ -60,8 +71,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: intelligent-frontier-${{ matrix.question }}
-          path: snapshots/intelligent-frontier/${{ matrix.question }}/
+          name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
+          path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90

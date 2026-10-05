@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
-from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics
+from ForecastAgent.acquisition.frontier_compare import inputs, seeded, run_arm, metrics, run_case
 
 
 def call(name, args, ident):
@@ -14,6 +14,57 @@ def call(name, args, ident):
 
 
 class FrontierComparisonTests(TestCase):
+    def test_v2_is_explicit_separate_identity_and_cannot_migrate_saved_v1_task(self):
+        data,_=inputs()
+        with TemporaryDirectory() as tmp:
+            old=seeded(data['cases'][0],'candidate',Path(tmp)/'old')
+            new=seeded(data['cases'][0],'candidate',Path(tmp)/'new',repair_v2=True)
+            self.assertEqual(old.bundle['request']['acquisition_strategy'],'intelligent_materials_v1')
+            self.assertEqual(new.bundle['request']['acquisition_strategy'],'intelligent_materials_v2')
+            self.assertEqual(old.bundle['pages'],new.bundle['pages'])
+            with self.assertRaisesRegex(ValueError,'different input'):
+                seeded(data['cases'][0],'candidate',Path(tmp)/'old',repair_v2=True)
+            with self.assertRaisesRegex(ValueError,'fixed Super'):
+                run_case(data['cases'][0]['id'],Path(tmp)/'invalid',repair_v2=True)
+
+    def test_v2_harness_forces_exact_review_and_rejects_cache_policy_migration(self):
+        from ForecastAgent.tests.test_intelligent_repairs import saved_cases, adapt_saved_plan
+        data,_=inputs()
+        case=data['cases'][0]
+        saved=next(c for c in saved_cases() if c['id']==case['id'])
+        old_plan=next(r['arguments'] for r in saved['calls'] if r['tool']=='plan_evidence')
+        read=next(r['arguments'] for r in saved['calls'] if r['tool']=='read_document')
+        with TemporaryDirectory() as tmp, patch.dict('os.environ',{'EXA_API_KEY':''}):
+            root=Path(tmp)
+            task=seeded(case,'candidate',root,repair_v2=True)
+            plan=adapt_saved_plan(task,old_plan)
+            turns=[]
+            def respond(projected,*args,**kwargs):
+                turns.append(kwargs.get('forced_tool'))
+                if len(turns)==1:
+                    return {'tool_calls':[call('plan_evidence',plan,'p')]}
+                if len(turns)==2:
+                    return {'tool_calls':[call('read_document',read,'r')]}
+                self.assertEqual(kwargs['forced_tool'],'review_passages')
+                focus=next(json.loads(m['content']) for m in projected if m['role']=='user'
+                    and json.loads(m['content']).get('kind')=='pending_material_review')
+                return {'tool_calls':[call('review_passages',{'items':[{'passage_id':r['passage_id'],
+                    'action':'keep','need_ids':[plan['needs'][0]['id']],
+                    'reason':'Keep complete dated table rows with units and labels.'} for r in focus['passages']]},'k'),
+                    call('finish_collection',{'gaps':['Independent series and assessments remain missing.']},'f')]}
+            with patch('ForecastAgent.runtime.retrieval.ask_ultra',side_effect=respond) as model, \
+                 patch('ForecastAgent.providers.http.download') as fetch:
+                report=run_arm(case,'candidate',root,'mock-key',http_cap=11,repair_v2=True)
+            self.assertEqual(model.call_count,3)
+            fetch.assert_not_called()
+            self.assertEqual(report['issues'],[])
+            self.assertEqual(report['material_checks_selected'],2)
+            with patch('ForecastAgent.runtime.retrieval.ask_ultra') as cached:
+                self.assertEqual(run_arm(case,'candidate',root,'mock-key',http_cap=11,repair_v2=True),report)
+                with self.assertRaisesRegex(ValueError,'policy changed'):
+                    run_arm(case,'candidate',root,'mock-key')
+                cached.assert_not_called()
+
     def test_pool_and_preregistered_anchors_are_exact(self):
         data, rubric = inputs()
         self.assertEqual(sum(len(c['pages']) for c in data['cases']),33)

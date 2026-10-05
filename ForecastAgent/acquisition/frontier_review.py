@@ -78,6 +78,13 @@ def review(root, run_id):
             record['frozen_case_identity']=identity
             record['selected_original_material']=[{'url':e['url'],'text':e['text'],
                 'location':e.get('location'),'need_ids':e.get('need_ids')} for e in bundle.get('excerpts',[])]
+            record['candidate_strategy']=bundle['request'].get('acquisition_strategy')
+            names={s.get('tool') for s in bundle.get('transcript',[])}
+            record['actual_tool_counts']={name:sum(s.get('tool')==name for s in bundle.get('transcript',[])) for name in sorted(names)}
+            record['material_assessment_count']=len(bundle.get('material_assessments',{}))
+            record['material_plan_failure_count']=len(bundle.get('control',{}).get('material_plan_failures',[]))
+            record['pending_review_projection_count']=sum(bool(p.get('retained_pending_passage_ids')) for p in bundle.get('context_projections',[]))
+            record['context_chars_max']=max((p.get('projected_chars',0) for p in bundle.get('context_projections',[])),default=0)
             row['arms'][arm]=record
         rows.append(row)
     totals={}
