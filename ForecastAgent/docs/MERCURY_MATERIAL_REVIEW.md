@@ -484,3 +484,45 @@ The full English per-question audit is
 `E:/metaculus_data/reports/mercury-material-obligations-audit-37254987807.json`.
 This is a saved-material system experiment, not a forecasting/Brier result,
 a fully blinded review, or a homogeneous model-only A/B.
+
+## V5 typed original roots: bounded regression
+
+`MERCURY_TYPED_ROOTS5.json` preregisters a five-case, 19-need comparison using
+the original energy, cyber, fuel, stablecoin and legal packets from run
+`37254987807`. These are repair regressions, not heldout validation. Original
+question text, original needs, rule catalog and delivered reading are identical
+between arms. The existing omitted USDC pages remain omitted in this test;
+reader allocation is a separate unresolved problem. Bodies may contain future
+information. No outcome labels, forecasts or accuracy metrics are requested.
+
+V4 reuses its frozen rules-only compiler proposals and reruns evidence plus
+conditional coherence. V5 does not adopt those qualifier propositions. It
+first asks Mercury to classify every unchanged original need by obligation
+type, temporal operator, polarity, connective and need/rule alignment, using
+rules only. A second request independently selects the original evidence and
+relation for every original root. Proposed types are fallible, not program
+verified logic. Literal parameters/identities have separate dispositions;
+they cannot substitute for observations. An unaligned need or type/relation
+disagreement retains the raw answer but marks consistency review. No rule
+closes automatically and no model claim receives a truth certificate.
+
+This isolates whether typed original roots avoid the previous affirmative
+qualifier substitution and unnecessary observation-coherence checks for
+literal parameters/identities. It does not establish that fewer evidence
+heads preserve every atomic qualifier. Audit that regression explicitly.
+
+Before calls, freeze the five packets, original needs, V4 contracts, alternating
+arm order and code hashes. New experiment caps are 24 logical calls, 26 physical
+attempts, 1,200 seconds and 500,000 request bytes. The previous 65 attempts and
+their 70/74 caps remain unchanged; this is a separately bounded experiment,
+not a reset. Mercury stays `inception/mercury-decide:free`; no Super, search,
+fetch, paid fallback, forecast or production change runs. Resume requires the
+same manifest identity and retains all calls, elapsed time and provider files.
+
+Structural gates check original-span replay, exact reading equality, root
+preservation, typed completeness and caps. Semantic review checks negative
+non-reversal versus reversal, literal 50 MW, cyber confirmation timing, fuel
+observed price versus rule target, crypto any-time-by versus as-of and legally
+operative prohibition versus an earlier issued sentence. Identity/parameter
+retention must not introduce new world-event overclaims. Improvement requires
+manual evidence audit; a successful workflow is insufficient for promotion.
