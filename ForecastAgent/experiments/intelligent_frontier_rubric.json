@@ -1,0 +1,261 @@
+{
+  "schema": "frozen-frontier-preregistered-rubric-v1",
+  "frozen_before_provider_calls": true,
+  "pool_sha256": "52c850b0289c40e5b2cde4026e7a27bf9cbb1df509f0f11840772bbd93ee6853",
+  "question_ids": [
+    "36871",
+    "43494",
+    "43501",
+    "43991",
+    "44801"
+  ],
+  "targets": {
+    "36871": [
+      {
+        "id": "target_usdt_row",
+        "description": "USDT market capitalization at the target snapshot; preserve full value and entity",
+        "alternatives": [
+          {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "anchors": [
+              "USDT",
+              "$184,368,461,962.97"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "target_usdc_row",
+        "description": "USDC market capitalization at the same target snapshot",
+        "alternatives": [
+          {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "anchors": [
+              "USDC",
+              "$73,360,220,193.95"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "target_table_identity",
+        "description": "Target observation date, denomination and column meaning",
+        "alternatives": [
+          {
+            "url": "https://coinmarketcap.com/historical/20260630",
+            "anchors": [
+              "Historical Snapshot - 30 June 2026",
+              "USD",
+              "Market Cap"
+            ]
+          }
+        ]
+      }
+    ],
+    "43494": [
+      {
+        "id": "ny_scope_and_date",
+        "description": "Executive-order date and electricity threshold, not merely a general moratorium headline",
+        "alternatives": [
+          {
+            "url": "https://lysanderny.gov/sites/default/files/2026-07/summary_of_eo_62_on_data_centers.pdf",
+            "anchors": [
+              "July 14, 2026",
+              "50 megawatts"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ny_permit_scope",
+        "description": "Exact permit restriction text to distinguish environmental permits from grid connections",
+        "alternatives": [
+          {
+            "url": "https://esd.ny.gov/esd-media-center/press-releases/first-statewide-moratorium-new-hyperscale-data-centers-launched",
+            "anchors": [
+              "moratorium",
+              "State environmental permits"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pa_binding_scope",
+        "description": "Pennsylvania executive-order date and binding permit commitment",
+        "alternatives": [
+          {
+            "url": "https://dced.pa.gov/business-assistance/data-center-resources/grid-requirements",
+            "anchors": [
+              "August 18, 2026",
+              "legally binding commitment"
+            ]
+          }
+        ]
+      }
+    ],
+    "43501": [
+      {
+        "id": "government_incident_details",
+        "description": "Confirmed vendor/product and unauthorized data types",
+        "alternatives": [
+          {
+            "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+            "anchors": [
+              "Instructure Holdings",
+              "unauthorized access to usernames, email addresses"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "incident_date_range",
+        "description": "Explicit incident-related log-review dates for chronology",
+        "alternatives": [
+          {
+            "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-05-12/technology-security-alert-ongoing-cybersecurity-incident-involving-canvas-learning-management-system",
+            "anchors": [
+              "April 25, 2026",
+              "May 8, 2026"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "vendor_response",
+        "description": "Original vendor acknowledgement and ongoing institution-level breakdown",
+        "alternatives": [
+          {
+            "url": "https://www.instructure.com/incident_update",
+            "anchors": [
+              "Steve Daly, CEO, Instructure",
+              "parsing them by institution"
+            ]
+          }
+        ]
+      }
+    ],
+    "43991": [
+      {
+        "id": "sentence_components",
+        "description": "Custodial and ineligibility components must remain distinguishable",
+        "alternatives": [
+          {
+            "url": "https://www.rts.ch/info/monde/2026/article/condamnee-en-appel-marine-le-pen-pourra-se-presenter-en-2027-29296439.html",
+            "anchors": [
+              "45 mois dont 30 avec sursis",
+              "déjà été purgée"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sentence_effect",
+        "description": "Eligibility wording and original sentence-clock start",
+        "alternatives": [
+          {
+            "url": "https://www.rts.ch/info/monde/2026/article/condamnee-en-appel-marine-le-pen-pourra-se-presenter-en-2027-29296439.html",
+            "anchors": [
+              "Elle serait éligible au jour du premier tour",
+              "31 mars 2025"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "future_appeal_branch",
+        "description": "Conditional prosecutor appeal and timing, not a completed reversal",
+        "alternatives": [
+          {
+            "url": "https://fr.euronews.com/2026/07/07/je-suis-candidate-a-lelection-presidentielle-annonce-marine-le-pen-sur-tf1",
+            "anchors": [
+              "la procureure générale",
+              "la semaine prochaine",
+              "éventuel pourvoi"
+            ]
+          }
+        ]
+      }
+    ],
+    "44801": [
+      {
+        "id": "aaa_predeadline_metric",
+        "description": "AAA dated pre-deadline regular national price, not a state or monthly average",
+        "alternatives": [
+          {
+            "url": "https://gasprices.aaa.com/gas-prices-remain-high-as-august-will-likely-set-new-record",
+            "anchors": [
+              "August 27, 2026",
+              "national average for a gallon of regular gasoline",
+              "$4.09"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "later_annual_and_alltime",
+        "description": "Later report differentiates annual record from all-time high and retains its date",
+        "alternatives": [
+          {
+            "url": "https://gasprices.aaa.com/pump-prices-keep-climbing-as-crude-oil-remains-high-2",
+            "anchors": [
+              "September 17, 2026",
+              "$4.56 set on May 21",
+              "$5.01 set on June 14, 2022"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "near_deadline_lead",
+        "description": "Saved AAA September 3 index lead retained as incomplete source, not full daily series",
+        "alternatives": [
+          {
+            "url": "https://gasprices.aaa.com/2026",
+            "anchors": [
+              "September 3, 2026",
+              "$4.14"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "arm_order": {
+    "36871": [
+      "baseline",
+      "candidate"
+    ],
+    "43494": [
+      "candidate",
+      "baseline"
+    ],
+    "43501": [
+      "baseline",
+      "candidate"
+    ],
+    "43991": [
+      "candidate",
+      "baseline"
+    ],
+    "44801": [
+      "baseline",
+      "candidate"
+    ]
+  },
+  "primary_measure": "Fraction of 15 predeclared material-anchor checks present in version-valid banked original excerpts, scored separately per case. All anchors for a check must come from the specified source; excerpts may be combined within that source.",
+  "scope": "Development regression, not untouched holdout. Same captured material, zero discovery/fetch. Not full semantic coverage or forecast accuracy. Target table headers and date can be separately banked. Retrospective current-body information and missing opening timestamps remain caveats.",
+  "absent_material_to_review": {
+    "36871": "No full daily combined series; a target-day value alone does not prove no earlier threshold crossing.",
+    "43494": "No documented complete official rescission check or definitive grid-connection applicability interpretation.",
+    "43501": "Opening timestamp absent; later confirmed distinct incident cannot be inferred from the old incident.",
+    "43991": "No official full judgment; distinguish current sentence effect and future appeal.",
+    "44801": "No complete AAA national regular daily series through September 5; monthly and seasonal records are not all-time daily highs."
+  },
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "fallback": false,
+  "maximum_model_http_attempts": 160,
+  "maximum_decisions_per_arm": 12,
+  "network_acquisition_calls": 0,
+  "analysis_calls": 0,
+  "promotion_allowed": false
+}
