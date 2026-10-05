@@ -2,9 +2,19 @@
 import copy
 
 
+def compact_rule_links(value):
+    if isinstance(value,list):return [compact_rule_links(v) for v in value]
+    if not isinstance(value,dict):return value
+    return {k:([{'rule_id':r['rule_id']} for r in v] if k in ('rule_bindings','origins')
+               and isinstance(v,list) and all(isinstance(r,dict) and 'rule_id' in r for r in v)
+               else compact_rule_links(v)) for k,v in value.items()}
+
+
 def prepare(prepared):
     out=copy.deepcopy(prepared)
     state=out['state']
+    for key in ('needs','observation_contracts','candidate_claims'):
+        if key in state:state[key]=compact_rule_links(state[key])
     reading=state.get('reading')
     if reading:
         metadata={k:reading.pop(k,[]) for k in ('inventory','omitted')}

@@ -412,3 +412,14 @@ falls to 26,007 common-state / 28,051 maximum single-head tokens. Both paired
 arms receive the same projection. Invalid-request `422` failures are isolated
 to their case; authentication, account limits and service failures still stop
 the trial. No hard provider option limit or guaranteed context fit is claimed.
+
+Run `37254353088` reached all 13 cases at cumulative 58 attempts. Eleven pairs
+completed; crypto V4 still exceeded the proxy context envelope (33,252 tokens
+for its largest head), and the law planner emitted unsupported `effect` as a
+dimension. The final bounded continuation retains every completed pair, moves
+repeated rule quotations to their existing rule IDs (the full original rule
+catalog remains available), and permits one schema-only planner repair. Repair
+must preserve every need ID, condition, target and rule ID verbatim; it cannot
+invent observations, remove needs or see source bodies. The failed proposals
+remain archived. Crypto's projected largest head estimates 27,474 proxy tokens.
+The same cumulative 70/74 caps remain unchanged.

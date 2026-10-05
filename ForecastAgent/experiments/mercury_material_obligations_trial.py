@@ -60,7 +60,7 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
     def observer(event,record,token=None):
         if event == 'reserve':
             if len(state['attempts']) >= data['limits']['http']:raise RuntimeError('frozen_http_cap_exhausted')
-            model = SUPER if active['phase'] in ('planning','compile') else decisions.MODEL
+            model = SUPER if active['phase'] in ('planning','planning_repair','compile') else decisions.MODEL
             if record['request']['model'] != model:raise RuntimeError('unexpected_model')
             token = len(state['attempts']); starts[token] = time.monotonic()
             state['attempts'].append({**active,'status':'reserved'})
@@ -124,11 +124,26 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
             if plan is None:
                 p = {'state':{'question':bundle['request'],'rule_catalog':ids.rule_catalog(bundle['request'])},'questions':{}}
                 save(output/(case['id']+'-planning-prepared.json'),p)
-                reply = execute('planning',p,tool=ids.tools()[0],prompt=ids.PLAN_PROMPT)
-                save(output/(case['id']+'-planning-reply.json'),reply)
+                prior=output/(case['id']+'-planning-reply.json')
+                reply = load(prior) if prior.exists() else execute('planning',p,tool=ids.tools()[0],prompt=ids.PLAN_PROMPT)
+                save(prior,reply)
                 proposals,repairs = ids.envelope(reply,'needs')
                 plan = ids.bind_needs(bundle['request'],proposals)
                 plan['compatibility_repairs'] = repairs
+                if not plan['needs'] or plan['rejected_needs']:
+                    repaired_file=output/(case['id']+'-planning-repair-reply.json')
+                    p={'state':{'question':bundle['request'],'rule_catalog':ids.rule_catalog(bundle['request']),
+                        'previous_proposal':reply,'validation_errors':plan['rejected_needs'],
+                        'allowed_dimensions':list(ids.DIMENSIONS)},'questions':{}}
+                    save(output/(case['id']+'-planning-repair-prepared.json'),p)
+                    prompt=ids.PLAN_PROMPT+' Repair only invalid schema fields from previous_proposal. Preserve EVERY original need id, condition, target and rule_ids verbatim; do not invent or remove needs. Choose a supported dimension. All source facts and outcomes remain unavailable.'
+                    repaired=load(repaired_file) if repaired_file.exists() else execute('planning_repair',p,tool=ids.tools()[0],prompt=prompt)
+                    save(repaired_file,repaired)
+                    corrected,compat=ids.envelope(repaired,'needs')
+                    immutable=lambda rows:{n['id']:{k:n[k] for k in ('condition','target','rule_ids')} for n in rows}
+                    if immutable(corrected)!=immutable(proposals):raise ValueError('planning_repair_changed_obligation')
+                    plan=ids.bind_needs(bundle['request'],corrected);plan['compatibility_repairs']=compat
+                    plan['planning_repair']='one_bounded_schema_only_repair_original_proposal_retained'
                 if not plan['needs'] or plan['rejected_needs']:raise ValueError('empty_or_rejected_plan')
             if len(plan['needs']) > data['limits']['needs_per_case']:raise ValueError('need_limit_no_truncation')
             save(output/(case['id']+'-frozen-input.json'),{'bundle':bundle,'plan':plan})
@@ -140,6 +155,7 @@ def run(output, key, manifest=MANIFEST, *, resume=None):
             if state['blocked']:break
             continue
         row.update(need_count=len(plan['needs']),reading_sha256=base.sha(json.dumps(baseline['state']['reading'],sort_keys=True)))
+        row.pop('error',None)
         for arm in case['arm_order']:
             if row['arms'].get(arm,{}).get('application_status')=='typed_review_complete':continue
             active['arm'] = arm

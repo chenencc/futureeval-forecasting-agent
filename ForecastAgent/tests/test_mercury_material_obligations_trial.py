@@ -117,5 +117,27 @@ class Trial(unittest.TestCase):
                 r=trial.run(root/'out','dummy',manifest)
             self.assertFalse(r['blocked']);self.assertEqual(r['cases'][0]['arms']['v4']['status'],'received')
 
+    def test_single_schema_repair_preserves_obligation_and_is_counted(self):
+        bundle,plan,_=MercuryMaterial().fixture()
+        n=plan['needs'][0]
+        proposal={'id':n['id'],'condition':n['condition'],'critical':n['critical'],
+            'dimension':'effect','target':n['targets'][n['dimension']]['value'],'rule_ids':n['rule_ids']}
+        def provider(messages,key,tools,forced_tool,observer,**kwargs):
+            if forced_tool=='compile_evidence_obligations':return self.compile(messages,key,tools,forced_tool,observer,**kwargs)
+            payload=json.loads(messages[1]['content'])
+            corrected={**proposal,'dimension':n['dimension']} if 'previous_proposal' in payload else proposal
+            reply={'needs':[corrected]}
+            rec={'request':{'model':trial.SUPER,'messages':messages},'status':'reserved'}
+            token=observer('reserve',rec);rec.update(status='received',response={'choices':[{'finish_reason':'tool_calls'}]});observer('complete',rec,token)
+            return {'tool_calls':[{'function':{'name':forced_tool,'arguments':json.dumps(reply)}}]}
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'FORECAST_MODEL':trial.SUPER,'FORECAST_MODEL_FALLBACK_SUPER':'0'}):
+            root=Path(d);manifest=self.fixture(root);m=load(manifest);m['cases'][0].pop('plan');save(manifest,m)
+            with patch.object(trial.decisions,'decide',self.decide),patch.object(trial,'ask_model',provider):
+                r=trial.run(root/'out','dummy',manifest)
+            self.assertTrue(r['business_gate_passed']);self.assertEqual(r['actual_http_attempts'],6)
+            self.assertEqual([a['phase'] for a in r['attempts']].count('planning_repair'),1)
+            frozen=load(root/'out/fixed-frozen-input.json')
+            self.assertEqual(frozen['plan']['needs'][0]['condition'],proposal['condition'])
+
 
 if __name__=='__main__':unittest.main()
