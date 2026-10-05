@@ -338,3 +338,42 @@ The English semantic audit and per-need evidence are in
 `E:/metaculus_data/reports/mercury-material-units-audit-37251487304.json`.
 Review was not fully blinded. No resolved outcomes, accuracy or Brier metrics
 were used. These eight regressions do not establish unseen generalization.
+
+## V4 observation obligations: preregistered trial
+
+`MERCURY_MATERIAL_OBLIGATIONS13.json` freezes eight previous regression cases
+and their same 33 needs, plus five questions not used in this material-review
+repair: crypto capitalization, music chart peaks, French eligibility law,
+IAEA on-site inspections and Linux desktop statistics. They come from saved
+collection packets and are not globally unseen. Source bodies can contain
+post-event information; this is a material interpretation experiment, not a
+leakage-safe forecasting backtest. Saved bodies are retained in full, with the
+existing 60,000-character reader recording every omitted unit. Both arms see
+identical delivered units. No new search, fetch or forecast is authorized by
+this experiment.
+
+V3 remains unchanged. V4 keeps every original need as an immutable root
+observation question and separately retains the requested rule parameters.
+A rules-only Super call proposes up to six atomic qualifiers per need; it
+cannot see bodies or labels. Rule IDs are bound to exact original spans.
+Knowing a threshold or deadline never deletes its price/date observation.
+Mercury selects each root/qualifier relation and reference jointly. An apparent
+complete candidate requires all root/qualifier claims to be explicit and then
+receives one conditional Mercury request checking that they describe the same
+actual observation. A shared URL is insufficient. Claims stay unverified and
+no rule closes automatically, even after a positive coherence answer.
+
+This is a system-level comparison: V4 adds a compiler and an extra conditional
+decision. New-question needs are planned once and shared across both arms.
+Limits are 70 logical calls, 74 physical attempts, 1,500 seconds, 16 needs and
+100 proof heads per case. Requests exceeding the frozen 500,000-byte guard
+fail without truncation. Models are fixed to free Super for planning/compiler
+and free Mercury for decisions, with no paid or Super fallback. Prior journals
+and consumption remain unchanged. The workflow rejects rerun attempts and
+always uploads preserved state.
+
+Audit root disappearance, actual event/date overclaims, omitted or invented
+qualifiers, loss of independently valid source/entity facts, common-observation
+coherence, reading omissions and actual provider attempts/tokens separately.
+Format success and fewer available enums do not establish semantic quality.
+Production remains unchanged pending the paired audit.

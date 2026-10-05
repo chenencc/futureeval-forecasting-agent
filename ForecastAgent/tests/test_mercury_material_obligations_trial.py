@@ -1,0 +1,63 @@
+"""Fixed model policy, durable calls, paired coverage and service failure stop."""
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from ForecastAgent.analysis.pilot import load,save
+from ForecastAgent.experiments import mercury_material_obligations_trial as trial
+from ForecastAgent.tests.test_mercury_material import MercuryMaterial
+from ForecastAgent.tests.test_mercury_material_v3 import answers
+
+
+class Trial(unittest.TestCase):
+    def fixture(self,root):
+        bundle,plan,_=MercuryMaterial().fixture()
+        manifest={'trial_id':'offline','scope':'offline','frozen_code_sha256':{},
+            'prior_experiments':[{'http':24,'unchanged':True}],
+            'limits':{'logical':4,'http':4,'seconds':30,'request_bytes':250000,
+                      'needs_per_case':16,'proof_heads_per_case':100},
+            'cases':[{'id':'fixed','question_id':'fixture','cohort':'regression',
+                      'bundle':bundle,'plan':plan,'arm_order':['v3','v4']}]}
+        save(root/'manifest.json',manifest);return root/'manifest.json'
+
+    def decide(self,state,questions,key,observer):
+        selected={k:'entity_identity' if k.startswith('unit_') else 'NONE' for k in questions}
+        response=answers(questions,selected)
+        rec={'request':{'model':trial.decisions.MODEL,'state':state,'questions':questions},'status':'reserved'}
+        token=observer('reserve',rec);rec.update(status='received',response=response);observer('complete',rec,token)
+        return response
+
+    def compile(self,messages,key,tools,forced_tool,observer,**kwargs):
+        payload=json.loads(messages[1]['content'])
+        reply={'conditions':[{'need_id':n['id'],'qualifiers':[]} for n in payload['needs']]}
+        rec={'request':{'model':trial.SUPER,'messages':messages},'status':'reserved'}
+        token=observer('reserve',rec);rec.update(status='received',response={'choices':[{'finish_reason':'tool_calls'}]});observer('complete',rec,token)
+        return {'tool_calls':[{'function':{'name':forced_tool,'arguments':json.dumps(reply)}}]}
+
+    def test_four_calls_share_reading_keep_root_and_history(self):
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'FORECAST_MODEL':trial.SUPER,'FORECAST_MODEL_FALLBACK_SUPER':'0'}):
+            root=Path(d);manifest=self.fixture(root)
+            with patch.object(trial.decisions,'decide',self.decide),patch.object(trial,'ask_model',self.compile):
+                r=trial.run(root/'out','dummy',manifest)
+            self.assertTrue(r['business_gate_passed']);self.assertEqual(r['actual_http_attempts'],4)
+            self.assertEqual([a['phase'] for a in r['attempts']],['units','evidence','compile','proof'])
+            self.assertEqual(r['prior_experiments'],[{'http':24,'unchanged':True}])
+            old=load(root/'out/fixed-v3-prepared.json');new=load(root/'out/fixed-v4-prepared.json')
+            for k in ('reading','needs','question','rule_catalog'):self.assertEqual(old['state'][k],new['state'][k])
+            self.assertEqual(len(new['questions']),len(new['state']['needs']))
+            with self.assertRaisesRegex(ValueError,'existing_trial_cannot_reset_budget'):trial.run(root/'out','dummy',manifest)
+
+    def test_service_failure_preserves_reservation_and_blocks_later_calls(self):
+        def fail(state,questions,key,observer):
+            observer('reserve',{'request':{'model':trial.decisions.MODEL},'status':'reserved'})
+            raise RuntimeError('service_failure')
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'FORECAST_MODEL':trial.SUPER,'FORECAST_MODEL_FALLBACK_SUPER':'0'}):
+            root=Path(d);manifest=self.fixture(root)
+            with patch.object(trial.decisions,'decide',fail):r=trial.run(root/'out','dummy',manifest)
+            self.assertTrue(r['blocked']);self.assertEqual(r['actual_http_attempts'],1)
+            self.assertEqual(r['attempts'][0]['status'],'reserved')
+
+
+if __name__=='__main__':unittest.main()
