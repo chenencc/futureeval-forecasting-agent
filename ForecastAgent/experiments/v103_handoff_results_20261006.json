@@ -1,0 +1,140 @@
+{
+  "schema": "v103-handoff-round-summary-v1",
+  "branch": "dev_v103_handoff",
+  "commit": "36cc6db3906fb93ae47613cea3011307f4af74cd",
+  "base_release": "v1.0.3",
+  "phases": [
+    {
+      "run_id": "37416882134",
+      "phase": "regression",
+      "metrics": {
+        "first": {
+          "requested_pairs": 5,
+          "scored_pairs": 5,
+          "arms": {
+            "release": {
+              "brier": 0.08103525038804092,
+              "log_loss": 0.25155770201791183,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.024381870551070835,
+              "log_loss": 0.12553791033933956,
+              "correct_at_half": 1.0
+            }
+          }
+        },
+        "final": {
+          "requested_pairs": 5,
+          "scored_pairs": 5,
+          "arms": {
+            "release": {
+              "brier": 0.06896428662581214,
+              "log_loss": 0.22443072934897837,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.03570067584102195,
+              "log_loss": 0.13931073042909167,
+              "correct_at_half": 1.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "run_id": "37417154862",
+      "phase": "expansion",
+      "metrics": {
+        "first": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.1778826277461979,
+              "log_loss": 0.521962432117976,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.1411099970668763,
+              "log_loss": 0.38900241288426285,
+              "correct_at_half": 0.7
+            }
+          }
+        },
+        "final": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.17811266786844615,
+              "log_loss": 0.520311276894478,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.15364275005484307,
+              "log_loss": 0.4156378742443209,
+              "correct_at_half": 0.7
+            }
+          }
+        }
+      }
+    }
+  ],
+  "question_count": 15,
+  "metrics_combined_exploratory": {
+    "first": {
+      "release": {
+        "brier": 0.14560016862681222,
+        "log_loss": 0.4318275220846213,
+        "correct_at_half": 0.8
+      },
+      "context": {
+        "brier": 0.10220062156160781,
+        "log_loss": 0.3011809120359551,
+        "correct_at_half": 0.8
+      }
+    },
+    "final": {
+      "release": {
+        "brier": 0.1417298741209015,
+        "log_loss": 0.42168442771264475,
+        "correct_at_half": 0.8
+      },
+      "context": {
+        "brier": 0.1143287253169027,
+        "log_loss": 0.3235288263059112,
+        "correct_at_half": 0.8
+      }
+    }
+  },
+  "by_arm_consumption": {
+    "release": {
+      "actual_http_attempts": 23,
+      "known_tokens": 1132430,
+      "unknown_usage_attempts": 0
+    },
+    "context": {
+      "actual_http_attempts": 23,
+      "known_tokens": 949642,
+      "unknown_usage_attempts": 0
+    }
+  },
+  "actual_mercury_http_attempts": 46,
+  "known_reported_tokens": 2082072,
+  "unknown_usage_attempts": 0,
+  "source_integrity_and_old_text_preservation": "Passed Linux all-fifteen preflight and sealed source-coordinate/request audits.",
+  "search_calls": 0,
+  "source_fetch_calls": 0,
+  "supplement_calls": 0,
+  "forecasts_submitted": 0,
+  "production_changed": false,
+  "promotion_allowed": false,
+  "interpretation_limits": [
+    "Regression cases and expansion cases must be interpreted separately.",
+    "Expansion cases appeared in prior experiments and are not untouched holdouts.",
+    "Current historical bodies and model knowledge may reveal outcomes; this is not a forecast backtest.",
+    "One stochastic replicate per arm cannot establish a stable effect.",
+    "Context range coverage is a mechanical proxy, not proof of target sufficiency."
+  ]
+}

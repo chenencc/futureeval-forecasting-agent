@@ -75,3 +75,42 @@ pilot in Actions. It has no schedule, two concurrent cases, the existing
 explicit exact-parent restoration input. GitHub reruns with empty state are
 rejected. Main production workflow files, pins, flags and accepted tasks are
 unchanged.
+
+## Completed paired pilot, 2026-10-06
+
+Executed commit: `36cc6db3906fb93ae47613cea3011307f4af74cd`.
+All fifteen cases and thirty arms returned validated probabilities. Thirteen
+focused tests and the all-fifteen offline preflight passed. The completed runs
+were [regression 37416882134](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37416882134)
+and [expansion 37417154862](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37417154862).
+The temporary manual workflow was disabled again after completion.
+
+| Cohort and stage | Release Brier | Context Brier |
+| --- | ---: | ---: |
+| Five regression cases, first | 0.08104 | 0.02438 |
+| Five regression cases, final | 0.06896 | 0.03570 |
+| Ten expansion cases, first | 0.17788 | 0.14111 |
+| Ten expansion cases, final | 0.17811 | 0.15364 |
+
+Final classification accuracy changed from 4/5 to 5/5 in regression and from
+8/10 to 7/10 in expansion. Both arms used 23 actual HTTP attempts. Reported
+input plus output tokens were 1,132,430 for release and 949,642 for context,
+a 16.14% reduction. All 46 attempts had known usage. The decision endpoint
+reported `input_tokens` and `output_tokens`; the independent audit sums those
+fields when `total_tokens` is absent. The sealed provider records are retained.
+
+An earlier initialization failure occurred before any HTTP reservation. Its
+five failure logs were audited and the directory initialization was repaired
+before the successful runs. It consumed no provider, search or fetch quota.
+
+Both batches improved probability loss, but expansion classification regressed.
+Context final Brier was worse than context first Brier in both batches. The
+candidate remains experimental; these results do not authorize promotion or
+establish stable live forecasting skill. Conditional reread value is a remaining
+question. Production workflows and acquisition remain unchanged. No quota was
+reset and no forecast was submitted.
+
+The English aggregate report is saved as
+`ForecastAgent/experiments/v103_handoff_results_20261006.json`. Original archives,
+sealed requests, provider responses, coordinate audits and per-question CSVs
+were imported into `E:\metaculus_data\reports\v103-handoff-<run_id>`.
