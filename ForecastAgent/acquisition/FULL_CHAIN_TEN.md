@@ -81,3 +81,24 @@ adapter and exact canceled parent run. Restoration refuses an empty ledger if
 collection started without a recoverable artifact. A case may start fresh only
 when its exact parent job proves collection never executed. Failed provider
 transports and shared account quotas are not eligible for this handoff.
+
+## Preserved raw interruption amendment
+
+Continuation `37391391636` exposed one different stage failure: a local context
+projection overflow stopped the collector after four readable captures were
+saved. Its original result remains `partial`, with pending delivery and unresolved
+gaps. All four model requests had received responses; this was not a service or
+credential failure.
+
+`full_chain_ten_raw_handoff` allows this narrowly identified local interruption
+to export its saved material to the existing supplement and scoring experiment.
+The exact completed parent archive is mandatory. It never invokes collection,
+starts an empty ledger, or rewrites the native result. A manifest verifies every
+original collection file before and after processing. Transport errors, quota
+failures, missing archives and unreadable captures remain ineligible. Previously
+completed score journals are verified and reused without another model request.
+
+This additional amendment changes only the raw-material stage handoff. Both
+scoring arms retain the original protocol, model, source package, request bounds
+and score budgets. The aggregate distinguishes downstream completion from
+semantic or collection completion.

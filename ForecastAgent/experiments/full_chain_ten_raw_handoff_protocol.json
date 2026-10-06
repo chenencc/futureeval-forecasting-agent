@@ -1,0 +1,15 @@
+{
+  "schema": "full-chain-ten-preserved-raw-handoff-amendment-v1",
+  "original_protocol_sha256_lf": "7c1feeb055e2e08c1b002406f2fdafde375f3cbe68a8af45c53ed8f85aeae847",
+  "adapter_sha256_lf": "5163e5d3a739f5e650746f6c4ba16ecc01e8cd4fd1aed5732754964eb5634361",
+  "exact_parent_run_id": 37391391636,
+  "exact_parent_commit": "886975e9a3e3ccf9513119c1ead75eb586d87d43",
+  "repo": "chenencc/futureeval-forecasting-agent",
+  "reason": "Local context projection can interrupt a collector after readable captures have been durably saved. Admit a raw-only downstream diagnostic while preserving the partial result, pending passages, original native journals and gaps.",
+  "changes": "Stage handoff only. Frozen collection, supplements, scoring, inputs, models, clipping and budgets unchanged.",
+  "no_fresh_collection": true,
+  "prior_scored_cases_may_repeat": false,
+  "budget_reset": false,
+  "semantic_complete": false,
+  "submitted": false
+}
