@@ -1,0 +1,20 @@
+name: MiniBench routing acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.0.3-minibench.1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m ForecastAgent.releases.manifest
+      - run: python -m unittest discover -s ForecastAgent/tests -q
+      - run: python -m unittest ForecastAgent.infrastructure.test_storage_monitor -q
+      - run: python -m unittest ForecastAgent.infrastructure.test_minibench_monitor -q

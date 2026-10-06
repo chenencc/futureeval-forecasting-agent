@@ -15,6 +15,7 @@ from ForecastAgent.competition.platform import Client, deliver, has_existing_for
 from ForecastAgent.competition.queue import descriptor, digest, load, questions, save, utc
 from ForecastAgent.runtime.task_lock import task_lock
 from ForecastAgent.competition.mercury import VERSION
+from ForecastAgent.competition.tournaments import configured_tournament
 
 SCHEMA = 'official-competition-v1'
 TERMINAL = {'accepted', 'already_forecasted', 'closed', 'deadline_missed', 'blocked_integrity', 'provider_blocked', 'platform_rejected'}
@@ -148,8 +149,8 @@ def run(root, snapshot_root, *, enabled=False, legacy_root=None, limit=5, client
         state_path = root / 'campaign.json'
         if not state_path.exists() and (root / 'tasks').exists():
             raise ValueError('Official task state exists without ledger; refuse quota restart')
-        state = load(state_path) if state_path.exists() else {'schema': SCHEMA, 'tournament': 'fall-futureeval-2026', 'tasks': {}}
-        if state['schema'] != SCHEMA or state['tournament'] != 'fall-futureeval-2026':
+        state = load(state_path) if state_path.exists() else {'schema': SCHEMA, 'tournament': configured_tournament(), 'tasks': {}}
+        if state['schema'] != SCHEMA or state['tournament'] != configured_tournament():
             raise ValueError('Wrong official campaign identity')
         save(root / 'account-check.json', account)
         indexes = sorted(Path(snapshot_root).rglob('index.json'))

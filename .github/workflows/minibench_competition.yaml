@@ -1,0 +1,209 @@
+name: MiniBench official competition worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      monitor_run_id:
+        description: Completed main monitor run with fresh complete snapshots
+        required: true
+        type: string
+      verification_only:
+        description: Verify preserved inventory without model calls or submission
+        required: true
+        default: true
+        type: boolean
+  workflow_run:
+    workflows: ['MiniBench official question monitor']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: futureeval-official-worker
+  cancel-in-progress: false
+
+jobs:
+  compete:
+    if: (github.event_name == 'workflow_dispatch' && (inputs.verification_only || vars.FORECAST_MINIBENCH_ENABLED == 'true')) || (github.event_name == 'workflow_run' && vars.FORECAST_MINIBENCH_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      FORECAST_TOURNAMENT: minibench
+      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '1'
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      EXA_API_KEY: ${{ secrets.EXA_API }}
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      FORECAST_SHARED_CACHE_ROOT: snapshots/minibench/cache
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.0.3-minibench.1
+      - name: Check out independent infrastructure utilities
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .infrastructure
+          persist-credentials: false
+          sparse-checkout: ForecastAgent/infrastructure
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify immutable production release
+        run: |
+          test "$(git describe --tags --exact-match)" = "v1.0.3-minibench.1"
+          echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Validate triggering official monitor
+        id: source
+        uses: actions/github-script@v7
+        env:
+          INPUT_MONITOR_RUN_ID: ${{ inputs.monitor_run_id }}
+          INPUT_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const manual=context.eventName==='workflow_dispatch';
+            const id=manual?process.env.INPUT_MONITOR_RUN_ID:String(context.payload.workflow_run.id);
+            if(!/^[1-9][0-9]*$/.test(id)||!Number.isSafeInteger(Number(id))) throw new Error('Invalid monitor run identity');
+            const {data}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:Number(id)});
+            if(data.name!=='MiniBench official question monitor'||data.head_branch!=='main'||data.conclusion!=='success')
+              throw new Error('A successful official main monitor is required');
+            const artifacts=await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{owner,repo,run_id:Number(id)});
+            if(!artifacts.some(a=>a.name===`minibench-questions-${id}`&&!a.expired)) throw new Error('Monitor snapshots unavailable');
+            core.setOutput('run_id',id);
+            core.setOutput('submit',!manual||process.env.INPUT_VERIFICATION_ONLY!=='true'?'true':'false');
+      - name: Find latest exact official state and legacy collection ledgers
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          script: |
+            const {owner,repo}=context.repo;
+            async function find(workflow,name,stage) {
+              for (let page=1;page<=10;page++) {
+                const {data}=await github.rest.actions.listWorkflowRuns({owner,repo,
+                  workflow_id:workflow,status:'completed',branch:'main',per_page:100,page});
+                for (const run of data.workflow_runs) {
+                  if (run.id===context.runId) continue;
+                  const artifacts=await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{owner,repo,run_id:run.id});
+                  if (artifacts.some(a=>a.name===name&&!a.expired)) return String(run.id);
+                  const jobs=await github.paginate(github.rest.actions.listJobsForWorkflowRun,{owner,repo,run_id:run.id});
+                  if (jobs.flatMap(j=>j.steps||[]).some(s=>s.name===stage&&s.conclusion!=='skipped'))
+                    throw new Error('Latest ledger missing; refuse to reset quotas or duplicate submissions');
+                }
+                if (data.workflow_runs.length<100) return '';
+              }
+              throw new Error('State history exceeds the audited recovery window');
+            }
+            const official=await find('minibench_competition.yaml','minibench-official-state','Acquire analyze and submit eligible questions');
+            const legacy=''; // MiniBench never imports the Fall ledger.
+            core.setOutput('official',official);
+            core.setOutput('legacy',legacy);
+            core.setOutput('completed',[official,legacy].filter(Boolean).join(','));
+      - name: Restore official state
+        if: steps.previous.outputs.official != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: minibench-official-state
+          run-id: ${{ steps.previous.outputs.official }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/minibench
+      - name: Restore prelaunch collection ledgers
+        if: steps.previous.outputs.legacy != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-collection-state
+          run-id: ${{ steps.previous.outputs.legacy }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/minibench/legacy
+      - name: Read triggering complete question snapshots
+        uses: actions/download-artifact@v4
+        with:
+          name: minibench-questions-${{ steps.source.outputs.run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/minibench-incoming
+      - name: Verify restored checkpoint hashes
+        if: steps.previous.outputs.official != ''
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py verify --root snapshots/minibench
+      - name: Verify registered bot and forecasting access
+        run: |
+          python -c "import os; from ForecastAgent.competition.platform import Client; from ForecastAgent.competition.queue import save; account=Client(os.environ['METACULUS_TOKEN']).account(); save('snapshots/minibench/account-check.json',account); print(account)"
+      - name: Install free readers and browser
+        run: |
+          python -m pip install -r ForecastAgent/requirements-supplement.txt
+          python -m playwright install --with-deps chromium
+      - name: Acquire analyze and submit eligible questions
+        run: |
+          if [ -n "$RESTORED_LEGACY_RUN" ]; then
+            echo "Legacy collection state is preserved; explicit migration is required before new collection."
+            exit 1
+          fi
+          args=(--root snapshots/minibench --snapshots snapshots/minibench-incoming --limit 5)
+          if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
+          python -m ForecastAgent.releases.v1_0_3 "${args[@]}"
+        env:
+          SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
+          RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/minibench
+      - name: Split recovery checkpoint and changed evidence
+        if: always() && hashFiles('snapshots/minibench/campaign.json') != ''
+        id: split
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py split --root snapshots/minibench --output snapshots/storage-export
+      - name: Archive changed evidence
+        if: always() && steps.split.outcome == 'success'
+        id: evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-official-evidence-${{ github.run_id }}
+          path: snapshots/storage-export/evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve official campaign and delivery receipts
+        if: always() && steps.evidence.outcome == 'success'
+        id: checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-official-state
+          path: snapshots/storage-export/checkpoint/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Emergency full recovery if storage export failed
+        if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/minibench/campaign.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-official-state
+          path: snapshots/minibench/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish small private listener control ledger
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-official-control
+          path: snapshots/storage-export/checkpoint/campaign.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Rotate superseded recovery checkpoints
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
+            const current=artifacts.find(a=>String(a.id)==='${{ steps.checkpoint.outputs.artifact-id }}'&&!a.expired);
+            if(!current || current.name!=='minibench-official-state') throw new Error('Uploaded checkpoint not confirmed');
+            for(const name of ['minibench-official-state','minibench-official-control']) {
+              const checkpoints=artifacts.filter(a=>a.name===name&&!a.expired)
+                .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||b.id-a.id);
+              for(const artifact of checkpoints.slice(3,13))
+                await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
+            }

@@ -13,6 +13,7 @@ from pathlib import Path
 from ForecastAgent.acquisition import pipeline
 from ForecastAgent.analysis.distributions import probability, validate_cdf, payload
 from ForecastAgent.competition import live
+from ForecastAgent.competition.tournaments import configured_tournament
 from ForecastAgent.competition.queue import load, save, digest, questions, descriptor, utc
 from ForecastAgent.releases.guard import execute
 from ForecastAgent.releases import surfaces
@@ -258,15 +259,15 @@ def seed(root,snapshots):
 
 def _seed(root,snapshots):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
-    indexes=[p for p in Path(snapshots).rglob('index.json') if load(p).get('tournament')=='fall-futureeval-2026']
+    indexes=[p for p in Path(snapshots).rglob('index.json') if load(p).get('tournament')==configured_tournament()]
     if not indexes:raise ValueError('Complete tournament snapshot required')
     ip=max(indexes,key=lambda p:load(p)['retrieved_at_utc']);index=load(ip)
     if not index.get('open_scan_complete') or not 0<=(utc()-utc(index['retrieved_at_utc'])).total_seconds()<=7200:
         raise ValueError('Incomplete or stale tournament scan')
     sp=root/'campaign.json'
     if not sp.exists() and (root/'tasks').exists():raise ValueError('Task files exist without ledger; never reset')
-    state=load(sp) if sp.exists() else {'schema':live.SCHEMA,'tournament':'fall-futureeval-2026','tasks':{}}
-    if state.get('schema')!=live.SCHEMA or state.get('tournament')!='fall-futureeval-2026':
+    state=load(sp) if sp.exists() else {'schema':live.SCHEMA,'tournament':configured_tournament(),'tasks':{}}
+    if state.get('schema')!=live.SCHEMA or state.get('tournament')!=configured_tournament():
         raise ValueError('Wrong preserved campaign identity')
     for task in state['tasks'].values():
         if (task['stage'] not in live.TERMINAL and task.get('release_version') != VERSION and

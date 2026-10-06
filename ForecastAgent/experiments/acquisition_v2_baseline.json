@@ -313,7 +313,7 @@
     "ForecastAgent/competition/__main__.py": "99808ac61ec9975649c03e0d6693c9ab0bc069d64fe52ccbf473624a475c3f80",
     "ForecastAgent/competition/bridge.py": "f53003955fc0779adc52d3442e12e40c16fda8c1c0e238aedf8fe37d821105df",
     "ForecastAgent/competition/lifecycle.py": "ce0f377d2a928e4edcac46f46b3a3ca36f12a4380a14f2afdee8e694e34051ee",
-    "ForecastAgent/competition/live.py": "fc6b3c47c1ba76b0291da6ae44afe9aaacfccfec18a539c59d4552fadc35f298",
+    "ForecastAgent/competition/live.py": "db96f2a11efe4cc2f00214b413ddecf49e5532146c3630f51b530c65b0763d8d",
     "ForecastAgent/competition/mercury.py": "b144fe6786ac4859f37dc139e34308fc502265aa81358fc229b3935477a26aa7",
     "ForecastAgent/competition/nonbinary_debug.py": "3d806b1ce2111686bdb996f820f2c4da6cbc4ab56a7574f23d2023ab6cb3446c",
     "ForecastAgent/competition/platform.py": "0994d94b44b916fd7d4e9a1e73be06651466bbf79a794c4e47592eb8c8dd4b5b",
@@ -344,5 +344,14 @@
   },
   "provider_calls_made": 0,
   "workflows_dispatched": 0,
-  "forecasts_submitted": 0
+  "forecasts_submitted": 0,
+  "tournament_routing_extension": {
+    "base_release_tag": "v1.0.3",
+    "new_release_tag": "v1.0.3-minibench.1",
+    "file": "ForecastAgent/competition/live.py",
+    "original_sha256_lf": "fc6b3c47c1ba76b0291da6ae44afe9aaacfccfec18a539c59d4552fadc35f298",
+    "extended_sha256_lf": "db96f2a11efe4cc2f00214b413ddecf49e5532146c3630f51b530c65b0763d8d",
+    "ast_restoration_equal": true,
+    "scope": "Two campaign routing constants and one import only; analysis functions unchanged."
+  }
 }

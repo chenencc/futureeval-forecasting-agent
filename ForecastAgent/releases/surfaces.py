@@ -2,6 +2,7 @@
 import copy
 from pathlib import Path
 from ForecastAgent.competition.queue import load, save, questions
+from ForecastAgent.competition.tournaments import configured_tournament
 
 
 def normalize(post):
@@ -45,7 +46,7 @@ class Client:
 def snapshots(source,destination):
     source=Path(source);destination=Path(destination)
     if (source/'surface-normalization.json').exists():return source
-    indexes=[p for p in source.rglob('index.json') if load(p).get('tournament')=='fall-futureeval-2026']
+    indexes=[p for p in source.rglob('index.json') if load(p).get('tournament')==configured_tournament()]
     if not indexes:raise ValueError('Tournament snapshot missing')
     index_path=max(indexes,key=lambda p:load(p)['retrieved_at_utc']);index=copy.deepcopy(load(index_path))
     rows={str(r['question_id']):r for r in index.get('questions',[])};converted=[];errors={}

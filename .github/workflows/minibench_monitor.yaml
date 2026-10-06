@@ -1,0 +1,202 @@
+name: MiniBench official question monitor
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: minibench-question-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FORECAST_TOURNAMENT: minibench
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Find the previous monitor state artifact
+        id: previous
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          script: |
+            const {owner, repo} = context.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'minibench_monitor.yaml',
+              branch: 'main', status: 'completed', per_page: 30,
+            });
+            for (const run of data.workflow_runs) {
+              if (run.id === context.runId) continue;
+              // Logs verified: state lookup failed before acquisition started.
+              if (run.id === 36718845323) continue;
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                owner, repo, run_id: run.id, per_page: 100,
+              });
+              if (artifacts.data.artifacts.some(a => a.name === 'minibench-monitor-state' && !a.expired)) {
+                core.setOutput('artifact', 'minibench-monitor-state');
+                core.setOutput('health_available', artifacts.data.artifacts.some(a => a.name === 'minibench-monitor-health' && !a.expired));
+                return run.id;
+              }
+              const {data: jobs} = await github.rest.actions.listJobsForWorkflowRun({owner, repo, run_id:run.id});
+              const steps = jobs.jobs.flatMap(j => j.steps || []);
+              const acquisition = steps.find(s => s.name === 'Save read-only question snapshot');
+              const legacy = artifacts.data.artifacts.find(a => a.name === `minibench-questions-${run.id}` && !a.expired);
+              if (run.conclusion === 'success' && legacy && !steps.some(s => s.name === 'Install free document parser')) {
+                core.setOutput('artifact', legacy.name);
+                return run.id;
+              }
+              if (acquisition && acquisition.conclusion === 'skipped') continue;
+              throw new Error('Latest monitor state unavailable: refusing to reset per-task search budgets');
+            }
+            return null;
+      - name: Restore question IDs and archive cursor
+        if: steps.previous.outputs.result != 'null'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.previous.outputs.artifact }}
+          run-id: ${{ fromJSON(steps.previous.outputs.result) }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/minibench-monitor/
+      - name: Restore monitor health history
+        if: steps.previous.outputs.health_available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: minibench-monitor-health
+          run-id: ${{ fromJSON(steps.previous.outputs.result) }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/minibench-monitor/
+      - name: Save read-only question snapshot
+        id: snapshot
+        run: python -m ForecastAgent.monitor_tournament --root snapshots/minibench-monitor
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          RUN_READ_ONLY_RESEARCH: '0'
+          QUEUE_READ_ONLY_RESEARCH: '0'
+          OFFICIAL_OPEN_SCAN_PRIORITY: '1'
+          FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.result != 'null' && fromJSON(steps.previous.outputs.result) || '' }}
+          FORECAST_RESTORED_STATE_ROOT: snapshots/minibench-monitor
+      - name: Record monitor health and trigger history
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          SNAPSHOT_OUTCOME: ${{ steps.snapshot.outcome }}
+        with:
+          script: |
+            const fs = require('fs');
+            const root = 'snapshots/minibench-monitor';
+            fs.mkdirSync(root, {recursive: true});
+            const path = `${root}/monitor-health.json`;
+            let previous = {};
+            if (fs.existsSync(path)) previous = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const {owner, repo} = context.repo;
+            let current = {}, scheduled = [], historyError = null;
+            try {
+              current = (await github.rest.actions.getWorkflowRun({owner, repo, run_id: context.runId})).data;
+              const history = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: 'minibench_monitor.yaml', event: 'schedule', per_page: 3,
+              });
+              scheduled = history.data.workflow_runs.map(r => ({
+                run_id: r.id, created_at_utc: r.created_at, status: r.status,
+                conclusion: r.conclusion, commit: r.head_sha, url: r.html_url,
+              }));
+            } catch (error) {
+              historyError = error.message;
+              core.warning(`Trigger history unavailable: ${historyError}`);
+            }
+            const now = new Date().toISOString();
+            const indexes = fs.readdirSync(root, {withFileTypes: true})
+              .filter(d => d.isDirectory() && /^\d{8}T\d{6}Z$/.test(d.name))
+              .map(d => `${root}/${d.name}/index.json`).filter(p => fs.existsSync(p)).sort();
+            const index = indexes.length ? JSON.parse(fs.readFileSync(indexes.at(-1), 'utf8')) : {};
+            const fresh = process.env.SNAPSHOT_OUTCOME === 'success' && index.code_commit === context.sha
+              && (!current.created_at || Date.parse(index.retrieved_at_utc) >= Date.parse(current.created_at));
+            const record = {
+              run_id: context.runId, run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              event: context.eventName, schedule: context.payload.schedule || null,
+              created_at_utc: current.created_at || null, started_at_utc: current.run_started_at || null,
+              recorded_at_utc: now, commit: context.sha,
+              url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              snapshot_outcome: process.env.SNAPSHOT_OUTCOME, snapshot_fresh: fresh,
+              snapshot_at_utc: fresh ? index.retrieved_at_utc : null,
+              open_scan_complete: fresh ? index.open_scan_complete : false,
+              open_question_count: fresh ? index.open_question_count : null,
+              lifecycle_counts: fresh ? index.lifecycle_counts : null,
+              previous_record_interval_seconds: previous.latest?.recorded_at_utc
+                ? (Date.parse(now) - Date.parse(previous.latest.recorded_at_utc)) / 1000 : null,
+            };
+            const lastScheduled = scheduled[0] || null;
+            const age = lastScheduled ? (Date.parse(now) - Date.parse(lastScheduled.created_at_utc)) / 1000 : null;
+            const nativeScheduleEnabled = /^  schedule:/m.test(
+              fs.readFileSync('.github/workflows/minibench_monitor.yaml', 'utf8'));
+            const health = {
+              schema: 'minibench-monitor-health-v1', expected_interval_seconds: 600,
+              native_schedule_enabled: nativeScheduleEnabled,
+              latest: record, latest_successful_snapshot: fresh && index.open_scan_complete
+                ? record : previous.latest_successful_snapshot || null,
+              last_scheduled_run: lastScheduled, scheduled_age_seconds: age,
+              scheduled_history: scheduled, history_error: historyError,
+              schedule_observation: !nativeScheduleEnabled ? 'disabled' : historyError ? 'unknown' : !lastScheduled ? 'not_observed'
+                : age > 1800 ? 'overdue' : 'recently_observed',
+              records: [...(previous.records || []), record].slice(-1000),
+            };
+            fs.writeFileSync(path, JSON.stringify(health, null, 2));
+            await core.summary.addHeading('Official monitor health')
+              .addTable([
+                [{data: 'Check', header: true}, {data: 'Value', header: true}],
+                ['Trigger', record.event], ['Commit', record.commit],
+                ['Fresh complete snapshot', String(fresh && index.open_scan_complete)],
+                ['Open questions', String(record.open_question_count)],
+                ['Last scheduled run', lastScheduled ? lastScheduled.created_at_utc : 'Not observed'],
+                ['Schedule observation (30-minute tolerance)', health.schedule_observation],
+              ]).write();
+            if (health.schedule_observation === 'overdue') core.warning('No schedule-origin run observed within 30 minutes');
+      - name: Save state for the next poll
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-monitor-state
+          include-hidden-files: true
+          path: |
+            snapshots/minibench-monitor/state.json
+            snapshots/minibench-monitor/retrieval/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Upload monitor health
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-monitor-health
+          path: snapshots/minibench-monitor/monitor-health.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload question snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minibench-questions-${{ github.run_id }}
+          path: |
+            snapshots/minibench-monitor/*/index.json
+            snapshots/minibench-monitor/*/*.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Rotate superseded monitor state and health
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
+            for(const name of ['minibench-monitor-state','minibench-monitor-health']) {
+              const items=artifacts.filter(a=>a.name===name&&!a.expired).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||b.id-a.id);
+              if(!items.some(a=>a.workflow_run?.id===context.runId)) throw new Error('Current monitor state not confirmed');
+              for(const artifact of items.slice(3,13))
+                await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
+            }
