@@ -36,12 +36,16 @@ Invalid branches are separately recorded, while other posts continue.
   two browser-render, and eight local-reparse limits.
 - Collector completion is not evidence adequacy. Eligible locally closed tasks
   can export readable raw material with recorded gaps, preserving every original
-  journal and result byte. Transport-interrupted partial tasks do not use that
+  journal and result byte. Completed, checksum-verified 5xx service-error receipts
+  may also export available readable material with an explicit interruption gap.
+  Unknown in-flight receipts, account quota and credential errors do not use that
   bridge. The analysis package is checksum-bound to the collector adapter.
 - Mercury independently reads saved original material. A second request remains
   conditional on diagnostics and enough unseen text. A failed reread retains
   the valid first score. Mercury service failure uses the existing authorized
   reasoning-only fallback. Invalid identities do not trigger fallback.
+  A malformed/transport response is recovered only when its exact failed journal
+  matches the frozen request; capped replay makes no extra Mercury HTTP attempt.
 - Binary probabilities are clipped to 0.02–0.98. Multiple-choice probabilities
   use a bounded simplex so labels and sum are preserved. Range/date/discrete
   forecasts follow the authoritative API grid and CDF constraints. Closed CDF

@@ -16,6 +16,7 @@ from ForecastAgent.competition import live
 from ForecastAgent.competition.queue import load, save, digest, questions, descriptor, utc
 from ForecastAgent.releases.guard import execute
 from ForecastAgent.releases import surfaces
+from ForecastAgent.releases.manifest import verify as verify_release
 from ForecastAgent.runtime.task_lock import task_lock
 
 VERSION='1.0.2'
@@ -49,9 +50,10 @@ def handoff(directory):
     directory=Path(directory); state=load(directory/'state.json')
     if state['stage']!='collection':return False
     root=directory/'collection'; bundle=load(root/'bundle.json')
-    if not raw_handoff_eligible(bundle):return False
+    service_gap=service_gap_eligible(bundle,root)
+    if not raw_handoff_eligible(bundle) and not service_gap:return False
     frozen=load(directory/'identity.json')
-    if digest(frozen)!=state['identity_sha256'] or bundle['request']!=frozen['request']:
+    if pipeline.digest(frozen)!=state['identity_sha256'] or bundle['request']!=frozen['request']:
         raise ValueError('Original acquisition identity changed')
     for a in bundle.get('model_attempts',[]):
         path=root/a['path']
@@ -59,7 +61,8 @@ def handoff(directory):
             raise ValueError('Original acquisition journal changed')
     receipt={'version':VERSION,'original_state':state,'original_result':bundle['result'],
              'native_files_sha256':native_manifest(root),'budget_reset':False,
-             'semantic_complete':False,'new_collection_calls':0,'new_search_calls':0}
+             'semantic_complete':False,'known_service_interruption':service_gap,
+             'new_collection_calls':0,'new_search_calls':0}
     save(directory/'raw-handoff.json',receipt)
     ident=bundle['request']['id'];archive=directory/'parent.zip'
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
@@ -73,11 +76,32 @@ def handoff(directory):
     return True
 
 
+def service_gap_eligible(bundle,root):
+    """Use saved readable material after completed service-error receipts only."""
+    result=bundle.get('result') or {};execution=result.get('execution_report') or {}
+    if not (result.get('status')=='partial' and result.get('termination_reason')=='model_transport_failure'
+            and execution.get('owner')=='program' and execution.get('interrupted') is True):return False
+    if not any(p.get('content') and p.get('body_diagnostics',{}).get('usable_text') for p in bundle.get('pages',{}).values()):return False
+    failed=[a for a in bundle.get('model_attempts',[]) if a.get('status')!='received']
+    if not failed:return False
+    for attempt in failed:
+        path=(Path(root)/attempt['path']).resolve()
+        if not path.is_relative_to(Path(root).resolve()) or file_hash(path)!=attempt['sha256']:raise ValueError('Failed provider journal changed')
+        record=load(path);error=(record.get('response') or {}).get('error') or {}
+        code=record.get('http_status') or (error.get('code') if isinstance(error,dict) else None)
+        if not isinstance(code,int) or code<500 or record.get('status')!=attempt['status']:return False
+    return True
+
+
 def collect(request, retrieval):
+    verify_release()
     request=copy.deepcopy(request)
     request.update(acquisition_strategy='intelligent_materials_v3',drain_unseen_reads_before_stall=True,
                    exa_search_policy='required')
     directory=Path(retrieval)/'release-1.0.2'
+    if (directory/'state.json').exists() and (directory/'collection/bundle.json').exists():
+        if load(directory/'identity.json')!=pipeline.identity(request,True):raise ValueError('Saved acquisition identity differs from the current request')
+        handoff(directory)
     result=pipeline.run(request,directory,supplement_network=True)
     if result.get('state')!='complete' and handoff(directory):
         result=pipeline.run(request,directory,supplement_network=True)
@@ -87,19 +111,32 @@ def collect(request, retrieval):
     if receipt.exists() and native_manifest(directory/'collection')!=load(receipt)['native_files_sha256']:
         raise ValueError('Raw export changed native acquisition state')
     package=directory/'package.json'
+    if receipt.exists() and raw['result'].get('incomplete'):
+        exported=load(package);gaps=copy.deepcopy(exported.get('gaps',exported.get('result',{}).get('gaps',[])))
+        gaps.append({'code':'collector_interrupted_or_budget_closed','raw_only_export':True,
+                     'termination_reason':raw['result'].get('termination_reason'),
+                     'description':'Original acquisition is incomplete. Saved readable material is available; missing observations are not evidence of nonoccurrence.'})
+        exported.update(gaps=gaps,release_raw_export={'original_package_sha256':file_hash(package),
+                         'collector_result_unchanged':True,'semantic_complete':False})
+        package=directory/'raw-export-package.json'
+        if package.exists() and load(package)!=exported:raise ValueError('Frozen raw export package changed')
+        save(package,exported)
     # The legacy worker receives a stage-completion adapter, not a rewritten
     # collector result. Its supplement hook supplies the exact immutable package.
     adapter={'request':raw['request'],'result':{'status':'raw_package_exported','incomplete':False,
               'scope':'Downstream raw export only; original collector result is separately preserved.'},
-             'release_acquisition':{'version':VERSION,'package_sha256':file_hash(package)},
+             'release_acquisition':{'version':VERSION,'package_file':package.name,'package_sha256':file_hash(package)},
              'original_collector_result':raw['result']}
     save(Path(retrieval)/'bundle.json',adapter)
     return adapter
 
 
 def supplement(adapter, folder, ident):
-    directory=Path(folder)/'retrieval/release-1.0.2';path=directory/'package.json'
+    directory=Path(folder)/'retrieval/release-1.0.2'
     marker=adapter.get('release_acquisition') or {}
+    name=marker.get('package_file','package.json')
+    if name not in {'package.json','raw-export-package.json'}:raise ValueError('Invalid material package filename')
+    path=directory/name
     if marker.get('version')!=VERSION or file_hash(path)!=marker.get('package_sha256'):
         raise ValueError('Frozen material export adapter changed')
     package=load(path)
@@ -109,11 +146,21 @@ def supplement(adapter, folder, ident):
 
 def analyze(source, folder, ident):
     pipeline.verify_baseline()
+    verify_release()
     folder=Path(folder);candidate_path=folder/'candidate.json'
     marker=folder/'candidate-integrity.json'
     if candidate_path.exists() and marker.exists():
         verify_candidate(folder);return load(candidate_path)
-    candidate=live.analyze(source,folder/'analysis-core-1.0.1',ident)
+    core=folder/'analysis-core-1.0.1'
+    try:candidate=live.analyze(source,core,ident)
+    except Exception as exc:
+        if not failed_provider_receipt(source,core):raise
+        # A completed invalid/transport receipt already owns the only attempt.
+        # Replay reaches the existing cap guard: retain a valid first decision
+        # or use the unchanged reasoning fallback, without another Mercury HTTP.
+        save(folder/'provider-recovery.json',{'error_type':type(exc).__name__,
+             'replay_existing_journals':True,'new_mercury_attempts':0,'budget_reset':False})
+        candidate=live.analyze(source,core,ident)
     candidate.update(release_version=VERSION,analysis_core_release_version=CORE_VERSION,
                      acquisition_release_version=VERSION)
     candidate['comment']=candidate['comment'].replace('# ForecastAgent 1.0.1', '# ForecastAgent 1.0.2')
@@ -123,6 +170,23 @@ def analyze(source, folder, ident):
                  'release_version':VERSION,'analysis_core_release_version':CORE_VERSION})
     save(candidate_path,candidate)
     return candidate
+
+
+def failed_provider_receipt(source,core):
+    from ForecastAgent.competition import mercury
+    from ForecastAgent.analysis import pilot
+    from ForecastAgent.providers import decisions
+    root=Path(core)/'mercury-v1.0.1';identity=root/'identity.json'
+    if not identity.exists():return False
+    if load(identity).get('packet_sha256')!=pilot.digest(mercury.packet_for(load(source))):return False
+    for stage in ('first','second'):
+        request=root/stage/'request.json'
+        if not request.exists() or (root/stage/'response.json').exists():continue
+        for path in (root/stage/'http').glob('*.json'):
+            receipt=load(path)
+            if receipt.get('status')=='invalid_or_transport_error' and receipt.get('endpoint')==decisions.ENDPOINT and receipt.get('request')==load(request):
+                return True
+    return False
 
 
 def validate_payload(question, candidate):
@@ -149,6 +213,16 @@ def verify_candidate(folder):
         raise ValueError('Frozen candidate source changed')
 
 
+def deliver(client,task,candidate,comment,folder,*,enabled=False):
+    verify_candidate(folder);saved=load(Path(folder)/'candidate.json')
+    if saved['payload']!=candidate or saved['comment']!=comment:
+        raise ValueError('Delivery differs from the frozen candidate')
+    validate_payload(load(Path(folder)/'analysis-input.json')['request'],candidate)
+    task.update(worker_release_version=VERSION,analysis_release_version=VERSION,
+                analysis_core_release_version=CORE_VERSION)
+    return live.deliver(client,task,candidate,comment,folder,enabled=enabled)
+
+
 def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=None, collector=None, limit=1):
     snapshots=surfaces.snapshots(snapshots,Path(root)/'incoming-1.0.2')
     seed(root,snapshots)
@@ -162,7 +236,7 @@ def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=
     save(Path(root)/'campaign.json',state)
     client=surfaces.Client(client or live.Client(os.environ.get('METACULUS_TOKEN','')))
     report=live.run(root,snapshots,enabled=enabled,client=client,
-                    collect=collector or collect,supplement=supplement,infer=infer or analyze,deliver_fn=deliver_fn,limit=limit)
+                    collect=collector or collect,supplement=supplement,infer=infer or analyze,deliver_fn=deliver_fn or deliver,limit=limit)
     report.update(worker_release_version=VERSION,analysis_core_release_version=CORE_VERSION)
     save(Path(root)/'report.json',report)
     return report
@@ -170,6 +244,11 @@ def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=
 
 def seed(root,snapshots):
     """Persist the complete question inventory before a network call can stall."""
+    root=Path(root);root.mkdir(parents=True,exist_ok=True)
+    with task_lock(root):return _seed(root,snapshots)
+
+
+def _seed(root,snapshots):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     indexes=[p for p in Path(snapshots).rglob('index.json') if load(p).get('tournament')=='fall-futureeval-2026']
     if not indexes:raise ValueError('Complete tournament snapshot required')
@@ -271,7 +350,7 @@ def main():
     parser.add_argument('--submit',action='store_true')
     parser.add_argument('--once',action='store_true')
     parser.add_argument('--limit',type=int,default=5)
-    args=parser.parse_args();pipeline.verify_baseline()
+    args=parser.parse_args();pipeline.verify_baseline();verify_release()
     if args.once:result=once(args.root,args.snapshots,enabled=args.submit)
     else:result=supervise(args.root,args.snapshots,submit=args.submit,limit=args.limit)
     print(json.dumps(result))

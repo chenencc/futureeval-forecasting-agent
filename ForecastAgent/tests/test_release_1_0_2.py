@@ -117,7 +117,7 @@ class ReleaseTests(unittest.TestCase):
         b['result']={'status':'partial','incomplete':True,'termination_reason':'context_projection_failure',
                      'execution_report':{'owner':'program','interrupted':True}}
         save(native/'bundle.json',b);identity={'request':b['request']};save(self.root/'identity.json',identity)
-        save(self.root/'state.json',{'stage':'collection','identity_sha256':digest(identity)})
+        save(self.root/'state.json',{'stage':'collection','identity_sha256':release.pipeline.digest(identity)})
         before=release.native_manifest(native);self.assertTrue(release.handoff(self.root))
         self.assertEqual(before,release.native_manifest(native));self.assertFalse(load(self.root/'raw-handoff.json')['budget_reset'])
         b['result']['termination_reason']='provider_transport_failure';self.assertFalse(release.raw_handoff_eligible(b))
@@ -164,6 +164,38 @@ class ReleaseTests(unittest.TestCase):
             report=release.once(self.root/'worker',incoming,enabled=True,client=client,collector=stress.saved_collector,limit=5)
         self.assertEqual(report['state_distribution'],{'accepted':1,'blocked_integrity':3})
         self.assertEqual(len(client.writes),1)
+
+    def test_malformed_reread_is_retained_via_exact_failed_receipt_without_new_http(self):
+        from ForecastAgent.providers import decisions
+        source=self.root/'analysis-input.json';save(source,bundle(long=True));calls=[]
+        def decide(state,registry,key,observer):
+            record={'endpoint':decisions.ENDPOINT,'request':{'model':decisions.MODEL,'state':state,'questions':registry},'status':'reserved'}
+            token=observer('reserve',record);calls.append(1)
+            if len(calls)==2:
+                record.update(status='invalid_or_transport_error',error='Invalid JSON response');observer('complete',record,token)
+                raise ValueError('Invalid JSON response')
+            answer=response(registry,insufficient=True);record.update(status='received',response=answer);observer('complete',record,token);return answer
+        with patch.dict(os.environ,{'OPENROUTER_API_KEY':'offline'}),patch('ForecastAgent.providers.decisions.decide',decide):
+            result=release.analyze(source,self.root,'7')
+        self.assertEqual(len(calls),2);self.assertEqual(result['selection'],'mercury_first_read')
+        self.assertTrue(load(self.root/'provider-recovery.json')['replay_existing_journals'])
+        self.assertEqual(result['payload']['probability_yes'],.98)
+
+    def test_service_interruption_exports_readable_raw_but_not_quota_or_unknown_receipts(self):
+        native=self.root/'collection';b=bundle();record={'status':'missing_choices','response':{'error':{'code':503}}}
+        save(native/'http/attempt.json',record)
+        b['model_attempts']=[{'path':'http/attempt.json','sha256':release.file_hash(native/'http/attempt.json'),'status':'missing_choices'}]
+        b['result']={'status':'partial','incomplete':True,'termination_reason':'model_transport_failure',
+                     'execution_report':{'owner':'program','interrupted':True}}
+        save(native/'bundle.json',b);identity={'request':b['request']};save(self.root/'identity.json',identity)
+        save(self.root/'state.json',{'stage':'collection','identity_sha256':release.pipeline.digest(identity)})
+        before=release.native_manifest(native);self.assertTrue(release.handoff(self.root))
+        self.assertEqual(before,release.native_manifest(native))
+        self.assertTrue(load(self.root/'raw-handoff.json')['known_service_interruption'])
+        for code in [400,401,402,403,429,None]:
+            record['response']['error']['code']=code;save(native/'http/attempt.json',record)
+            b['model_attempts'][0]['sha256']=release.file_hash(native/'http/attempt.json')
+            self.assertFalse(release.service_gap_eligible(b,native))
 
 
 if __name__=='__main__':unittest.main()
