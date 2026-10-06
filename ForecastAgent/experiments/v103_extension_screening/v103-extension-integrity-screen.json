@@ -1,0 +1,161 @@
+{
+  "rows": [
+    {
+      "question_id": "43688",
+      "question": "Will the Federal Reserve raise the federal funds target range before July 30, 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21859,
+          "second_bytes": 27529
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21943,
+          "second_bytes": 25805
+        }
+      }
+    },
+    {
+      "question_id": "43682",
+      "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21841,
+          "second_bytes": 27956
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21891,
+          "second_bytes": 25926
+        }
+      }
+    },
+    {
+      "question_id": "43171",
+      "question": "Will Neymar be called up for Brazil in the 2026 FIFA World Cup?",
+      "arms": {
+        "release": {
+          "error": "ValueError: Read only URLs already saved in this task"
+        },
+        "context": {
+          "error": "ValueError: Read only URLs already saved in this task"
+        }
+      }
+    },
+    {
+      "question_id": "42540",
+      "question": "Will a 1kt meteor strike take place during March or April 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 18873,
+          "second_bytes": 18873
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 17063,
+          "second_bytes": 17063
+        }
+      }
+    },
+    {
+      "question_id": "43091",
+      "question": "Will any AI model achieve a score of 95% or higher on the GPQA Diamond Benchmark Leaderboard before June 1, 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21977,
+          "second_bytes": 27731
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21744,
+          "second_bytes": 26648
+        }
+      }
+    },
+    {
+      "question_id": "41206",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before July 1, 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21952,
+          "second_bytes": 27929
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21930,
+          "second_bytes": 25898
+        }
+      }
+    },
+    {
+      "question_id": "43461",
+      "question": "Will at least 5 non-passengers be linked to the MV Hondius hantavirus outbreak before August 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21734,
+          "second_bytes": 27960
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21816,
+          "second_bytes": 26403
+        }
+      }
+    },
+    {
+      "question_id": "43824",
+      "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 8916,
+          "second_bytes": 8916
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 8787,
+          "second_bytes": 8787
+        }
+      }
+    },
+    {
+      "question_id": "43496",
+      "question": "Will Haiti hold the first round of its presidential election before September 1, 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21846,
+          "second_bytes": 27931
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21824,
+          "second_bytes": 25966
+        }
+      }
+    },
+    {
+      "question_id": "39992",
+      "question": "Will Israel participate in the Eurovision Song Contest 2026?",
+      "arms": {
+        "release": {
+          "errors": [],
+          "first_bytes": 21751,
+          "second_bytes": 27746
+        },
+        "context": {
+          "errors": [],
+          "first_bytes": 21705,
+          "second_bytes": 25684
+        }
+      }
+    }
+  ],
+  "model_calls": 0
+}

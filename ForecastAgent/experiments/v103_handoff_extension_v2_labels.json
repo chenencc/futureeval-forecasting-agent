@@ -1,0 +1,76 @@
+{
+  "schema": "v103-extension-evaluation-labels-v1",
+  "source_file_sha256": "8de9fcf906ce162af138e840bffa8e1bd89e85f40de395e5bd2b02662881761c",
+  "records": {
+    "43688": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-07-19",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "3ecee15a2c1bd0117b8064e401c4586220bf4e71a066b9ac7870abc861bce888",
+      "question_url": "https://www.metaculus.com/questions/43688"
+    },
+    "43682": {
+      "resolution": 1.0,
+      "snapshot_date": "2026-06-21",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "05862cbb85a907924b12562d6e74956b0634a7dff24eaedbc9924fb672530bfe",
+      "question_url": "https://www.metaculus.com/questions/43682"
+    },
+    "43171": {
+      "resolution": 1.0,
+      "snapshot_date": "2026-05-10",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "2804d290cf1e2ffd5babc7283236b50a4ea500a0a019d30ce4997ea50177df49",
+      "question_url": "https://www.metaculus.com/questions/43171"
+    },
+    "42540": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-03-29",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "557bdbf7d69ad171f873a5976f4e7f79cdeaf0080509d5da374d9be2d7372ff2",
+      "question_url": "https://www.metaculus.com/questions/42540"
+    },
+    "43091": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-05-24",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "ce8d8c9f71fea8a34fddfb5e481ac9d0b33d11e9fa38d2b35af6c2b5b197fadc",
+      "question_url": "https://www.metaculus.com/questions/43091"
+    },
+    "41206": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-06-21",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "ea10a053a0dd04f54f851d57c75f0f5578e95b4c32dbc36fd1f78eca035b7bf8",
+      "question_url": "https://www.metaculus.com/questions/41206"
+    },
+    "43461": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-06-21",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "71ce66ed93317ebbb0932b2f9148b0154639b3b6b45517c906d65f28616f2af2",
+      "question_url": "https://www.metaculus.com/questions/43461"
+    },
+    "43824": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-08-02",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "54e6af82062c5dd061c1e679de1f0d7ad8591207328537a5a709226f8356251c",
+      "question_url": "https://www.metaculus.com/questions/43824"
+    },
+    "43496": {
+      "resolution": 0.0,
+      "snapshot_date": "2026-08-16",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "ef0f72e05b74504ad65ef222362d6f1d34fc9b8bcea05308b3e61e4b11723cc8",
+      "question_url": "https://www.metaculus.com/questions/43496"
+    },
+    "39992": {
+      "resolution": 1.0,
+      "snapshot_date": "2026-04-12",
+      "source": "Archived ForecastBench Metaculus 2026 evaluation dataset",
+      "source_row_sha256": "0d606b29b6ad5e705ea149ae9e4e9e3f1666118c8535da98b832e30f61859a8b",
+      "question_url": "https://www.metaculus.com/questions/39992"
+    }
+  }
+}

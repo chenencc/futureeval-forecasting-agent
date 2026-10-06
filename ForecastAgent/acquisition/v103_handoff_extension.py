@@ -1,0 +1,91 @@
+"""A separately frozen ten-case cohort using the unchanged paired pilot engine."""
+
+import argparse
+import copy
+import json
+from contextlib import contextmanager
+from pathlib import Path
+
+from ForecastAgent.acquisition import v103_handoff_trial as trial
+from ForecastAgent.analysis.pilot import load, save
+
+ROOT = trial.ROOT
+COHORT = ROOT / 'ForecastAgent/experiments/v103_handoff_extension_v2_cohort.json'
+FIXTURE = ROOT / 'ForecastAgent/fixtures/v103_handoff_extension_v2_saved.json.gz'
+PROTOCOL = ROOT / 'ForecastAgent/experiments/v103_handoff_extension_v2_protocol.json'
+LABELS = ROOT / 'ForecastAgent/experiments/v103_handoff_extension_v2_labels.json'
+ORIGINAL_PROTOCOL = ROOT / 'ForecastAgent/experiments/v103_handoff_protocol.json'
+
+
+@contextmanager
+def experiment():
+    """Bind only the new cohort and durable protocol; preserve the pilot engine."""
+    names = ('COHORT', 'FIXTURE', 'PROTOCOL', 'LABELS')
+    previous = {name: getattr(trial, name) for name in names}
+    trial.inputs.cache_clear()
+    trial.COHORT, trial.FIXTURE, trial.PROTOCOL = COHORT, FIXTURE, PROTOCOL
+    trial.LABELS = {'extension': LABELS}
+    try:
+        yield trial
+    finally:
+        for name, value in previous.items():
+            setattr(trial, name, value)
+        trial.inputs.cache_clear()
+
+
+def freeze_protocol():
+    """Keep the original sources and policy and bound the new ten-case ledger."""
+    original = load(ORIGINAL_PROTOCOL)
+    for name, expected in original['experiment_sources_sha256_lf'].items():
+        if trial.source_sha(ROOT / name) != expected:
+            raise ValueError('The original paired engine changed: ' + name)
+    cohort = load(COHORT)
+    cases = cohort['cases']
+    old_ids = {r['question_id'] for r in load(ROOT / 'ForecastAgent/experiments/v103_handoff_cohort.json')['cases']}
+    new_ids = {r['question_id'] for r in cases}
+    if len(cases) != 10 or len(new_ids) != 10 or old_ids & new_ids:
+        raise ValueError('The extension must contain exactly ten different new cases')
+    p = copy.deepcopy(original)
+    p.update(schema='v103-same-material-extension-score-v1',
+             parent_protocol_sha256_lf=trial.source_sha(ORIGINAL_PROTOCOL),
+             cohort_sha256_lf=trial.source_sha(COHORT),
+             fixture_sha256=trial.sha(FIXTURE),
+             labels_sha256_lf={'extension': trial.source_sha(LABELS)},
+             evaluation_warning=cohort['evaluation_warning'])
+    p['limits']['campaign_http'] = 40
+    name = Path(__file__).relative_to(ROOT).as_posix()
+    p['experiment_sources_sha256_lf'][name] = trial.source_sha(__file__)
+    if PROTOCOL.exists() and load(PROTOCOL) != p:
+        raise ValueError('This extension protocol is already frozen')
+    save(PROTOCOL, p)
+    return p
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--freeze-protocol', action='store_true')
+    parser.add_argument('--preflight', action='store_true')
+    parser.add_argument('--question-id')
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--review', action='store_true')
+    args = parser.parse_args()
+    if args.freeze_protocol:
+        print(json.dumps(freeze_protocol()))
+        return
+    with experiment() as engine:
+        if args.preflight:
+            result = engine.preflight('extension')
+            save(args.output, result)
+            print(json.dumps({k: v for k, v in result.items() if k != 'rows'}))
+        elif args.review:
+            result = engine.review(args.output, 'extension')
+            print(json.dumps({k: v for k, v in result.items() if k not in ('rows', 'transports')}))
+        else:
+            result = engine.run_case(args.output, args.question_id)
+            print(json.dumps(result))
+            if any(r['probability_yes'] is None for r in result['arms'].values()):
+                raise SystemExit(2)
+
+
+if __name__ == '__main__':
+    main()

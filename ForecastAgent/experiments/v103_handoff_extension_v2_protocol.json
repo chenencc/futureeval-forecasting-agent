@@ -1,0 +1,41 @@
+{
+  "schema": "v103-same-material-extension-score-v1",
+  "base_release": "v1.0.3",
+  "base_commit": "a2a3dba9ac28fc6d768536de705dcbfec5cda4fc",
+  "cohort_sha256_lf": "4f6afac187f5bd2799d6ee876bdec779f24037815090599c43eb6bdef0ef8af8",
+  "fixture_sha256": "3df48fb5e1e20097e7fb1e14c0a754af264bba12c4e54bcda9f81371d0057d9b",
+  "model": "inception/mercury-decide:free",
+  "endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "registry_sha256": "8eb91dd02a52bd836a6f6b9c8320ec3b6234cef0f02650eb638710acf43aec0e",
+  "routing": {
+    "insufficient_probability": 0.4,
+    "conflict_probability": 0.5,
+    "minimum_new_chars": 900,
+    "yes_conflict_probability": 0.65,
+    "condition_refuted_probability": 0.65
+  },
+  "limits": {
+    "first_bytes": 22000,
+    "second_bytes": 28000,
+    "physical_http_per_arm": 2,
+    "physical_http_per_question": 4,
+    "campaign_http": 40
+  },
+  "fixed_release_dependencies": 47,
+  "experiment_sources_sha256_lf": {
+    "ForecastAgent/acquisition/v103_handoff_trial.py": "3b69efb4dc4e92db24311608458f3e5968252c9abc14037a631adb864ec63895",
+    "ForecastAgent/acquisition/context_handoff.py": "341c5854d2734b91542b099cbc1ff3ede7d2e5b933de73e4236b0c452334f3ba",
+    "ForecastAgent/acquisition/v103_handoff_extension.py": "34b9bba47c53c9cfbda39b1c6834be36c532c5d117a10064e93424466b1fd77a"
+  },
+  "labels_sha256_lf": {
+    "extension": "8099a76fe54a2a5d580b8c558163cb428408f4159ef7dde3bcba786de7bef161"
+  },
+  "primary_metric": "Paired first-pass clipped Brier; final clipped Brier and natural log loss separately.",
+  "source_policy": "Same immutable question and original bodies in both arms. No retrieval, supplement, label, community probability, model narrative or previous prediction in inference.",
+  "changed_variable": "Original evidence packing only, with exact context groups and coordinate deduplication.",
+  "fixed_analysis": "Same v1.0.3 first instructions, Mercury registry, endpoint, routing thresholds, two-stage caps and 0.02-0.98 clipping.",
+  "evaluation_warning": "Retrospective engineering diagnostic. Current web material and model knowledge may contain outcomes.",
+  "promotion_allowed": false,
+  "submitted": false,
+  "parent_protocol_sha256_lf": "0b76933812ac1bdd07c01f60b908149dfb5ead6c14fbb90b17226c4a8c204315"
+}

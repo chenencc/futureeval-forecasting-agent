@@ -1,0 +1,18 @@
+{
+  "rows": [
+    {
+      "question_id": "43171",
+      "run_id": "37195683563",
+      "artifact_id": "11301059723",
+      "artifact_path": "acquisition/bundle.json",
+      "source_sha256": "9ac2c3e760e7d3ab83512f65071f4c1b6ec5a200c08d41de47d9a52b425b07d4",
+      "local_blob": "E:\\metaculus_data\\blobs\\sha256\\9a\\9ac2c3e760e7d3ab83512f65071f4c1b6ec5a200c08d41de47d9a52b425b07d4",
+      "source_count": 3,
+      "document_formats": [],
+      "projected_bundle_sha256": "db92d5987b28e4d52eee3fa0dc38fb58cfcf4278a558af94fcf8835d1b7df796",
+      "passed": true
+    }
+  ],
+  "model_calls": 0,
+  "selection_policy": "Latest source run with exact original-coordinate audit, same preselected question; no label or prediction criterion."
+}

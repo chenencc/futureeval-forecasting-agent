@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       phase:
-        description: 'Frozen regression five or independent expansion ten; saved material only'
+        description: 'Frozen regression five, first expansion ten, or additional extension ten'
         type: choice
-        options: ['regression', 'expansion']
+        options: ['regression', 'expansion', 'extension']
         default: 'regression'
         required: true
       resume_run:
@@ -39,9 +39,16 @@ jobs:
             exit 1
           fi
       - name: Check original context and failure recovery
-        run: python -m unittest ForecastAgent.tests.test_v103_context_handoff ForecastAgent.tests.test_v103_handoff_trial -v
-      - name: Check all fifteen immutable original packages without providers
-        run: python -m ForecastAgent.acquisition.v103_handoff_trial --preflight --output snapshots/v103-handoff-offline.json
+        run: python -m unittest ForecastAgent.tests.test_v103_context_handoff ForecastAgent.tests.test_v103_handoff_trial ForecastAgent.tests.test_v103_handoff_extension -v
+      - name: Check immutable original packages without providers
+        run: |
+          if [ "$PAIR_PHASE" = 'extension' ]; then
+            python -m ForecastAgent.acquisition.v103_handoff_extension --preflight --output snapshots/v103-handoff-offline.json
+          else
+            python -m ForecastAgent.acquisition.v103_handoff_trial --preflight --output snapshots/v103-handoff-offline.json
+          fi
+        env:
+          PAIR_PHASE: ${{ inputs.phase }}
       - uses: actions/upload-artifact@v4
         with:
           name: v103-handoff-offline-${{ github.run_id }}
@@ -56,7 +63,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        question: ${{ fromJSON(inputs.phase == 'regression' && '["36871","43494","43501","43991","44801"]' || '["44925","40938","43703","43709","44247","43844","43992","41090","43615","44448"]') }}
+        question: ${{ fromJSON(inputs.phase == 'regression' && '["36871","43494","43501","43991","44801"]' || inputs.phase == 'expansion' && '["44925","40938","43703","43709","44247","43844","43992","41090","43615","44448"]' || '["43688","43682","43171","42540","43091","41206","43461","43824","43496","39992"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -71,9 +78,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/v103-handoff/${{ matrix.question }}
       - name: Compare first and conditional final decisions on the same bodies
-        run: python -u -m ForecastAgent.acquisition.v103_handoff_trial --output snapshots/v103-handoff --question-id "$CASE_ID"
+        run: |
+          if [ "$PAIR_PHASE" = 'extension' ]; then
+            python -u -m ForecastAgent.acquisition.v103_handoff_extension --output snapshots/v103-handoff --question-id "$CASE_ID"
+          else
+            python -u -m ForecastAgent.acquisition.v103_handoff_trial --output snapshots/v103-handoff --question-id "$CASE_ID"
+          fi
         env:
           CASE_ID: ${{ matrix.question }}
+          PAIR_PHASE: ${{ inputs.phase }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
       - name: Preserve original inputs and every reserved provider attempt
         if: always()

@@ -114,3 +114,32 @@ The English aggregate report is saved as
 `ForecastAgent/experiments/v103_handoff_results_20261006.json`. Original archives,
 sealed requests, provider responses, coordinate audits and per-question CSVs
 were imported into `E:\metaculus_data\reports\v103-handoff-<run_id>`.
+
+## Additional ten-case extension
+
+The next extension adds 43688, 43682, 43171, 42540, 43091, 41206, 43461, 43824,
+43496 and 39992. They cover monetary policy, court decisions, sports selection,
+space observations, AI benchmarks, securities filings, public health, market
+series, election timing and entertainment participation. Saved formats include
+HTML, PDF, HTML tables, CSV and series. These cases are outside the earlier
+fifteen-case paired delivery trial, but some appeared in older research.
+
+`v103_handoff_extension.py` binds separate immutable cohort, fixture, labels and
+protocol paths around the unchanged pilot engine. The previous packing and
+scoring source hashes remain identical. First and second caps and routing remain
+the same, with at most forty actual HTTP attempts for ten new cases. Original
+fifteen-case inputs, results and lifetime journals are retained.
+
+Before provider calls, the expanded sports snapshot failed the frozen original
+URL/coordinate audit for both arms. A same-run original raw package passed the
+audit and contains substantive saved text; both arms now use that exact package.
+The rejected projection, its protocol, wrapper source and zero-provider screen
+are preserved in `experiments/v103_extension_screening`. The compatible ten-case
+fixture and its replacement rationale are frozen under `v103_handoff_extension_v2`.
+This substitution is based on source integrity, with no scored-output criterion.
+
+The extension compares first and final results separately and archives per-case
+sources, requests, actual usage and failure journals. It neither acquires new
+material nor changes production. Outcome knowledge and current historical bodies
+remain a limitation; this is an engineering comparison, not a historical forecast
+backtest or an automatic promotion gate.

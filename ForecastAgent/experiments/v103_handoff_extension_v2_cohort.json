@@ -1,0 +1,216 @@
+{
+  "schema": "v103-handoff-extension-cohort-v1",
+  "base_release": "v1.0.3",
+  "base_commit": "a2a3dba9ac28fc6d768536de705dcbfec5cda4fc",
+  "fixture_sha256": "3df48fb5e1e20097e7fb1e14c0a754af264bba12c4e54bcda9f81371d0057d9b",
+  "cases": [
+    {
+      "question_id": "43688",
+      "phase": "extension",
+      "family": "monetary_policy",
+      "question": "Will the Federal Reserve raise the federal funds target range before July 30, 2026?",
+      "original_run_id": "37195683563",
+      "original_artifact_id": "11300692402",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "c5f9910777e09a344e4c0a5fa4b0a2fc8343873db30fec06e1a26e7a52014bf1",
+      "projected_bundle_sha256": "6d74fa334a738ed3d3b9fc9f17f44930d67ceeeae07eaad21f9412a60f9c03b7",
+      "source_count": 24,
+      "document_formats": [
+        "html",
+        "pdf"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43682",
+      "phase": "extension",
+      "family": "court_decision",
+      "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+      "original_run_id": "37195683563",
+      "original_artifact_id": "11300994078",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "06e190f660c98db5c3e186be8cf4a9901e9dee1922cf2ad339c8e0bfe22dbf15",
+      "projected_bundle_sha256": "2852fc35c8ffa60ad24b935e366d6f03f8b01e5f9b2622cad743a13b606b70fb",
+      "source_count": 20,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43171",
+      "phase": "extension",
+      "family": "sports_selection",
+      "question": "Will Neymar be called up for Brazil in the 2026 FIFA World Cup?",
+      "original_run_id": "37195683563",
+      "original_artifact_id": "11301059723",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "9ac2c3e760e7d3ab83512f65071f4c1b6ec5a200c08d41de47d9a52b425b07d4",
+      "projected_bundle_sha256": "db92d5987b28e4d52eee3fa0dc38fb58cfcf4278a558af94fcf8835d1b7df796",
+      "source_count": 3,
+      "document_formats": [],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "42540",
+      "phase": "extension",
+      "family": "space_observation",
+      "question": "Will a 1kt meteor strike take place during March or April 2026?",
+      "original_run_id": "37195683563",
+      "original_artifact_id": "11301207398",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "c1f0d46bd12f4bb331b59d5829145ff8eb42218e70483a495f5cddb5c19db1a2",
+      "projected_bundle_sha256": "1643b8e09e4e902413993a5f02d4b9917f9e141eeda3e4a1c29025df83cb558e",
+      "source_count": 6,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43091",
+      "phase": "extension",
+      "family": "ai_benchmark",
+      "question": "Will any AI model achieve a score of 95% or higher on the GPQA Diamond Benchmark Leaderboard before June 1, 2026?",
+      "original_run_id": "37195683563",
+      "original_artifact_id": "11301575976",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "c9d7d2cb6cdf89d3c6689ce48eaaac65f3606c8ff279c1b23953bcddb1781ca2",
+      "projected_bundle_sha256": "f9e4d773c9ba403a8025114fa98ec2e099e1a7a41f8be56454f7fba85b14582a",
+      "source_count": 6,
+      "document_formats": [
+        "csv",
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "41206",
+      "phase": "extension",
+      "family": "securities_filing",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before July 1, 2026?",
+      "original_run_id": "37188017851",
+      "original_artifact_id": "11297272801",
+      "original_artifact_path": "collection/acquisition/bundle.json",
+      "original_file_sha256": "169f2c55597238c680c0a7fdd5a929ca3b65764eb2045ad7a608782f548f3ad8",
+      "projected_bundle_sha256": "c9806ab077af40d7120830089e5c76864158b4d573259aa9b79295d8c5f74b09",
+      "source_count": 10,
+      "document_formats": [
+        "html",
+        "pdf"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43461",
+      "phase": "extension",
+      "family": "public_health",
+      "question": "Will at least 5 non-passengers be linked to the MV Hondius hantavirus outbreak before August 2026?",
+      "original_run_id": "37172607719",
+      "original_artifact_id": "11292198005",
+      "original_artifact_path": "acquisition/bundle.json",
+      "original_file_sha256": "eb90cb846acc21d3a141d056f0dd7f9629692cfb6048e079ac1b25e9cae37590",
+      "projected_bundle_sha256": "59f381212dabbe1ddf757d3347930304ca546d560803d812faef8c74bdde677a",
+      "source_count": 10,
+      "document_formats": [
+        "html",
+        "pdf"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43824",
+      "phase": "extension",
+      "family": "market_time_series",
+      "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+      "original_run_id": "37101299893",
+      "original_artifact_id": "11266986257",
+      "original_artifact_path": "handoffs/43824/raw-bundle.json",
+      "original_file_sha256": "d7094f1e131780854b1df82c81feb62c181a0ee712518c1a8dc4a960ef766b83",
+      "projected_bundle_sha256": "a0734dd53aeb35c4e96805e43ae165be328633fbb41c5b0cabb5950bd9994f46",
+      "source_count": 1,
+      "document_formats": [
+        "series"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43496",
+      "phase": "extension",
+      "family": "election_timing",
+      "question": "Will Haiti hold the first round of its presidential election before September 1, 2026?",
+      "original_run_id": "37101299893",
+      "original_artifact_id": "11266986257",
+      "original_artifact_path": "handoffs/43496/raw-bundle.json",
+      "original_file_sha256": "f9ac1ef89503a71406b9e6abace19eab223c555edffc7d23a424f836313ebd7e",
+      "projected_bundle_sha256": "b4ac7b7562936d9ded20624311d88e22d9976c3270a7ee2045119de4d5ebba64",
+      "source_count": 8,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "39992",
+      "phase": "extension",
+      "family": "entertainment_participation",
+      "question": "Will Israel participate in the Eurovision Song Contest 2026?",
+      "original_run_id": "37092468811",
+      "original_artifact_id": "11263361601",
+      "original_artifact_path": "tasks/39992/raw-bundle.json",
+      "original_file_sha256": "1b908053ea4a3f72f0ef67896167a939f94fb3b1c56d16727232c3e43597dae2",
+      "projected_bundle_sha256": "e1438db03276c5c2cf86813e8f04cf0de08d0eded81d77933b146705488cefd0",
+      "source_count": 4,
+      "document_formats": [
+        "html"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    }
+  ],
+  "selection_policy": "Ten purposively selected domains and saved document formats, outside the earlier fifteen-case delivery trial. Selection uses question metadata and material availability, before opening labels or new model results. Some questions appeared in older research; this is not a pristine holdout.",
+  "snapshot_policy": "Most recent imported saved raw package with original bodies and full criteria. The preselected sports case uses a same-run raw package because the expanded intelligence package failed the offline original URL/coordinate audit. Both arms receive the same compatible original projection; the rejected package and zero-provider screening are recorded separately. No new retrieval or supplement.",
+  "pre_provider_screening": {
+    "initial_cohort_sha256_lf": "f8be6dabcf9fa8ac69d122bdfeffb3e86b6d2c8ba972c3a62a2584050dada2e0",
+    "initial_model_calls": 0,
+    "same_question_source_replacement": "43171",
+    "reason": "Original URL index could not be resolved by the frozen saved reader for either arm."
+  },
+  "source_policy": "Exact saved-body projection; original files unchanged. No search, capture, supplement, labels or prior forecasts are supplied to the model.",
+  "evaluation_warning": "Retrospective engineering diagnostic. Current web material and model knowledge may contain outcomes.",
+  "promotion_allowed": false
+}
