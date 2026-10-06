@@ -10,9 +10,10 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
+from ForecastAgent.competition.tournaments import configured_tournament
 
 API_ROOT = "https://www.metaculus.com/api/posts/"
-TOURNAMENT = "fall-futureeval-2026"
+TOURNAMENT = configured_tournament()
 OPEN_PAGE_LIMIT = 30
 ARCHIVE_PAGES_PER_RUN = 5
 RESEARCH_PER_RUN = 2
@@ -143,6 +144,8 @@ def _load_state(path: Path) -> dict:
     state = json.loads(path.read_text(encoding="utf-8"))
     if state.get("schema_version") != 1:
         raise ValueError("Unsupported monitor state schema")
+    if state.get('tournament', 'fall-futureeval-2026') != TOURNAMENT:
+        raise ValueError('Wrong monitor tournament; refuse mixed state')
     return state
 
 
@@ -208,7 +211,7 @@ def snapshot_questions(token: str, root: Path = Path("snapshots/monitor"), *, re
                     pending_research.append((post, question))
 
     # Persist poll state before any long model work.
-    state.update(seen_question_ids=sorted(seen), researched_question_ids=sorted(researched),
+    state.update(tournament=TOURNAMENT, seen_question_ids=sorted(seen), researched_question_ids=sorted(researched),
                  archive_next_url=archive_next, updated_at_utc=now.isoformat())
     _write_json(state_path,state)
     research_results=run_pending_research(pending_research,state,root,output,now) if research and open_complete else []

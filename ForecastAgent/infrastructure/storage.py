@@ -1,5 +1,6 @@
 """Split resumable state from immutable changed evidence without resetting budgets."""
 import argparse
+import os
 import hashlib
 import json
 import shutil
@@ -24,7 +25,7 @@ def split(root, output):
     if output.exists():
         raise ValueError('Use a fresh output directory')
     state = json.loads((root / 'campaign.json').read_text(encoding='utf-8'))
-    if state.get('schema') != 'official-competition-v1' or state.get('tournament') != 'fall-futureeval-2026':
+    if state.get('schema') != 'official-competition-v1' or state.get('tournament') != os.environ.get('FORECAST_TOURNAMENT', 'fall-futureeval-2026'):
         raise ValueError('Unexpected campaign identity')
     previous_path = root / 'archive-manifest.json'
     previous = json.loads(previous_path.read_text(encoding='utf-8')) if previous_path.exists() else {}

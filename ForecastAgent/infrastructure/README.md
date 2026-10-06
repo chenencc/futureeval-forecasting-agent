@@ -1,8 +1,12 @@
 # Public listening and private recovery storage
 
-Production forecasting still checks out immutable `v1.0.1`. These infrastructure
+Fall production forecasting checks out immutable `v1.0.3`. These infrastructure
 utilities are checked out separately from `main`; they do not alter model routing,
 research quotas, probability policy or submission rules.
+
+MiniBench has independent monitoring, recovery and delivery artifacts. See
+[MiniBench production entry](MINIBENCH.md) for its immutable routing extension,
+activation flags and evidence required to claim accepted participation.
 
 ## Public listener
 
