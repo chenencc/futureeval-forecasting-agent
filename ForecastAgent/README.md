@@ -1,7 +1,8 @@
 # ForecastAgent
 
-For the patched production release and its immutable entrypoint, see
-[release 1.0.3](../RELEASE_1_0_3.md). Its analysis core remains release 1.0.1.
+For release 1.0.4, its immutable entrypoint and cutover/rollback contracts, see
+[release documentation](releases/README.md). It retains release 1.0.3 acquisition
+and the release 1.0.1 analysis core, with complete original-context delivery.
 
 For the release-based, acquisition-only development plan with frozen analysis,
 see [Acquisition V2 design](docs/ACQUISITION_V2_DESIGN.md). This is an experimental branch;
@@ -9,7 +10,7 @@ release 1.0.3 promotes the bounded acquisition candidate to production. The opt-
 [Intelligent acquisition V1](acquisition/README.md) implements material planning,
 version-bound gap assessment, independent supplement and a compatible package.
 
-The official competition worker is pinned to release 1.0.3: patched V3 acquisition → independent supplement → unchanged release 1.0.1 Mercury original-evidence conditional rereading → validated automatic submission. The machine-readable policy is [1.0.1.json](releases/1.0.1.json).
+The release 1.0.4 production entrypoint runs patched V3 acquisition → independent supplement → complete-context delivery → frozen release 1.0.1 Mercury conditional rereading → validated automatic submission. The machine-readable scoring policy remains [1.0.1.json](releases/1.0.1.json).
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
 

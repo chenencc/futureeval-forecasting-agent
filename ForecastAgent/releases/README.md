@@ -1,4 +1,64 @@
-# ForecastAgent release 1.0.2
+# ForecastAgent release 1.0.4
+
+Release 1.0.4 is based on the immutable `v1.0.3` tag. Acquisition and independent
+supplement remain unchanged. The evidence delivery adapter preserves every
+previously visible original coordinate and adds complete paragraphs and table
+contexts before invoking the frozen 1.0.1 Mercury registry and scoring rules.
+
+The first and conditional second requests retain their 22,000 and 28,000 byte
+caps. Mercury still makes at most two HTTP attempts per analysis. Packing or
+coordinate validation failure returns the validated previous selector input;
+it does not spend another model attempt. Failed second projection preserves the
+first decision when a safe extension is unavailable. Source citations resolve
+through the compact source ledger.
+
+```powershell
+python -m ForecastAgent.releases.v1_0_4 --root snapshots/official --snapshots snapshots/incoming
+python -m unittest ForecastAgent.tests.test_release_1_0_4 -v
+```
+
+The default command verifies inventory without acquisition or submission.
+Authorized production adds `--submit`. Production uses the exact tag and source
+manifest; its infrastructure utilities are maintained separately on `main`.
+
+## Release 1.0.4 evidence and limitations
+
+Three paired binary cohorts contain 25 questions. Final Brier decreased from
+0.09201352 to 0.08551265, while both arms classified 22/25 correctly. The 20
+nonbinary pairs completed all first reads; final multiple-choice and numeric
+losses increased, while discrete and research-date losses decreased. These are
+retrospective single-replicate comparisons, not an official tournament score or
+a clean historical forecasting benchmark. Resolved-question web material may
+contain outcomes. Efficiency and original-context delivery motivate promotion;
+universal forecasting improvement is not established.
+
+Production packing exactly reproduces 42 official first request states and 25
+available conditional second states from these saved experiments, with zero
+provider calls. Three date experiments used research grids and are excluded
+from production compatibility claims. Production always requires authoritative
+API range metadata and never fabricates a date grid.
+
+The 22 release contract tests include a 100-question mixed-format queue with
+simulated HTTP, recovery, unknown POST reconciliation, payload and citation
+validation, packing fallback and a real child-process timeout. They test
+engineering behavior, not live forecasting accuracy.
+
+## Cutover and rollback
+
+Before changing the worker tag, confirm that no worker is active and the latest
+exact campaign has no old-version nonterminal task. Drain any such task with
+its original release and budgets first. Accepted/skipped records and submission
+receipts remain byte-preserved. The adapter refuses incompatible inflight
+identities rather than restarting their calls. No quota reset accompanies an
+upgrade or rollback.
+
+At a clean task boundary, rollback changes the production checkout, tag check
+and module entrypoint to `v1.0.3`. Finish any active 1.0.4 task with 1.0.4 before
+rolling back. A verification-only dispatch restores the exact checkpoint,
+checks fresh monitor inventory and archives the preserved state without model
+calls or forecast submissions.
+
+## Inherited acquisition and delivery contracts
 
 Composition: **new V3 material acquisition -> deterministic independent
 supplement -> unchanged release 1.0.1 Mercury analysis**.
