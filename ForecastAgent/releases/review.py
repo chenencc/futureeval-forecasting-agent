@@ -32,9 +32,12 @@ def review(root):
         calls=[]
         for path in sorted((folder/'analysis-core-1.0.1').rglob('http/*.json')):
             record=load(path);usage=(record.get('response') or {}).get('usage')
+            tokens=usage.get('total_tokens') if isinstance(usage,dict) else None
+            if tokens is None and isinstance(usage,dict) and all(type(usage.get(k)) is int for k in ('input_tokens','output_tokens')):
+                tokens=usage['input_tokens']+usage['output_tokens']
             calls.append({'path':path.relative_to(folder).as_posix(),'status':record.get('status'),
                           'model':record.get('request',{}).get('model'),
-                          'total_tokens':usage.get('total_tokens') if isinstance(usage,dict) else None})
+                          'total_tokens':tokens})
         item['decision_transport_records']=calls
         item['known_decision_tokens']=sum(r['total_tokens'] for r in calls if isinstance(r['total_tokens'],int))
         item['unknown_decision_usage_attempts']=sum(not isinstance(r['total_tokens'],int) for r in calls)
