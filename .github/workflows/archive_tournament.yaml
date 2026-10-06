@@ -1,0 +1,44 @@
+name: Archive tournament questions (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: Fixed numeric tournament project ID
+        required: true
+        type: string
+        default: '33129'
+      expected_start:
+        description: Expected round start date in UTC (YYYY-MM-DD)
+        required: true
+        type: string
+        default: '2026-10-05'
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate fixed archive identity and download permitted records
+        run: |
+          python -m ForecastAgent.infrastructure.download_tournament \
+            --project-id "$PROJECT_ID" --expected-start "$EXPECTED_START" \
+            --root snapshots/tournament-archive
+        env:
+          PROJECT_ID: ${{ inputs.project_id }}
+          EXPECTED_START: ${{ inputs.expected_start }}
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tournament-questions-${{ inputs.project_id }}-${{ github.run_id }}
+          path: snapshots/tournament-archive/
+          if-no-files-found: error
+          retention-days: 90
