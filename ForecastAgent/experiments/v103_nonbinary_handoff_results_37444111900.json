@@ -1,0 +1,2007 @@
+{
+  "metrics": {
+    "multiple_choice": {
+      "first": {
+        "requested_pairs": 5,
+        "scored_pairs": 5,
+        "arms": {
+          "release": {
+            "multiclass_brier": 0.8969374191290063,
+            "log_loss": 1.7477455250857354,
+            "top_option_correct": 0.4
+          },
+          "context": {
+            "multiclass_brier": 0.9249495668054397,
+            "log_loss": 1.7944826432095176,
+            "top_option_correct": 0.4
+          }
+        }
+      },
+      "final": {
+        "requested_pairs": 5,
+        "scored_pairs": 5,
+        "arms": {
+          "release": {
+            "multiclass_brier": 0.677813342392218,
+            "log_loss": 1.4655960018192622,
+            "top_option_correct": 0.6
+          },
+          "context": {
+            "multiclass_brier": 0.7771907603333748,
+            "log_loss": 1.5580982466488453,
+            "top_option_correct": 0.4
+          }
+        }
+      }
+    },
+    "numeric": {
+      "first": {
+        "requested_pairs": 6,
+        "scored_pairs": 6,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.09321919572043003
+          },
+          "context": {
+            "bounded_normalized_crps": 0.10045721727312591
+          }
+        }
+      },
+      "final": {
+        "requested_pairs": 6,
+        "scored_pairs": 6,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.10240274000526134
+          },
+          "context": {
+            "bounded_normalized_crps": 0.11063360919753927
+          }
+        }
+      }
+    },
+    "discrete": {
+      "first": {
+        "requested_pairs": 6,
+        "scored_pairs": 6,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.08196072955746149
+          },
+          "context": {
+            "bounded_normalized_crps": 0.08515236302847956
+          }
+        }
+      },
+      "final": {
+        "requested_pairs": 6,
+        "scored_pairs": 6,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.08990911084070195
+          },
+          "context": {
+            "bounded_normalized_crps": 0.07309865764002772
+          }
+        }
+      }
+    },
+    "date": {
+      "first": {
+        "requested_pairs": 3,
+        "scored_pairs": 3,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.006679713558956676
+          },
+          "context": {
+            "bounded_normalized_crps": 0.004682780189680055
+          }
+        }
+      },
+      "final": {
+        "requested_pairs": 3,
+        "scored_pairs": 3,
+        "arms": {
+          "release": {
+            "bounded_normalized_crps": 0.008568114281173688
+          },
+          "context": {
+            "bounded_normalized_crps": 0.0067215254363655495
+          }
+        }
+      }
+    }
+  },
+  "complete": true,
+  "by_arm_consumption": {
+    "release": {
+      "actual_http_attempts": 38,
+      "known_tokens": 1989451,
+      "unknown_usage_attempts": 0
+    },
+    "context": {
+      "actual_http_attempts": 36,
+      "known_tokens": 1568198,
+      "unknown_usage_attempts": 0
+    }
+  },
+  "format_summary": {
+    "release": {
+      "valid_official_format": 17,
+      "research_date_distributions": 3,
+      "failed_first_predictions": [],
+      "reread_failures": [],
+      "successful_rereads": 18
+    },
+    "context": {
+      "valid_official_format": 17,
+      "research_date_distributions": 3,
+      "failed_first_predictions": [],
+      "reread_failures": [],
+      "successful_rereads": 16
+    }
+  },
+  "original_coverage": {
+    "cases_with_added_first_coordinates": 20,
+    "added_first_coordinate_characters": 37106,
+    "old_visible_text_removed": 0
+  },
+  "paired_effects": {
+    "multiple_choice": {
+      "first": {
+        "measure": "multiclass_brier",
+        "paired_cases": 5,
+        "mean_context_minus_release": 0.028012147676433275,
+        "improved": 1,
+        "unchanged": 1,
+        "worsened": 3
+      },
+      "final": {
+        "measure": "multiclass_brier",
+        "paired_cases": 5,
+        "mean_context_minus_release": 0.09937741794115659,
+        "improved": 3,
+        "unchanged": 1,
+        "worsened": 1
+      }
+    },
+    "numeric": {
+      "first": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 6,
+        "mean_context_minus_release": 0.007238021552695883,
+        "improved": 3,
+        "unchanged": 0,
+        "worsened": 3
+      },
+      "final": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 6,
+        "mean_context_minus_release": 0.008230869192277923,
+        "improved": 2,
+        "unchanged": 0,
+        "worsened": 4
+      }
+    },
+    "discrete": {
+      "first": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 6,
+        "mean_context_minus_release": 0.0031916334710180654,
+        "improved": 3,
+        "unchanged": 1,
+        "worsened": 2
+      },
+      "final": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 6,
+        "mean_context_minus_release": -0.016810453200674237,
+        "improved": 4,
+        "unchanged": 1,
+        "worsened": 1
+      }
+    },
+    "date": {
+      "first": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 3,
+        "mean_context_minus_release": -0.0019969333692766208,
+        "improved": 2,
+        "unchanged": 0,
+        "worsened": 1
+      },
+      "final": {
+        "measure": "bounded_normalized_crps",
+        "paired_cases": 3,
+        "mean_context_minus_release": -0.0018465888448081383,
+        "improved": 2,
+        "unchanged": 0,
+        "worsened": 1
+      }
+    }
+  },
+  "runtime_replay": {
+    "workflow_python": "3.11",
+    "local_python": "3.12",
+    "policy": "Original response_body member order plus Python 3.11 left-to-right float sums. Exact forecast equality retained; no numerical tolerance or output modification.",
+    "reference": "https://docs.python.org/3/library/functions.html#sum",
+    "all_first_and_selected_final_forecasts_exactly_reproduced": true,
+    "review_helper_sha256": "c6d1a90f5e7fb104f63e1617f217a62de8ea930b2af00ad441f1f06e47c2a6fa"
+  },
+  "limits": [
+    "Identical archived original materials, questions, scale and decision registry within each pair.",
+    "Evidence packing is the intended changed variable. Original capture versions differ across cases.",
+    "Three dates lack official API scale and question identity; research distributions cannot establish submission validity.",
+    "Range metric is bounded normalized CRPS, categorical metric is sum Brier; neither is Metaculus Peer or Baseline score.",
+    "Censored labels retain tail identity, not fabricated point outcomes.",
+    "Historical captures/model knowledge can expose outcomes. This is not a leakage-free historical backtest.",
+    "One stochastic replicate per arm; no model repeat variance estimate and no production promotion."
+  ],
+  "per_arm_completion": {
+    "release": 20,
+    "context": 20
+  },
+  "actual_mercury_http_attempts": 74,
+  "known_reported_tokens": 3557649,
+  "unknown_usage_attempts": 0,
+  "schema": "v103-typed-handoff-round-summary-v1",
+  "base_release": "v1.0.3",
+  "execution": {
+    "run_id": "37444111900",
+    "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37444111900",
+    "commit": "aedb4916e2ee8392d79afeb6bd703eaf476c2f18",
+    "branch": "dev_v103_handoff",
+    "conclusion": "success"
+  },
+  "protocol_sha256_lf": "4dfe9b55d691fc4484ff39076b09aa1dc5ba30ab1acee230043390a0db052218",
+  "question_count": 20,
+  "per_question": [
+    {
+      "question_id": "44939",
+      "type": "numeric",
+      "question": "What will be the average gas price in the U.S. on August 17, 2026?",
+      "label": {
+        "post_id": 44939,
+        "question_id": 45082,
+        "type": "numeric",
+        "resolution_display": "4.049",
+        "result_kind": "numeric",
+        "value": 4.049,
+        "source_url": "https://www.metaculus.com/questions/44939/",
+        "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.21913395174445363,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.21925743338962717,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21919,
+            "visible_original_chars": 9180,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.19590628511528776,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.2471898396736207,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21855,
+            "visible_original_chars": 11348,
+            "new_first_coordinate_chars": 2168,
+            "old_visible_text_removed": [],
+            "context_omissions": 13
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "44126",
+      "type": "numeric",
+      "question": "How much in digital advertising revenues will the New York Times Company report in its Q2 2026 earnings release?",
+      "label": {
+        "post_id": 44126,
+        "question_id": 44148,
+        "type": "numeric",
+        "resolution_display": "113.961M $",
+        "result_kind": "numeric",
+        "value": 113961000,
+        "source_url": "https://www.metaculus.com/questions/44126/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.10071657516796739,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.13484217170510474,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21922,
+            "visible_original_chars": 7929,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.1762753228803041,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.12106656454337758,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21960,
+            "visible_original_chars": 9429,
+            "new_first_coordinate_chars": 1500,
+            "old_visible_text_removed": [],
+            "context_omissions": 277
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "43658",
+      "type": "numeric",
+      "question": "What will the U.S. seasonally adjusted annual rate (SAAR) of total privately-owned housing starts be for July 2026, in thousands of units?",
+      "label": {
+        "post_id": 43658,
+        "question_id": 43662,
+        "type": "numeric",
+        "resolution_display": "1443 thousand units",
+        "result_kind": "numeric",
+        "value": 1443,
+        "source_url": "https://www.metaculus.com/questions/43658/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.12059478458880744,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.1205756410501845,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21572,
+            "visible_original_chars": 8404,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "value_units",
+            "material_conflict"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.12153765539565962,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.12070367019779596,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21805,
+            "visible_original_chars": 10767,
+            "new_first_coordinate_chars": 2363,
+            "old_visible_text_removed": [],
+            "context_omissions": 162
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "value_units"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "43801",
+      "type": "numeric",
+      "question": "What will be the change  in 12-month violent-crime trend for the period ending May 2026 according to the F.B.I.?",
+      "label": {
+        "post_id": 43801,
+        "question_id": 43831,
+        "type": "numeric",
+        "resolution_display": "-8.982%",
+        "result_kind": "numeric",
+        "value": -8.982,
+        "source_url": "https://www.metaculus.com/questions/43801/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.03197903046230414,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.03810407481230111,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21969,
+            "visible_original_chars": 6794,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.022793376347316464,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.06146276535767572,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21952,
+            "visible_original_chars": 8442,
+            "new_first_coordinate_chars": 1648,
+            "old_visible_text_removed": [],
+            "context_omissions": 260
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "44431",
+      "type": "numeric",
+      "question": "What will be the highest price of copper futures in August 2026?",
+      "label": {
+        "post_id": 44431,
+        "question_id": 44511,
+        "type": "numeric",
+        "resolution_display": "6.75 USD per lb",
+        "result_kind": "numeric",
+        "value": 6.75,
+        "source_url": "https://www.metaculus.com/questions/44431/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.009736035615360721,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.009798839200257217,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21683,
+            "visible_original_chars": 8645,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.008291796967661762,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.008291796967661762,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21609,
+            "visible_original_chars": 10578,
+            "new_first_coordinate_chars": 1933,
+            "old_visible_text_removed": [],
+            "context_omissions": 15
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": []
+        }
+      }
+    },
+    {
+      "question_id": "44128",
+      "type": "numeric",
+      "question": "How many foreign visitors will fly to the United States in June 2026?",
+      "label": {
+        "post_id": 44128,
+        "question_id": 44150,
+        "type": "numeric",
+        "resolution_display": "4.394782M passengers",
+        "result_kind": "numeric",
+        "value": 4394782,
+        "source_url": "https://www.metaculus.com/questions/44128/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.07715479674368683,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.09183827987409328,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21750,
+            "visible_original_chars": 7756,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.07793886693252575,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.10508701844510382,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21830,
+            "visible_original_chars": 10051,
+            "new_first_coordinate_chars": 2295,
+            "old_visible_text_removed": [],
+            "context_omissions": 59
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "44129",
+      "type": "multiple_choice",
+      "question": "What will the Japan Economy Watchers Current Index be in the August release?",
+      "label": {
+        "post_id": 44129,
+        "question_id": 44151,
+        "type": "multiple_choice",
+        "resolution_display": "44.0 to 46.0",
+        "result_kind": "category",
+        "value": null,
+        "option_index_zero_based": 3,
+        "source_url": "https://www.metaculus.com/questions/44129/",
+        "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.377117876236562,
+            "log_loss": 1.9801935847774002,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.13804251179523214,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.1665287427271219,
+            "log_loss": 0.3797165164327537,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.6840553001652925,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21965,
+            "visible_original_chars": 6651,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "metric_definition",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Under 40.0": 0.026570036763213463,
+            "40.0 to 42.0": 0.02,
+            "Greater than 42.0 and less than 44.0": 0.02,
+            "44.0 to 46.0": 0.13804251179523214,
+            "Greater than 46.0": 0.7953874514415543
+          },
+          "final_probabilities": {
+            "Under 40.0": 0.02,
+            "40.0 to 42.0": 0.02,
+            "Greater than 42.0 and less than 44.0": 0.02,
+            "44.0 to 46.0": 0.6840553001652925,
+            "Greater than 46.0": 0.25594469983470736
+          }
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.534636416116598,
+            "log_loss": 2.3550411435456358,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.09488960235962282,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.8847921558520448,
+            "log_loss": 1.1841703687919682,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.3059999413207688,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21860,
+            "visible_original_chars": 8081,
+            "new_first_coordinate_chars": 1430,
+            "old_visible_text_removed": [],
+            "context_omissions": 10
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Under 40.0": 0.02,
+            "40.0 to 42.0": 0.02,
+            "Greater than 42.0 and less than 44.0": 0.02,
+            "44.0 to 46.0": 0.09488960235962282,
+            "Greater than 46.0": 0.8451103976403771
+          },
+          "final_probabilities": {
+            "Under 40.0": 0.02,
+            "40.0 to 42.0": 0.02,
+            "Greater than 42.0 and less than 44.0": 0.02,
+            "44.0 to 46.0": 0.3059999413207688,
+            "Greater than 46.0": 0.6340000586792311
+          }
+        }
+      }
+    },
+    {
+      "question_id": "44731",
+      "type": "multiple_choice",
+      "question": "How many parties will obtain representation in the 2026 Kazakh legislative election?",
+      "label": {
+        "post_id": 44731,
+        "question_id": 44880,
+        "type": "multiple_choice",
+        "resolution_display": "Five",
+        "result_kind": "category",
+        "option_index_zero_based": 3,
+        "source_url": "https://www.metaculus.com/questions/44731/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.2420817762359808,
+            "log_loss": 2.5374727665996892,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.0790659656589347,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 1.2998151554024833,
+            "log_loss": 2.644091040974956,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.07106992403817719,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21906,
+            "visible_original_chars": 6199,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Two or Fewer": 0.5871072150959376,
+            "Three": 0.20260338921020862,
+            "Four": 0.0841943985577907,
+            "Five": 0.0790659656589347,
+            "Six": 0.02,
+            "Greater than Six": 0.02702903147712832
+          },
+          "final_probabilities": {
+            "Two or Fewer": 0.6334393378334374,
+            "Three": 0.17048788491930164,
+            "Four": 0.07106992403817719,
+            "Five": 0.07106992403817719,
+            "Six": 0.02036187414942708,
+            "Greater than Six": 0.03357105502147952
+          }
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.252343598377394,
+            "log_loss": 2.489554205539805,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.08294693561865199,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 1.2395955562654857,
+            "log_loss": 2.5270619396481986,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.07989340744827139,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21857,
+            "visible_original_chars": 7290,
+            "new_first_coordinate_chars": 1091,
+            "old_visible_text_removed": [],
+            "context_omissions": 185
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Two or Fewer": 0.6128992682673935,
+            "Three": 0.16495967885184323,
+            "Four": 0.08294693561865199,
+            "Five": 0.08294693561865199,
+            "Six": 0.023764694939597153,
+            "Greater than Six": 0.032482486703862314
+          },
+          "final_probabilities": {
+            "Two or Fewer": 0.5903365880755129,
+            "Three": 0.19165432127850515,
+            "Four": 0.07505291058958559,
+            "Five": 0.07989340744827139,
+            "Six": 0.022889844471435408,
+            "Greater than Six": 0.04017292813668964
+          }
+        }
+      }
+    },
+    {
+      "question_id": "44728",
+      "type": "multiple_choice",
+      "question": "Where will be the great white shark Percy on September 1, 2026?",
+      "label": {
+        "post_id": 44728,
+        "question_id": 44877,
+        "type": "multiple_choice",
+        "resolution_display": "Somewhere else",
+        "result_kind": "category",
+        "option_index_zero_based": 4,
+        "source_url": "https://www.metaculus.com/questions/44728/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.7960428092820397,
+            "log_loss": 3.912023005428146,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.02,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 1.8079999999999998,
+            "log_loss": 3.912023005428146,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.02,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21899,
+            "visible_original_chars": 11800,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Florida": 0.9133073478310729,
+            "Georgia, South Carolina, or North Carolina": 0.02669265216892716,
+            "Virginia or Maryland": 0.02,
+            "Any other U.S. State": 0.02,
+            "Somewhere else": 0.02
+          },
+          "final_probabilities": {
+            "Florida": 0.9199999999999999,
+            "Georgia, South Carolina, or North Carolina": 0.02,
+            "Virginia or Maryland": 0.02,
+            "Any other U.S. State": 0.02,
+            "Somewhere else": 0.02
+          }
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 1.8079999999999998,
+            "log_loss": 3.912023005428146,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.02,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 1.7447660895493429,
+            "log_loss": 3.912023005428146,
+            "top_option_correct": false,
+            "probability_of_true_option": 0.02,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21817,
+            "visible_original_chars": 14264,
+            "new_first_coordinate_chars": 2464,
+            "old_visible_text_removed": [],
+            "context_omissions": 164
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Florida": 0.9199999999999999,
+            "Georgia, South Carolina, or North Carolina": 0.02,
+            "Virginia or Maryland": 0.02,
+            "Any other U.S. State": 0.02,
+            "Somewhere else": 0.02
+          },
+          "final_probabilities": {
+            "Florida": 0.8833800246439969,
+            "Georgia, South Carolina, or North Carolina": 0.05661997535600305,
+            "Virginia or Maryland": 0.02,
+            "Any other U.S. State": 0.02,
+            "Somewhere else": 0.02
+          }
+        }
+      }
+    },
+    {
+      "question_id": "43665",
+      "type": "multiple_choice",
+      "question": "What will SpaceX's closing market capitalization be on its first day of trading as a public company?",
+      "label": {
+        "post_id": 43665,
+        "question_id": 43669,
+        "type": "multiple_choice",
+        "resolution_display": "$2.0 trillion to $2.5 trillion",
+        "result_kind": "category",
+        "option_index_zero_based": 2,
+        "source_url": "https://www.metaculus.com/questions/43665/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 0.06464463389044944,
+            "log_loss": 0.247162864905354,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.7810134834855635,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.10992281383148542,
+            "log_loss": 0.3302740425423674,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.7187267447371224,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21991,
+            "visible_original_chars": 7551,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Less than $1.5 trillion": 0.04173625057239014,
+            "$1.5 trillion to $2.0 trillion": 0.1172502659420462,
+            "$2.0 trillion to $2.5 trillion": 0.7810134834855635,
+            "$2.5 trillion to $3.0 trillion": 0.02,
+            "More than $3.0 trillion": 0.02,
+            "No IPO before September 10, 2026": 0.02
+          },
+          "final_probabilities": {
+            "Less than $1.5 trillion": 0.060004409834890235,
+            "$1.5 trillion to $2.0 trillion": 0.16126884542798725,
+            "$2.0 trillion to $2.5 trillion": 0.7187267447371224,
+            "$2.5 trillion to $3.0 trillion": 0.02,
+            "More than $3.0 trillion": 0.02,
+            "No IPO before September 10, 2026": 0.02
+          }
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "multiclass_brier": 0.02496781953320643,
+            "log_loss": 0.15391945781591343,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.8573410703530411,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.012000000000000018,
+            "log_loss": 0.1053605156578264,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.8999999999999999,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21904,
+            "visible_original_chars": 9442,
+            "new_first_coordinate_chars": 1891,
+            "old_visible_text_removed": [],
+            "context_omissions": 83
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "scope_exceptions",
+            "observation_coverage",
+            "material_conflict",
+            "evidence_sufficiency"
+          ],
+          "first_probabilities": {
+            "Less than $1.5 trillion": 0.04132946482347947,
+            "$1.5 trillion to $2.0 trillion": 0.04132946482347947,
+            "$2.0 trillion to $2.5 trillion": 0.8573410703530411,
+            "$2.5 trillion to $3.0 trillion": 0.02,
+            "More than $3.0 trillion": 0.02,
+            "No IPO before September 10, 2026": 0.02
+          },
+          "final_probabilities": {
+            "Less than $1.5 trillion": 0.02,
+            "$1.5 trillion to $2.0 trillion": 0.02,
+            "$2.0 trillion to $2.5 trillion": 0.8999999999999999,
+            "$2.5 trillion to $3.0 trillion": 0.02,
+            "More than $3.0 trillion": 0.02,
+            "No IPO before September 10, 2026": 0.02
+          }
+        }
+      }
+    },
+    {
+      "question_id": "45183",
+      "type": "multiple_choice",
+      "question": "What will be the outcome of Duane \"Keffe D\" Davis's Tupac Shakur murder trial by September 11, 2026?",
+      "label": {
+        "post_id": 45183,
+        "question_id": 45376,
+        "type": "multiple_choice",
+        "resolution_display": "Guilty of first-degree murder",
+        "result_kind": "category",
+        "option_index_zero_based": 0,
+        "source_url": "https://www.metaculus.com/questions/45183/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "multiclass_brier": 0.0048000000000000065,
+            "log_loss": 0.06187540371808753,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.94,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.0048000000000000065,
+            "log_loss": 0.06187540371808753,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.94,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21963,
+            "visible_original_chars": 7145,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [],
+          "first_probabilities": {
+            "Guilty of first-degree murder": 0.94,
+            "Guilty of a lesser homicide offense": 0.02,
+            "Not guilty (full acquittal)": 0.02,
+            "Mistrial, or no verdict yet reached": 0.02
+          },
+          "final_probabilities": {
+            "Guilty of first-degree murder": 0.94,
+            "Guilty of a lesser homicide offense": 0.02,
+            "Not guilty (full acquittal)": 0.02,
+            "Mistrial, or no verdict yet reached": 0.02
+          }
+        },
+        "context": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "multiclass_brier": 0.0048000000000000065,
+            "log_loss": 0.06187540371808753,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.94,
+            "payload_format_valid": true
+          },
+          "final_metrics": {
+            "multiclass_brier": 0.0048000000000000065,
+            "log_loss": 0.06187540371808753,
+            "top_option_correct": true,
+            "probability_of_true_option": 0.94,
+            "payload_format_valid": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21869,
+            "visible_original_chars": 8874,
+            "new_first_coordinate_chars": 1729,
+            "old_visible_text_removed": [],
+            "context_omissions": 600
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [],
+          "first_probabilities": {
+            "Guilty of first-degree murder": 0.94,
+            "Guilty of a lesser homicide offense": 0.02,
+            "Not guilty (full acquittal)": 0.02,
+            "Mistrial, or no verdict yet reached": 0.02
+          },
+          "final_probabilities": {
+            "Guilty of first-degree murder": 0.94,
+            "Guilty of a lesser homicide offense": 0.02,
+            "Not guilty (full acquittal)": 0.02,
+            "Mistrial, or no verdict yet reached": 0.02
+          }
+        }
+      }
+    },
+    {
+      "question_id": "44938",
+      "type": "discrete",
+      "question": "How many viewers will Newsmax report having in the second quarter of 2026?",
+      "label": {
+        "post_id": 44938,
+        "question_id": 45081,
+        "type": "discrete",
+        "resolution_display": "Less than 26.95 million",
+        "result_kind": "below_lower_bound",
+        "value": null,
+        "source_url": "https://www.metaculus.com/questions/44938/",
+        "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.01624478308983921,
+            "payload_format_valid": true,
+            "official_metadata_available": true,
+            "tail_probability": 0.0311276956,
+            "tail_event_brier": 0.9387135422333663,
+            "exact_tail_value_unknown": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.01624478308983921,
+            "payload_format_valid": true,
+            "official_metadata_available": true,
+            "tail_probability": 0.0311276956,
+            "tail_event_brier": 0.9387135422333663,
+            "exact_tail_value_unknown": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21828,
+            "visible_original_chars": 7256,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": []
+        },
+        "context": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.0006333381066773465,
+            "payload_format_valid": true,
+            "official_metadata_available": true,
+            "tail_probability": 0.969999821,
+            "tail_event_brier": 0.0009000107400320386,
+            "exact_tail_value_unknown": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.0006333381066773465,
+            "payload_format_valid": true,
+            "official_metadata_available": true,
+            "tail_probability": 0.969999821,
+            "tail_event_brier": 0.0009000107400320386,
+            "exact_tail_value_unknown": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21895,
+            "visible_original_chars": 9298,
+            "new_first_coordinate_chars": 2042,
+            "old_visible_text_removed": [],
+            "context_omissions": 134
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": []
+        }
+      }
+    },
+    {
+      "question_id": "43919",
+      "type": "discrete",
+      "question": "What will be the rise in average hourly earnings for all employees on U.S. private nonfarm payrolls from June 2026 to July 2026?",
+      "label": {
+        "post_id": 43919,
+        "question_id": 43945,
+        "type": "discrete",
+        "resolution_display": "0.02 $",
+        "result_kind": "numeric",
+        "value": 0.02,
+        "source_url": "https://www.metaculus.com/questions/43919/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.004817610628838351,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.004820452587061396,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21994,
+            "visible_original_chars": 8203,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.004805263204140161,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.004816471370008182,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21880,
+            "visible_original_chars": 9828,
+            "new_first_coordinate_chars": 1625,
+            "old_visible_text_removed": [],
+            "context_omissions": 529
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "44940",
+      "type": "discrete",
+      "question": "What will be the voter turnout for Florida's 2026 primary election?",
+      "label": {
+        "post_id": 44940,
+        "question_id": 45083,
+        "type": "discrete",
+        "resolution_display": "25%",
+        "result_kind": "numeric",
+        "value": 25,
+        "source_url": "https://www.metaculus.com/questions/44940/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.005629873575940088,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.005629873575940088,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21467,
+            "visible_original_chars": 7460,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "first_read",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.005629873575940088,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.005629873575940088,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21930,
+            "visible_original_chars": 10380,
+            "new_first_coordinate_chars": 2920,
+            "old_visible_text_removed": [],
+            "context_omissions": 11
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": []
+        }
+      }
+    },
+    {
+      "question_id": "44727",
+      "type": "discrete",
+      "question": "How many cases will Damien Charlotin's AI Hallucination Cases database record for the second half of August 2026?",
+      "label": {
+        "post_id": 44727,
+        "question_id": 44876,
+        "type": "discrete",
+        "resolution_display": "54 cases",
+        "result_kind": "numeric",
+        "value": 54,
+        "source_url": "https://www.metaculus.com/questions/44727/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.15357159692504435,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.14148358706452127,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21768,
+            "visible_original_chars": 6679,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.13197827472263313,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.15280181799898881,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21898,
+            "visible_original_chars": 8107,
+            "new_first_coordinate_chars": 1428,
+            "old_visible_text_removed": [],
+            "context_omissions": 1105
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "45045",
+      "type": "discrete",
+      "question": "What will be the water level of the Rhine river, according to the Kaub gauging station, on September 1, 2026?",
+      "label": {
+        "post_id": 45045,
+        "question_id": 45194,
+        "type": "discrete",
+        "resolution_display": "69 cm",
+        "result_kind": "numeric",
+        "value": 69,
+        "source_url": "https://www.metaculus.com/questions/45045/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.13088620437081552,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.11068288561269542,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21814,
+            "visible_original_chars": 7207,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.131159945811914,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.09135400699154625,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21908,
+            "visible_original_chars": 8802,
+            "new_first_coordinate_chars": 1595,
+            "old_visible_text_removed": [],
+            "context_omissions": 295
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "45048",
+      "type": "discrete",
+      "question": "What percentage of all startup or tech company job openings will be with Amazon on September 2, 2026?",
+      "label": {
+        "post_id": 45048,
+        "question_id": 45197,
+        "type": "discrete",
+        "resolution_display": "7.5%",
+        "result_kind": "numeric",
+        "value": 7.5,
+        "source_url": "https://www.metaculus.com/questions/45048/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.18061430875429144,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.26059308311415436,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21990,
+            "visible_original_chars": 9081,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.23670748274957262,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.18335643779700564,
+            "payload_format_valid": true,
+            "official_metadata_available": true
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21955,
+            "visible_original_chars": 11081,
+            "new_first_coordinate_chars": 2000,
+            "old_visible_text_removed": [],
+            "context_omissions": 324
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "26754",
+      "type": "date",
+      "question": "When will a publicly-available LLM achieve gold on the International Math Olympiad?",
+      "label": {
+        "post_id": 26754,
+        "type": "date",
+        "resolution_display": "16 Jul 2026 12:00 UTC",
+        "result_kind": "date",
+        "value": "2026-07-16T12:00:00Z",
+        "source_url": "https://www.metaculus.com/questions/26754/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.008102053557928732,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 295.9275062033469
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.0079661611421119,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 290.9640357156371
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21959,
+            "visible_original_chars": 6284,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.008290704519932841,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 302.817982590547
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.00845834429913964,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 308.94102552607535
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21985,
+            "visible_original_chars": 7606,
+            "new_first_coordinate_chars": 1322,
+            "old_visible_text_removed": [],
+            "context_omissions": 537
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "metric_definition",
+            "scope_exceptions"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "676",
+      "type": "date",
+      "question": "When will the world create the first Trillionaire?",
+      "label": {
+        "post_id": 676,
+        "type": "date",
+        "resolution_display": "12 Jun 2026 09:00 UTC",
+        "result_kind": "date",
+        "value": "2026-06-12T09:00:00Z",
+        "source_url": "https://www.metaculus.com/questions/676/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.002603770042465095,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 95.10270080103759
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.004225248449493963,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 154.327199617767
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21894,
+            "visible_original_chars": 7410,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.0006815651144984662,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 24.89416580705648
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.0004839832937987463,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 17.67748980599921
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21885,
+            "visible_original_chars": 9678,
+            "new_first_coordinate_chars": 2268,
+            "old_visible_text_removed": [],
+            "context_omissions": 40
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    },
+    {
+      "question_id": "28102",
+      "type": "date",
+      "question": "When Will an AI be Amongst the Best Forecasters on Metaculus",
+      "label": {
+        "post_id": 28102,
+        "type": "date",
+        "resolution_display": "09 Feb 2026 10:55 UTC",
+        "result_kind": "date",
+        "value": "2026-02-09T10:55:00Z",
+        "source_url": "https://www.metaculus.com/questions/28102/",
+        "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+      },
+      "arms": {
+        "release": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.009333317076476201,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 340.8994062182932
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.0135129332519152,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 493.55988702620266
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21787,
+            "visible_original_chars": 5443,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        },
+        "context": {
+          "status": "completed",
+          "selection": "conditional_reread",
+          "first_metrics": {
+            "bounded_normalized_crps": 0.005076070934608858,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 185.40349088658854
+          },
+          "final_metrics": {
+            "bounded_normalized_crps": 0.011222248716158262,
+            "payload_format_valid": false,
+            "official_metadata_available": false,
+            "bounded_crps_days": 409.8926343576805
+          },
+          "delivery_audit": {
+            "first_request_bytes": 21925,
+            "visible_original_chars": 6837,
+            "new_first_coordinate_chars": 1394,
+            "old_visible_text_removed": [],
+            "context_omissions": 837
+          },
+          "error": null,
+          "second_error": null,
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "metric_definition",
+            "value_units",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ]
+        }
+      }
+    }
+  ],
+  "resolved_provider_models": [
+    "inception/mercury-decide-20260930"
+  ],
+  "consumption_change": {
+    "context_minus_release_tokens_percent": -21.17433402481388,
+    "context_minus_release_http_attempts": -2
+  },
+  "independent_recalculation": {
+    "passed": true,
+    "scored_predictions": 80
+  },
+  "interpretation": "Mixed type-dependent effects in one retrospective replicate. Context delivery saves recorded tokens but does not justify replacing release. MC regression is concentrated in 44129: correct 44.0–46.0 probability falls from 0.6841 to 0.3060. Both versions miss 44731 and 44728. Numeric rereads worsen mean loss in both arms. No production promotion.",
+  "reports": {
+    "full_local_audit": "E:\\metaculus_data\\reports\\v103-nonbinary-handoff-37444111900.json",
+    "per_question_csv": "E:\\metaculus_data\\reports\\v103-handoff-37444111900\\question-scores.csv"
+  },
+  "search_calls": 0,
+  "source_fetch_calls": 0,
+  "supplement_calls": 0,
+  "forecasts_submitted": 0,
+  "production_changed": false,
+  "promotion_allowed": false,
+  "temporary_workflow_restored": "disabled_manually",
+  "offline_tests_passed": 21
+}
