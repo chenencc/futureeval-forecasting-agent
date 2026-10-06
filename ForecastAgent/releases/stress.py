@@ -68,7 +68,7 @@ def snapshot(root,documents):
 def saved_collector(request,folder):
     """A saved material fixture, not a simulated claim about retrieval quality."""
     raw=bundle(request['question_type']);raw['request']=request
-    path=folder/'release-1.0.2/package.json';save(path,raw)
+    path=folder/f'release-{release.VERSION}/package.json';save(path,raw)
     adapter={'request':request,'result':{'incomplete':False,'status':'raw_package_exported'},
              'release_acquisition':{'version':release.VERSION,'package_sha256':release.file_hash(path)}}
     save(folder/'bundle.json',adapter)

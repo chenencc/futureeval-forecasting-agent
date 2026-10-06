@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       PYTHONUTF8: '1'
     steps:
@@ -27,7 +27,7 @@ jobs:
           python -m ForecastAgent.releases.manifest
           python -c "from ForecastAgent.acquisition.pipeline import verify_baseline; verify_baseline(); print('Frozen analysis core verified')"
       - name: Offline collection and release regressions
-        run: python -m unittest ForecastAgent.tests.test_production_collection ForecastAgent.tests.test_supplement ForecastAgent.tests.test_runtime_contracts ForecastAgent.tests.test_release_1_0_2
+        run: python -m unittest discover -s ForecastAgent/tests -v
       - name: Probe observed public HTML and PDF sources
         run: python -m ForecastAgent.releases.collection_gate --urls-file ForecastAgent/tests/fixtures/production_46056_sources.json --output snapshots/patch-gate --fetch
       - uses: actions/upload-artifact@v4

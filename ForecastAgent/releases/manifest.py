@@ -11,12 +11,12 @@ PATH=Path('ForecastAgent/releases/manifest.json')
 def sha(path):return hashlib.sha256(Path(path).read_bytes().replace(b'\r\n',b'\n')).hexdigest()
 
 
-def build(root=ROOT):
+def build(root=ROOT, version='1.0.3'):
     root=Path(root)
     paths=[p for p in (root/'ForecastAgent').rglob('*') if p.is_file() and '__pycache__' not in p.parts and
            p.suffix in {'.py','.md','.txt'} and 'tests' not in p.parts]
     base=load(root/'ForecastAgent/experiments/acquisition_v2_baseline.json')
-    result={'schema':'forecastagent-release-source-v1','version':'1.0.2',
+    result={'schema':'forecastagent-release-source-v1','version':version,
             'composition':'V3 acquisition + independent supplement + unchanged 1.0.1 live analysis core',
             'analysis_core_tag':'v1.0.1','analysis_core_commit':base['baseline_commit'],
             'acquisition_base_commit':'4f7bbed','budget_policy':base['baseline_limits'],
@@ -25,9 +25,10 @@ def build(root=ROOT):
     save(root/PATH,result);return result
 
 
-def verify(root=ROOT):
+def verify(root=ROOT, expected_version=None):
     root=Path(root);m=load(root/PATH)
-    if m.get('schema')!='forecastagent-release-source-v1' or m.get('version')!='1.0.2':raise ValueError('Wrong release manifest')
+    if m.get('schema')!='forecastagent-release-source-v1' or m.get('version') not in {'1.0.2','1.0.3'}:raise ValueError('Wrong release manifest')
+    if expected_version and m['version']!=expected_version:raise ValueError('Unexpected production release version')
     for name,expected in m['files_sha256_lf'].items():
         path=(root/name).resolve()
         if not path.is_relative_to(root.resolve()) or sha(path)!=expected:raise ValueError('Frozen release source changed: '+name)
