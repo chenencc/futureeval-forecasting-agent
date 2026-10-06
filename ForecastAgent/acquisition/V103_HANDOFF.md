@@ -143,3 +143,39 @@ sources, requests, actual usage and failure journals. It neither acquires new
 material nor changes production. Outcome knowledge and current historical bodies
 remain a limitation; this is an engineering comparison, not a historical forecast
 backtest or an automatic promotion gate.
+
+### Completed extension results
+
+Run [37441544872](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37441544872)
+completed successfully on commit `1e94256d4d2221e6dced40e2fe4ca115497332b0`.
+All ten cases and twenty arms scored, with Linux source-integrity preflight and
+all fifteen focused tests passing. Sealed predictions and actual provider
+records were imported and independently audited in `E:\metaculus_data`.
+
+| Stage | Release Brier | Context Brier | Release accuracy | Context accuracy |
+| --- | ---: | ---: | ---: | ---: |
+| First | 0.024304 | 0.048334 | 10/10 | 9/10 |
+| Final | 0.017439 | 0.042289 | 10/10 | 10/10 |
+
+Release used fifteen physical HTTP requests and 718,132 reported tokens. Context
+used fourteen requests and 576,873 tokens, 19.67% fewer tokens. Unknown-usage
+attempts: zero. The resolved provider model was `inception/mercury-decide-20260930`.
+The forty-request cap was respected; no search, source fetch, supplement, quota
+reset or forecast submission occurred. The temporary manual workflow is disabled
+again. Production remains unchanged.
+
+Eight cases gained original character coverage, totaling 13,878 additional
+coordinates, and no old-visible original text was removed. Nonetheless, this
+cohort favors release probability loss. The largest final regressions are the
+meteor case 42540 and Anthropic filing case 41206. Meteor original coverage is
+equal in both arms; only packing changes. One response per arm cannot separate
+representation effects from model-call variance, or attribute that difference
+to retrieval. Both arms improve aggregate Brier after rereading in this cohort,
+which differs from the earlier candidate cohorts.
+
+The exploratory combined twenty-five-case final Brier is 0.092014 for release and
+0.085513 for context, with accuracy 22/25 for both. Cohort differences and the
+new ten-case regression must remain visible. No candidate is promoted on these
+mixed single-replicate retrospective results. Full structured results are in
+`experiments/v103_handoff_extension_results_37441544872.json`; the corresponding
+local report also preserves per-question CSVs and original transport records.

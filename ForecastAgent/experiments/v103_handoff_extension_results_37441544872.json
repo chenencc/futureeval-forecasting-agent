@@ -1,0 +1,796 @@
+{
+  "schema": "v103-handoff-extension-round-summary-v1",
+  "base_release": "v1.0.3",
+  "branch": "dev_v103_handoff",
+  "executed_commit": "1e94256d4d2221e6dced40e2fe4ca115497332b0",
+  "run_id": "37441544872",
+  "run_url": "https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37441544872",
+  "new_question_count": 10,
+  "new_complete": true,
+  "new_per_arm_completion": {
+    "release": 10,
+    "context": 10
+  },
+  "new_metrics": {
+    "first": {
+      "requested_pairs": 10,
+      "scored_pairs": 10,
+      "arms": {
+        "release": {
+          "brier": 0.02430385165672553,
+          "log_loss": 0.1057900127105718,
+          "correct_at_half": 1.0
+        },
+        "context": {
+          "brier": 0.048334414923204554,
+          "log_loss": 0.1598653376733298,
+          "correct_at_half": 0.9
+        }
+      }
+    },
+    "final": {
+      "requested_pairs": 10,
+      "scored_pairs": 10,
+      "arms": {
+        "release": {
+          "brier": 0.01743899113975118,
+          "log_loss": 0.09207111184935561,
+          "correct_at_half": 1.0
+        },
+        "context": {
+          "brier": 0.042288527923965466,
+          "log_loss": 0.1465782858632633,
+          "correct_at_half": 1.0
+        }
+      }
+    }
+  },
+  "new_by_arm_consumption": {
+    "release": {
+      "actual_http_attempts": 15,
+      "known_tokens": 718132,
+      "unknown_usage_attempts": 0
+    },
+    "context": {
+      "actual_http_attempts": 14,
+      "known_tokens": 576873,
+      "unknown_usage_attempts": 0
+    }
+  },
+  "new_paired_effects": {
+    "first": {
+      "paired_cases": 10,
+      "mean_context_minus_release_brier": 0.02403056326647903,
+      "improved": 2,
+      "unchanged": 5,
+      "worsened": 3,
+      "descriptive_case_bootstrap_95_percent_interval": [
+        -1.8926801445551254e-11,
+        0.06533513089455181
+      ],
+      "uncertainty_warning": "One model replicate per arm. The case bootstrap ignores repeated-call variance and does not make the purposive historical cohort representative."
+    },
+    "final": {
+      "paired_cases": 10,
+      "mean_context_minus_release_brier": 0.02484953678421429,
+      "improved": 3,
+      "unchanged": 5,
+      "worsened": 2,
+      "descriptive_case_bootstrap_95_percent_interval": [
+        -0.00013533918754095954,
+        0.06767035047927311
+      ],
+      "uncertainty_warning": "One model replicate per arm. The case bootstrap ignores repeated-call variance and does not make the purposive historical cohort representative."
+    }
+  },
+  "new_reread_effects": {
+    "release": {
+      "successful_second_reads": 5,
+      "mean_final_minus_first_brier_on_reread_subset": -0.013729721033948697,
+      "improved": 1,
+      "unchanged": 2,
+      "worsened": 2
+    },
+    "context": {
+      "successful_second_reads": 4,
+      "mean_final_minus_first_brier_on_reread_subset": -0.015114717498097723,
+      "improved": 3,
+      "unchanged": 1,
+      "worsened": 0
+    }
+  },
+  "new_label_distribution": {
+    "0": 7,
+    "1": 3
+  },
+  "resolved_provider_models": [
+    "inception/mercury-decide-20260930"
+  ],
+  "per_question": [
+    {
+      "question_id": "43688",
+      "question": "Will the Federal Reserve raise the federal funds target range before July 30, 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.0028009264098010503,
+          "probability_yes": 0.0028009264098010503,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21859,
+            "visible_original_chars": 6988,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.0024726235896411373,
+          "probability_yes": 0.0024726235896411373,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21943,
+            "visible_original_chars": 8872,
+            "new_first_coordinate_chars": 1884,
+            "old_visible_text_removed": [],
+            "context_omissions": 250
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0,
+        "final": 0.0
+      }
+    },
+    {
+      "question_id": "43682",
+      "question": "Will the U.S. Supreme Court rule in favor of Monsanto in Monsanto Company v. John L. Durnell?",
+      "resolution": 1.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.9859363737573958,
+          "probability_yes": 0.9995694428812493,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21841,
+            "visible_original_chars": 6737,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.9996200154612149,
+          "probability_yes": 0.9996200154612149,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21891,
+            "visible_original_chars": 8183,
+            "new_first_coordinate_chars": 1446,
+            "old_visible_text_removed": [],
+            "context_omissions": 1135
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0,
+        "final": 0.0
+      }
+    },
+    {
+      "question_id": "43171",
+      "question": "Will Neymar be called up for Brazil in the 2026 FIFA World Cup?",
+      "resolution": 1.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.999088948949922,
+          "probability_yes": 0.999088948949922,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21858,
+            "visible_original_chars": 9878,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.9989677690417536,
+          "probability_yes": 0.9989677690417536,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21899,
+            "visible_original_chars": 13325,
+            "new_first_coordinate_chars": 3447,
+            "old_visible_text_removed": [],
+            "context_omissions": 82
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0,
+        "final": 0.0
+      }
+    },
+    {
+      "question_id": "42540",
+      "question": "Will a 1kt meteor strike take place during March or April 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.20181322466072713,
+          "probability_yes": 0.20181322466072713,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 18873,
+            "visible_original_chars": 6020,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.46879062662624377,
+          "probability_yes": 0.46879062662624377,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 17063,
+            "visible_original_chars": 6020,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.17903607396466517,
+        "final": 0.17903607396466517
+      }
+    },
+    {
+      "question_id": "43091",
+      "question": "Will any AI model achieve a score of 95% or higher on the GPQA Diamond Benchmark Leaderboard before June 1, 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.07585818158818373,
+          "probability_yes": 0.08509905312815914,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21977,
+            "visible_original_chars": 6834,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.09534945718704857,
+          "probability_yes": 0.08509904268669496,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21744,
+            "visible_original_chars": 8081,
+            "new_first_coordinate_chars": 1247,
+            "old_visible_text_removed": [],
+            "context_omissions": 54
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0033370552719989505,
+        "final": -1.777117321355437e-09
+      }
+    },
+    {
+      "question_id": "41206",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before July 1, 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.4378234991142019,
+          "probability_yes": 0.3486451285660856,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21952,
+            "visible_original_chars": 6727,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.5,
+          "probability_yes": 0.4378234991142019,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21930,
+            "visible_original_chars": 8324,
+            "new_first_coordinate_chars": 1597,
+            "old_visible_text_removed": [],
+            "context_omissions": 283
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.05831058362339647,
+        "final": 0.07013599070374117
+      }
+    },
+    {
+      "question_id": "43461",
+      "question": "Will at least 5 non-passengers be linked to the MV Hondius hantavirus outbreak before August 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.04208772611333754,
+          "probability_yes": 0.042087730919421175,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21734,
+            "visible_original_chars": 6517,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.037326888281170874,
+          "probability_yes": 0.03308598101059528,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21816,
+            "visible_original_chars": 8443,
+            "new_first_coordinate_chars": 1926,
+            "old_visible_text_removed": [],
+            "context_omissions": 400
+          }
+        }
+      },
+      "brier_delta": {
+        "first": -0.00037808010063630315,
+        "final": -0.0006766949545121297
+      }
+    },
+    {
+      "question_id": "43824",
+      "question": "Will the Brookmont Catastrophic Bond ETF drop at least $0.25 within two days before September 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.03308598101059528,
+          "probability_yes": 0.03308598101059528,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 8916,
+            "visible_original_chars": 878,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.03308597958047282,
+          "probability_yes": 0.03308597958047282,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [
+            "time_window",
+            "actor_action_target",
+            "event_stage",
+            "scope_exceptions",
+            "observation_coverage",
+            "evidence_sufficiency"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 8787,
+            "visible_original_chars": 878,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        }
+      },
+      "brier_delta": {
+        "first": -9.463400722775628e-11,
+        "final": -9.463400722775628e-11
+      }
+    },
+    {
+      "question_id": "43496",
+      "question": "Will Haiti hold the first round of its presidential election before September 1, 2026?",
+      "resolution": 0.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.001098731262916558,
+          "probability_yes": 0.0006263341404021992,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "material_conflict"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21846,
+            "visible_original_chars": 7265,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.0007554057973182198,
+          "probability_yes": 0.0007554057642774543,
+          "selection": "conditional_reread",
+          "remaining_diagnostic_gaps": [
+            "material_conflict"
+          ],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21824,
+            "visible_original_chars": 8968,
+            "new_first_coordinate_chars": 1703,
+            "old_visible_text_removed": [],
+            "context_omissions": 59
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0,
+        "final": 0.0
+      }
+    },
+    {
+      "question_id": "39992",
+      "question": "Will Israel participate in the Eurovision Song Contest 2026?",
+      "resolution": 1.0,
+      "arms": {
+        "release": {
+          "status": "completed",
+          "first_probability_yes": 0.9988304895857638,
+          "probability_yes": 0.9988304895857638,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21751,
+            "visible_original_chars": 3952,
+            "new_first_coordinate_chars": 0,
+            "old_visible_text_removed": [],
+            "context_omissions": 0
+          }
+        },
+        "context": {
+          "status": "completed",
+          "first_probability_yes": 0.9988304898565192,
+          "probability_yes": 0.9988304898565192,
+          "selection": "first_read",
+          "remaining_diagnostic_gaps": [],
+          "second_error": null,
+          "error": null,
+          "delivery_audit": {
+            "first_request_bytes": 21705,
+            "visible_original_chars": 4580,
+            "new_first_coordinate_chars": 628,
+            "old_visible_text_removed": [],
+            "context_omissions": 40
+          }
+        }
+      },
+      "brier_delta": {
+        "first": 0.0,
+        "final": 0.0
+      }
+    }
+  ],
+  "original_coordinate_coverage": {
+    "old_visible_text_removed": 0,
+    "cases_with_additional_first_original_coordinates": 8,
+    "cases_with_unchanged_first_original_coordinate_coverage": [
+      "42540",
+      "43824"
+    ],
+    "added_first_original_coordinate_characters": 13878,
+    "interpretation": "Coordinate coverage does not verify source relevance, truth or target sufficiency. Equal coverage with changed JSON packing and one model call per arm cannot isolate packing sensitivity from model-call variance."
+  },
+  "cohorts_separate": [
+    {
+      "run_id": "37416882134",
+      "phase": "regression",
+      "metrics": {
+        "first": {
+          "requested_pairs": 5,
+          "scored_pairs": 5,
+          "arms": {
+            "release": {
+              "brier": 0.08103525038804092,
+              "log_loss": 0.25155770201791183,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.024381870551070835,
+              "log_loss": 0.12553791033933956,
+              "correct_at_half": 1.0
+            }
+          }
+        },
+        "final": {
+          "requested_pairs": 5,
+          "scored_pairs": 5,
+          "arms": {
+            "release": {
+              "brier": 0.06896428662581214,
+              "log_loss": 0.22443072934897837,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.03570067584102195,
+              "log_loss": 0.13931073042909167,
+              "correct_at_half": 1.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "run_id": "37417154862",
+      "phase": "expansion",
+      "metrics": {
+        "first": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.1778826277461979,
+              "log_loss": 0.521962432117976,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.1411099970668763,
+              "log_loss": 0.38900241288426285,
+              "correct_at_half": 0.7
+            }
+          }
+        },
+        "final": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.17811266786844615,
+              "log_loss": 0.520311276894478,
+              "correct_at_half": 0.8
+            },
+            "context": {
+              "brier": 0.15364275005484307,
+              "log_loss": 0.4156378742443209,
+              "correct_at_half": 0.7
+            }
+          }
+        }
+      }
+    },
+    {
+      "run_id": "37441544872",
+      "phase": "extension",
+      "metrics": {
+        "first": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.02430385165672553,
+              "log_loss": 0.1057900127105718,
+              "correct_at_half": 1.0
+            },
+            "context": {
+              "brier": 0.048334414923204554,
+              "log_loss": 0.1598653376733298,
+              "correct_at_half": 0.9
+            }
+          }
+        },
+        "final": {
+          "requested_pairs": 10,
+          "scored_pairs": 10,
+          "arms": {
+            "release": {
+              "brier": 0.01743899113975118,
+              "log_loss": 0.09207111184935561,
+              "correct_at_half": 1.0
+            },
+            "context": {
+              "brier": 0.042288527923965466,
+              "log_loss": 0.1465782858632633,
+              "correct_at_half": 1.0
+            }
+          }
+        }
+      }
+    }
+  ],
+  "combined_25_exploratory": {
+    "first": {
+      "paired_cases": 25,
+      "arms": {
+        "release": {
+          "brier": 0.09708164183877756,
+          "log_loss": 0.3014125183350015,
+          "correct_at_half": 0.88
+        },
+        "context": {
+          "brier": 0.08065413890624651,
+          "log_loss": 0.24465468229090498,
+          "correct_at_half": 0.84
+        }
+      }
+    },
+    "final": {
+      "paired_cases": 25,
+      "arms": {
+        "release": {
+          "brier": 0.09201352092844135,
+          "log_loss": 0.2898391013673291,
+          "correct_at_half": 0.88
+        },
+        "context": {
+          "brier": 0.0855126463597278,
+          "log_loss": 0.252748610128852,
+          "correct_at_half": 0.88
+        }
+      }
+    }
+  },
+  "combined_by_arm_consumption": {
+    "release": {
+      "actual_http_attempts": 38,
+      "known_tokens": 1850562,
+      "unknown_usage_attempts": 0
+    },
+    "context": {
+      "actual_http_attempts": 37,
+      "known_tokens": 1526515,
+      "unknown_usage_attempts": 0
+    }
+  },
+  "unknown_usage_attempts": 0,
+  "search_calls": 0,
+  "source_fetch_calls": 0,
+  "supplement_calls": 0,
+  "forecasts_submitted": 0,
+  "production_changed": false,
+  "promotion_allowed": false,
+  "limits": [
+    "Identical original material within each pair; source and transport audits passed.",
+    "New ten cases do not overlap the earlier fifteen, but may have appeared in older experiments.",
+    "Retrospective material and model knowledge may reveal results. This is not a historical forecast backtest.",
+    "Only one stochastic replicate per arm. No winner selection or model/prompt tuning during execution.",
+    "The sports case uses a same-run raw snapshot after the expanded snapshot failed the offline URL audit; both versions and zero-provider screening are preserved."
+  ]
+}
