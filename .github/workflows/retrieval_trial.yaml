@@ -1,17 +1,17 @@
-name: Frozen frontier paired acquisition experiment
-run-name: Frozen frontier ${{ inputs.candidate_policy || 'v1' }} paired acquisition
+name: V103 paired evidence handoff
+run-name: V103 context handoff / ${{ inputs.phase }}
 
 on:
   workflow_dispatch:
     inputs:
-      candidate_policy:
-        description: 'Separately frozen candidate strategy; never migrate prior case state'
+      phase:
+        description: 'Frozen regression five or independent expansion ten; saved material only'
         type: choice
-        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores', 'full_chain_ten', 'release_1_0_2']
-        default: 'v1'
+        options: ['regression', 'expansion']
+        default: 'regression'
         required: true
       resume_run:
-        description: 'Exact prior run to restore; no automatic quota restart'
+        description: 'Exact prior run whose case journals must be restored'
         required: false
         default: ''
 
@@ -20,238 +20,67 @@ permissions:
   actions: read
 
 concurrency:
-  group: intelligent-frontier-five-${{ inputs.candidate_policy || 'v1' }}
+  group: v103-evidence-handoff-${{ inputs.phase }}
   cancel-in-progress: false
 
 jobs:
-  release_offline:
-    if: inputs.candidate_policy == 'release_1_0_2'
+  offline:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
-      - run: python -m unittest discover -s ForecastAgent/tests
-      - run: python -m ForecastAgent.releases.stress --root snapshots/release-1.0.2-offline --count 100
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: release-1.0.2-offline
-          path: snapshots/release-1.0.2-offline/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 90
-
-  release_providers:
-    if: inputs.candidate_policy == 'release_1_0_2'
-    needs: release_offline
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        kind: ['binary', 'multiple_choice', 'numeric', 'discrete', 'date']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
-      - run: python -m playwright install --with-deps chromium
-      - name: Require exact saved state on retries
+      - name: Reject untracked reruns
         run: |
-          test "$GITHUB_RUN_ATTEMPT" = '1' || { echo 'Restore prior artifacts via resume_run'; exit 1; }
-      - uses: actions/download-artifact@v4
-        if: inputs.resume_run != ''
-        with:
-          name: release-1.0.2-provider-${{ matrix.kind }}
-          run-id: ${{ inputs.resume_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/release-1.0.2-providers/${{ matrix.kind }}
-      - name: Bounded collection, supplement and frozen analysis; no delivery
-        run: python -u -m ForecastAgent.releases.pilot --root "snapshots/release-1.0.2-providers/$CASE_KIND" --kind "$CASE_KIND"
-        env:
-          CASE_KIND: ${{ matrix.kind }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
-          EXA_API_KEY: ${{ secrets.EXA_API }}
-          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
-          FORECAST_MODEL_FALLBACK_SUPER: '1'
+          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
+            echo 'Restore exact journals with resume_run; never restart an empty ledger.'
+            exit 1
+          fi
+      - name: Check original context and failure recovery
+        run: python -m unittest ForecastAgent.tests.test_v103_context_handoff ForecastAgent.tests.test_v103_handoff_trial -v
+      - name: Check all fifteen immutable original packages without providers
+        run: python -m ForecastAgent.acquisition.v103_handoff_trial --preflight --output snapshots/v103-handoff-offline.json
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: release-1.0.2-provider-${{ matrix.kind }}
-          path: snapshots/release-1.0.2-providers/${{ matrix.kind }}/
-          include-hidden-files: true
-          if-no-files-found: error
+          name: v103-handoff-offline-${{ github.run_id }}
+          path: snapshots/v103-handoff-offline.json
           retention-days: 90
 
   compare:
-    if: inputs.candidate_policy != 'handoff_scores' && inputs.candidate_policy != 'full_chain_ten' && inputs.candidate_policy != 'release_1_0_2'
+    needs: offline
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        question: ['36871', '43494', '43501', '43991', '44801']
+        question: ${{ fromJSON(inputs.phase == 'regression' && '["36871","43494","43501","43991","44801"]' || '["44925","40938","43703","43709","44247","43844","43992","41090","43615","44448"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
-      - name: Reject untracked workflow retries
-        run: |
-          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
-            echo 'Use a new dispatch with the exact resume_run artifact; never rerun with empty ledgers.'
-            exit 1
-          fi
-      - name: Restore exact previous case state
+      - name: Restore exact previous case journals
         if: inputs.resume_run != ''
         uses: actions/download-artifact@v4
         with:
-          name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
+          name: v103-handoff-${{ inputs.phase }}-${{ matrix.question }}
           run-id: ${{ inputs.resume_run }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}
-      - name: Frozen input and offline contract checks
-        run: |
-          python -m ForecastAgent.acquisition.frontier_compare --preflight
-          python -m unittest ForecastAgent.tests.test_intelligent_acquisition ForecastAgent.tests.test_intelligent_repairs ForecastAgent.tests.test_frontier_compare ForecastAgent.tests.test_material_protocol ForecastAgent.tests.test_delivery_control
-      - name: Compare two model policies over identical saved sources
-        run: |
-          EXTRA=()
-          if [ "$CANDIDATE_POLICY" = 'v2' ]; then EXTRA+=(--repair-v2); fi
-          if [ "$CANDIDATE_POLICY" = 'v3' ]; then EXTRA+=(--repair-v3); fi
-          if [ "$CANDIDATE_POLICY" = 'delivery' ]; then EXTRA+=(--repair-delivery); fi
-          python -u -m ForecastAgent.acquisition.frontier_compare --question-id "$CASE_ID" --root "snapshots/intelligent-frontier-$CANDIDATE_POLICY/$CASE_ID" --replicate-super "${EXTRA[@]}"
-        env:
-          CASE_ID: ${{ matrix.question }}
-          CANDIDATE_POLICY: ${{ inputs.candidate_policy }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-          FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
-          FORECAST_MODEL_FALLBACK_SUPER: '0'
-      - name: Preserve complete paired experiment state
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: intelligent-frontier-${{ inputs.candidate_policy }}-${{ matrix.question }}
-          path: snapshots/intelligent-frontier-${{ inputs.candidate_policy }}/${{ matrix.question }}/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 90
-
-  full_chain_ten:
-    if: inputs.candidate_policy == 'full_chain_ten'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        question: ['44925', '40938', '43703', '43709', '44247', '43844', '43992', '41090', '43615', '44448']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
-      - run: python -m playwright install --with-deps chromium
-      - name: Reject empty-ledger workflow retries
-        run: |
-          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
-            echo 'Restore the exact previous artifacts with resume_run; do not rerun from empty state.'
-            exit 1
-          fi
-      - name: Restore exact previous full-chain case
-        if: inputs.resume_run != ''
-        run: python -m ForecastAgent.acquisition.full_chain_ten_raw_handoff --output snapshots/full-chain-ten --question-id "$CASE_ID" --restore-run "$PARENT_RUN"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CASE_ID: ${{ matrix.question }}
-          PARENT_RUN: ${{ inputs.resume_run }}
-      - name: Offline source, budget and decision checks
-        run: |
-          python -m unittest ForecastAgent.tests.test_full_chain_ten_raw_handoff ForecastAgent.tests.test_full_chain_ten ForecastAgent.tests.test_full_chain_ten_resume ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
-          python -m ForecastAgent.acquisition.full_chain_ten_raw_handoff --output snapshots/full-chain-ten --question-id "$CASE_ID" --dry-run
-        env:
-          CASE_ID: ${{ matrix.question }}
-      - name: Fresh acquisition, independent supplement, first and reread scores
-        run: python -u -m ForecastAgent.acquisition.full_chain_ten_raw_handoff --output snapshots/full-chain-ten --question-id "$CASE_ID"
-        env:
-          CASE_ID: ${{ matrix.question }}
-          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
-          FORECAST_MODEL_FALLBACK_SUPER: '1'
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
-          EXA_API_KEY: ${{ secrets.EXA_API }}
-      - name: Preserve original collection, supplements and both score journals
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: intelligent-full-chain-ten-${{ matrix.question }}
-          path: snapshots/full-chain-ten/${{ matrix.question }}/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 90
-
-  handoff_scores:
-    if: inputs.candidate_policy == 'handoff_scores'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        question: ['36871', '43494', '43501', '43991', '44801']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Reject untracked workflow retries
-        run: |
-          if [ "$GITHUB_RUN_ATTEMPT" != "1" ]; then
-            echo 'Use a new dispatch with the exact resume_run artifact; budgets cannot restart.'
-            exit 1
-          fi
-      - name: Restore original frozen source bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: intelligent-frontier-delivery-${{ matrix.question }}
-          run-id: '37316638264'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/handoff-source/${{ matrix.question }}
-      - name: Restore exact prior decision journals
-        if: inputs.resume_run != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: intelligent-handoff-score-${{ matrix.question }}
-          run-id: ${{ inputs.resume_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: snapshots/handoff-score/${{ matrix.question }}
-      - name: Offline first-request preflight
-        run: |
-          python -m unittest ForecastAgent.tests.test_material_handoff ForecastAgent.tests.test_handoff_scoring
-          python -m ForecastAgent.acquisition.handoff_scoring --root snapshots/handoff-source --output snapshots/handoff-score --question-id "$CASE_ID" --dry-run
-        env:
-          CASE_ID: ${{ matrix.question }}
-      - name: Score old and new packing with frozen Mercury
-        run: python -u -m ForecastAgent.acquisition.handoff_scoring --root snapshots/handoff-source --output snapshots/handoff-score --question-id "$CASE_ID"
+          path: snapshots/v103-handoff/${{ matrix.question }}
+      - name: Compare first and conditional final decisions on the same bodies
+        run: python -u -m ForecastAgent.acquisition.v103_handoff_trial --output snapshots/v103-handoff --question-id "$CASE_ID"
         env:
           CASE_ID: ${{ matrix.question }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-      - name: Preserve exact requests, responses, gaps and reservations
+      - name: Preserve original inputs and every reserved provider attempt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: intelligent-handoff-score-${{ matrix.question }}
-          path: snapshots/handoff-score/${{ matrix.question }}/
+          name: v103-handoff-${{ inputs.phase }}-${{ matrix.question }}
+          path: snapshots/v103-handoff/${{ matrix.question }}/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90

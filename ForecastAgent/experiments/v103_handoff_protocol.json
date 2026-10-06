@@ -1,0 +1,40 @@
+{
+  "schema": "v103-same-material-delivery-score-v1",
+  "base_release": "v1.0.3",
+  "base_commit": "a2a3dba9ac28fc6d768536de705dcbfec5cda4fc",
+  "cohort_sha256_lf": "689c253aa261ea3947a6a22c2033923feec192b89074432baf2027fb7d57f6e6",
+  "fixture_sha256": "fb137d918b6fdf6698346d401ad10e1a80f390d587fb38b166d07e2234570414",
+  "model": "inception/mercury-decide:free",
+  "endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "registry_sha256": "8eb91dd02a52bd836a6f6b9c8320ec3b6234cef0f02650eb638710acf43aec0e",
+  "routing": {
+    "insufficient_probability": 0.4,
+    "conflict_probability": 0.5,
+    "minimum_new_chars": 900,
+    "yes_conflict_probability": 0.65,
+    "condition_refuted_probability": 0.65
+  },
+  "limits": {
+    "first_bytes": 22000,
+    "second_bytes": 28000,
+    "physical_http_per_arm": 2,
+    "physical_http_per_question": 4,
+    "campaign_http": 60
+  },
+  "fixed_release_dependencies": 47,
+  "experiment_sources_sha256_lf": {
+    "ForecastAgent/acquisition/v103_handoff_trial.py": "9334b39aa96bfbe5fb737581a8810a53be93ee72d992cf649644a45bda7d4b44",
+    "ForecastAgent/acquisition/context_handoff.py": "341c5854d2734b91542b099cbc1ff3ede7d2e5b933de73e4236b0c452334f3ba"
+  },
+  "labels_sha256_lf": {
+    "regression": "1a2614e9d0a6bdfebedcda0279a8183316ecdd94e3bef4fc684913d185ef3b61",
+    "expansion": "cf86b63a1f30262b14b6eb333436899197911f3943bd7d0a32329ddc8ba889b9"
+  },
+  "primary_metric": "Paired first-pass clipped Brier; final clipped Brier and natural log loss separately.",
+  "source_policy": "Same immutable question and original bodies in both arms. No retrieval, supplement, label, community probability, model narrative or previous prediction in inference.",
+  "changed_variable": "Original evidence packing only, with exact context groups and coordinate deduplication.",
+  "fixed_analysis": "Same v1.0.3 first instructions, Mercury registry, endpoint, routing thresholds, two-stage caps and 0.02-0.98 clipping.",
+  "evaluation_warning": "Retrospective engineering diagnostic. Current web material and model knowledge may contain outcomes.",
+  "promotion_allowed": false,
+  "submitted": false
+}

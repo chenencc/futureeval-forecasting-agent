@@ -1,0 +1,262 @@
+{
+  "schema": "v103-handoff-cohort-v1",
+  "base_release": "v1.0.3",
+  "base_commit": "a2a3dba9ac28fc6d768536de705dcbfec5cda4fc",
+  "fixture_sha256": "fb137d918b6fdf6698346d401ad10e1a80f390d587fb38b166d07e2234570414",
+  "cases": [
+    {
+      "question_id": "36871",
+      "phase": "regression",
+      "question": "Will the market capitalization for USDT & USDC stablecoins surpass $300 billion USD by June 30, 2026?",
+      "original_run_id": "37316638264",
+      "original_file_sha256": "3e004355ccb81218d99be42ce7f7406382e5d2e189ee65e2b695da0936e11a9c",
+      "projected_bundle_sha256": "ac3397fcc559f5cc78385d6aac8e80e3414f7a5b12785e91dec1052ca2979819",
+      "source_count": 8,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43494",
+      "phase": "regression",
+      "question": "Will any U.S. state or EU member state restrict large-scale data center grid connections before September 2026?",
+      "original_run_id": "37316638264",
+      "original_file_sha256": "ccaa7f6fa26cd547b8ccedc77a7341d1544626e44e4e1f331e7425440a498b55",
+      "projected_bundle_sha256": "c6070e610e343f8683782b770e6c36d6f71f212a4eecd3c2114d6702b59aa0c4",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "pdf"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43501",
+      "phase": "regression",
+      "question": "Will Instructure be subject to another major hack before September 1, 2026?",
+      "original_run_id": "37316638264",
+      "original_file_sha256": "d7160d5dc85a8ad0605c0d7827b9623a8b814f085add02090c1255be3468702b",
+      "projected_bundle_sha256": "d52caf2930dc257bb3ea110d330e18e227a76977354f038ce1c9a52cd905e477",
+      "source_count": 8,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43991",
+      "phase": "regression",
+      "question": "On July 8, 2026, will Marine Le Pen be ineligible to run in the 2027 French presidential election?",
+      "original_run_id": "37316638264",
+      "original_file_sha256": "4c9b9bf4cdbf8028c4ce4a589382ea27816657cf6602474a2952afd84fe0cb4b",
+      "projected_bundle_sha256": "00366f8eabdbe4087b3ae69c0e352591bb2d4cacc2fa4d90775a37a21aaa492c",
+      "source_count": 5,
+      "document_formats": [
+        "html"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "44801",
+      "phase": "regression",
+      "question": "Will gas prices in the U.S. reach a new all-time high before September 6, 2026?",
+      "original_run_id": "37316638264",
+      "original_file_sha256": "cb7b9dc0d39a398ee8a0b5dfddd5e58df196342e48d7fc1e9b417fbd2651f168",
+      "projected_bundle_sha256": "6494a701ceec7de66a273ae52c58845d4a77eaad5d0ec4293895a2505a82d1b5",
+      "source_count": 8,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "44925",
+      "phase": "expansion",
+      "question": "Will the Royal Mail raise prices on any letters or parcels before September 10, 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "e952ef4ad1862144cb38d09efd13b726ae52c742a5ac797d24e86b1067132032",
+      "projected_bundle_sha256": "42a8f9d871e82e7f07527545612be91cdc674f024f1c46002e767c248571c959",
+      "source_count": 3,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "40938",
+      "phase": "expansion",
+      "question": "Will California Emissions Reporting Laws SB 253 and SB 261 Be In Effect on September 1, 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "c174ad4f6a08d67f617c04da63a1a2ace92b9e31e37489664628fa8d1cc044a9",
+      "projected_bundle_sha256": "378a9e65fabcb03614ec4206922e1d0ffdd2417cb32f26d47afaecf3f1badc6f",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "pdf"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43703",
+      "phase": "expansion",
+      "question": "Will a hurricane make landfall in the continental United States before September 1, 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "81695718cd88bd170ab7658f8008f7673a96f76dda88cc2f6e26dc9213bc15e9",
+      "projected_bundle_sha256": "166b6f9e8bebf3d16f0f3d38d3e7be8d9cccdf9bdff61db6dc5f36c054ecb238",
+      "source_count": 1,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43709",
+      "phase": "expansion",
+      "question": "Will Starlink's website show India as a country with Starlink availability before September 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "26370c048de0722615bac939721eb402d44f6c370cc5a554ad600846db4302a9",
+      "projected_bundle_sha256": "584cf99e845f730d5d870762d13dfc33d866100c6a78ec47f9101eadf108d691",
+      "source_count": 2,
+      "document_formats": [],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "44247",
+      "phase": "expansion",
+      "question": "Will Virgin Galactic have a \"Going Concern\" substantial doubt statement in its 10-Q SEC filing for Q2 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "4d01f306bde0dd2a7f82fb45254b055cb8b91688ae1a7c0a837eaa21e8dcbbef",
+      "projected_bundle_sha256": "fd850c2cb0e7b022eecc5f20039e14ba00a98665e11f31cac9967508926963ab",
+      "source_count": 3,
+      "document_formats": [
+        "html"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "43844",
+      "phase": "expansion",
+      "question": "Will Hakainde Hichilema receive at least 65% of the vote in the first round of Zambia's 2026 presidential election?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "48dc87d2a3e7cdb1e899839dacde2a9303160e434833b07dc1261a25c761a4d6",
+      "projected_bundle_sha256": "79fa8e67b4e60771535cde722cf923620e2450f565c6a7be8b2f7bbfc4a73312",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43992",
+      "phase": "expansion",
+      "question": "Will July 2026 be the warmest July on record, according to Copernicus?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "93e3228425885d8b2824b960033d1d2a01033a449294dc119a8db6dcdb102705",
+      "projected_bundle_sha256": "ed4359d4b29dac241e842728dfebb09df7dc44f42f21e46fd2bd97823eb759ae",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "41090",
+      "phase": "expansion",
+      "question": "Will the winner of the 2026 FIFA World Cup be a country that has never won before?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "41bcda497e5ac14cd50921f76ece15904b6a3611ab8ec9d3926a0e51f72c65c6",
+      "projected_bundle_sha256": "f9b7489d885d2cf9fd34c15477c44adff37b6107bcf0acc1aa671a67058fe712",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    },
+    {
+      "question_id": "43615",
+      "phase": "expansion",
+      "question": "Will Shakira's \"Dai Dai\" outpeak Shakira's \"Waka Waka\" on the Billboard Hot 100?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "019dd40647cfbaf6fa8ddc007fff2d8a831529bf24722d9beb95071e98180e92",
+      "projected_bundle_sha256": "297a113ca875f97795719db29b8ce28b5c19396f32bc1610146f7beded3470d4",
+      "source_count": 4,
+      "document_formats": [
+        "html"
+      ],
+      "route_order": [
+        "release",
+        "context"
+      ]
+    },
+    {
+      "question_id": "44448",
+      "phase": "expansion",
+      "question": "Will Anthropic file an initial registration statement (S-1) with the SEC to launch an IPO, before September 2026?",
+      "original_run_id": "37393064392",
+      "original_file_sha256": "92aa14925d6cd640c1a1b8f1e4b0db0da73e2d4b230d84d8fd7229e0fca874ba",
+      "projected_bundle_sha256": "aed9e7f015f15e0ede3d2c12f6f30c5aa1400d60667210db851b70f126765253",
+      "source_count": 4,
+      "document_formats": [
+        "html",
+        "html_table"
+      ],
+      "route_order": [
+        "context",
+        "release"
+      ]
+    }
+  ],
+  "selection_policy": "Fixed five development cases and ten different material families outside this repair set. The expansion cases were used in earlier experiments and are not pristine holdouts.",
+  "source_policy": "Exact saved-body projection; original files unchanged. No search, capture, supplement, labels or prior forecasts are supplied to the model.",
+  "evaluation_warning": "Retrospective engineering diagnostic. Current web material and model knowledge may contain outcomes.",
+  "promotion_allowed": false
+}
