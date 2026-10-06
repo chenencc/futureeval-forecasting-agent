@@ -1,6 +1,17 @@
 name: FutureEval official competition worker
 
 on:
+  workflow_dispatch:
+    inputs:
+      monitor_run_id:
+        description: Completed main monitor run with fresh complete snapshots
+        required: true
+        type: string
+      verification_only:
+        description: Verify preserved inventory without model calls or submission
+        required: true
+        default: true
+        type: boolean
   workflow_run:
     workflows: ['FutureEval official question monitor']
     types: [completed]
@@ -15,7 +26,7 @@ concurrency:
 
 jobs:
   compete:
-    if: vars.FORECAST_COMPETITION_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    if: (github.event_name == 'workflow_dispatch' && (inputs.verification_only || vars.FORECAST_COMPETITION_ENABLED == 'true')) || (github.event_name == 'workflow_run' && vars.FORECAST_COMPETITION_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -30,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1.0.1
+          ref: v1.0.3
       - name: Check out independent infrastructure utilities
         uses: actions/checkout@v4
         with:
@@ -43,8 +54,27 @@ jobs:
           python-version: '3.11'
       - name: Verify immutable production release
         run: |
-          test "$(git describe --tags --exact-match)" = "v1.0.1"
+          test "$(git describe --tags --exact-match)" = "v1.0.3"
           echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Validate triggering official monitor
+        id: source
+        uses: actions/github-script@v7
+        env:
+          INPUT_MONITOR_RUN_ID: ${{ inputs.monitor_run_id }}
+          INPUT_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const manual=context.eventName==='workflow_dispatch';
+            const id=manual?process.env.INPUT_MONITOR_RUN_ID:String(context.payload.workflow_run.id);
+            if(!/^[1-9][0-9]*$/.test(id)||!Number.isSafeInteger(Number(id))) throw new Error('Invalid monitor run identity');
+            const {data}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:Number(id)});
+            if(data.name!=='FutureEval official question monitor'||data.head_branch!=='main'||data.conclusion!=='success')
+              throw new Error('A successful official main monitor is required');
+            const artifacts=await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{owner,repo,run_id:Number(id)});
+            if(!artifacts.some(a=>a.name===`futureeval-questions-${id}`&&!a.expired)) throw new Error('Monitor snapshots unavailable');
+            core.setOutput('run_id',id);
+            core.setOutput('submit',!manual||process.env.INPUT_VERIFICATION_ONLY!=='true'?'true':'false');
       - name: Find latest exact official state and legacy collection ledgers
         id: previous
         uses: actions/github-script@v7
@@ -92,8 +122,8 @@ jobs:
       - name: Read triggering complete question snapshots
         uses: actions/download-artifact@v4
         with:
-          name: futureeval-questions-${{ github.event.workflow_run.id }}
-          run-id: ${{ github.event.workflow_run.id }}
+          name: futureeval-questions-${{ steps.source.outputs.run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/incoming
       - name: Verify restored checkpoint hashes
@@ -104,8 +134,17 @@ jobs:
           python -m pip install -r ForecastAgent/requirements-supplement.txt
           python -m playwright install --with-deps chromium
       - name: Acquire analyze and submit eligible questions
-        run: python -m ForecastAgent.competition.live --root snapshots/official --snapshots snapshots/incoming --legacy-root snapshots/official/legacy --limit 5 --submit
+        run: |
+          if [ -n "$RESTORED_LEGACY_RUN" ]; then
+            echo "Legacy collection state is preserved; explicit migration is required before new collection."
+            exit 1
+          fi
+          args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
+          if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
+          python -m ForecastAgent.releases.v1_0_3 "${args[@]}"
         env:
+          SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
+          RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/official
       - name: Split recovery checkpoint and changed evidence
