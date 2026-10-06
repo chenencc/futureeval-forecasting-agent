@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1.0.3
+          ref: v1.0.4
       - name: Check out independent infrastructure utilities
         uses: actions/checkout@v4
         with:
@@ -54,7 +54,7 @@ jobs:
           python-version: '3.11'
       - name: Verify immutable production release
         run: |
-          test "$(git describe --tags --exact-match)" = "v1.0.3"
+          test "$(git describe --tags --exact-match)" = "v1.0.4"
           echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Validate triggering official monitor
         id: source
@@ -141,7 +141,7 @@ jobs:
           fi
           args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
           if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
-          python -m ForecastAgent.releases.v1_0_3 "${args[@]}"
+          python -m ForecastAgent.releases.v1_0_4 "${args[@]}"
         env:
           SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
           RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}

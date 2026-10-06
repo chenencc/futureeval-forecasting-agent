@@ -1,6 +1,6 @@
 # Public listening and private recovery storage
 
-Fall production forecasting checks out immutable `v1.0.3`. These infrastructure
+Fall production forecasting checks out immutable `v1.0.4`. These infrastructure
 utilities are checked out separately from `main`; they do not alter model routing,
 research quotas, probability policy or submission rules.
 

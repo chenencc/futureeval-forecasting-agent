@@ -1,6 +1,6 @@
 # ForecastAgent
 
-The official competition worker is pinned to [release 1.0.3](https://github.com/chenencc/futureeval-forecasting-agent/releases/tag/v1.0.3): patched V3 acquisition → independent supplement → unchanged release 1.0.1 Mercury original-evidence conditional rereading → validated automatic submission. It runs `ForecastAgent.releases.v1_0_3` from the immutable tag, at most five questions per dispatch. Confirmed receipts and existing task budgets are retained. The [1.0.1 analysis policy](releases/1.0.1.json) remains the frozen analysis core.
+The official competition worker is pinned to [release 1.0.4](https://github.com/chenencc/futureeval-forecasting-agent/releases/tag/v1.0.4): unchanged patched V3 acquisition → independent supplement → complete original-context delivery → frozen release 1.0.1 Mercury conditional rereading → validated automatic submission. It runs `ForecastAgent.releases.v1_0_4` from the immutable tag, at most five questions per dispatch. Confirmed receipts and existing task budgets are retained. The [1.0.1 analysis policy](releases/1.0.1.json) remains the frozen analysis core. See the [tagged release contracts](https://github.com/chenencc/futureeval-forecasting-agent/blob/v1.0.4/ForecastAgent/releases/README.md) for evidence, limitations, packing fallback and clean-boundary rollback.
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
 
