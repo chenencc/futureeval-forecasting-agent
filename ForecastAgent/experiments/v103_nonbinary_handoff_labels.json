@@ -1,0 +1,204 @@
+{
+  "schema": "v103-typed-frozen-labels-v1",
+  "source_file_sha256": "25c902afccf66c8eeb87102d5210628194cc8643ba36b670108e24715facb450",
+  "records": {
+    "44939": {
+      "post_id": 44939,
+      "question_id": 45082,
+      "type": "numeric",
+      "resolution_display": "4.049",
+      "result_kind": "numeric",
+      "value": 4.049,
+      "source_url": "https://www.metaculus.com/questions/44939/",
+      "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+    },
+    "44126": {
+      "post_id": 44126,
+      "question_id": 44148,
+      "type": "numeric",
+      "resolution_display": "113.961M $",
+      "result_kind": "numeric",
+      "value": 113961000,
+      "source_url": "https://www.metaculus.com/questions/44126/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "43658": {
+      "post_id": 43658,
+      "question_id": 43662,
+      "type": "numeric",
+      "resolution_display": "1443 thousand units",
+      "result_kind": "numeric",
+      "value": 1443,
+      "source_url": "https://www.metaculus.com/questions/43658/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "43801": {
+      "post_id": 43801,
+      "question_id": 43831,
+      "type": "numeric",
+      "resolution_display": "-8.982%",
+      "result_kind": "numeric",
+      "value": -8.982,
+      "source_url": "https://www.metaculus.com/questions/43801/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44431": {
+      "post_id": 44431,
+      "question_id": 44511,
+      "type": "numeric",
+      "resolution_display": "6.75 USD per lb",
+      "result_kind": "numeric",
+      "value": 6.75,
+      "source_url": "https://www.metaculus.com/questions/44431/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44128": {
+      "post_id": 44128,
+      "question_id": 44150,
+      "type": "numeric",
+      "resolution_display": "4.394782M passengers",
+      "result_kind": "numeric",
+      "value": 4394782,
+      "source_url": "https://www.metaculus.com/questions/44128/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44129": {
+      "post_id": 44129,
+      "question_id": 44151,
+      "type": "multiple_choice",
+      "resolution_display": "44.0 to 46.0",
+      "result_kind": "category",
+      "value": null,
+      "option_index_zero_based": 3,
+      "source_url": "https://www.metaculus.com/questions/44129/",
+      "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+    },
+    "44731": {
+      "post_id": 44731,
+      "question_id": 44880,
+      "type": "multiple_choice",
+      "resolution_display": "Five",
+      "result_kind": "category",
+      "option_index_zero_based": 3,
+      "source_url": "https://www.metaculus.com/questions/44731/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44728": {
+      "post_id": 44728,
+      "question_id": 44877,
+      "type": "multiple_choice",
+      "resolution_display": "Somewhere else",
+      "result_kind": "category",
+      "option_index_zero_based": 4,
+      "source_url": "https://www.metaculus.com/questions/44728/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "43665": {
+      "post_id": 43665,
+      "question_id": 43669,
+      "type": "multiple_choice",
+      "resolution_display": "$2.0 trillion to $2.5 trillion",
+      "result_kind": "category",
+      "option_index_zero_based": 2,
+      "source_url": "https://www.metaculus.com/questions/43665/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "45183": {
+      "post_id": 45183,
+      "question_id": 45376,
+      "type": "multiple_choice",
+      "resolution_display": "Guilty of first-degree murder",
+      "result_kind": "category",
+      "option_index_zero_based": 0,
+      "source_url": "https://www.metaculus.com/questions/45183/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44938": {
+      "post_id": 44938,
+      "question_id": 45081,
+      "type": "discrete",
+      "resolution_display": "Less than 26.95 million",
+      "result_kind": "below_lower_bound",
+      "value": null,
+      "source_url": "https://www.metaculus.com/questions/44938/",
+      "observed_at_utc": "2026-10-02T11:40:14.026860+00:00"
+    },
+    "43919": {
+      "post_id": 43919,
+      "question_id": 43945,
+      "type": "discrete",
+      "resolution_display": "0.02 $",
+      "result_kind": "numeric",
+      "value": 0.02,
+      "source_url": "https://www.metaculus.com/questions/43919/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44940": {
+      "post_id": 44940,
+      "question_id": 45083,
+      "type": "discrete",
+      "resolution_display": "25%",
+      "result_kind": "numeric",
+      "value": 25,
+      "source_url": "https://www.metaculus.com/questions/44940/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "44727": {
+      "post_id": 44727,
+      "question_id": 44876,
+      "type": "discrete",
+      "resolution_display": "54 cases",
+      "result_kind": "numeric",
+      "value": 54,
+      "source_url": "https://www.metaculus.com/questions/44727/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "45045": {
+      "post_id": 45045,
+      "question_id": 45194,
+      "type": "discrete",
+      "resolution_display": "69 cm",
+      "result_kind": "numeric",
+      "value": 69,
+      "source_url": "https://www.metaculus.com/questions/45045/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "45048": {
+      "post_id": 45048,
+      "question_id": 45197,
+      "type": "discrete",
+      "resolution_display": "7.5%",
+      "result_kind": "numeric",
+      "value": 7.5,
+      "source_url": "https://www.metaculus.com/questions/45048/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "26754": {
+      "post_id": 26754,
+      "type": "date",
+      "resolution_display": "16 Jul 2026 12:00 UTC",
+      "result_kind": "date",
+      "value": "2026-07-16T12:00:00Z",
+      "source_url": "https://www.metaculus.com/questions/26754/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "676": {
+      "post_id": 676,
+      "type": "date",
+      "resolution_display": "12 Jun 2026 09:00 UTC",
+      "result_kind": "date",
+      "value": "2026-06-12T09:00:00Z",
+      "source_url": "https://www.metaculus.com/questions/676/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    },
+    "28102": {
+      "post_id": 28102,
+      "type": "date",
+      "resolution_display": "09 Feb 2026 10:55 UTC",
+      "result_kind": "date",
+      "value": "2026-02-09T10:55:00Z",
+      "source_url": "https://www.metaculus.com/questions/28102/",
+      "observed_at_utc": "2026-10-02T12:19:34.261059+00:00"
+    }
+  }
+}

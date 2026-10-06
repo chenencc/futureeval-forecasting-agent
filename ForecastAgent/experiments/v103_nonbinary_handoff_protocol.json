@@ -1,0 +1,37 @@
+{
+  "schema": "v103-typed-paired-delivery-v1",
+  "base_release": "v1.0.3",
+  "base_commit": "a2a3dba9ac28fc6d768536de705dcbfec5cda4fc",
+  "cohort_sha256_lf": "5589477a7f33b097339b1b250e9a022f4bed78c0df38b6a6f7ef5589187bb953",
+  "fixture_sha256": "2819daaa9209c624e0ba736c2bf4e425574752f75b9199815f7791f7a1ef897c",
+  "labels_sha256_lf": "634c6b803e567a8226dbb2c15f18608b523ce6d43350a2dcafa99a64989c0516",
+  "model": "inception/mercury-decide:free",
+  "endpoint": "https://openrouter.ai/api/alpha/decisions",
+  "routing": {
+    "insufficient_probability": 0.4,
+    "conflict_probability": 0.5,
+    "minimum_new_chars": 900,
+    "yes_conflict_probability": 0.65,
+    "condition_refuted_probability": 0.65
+  },
+  "limits": {
+    "first_bytes": 22000,
+    "second_bytes": 28000,
+    "physical_http_per_arm": 2,
+    "physical_http_per_question": 4,
+    "campaign_http": 80
+  },
+  "experiment_sources_sha256_lf": {
+    "ForecastAgent/acquisition/v103_nonbinary_handoff_trial.py": "e6d17876bcefee3390be9cc42c5e34556cf8753ed1a653c9928d0ce45fbec1ad",
+    "ForecastAgent/acquisition/typed_context_handoff.py": "a230f9fc0561d973d9fc1a6110b4fbce5b44127cd0aa591475f983be860c8d50",
+    "ForecastAgent/acquisition/nonbinary_handoff_inputs.py": "54f21cf8609cb8060a9d76affa0e955ef552098cb16583d5b788ae7c145e5b3c",
+    "ForecastAgent/acquisition/v103_handoff_trial.py": "3b69efb4dc4e92db24311608458f3e5968252c9abc14037a631adb864ec63895"
+  },
+  "fixed_release_dependencies": 47,
+  "changed_variable": "Evidence packing only. Explicit registry adapter reproduces the frozen binary packing algorithm.",
+  "fixed_analysis": "Release first instructions, typed distribution registry, scale, clipping, route and coordinate novelty gate, same in both arms.",
+  "metrics": "Multiclass Brier and log loss; bounded normalized CRPS by range type. Research dates separate. Not official Metaculus scores.",
+  "evaluation_warning": "Retrospective evidence and model knowledge can expose outcomes. This is an evidence-delivery engineering comparison, not a historical predictive backtest. One stochastic replicate per arm.",
+  "promotion_allowed": false,
+  "submitted": false
+}

@@ -1,0 +1,366 @@
+{
+  "schema": "v103-typed-source-screen-v1",
+  "model_calls": 0,
+  "rows": [
+    {
+      "post_id": "44731",
+      "run_id": "37191280427",
+      "artifact_id": "11298658379",
+      "artifact_path": "collection/acquisition/bundle.json",
+      "original_sha256": "29aa1943a2b0f7cfe59bbaaf1a8314013ecbc125573c1ea3db5132bf858671e2",
+      "source_count": 11,
+      "question_type": "multiple_choice",
+      "source_request_sha256": "8bbcbc1636a9fc29e9e7e1604de80dc2ce595daafd20faf92429d3977d70025f",
+      "passed": true,
+      "question": "How many parties will obtain representation in the 2026 Kazakh legislative election?",
+      "first_visible_chars": 6199,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "28102",
+      "run_id": "37188017851",
+      "artifact_id": "11297347742",
+      "artifact_path": "collection/acquisition/bundle.json",
+      "original_sha256": "7f39e8b25133f0c93c567a7a6259bb3df3264183cac568e441025e1dedba3931",
+      "source_count": 0,
+      "question_type": "date",
+      "source_request_sha256": "cc6a4e4303d5443b83a000d27a3d965c426e801ce330b3e6ffc94dfc11acaf61",
+      "passed": false,
+      "error": "ValueError: No saved readable sources"
+    },
+    {
+      "post_id": "28102",
+      "run_id": "37188017851",
+      "artifact_id": "11297347742",
+      "artifact_path": "collection/intelligence-bundle.json",
+      "original_sha256": "930c0a6c91246768dffa69742ddd0fd2911c8cfbfe0e44582c02eafe3cfa09c8",
+      "source_count": 30,
+      "question_type": "date",
+      "source_request_sha256": "cc6a4e4303d5443b83a000d27a3d965c426e801ce330b3e6ffc94dfc11acaf61",
+      "passed": true,
+      "question": "When Will an AI be Amongst the Best Forecasters on Metaculus",
+      "first_visible_chars": 5443,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf",
+        "text"
+      ]
+    },
+    {
+      "post_id": "43665",
+      "run_id": "37188017851",
+      "artifact_id": "11298012372",
+      "artifact_path": "collection/acquisition/bundle.json",
+      "original_sha256": "d2efe7ffb3f6e8177c24e440404064c032fbeb41f2d5d1e576b34b339b174b1a",
+      "source_count": 7,
+      "question_type": "multiple_choice",
+      "source_request_sha256": "36c2d58a30fd9180564f702783c8a435c654f04be1708f5d90badd7db58b83d1",
+      "passed": true,
+      "question": "What will SpaceX's closing market capitalization be on its first day of trading as a public company?",
+      "first_visible_chars": 7551,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "43801",
+      "run_id": "37177466859",
+      "artifact_id": "11293884466",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "3bab63e9177f91e17c5bcb6f081f5d96444e301ea3cfbe7fae059bf1d1eaf8ec",
+      "source_count": 8,
+      "question_type": "numeric",
+      "source_request_sha256": "3e494db641760448d8a900104dd33a98d3d8f17afab878fb9505c8e5f7fa0ec3",
+      "passed": true,
+      "question": "What will be the change  in 12-month violent-crime trend for the period ending May 2026 according to the F.B.I.?",
+      "first_visible_chars": 6794,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "44129",
+      "run_id": "37177466859",
+      "artifact_id": "11294014055",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "8bd694a62f42c3c95103bfb26db1b6544872baba83c89da9afb16df1775146b2",
+      "source_count": 6,
+      "question_type": "multiple_choice",
+      "source_request_sha256": "f7b2aa1ec3d073c6527837045114fb0ce51b75376219fe931b8c66ae0bc62156",
+      "passed": true,
+      "question": "What will the Japan Economy Watchers Current Index be in the August release?",
+      "first_visible_chars": 6651,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "44938",
+      "run_id": "37177466859",
+      "artifact_id": "11294165725",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "75c6fa9f12dad3e8bc30f778176e5a535bbf478175184de08c34b7884ce73c48",
+      "source_count": 6,
+      "question_type": "discrete",
+      "source_request_sha256": "3faf24ea5e7824597e5519b8045cdd104d7c064d6361efac8831fa6630aa7e63",
+      "passed": true,
+      "question": "How many viewers will Newsmax report having in the second quarter of 2026?",
+      "first_visible_chars": 7256,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "45048",
+      "run_id": "37175063769",
+      "artifact_id": "11293600041",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "2fa1ddec6b5ea88f76bacc69d7da7d40a3ee97744cf6fca2b5e2b6984e772b33",
+      "source_count": 4,
+      "question_type": "discrete",
+      "source_request_sha256": "20c14bf15f30392b315e4671f4720fb1fb522b3585f0221206c5807b966422fa",
+      "passed": true,
+      "question": "What percentage of all startup or tech company job openings will be with Amazon on September 2, 2026?",
+      "first_visible_chars": 9081,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "43919",
+      "run_id": "37175063769",
+      "artifact_id": "11293290838",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "22d74e833b4b9e6fe844d63d6d200b30d59cca6c1ad9d1035f8d17b0729cabb1",
+      "source_count": 6,
+      "question_type": "discrete",
+      "source_request_sha256": "f9de6927d1514bb14de0ca70588f15f2fedf3dce9f50ebbbcd55b7a168f5aacb",
+      "passed": true,
+      "question": "What will be the rise in average hourly earnings for all employees on U.S. private nonfarm payrolls from June 2026 to July 2026?",
+      "first_visible_chars": 8203,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "44128",
+      "run_id": "37175063769",
+      "artifact_id": "11292926118",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "92ac31436fff875a5dae1c8661f8717876faa448da5a062951f48e92042db4bc",
+      "source_count": 6,
+      "question_type": "numeric",
+      "source_request_sha256": "daddefb61b940ec1aabd33e58c56176e97cf1304a9dbaef8420ea31012b01cad",
+      "passed": true,
+      "question": "How many foreign visitors will fly to the United States in June 2026?",
+      "first_visible_chars": 7756,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "44940",
+      "run_id": "37175063769",
+      "artifact_id": "11292654368",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "2779143f8e5621629059b8650af1b40e88977b9cedc468c3bfa4c5a3291676eb",
+      "source_count": 6,
+      "question_type": "discrete",
+      "source_request_sha256": "0a7878ae6a272d7f6ee8020cc843fa6674a1d3ffeb1c150753c6c01b93f59c01",
+      "passed": true,
+      "question": "What will be the voter turnout for Florida's 2026 primary election?",
+      "first_visible_chars": 7460,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "44431",
+      "run_id": "37175063769",
+      "artifact_id": "11292554462",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "f63dbf8a910efe4e70bf622c32d0ba8710b2fee819f4150ce1b05c1af1b1ebbe",
+      "source_count": 5,
+      "question_type": "numeric",
+      "source_request_sha256": "98264cd04778272c880e6fd92d329cefe9648b990264eb394cf17c044750f3d5",
+      "passed": true,
+      "question": "What will be the highest price of copper futures in August 2026?",
+      "first_visible_chars": 8645,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "44728",
+      "run_id": "37175063769",
+      "artifact_id": "11292916427",
+      "artifact_path": "parent/acquisition/bundle.json",
+      "original_sha256": "a8b06873723d969a23bb00641937fca1071b79fb3fd6c2f354f5e0744fde411d",
+      "source_count": 2,
+      "question_type": "multiple_choice",
+      "source_request_sha256": "2944a9fdff59e360b9b1ce5f0408c940832a0353a355beca0dbc420bd6e44f29",
+      "passed": true,
+      "question": "Where will be the great white shark Percy on September 1, 2026?",
+      "first_visible_chars": 11800,
+      "document_formats": [
+        "html"
+      ]
+    },
+    {
+      "post_id": "44939",
+      "run_id": "37172607719",
+      "artifact_id": "11291892920",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "bd9c391bce2af1df8767049d34ee4cf7998da834bccad051ee4b486f5c05489b",
+      "source_count": 4,
+      "question_type": "numeric",
+      "source_request_sha256": "335195ce0a5f2577b2da75feac175eac51edfdf8ff75ab40ac4e5b08ac28cc43",
+      "passed": true,
+      "question": "What will be the average gas price in the U.S. on August 17, 2026?",
+      "first_visible_chars": 9180,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "43658",
+      "run_id": "37172607719",
+      "artifact_id": "11291718181",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "c07f47d96a63dac716bd0ce2ced14d7e8e80d3da6df8f3c1b66f025b67a570a0",
+      "source_count": 4,
+      "question_type": "numeric",
+      "source_request_sha256": "54f5c9d55df9b06b9b5a32c483063a4b49f8cbba00346d87de0ed2bb721a8706",
+      "passed": true,
+      "question": "What will the U.S. seasonally adjusted annual rate (SAAR) of total privately-owned housing starts be for July 2026, in thousands of units?",
+      "first_visible_chars": 8404,
+      "document_formats": [
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "44727",
+      "run_id": "37172607719",
+      "artifact_id": "11291979331",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "6a9865c2b23eaef9c833f4bb1c77a98e8d463e8c0f881f18c69a79d7e9b4cd5f",
+      "source_count": 32,
+      "question_type": "discrete",
+      "source_request_sha256": "093700c4598300e0cd8d2e4e4c4099c582ba49d259de0204f55469a4b7b41042",
+      "passed": true,
+      "question": "How many cases will Damien Charlotin's AI Hallucination Cases database record for the second half of August 2026?",
+      "first_visible_chars": 6679,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "26754",
+      "run_id": "37166863090",
+      "artifact_id": "11290540460",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "e062d07620cedc73b1087463dbcda3dbfe8315baf551647ca3a8ec30b885a678",
+      "source_count": 12,
+      "question_type": "date",
+      "source_request_sha256": "59869dae09f6b5cb44657b180dc9920d481ee62e830054a43e98677b3657f18d",
+      "passed": true,
+      "question": "When will a publicly-available LLM achieve gold on the International Math Olympiad?",
+      "first_visible_chars": 6284,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "45045",
+      "run_id": "37166863090",
+      "artifact_id": "11290600763",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "40125024773f849cd7b3941c5952e143cf91457d72f1c6cbedd9f4094e1886db",
+      "source_count": 7,
+      "question_type": "discrete",
+      "source_request_sha256": "83a38bca0bfb1c6aec0b053e38f1ef470ade1413e73b331bd10294815893cfb5",
+      "passed": true,
+      "question": "What will be the water level of the Rhine river, according to the Kaub gauging station, on September 1, 2026?",
+      "first_visible_chars": 7207,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "44126",
+      "run_id": "37133630039",
+      "artifact_id": "11278260171",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "a2a61648bbcf5fb87309398a0143dff81db6717c51ea75af6b3d7eb2989d9c6c",
+      "source_count": 6,
+      "question_type": "numeric",
+      "source_request_sha256": "23a2546e7024ea1ac54e24ce2f0883667870f6996ee6b3d4b992ff38b348de3f",
+      "passed": true,
+      "question": "How much in digital advertising revenues will the New York Times Company report in its Q2 2026 earnings release?",
+      "first_visible_chars": 7929,
+      "document_formats": [
+        "html",
+        "html_table",
+        "pdf"
+      ]
+    },
+    {
+      "post_id": "45183",
+      "run_id": "37126486691",
+      "artifact_id": "11274917669",
+      "artifact_path": "acquisition/bundle.json",
+      "original_sha256": "4de4706777b4639a02286d84358275600fd138ddc37400e5751c764e2f6b7afe",
+      "source_count": 8,
+      "question_type": "multiple_choice",
+      "source_request_sha256": "4744cfde6da19bd20acdfa41ede231997801d3fd5508287dee004c2ac52c5fe5",
+      "passed": true,
+      "question": "What will be the outcome of Duane \"Keffe D\" Davis's Tupac Shakur murder trial by September 11, 2026?",
+      "first_visible_chars": 7145,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    },
+    {
+      "post_id": "676",
+      "run_id": "37091334690",
+      "artifact_id": "11262289717",
+      "artifact_path": "tasks/676/analysis-input.json",
+      "original_sha256": "eef4eb90b8fca035c60386d835fac6936dea134d647b042f43ed6c900f014d45",
+      "source_count": 5,
+      "question_type": "date",
+      "source_request_sha256": "08f3d4aae39ec86a9e0568a5a87c0abf426eebf2872f0118fc77b1482eca408f",
+      "passed": true,
+      "question": "When will the world create the first Trillionaire?",
+      "first_visible_chars": 7410,
+      "document_formats": [
+        "html",
+        "html_table"
+      ]
+    }
+  ]
+}

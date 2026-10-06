@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       phase:
-        description: 'Frozen regression five, first expansion ten, or additional extension ten'
+        description: 'Frozen binary cohorts or the existing twenty nonbinary cases'
         type: choice
-        options: ['regression', 'expansion', 'extension']
+        options: ['regression', 'expansion', 'extension', 'nonbinary']
         default: 'regression'
         required: true
       resume_run:
@@ -39,10 +39,12 @@ jobs:
             exit 1
           fi
       - name: Check original context and failure recovery
-        run: python -m unittest ForecastAgent.tests.test_v103_context_handoff ForecastAgent.tests.test_v103_handoff_trial ForecastAgent.tests.test_v103_handoff_extension -v
+        run: python -m unittest ForecastAgent.tests.test_v103_context_handoff ForecastAgent.tests.test_v103_handoff_trial ForecastAgent.tests.test_v103_handoff_extension ForecastAgent.tests.test_v103_nonbinary_handoff -v
       - name: Check immutable original packages without providers
         run: |
-          if [ "$PAIR_PHASE" = 'extension' ]; then
+          if [ "$PAIR_PHASE" = 'nonbinary' ]; then
+            python -m ForecastAgent.acquisition.v103_nonbinary_handoff_trial --preflight --output snapshots/v103-handoff-offline.json
+          elif [ "$PAIR_PHASE" = 'extension' ]; then
             python -m ForecastAgent.acquisition.v103_handoff_extension --preflight --output snapshots/v103-handoff-offline.json
           else
             python -m ForecastAgent.acquisition.v103_handoff_trial --preflight --output snapshots/v103-handoff-offline.json
@@ -63,7 +65,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        question: ${{ fromJSON(inputs.phase == 'regression' && '["36871","43494","43501","43991","44801"]' || inputs.phase == 'expansion' && '["44925","40938","43703","43709","44247","43844","43992","41090","43615","44448"]' || '["43688","43682","43171","42540","43091","41206","43461","43824","43496","39992"]') }}
+        question: ${{ fromJSON(inputs.phase == 'regression' && '["36871","43494","43501","43991","44801"]' || inputs.phase == 'expansion' && '["44925","40938","43703","43709","44247","43844","43992","41090","43615","44448"]' || inputs.phase == 'extension' && '["43688","43682","43171","42540","43091","41206","43461","43824","43496","39992"]' || '["44939","44126","43658","43801","44431","44128","44129","44731","44728","43665","45183","44938","43919","44940","44727","45045","45048","26754","676","28102"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -79,7 +81,9 @@ jobs:
           path: snapshots/v103-handoff/${{ matrix.question }}
       - name: Compare first and conditional final decisions on the same bodies
         run: |
-          if [ "$PAIR_PHASE" = 'extension' ]; then
+          if [ "$PAIR_PHASE" = 'nonbinary' ]; then
+            python -u -m ForecastAgent.acquisition.v103_nonbinary_handoff_trial --output snapshots/v103-handoff --question-id "$CASE_ID"
+          elif [ "$PAIR_PHASE" = 'extension' ]; then
             python -u -m ForecastAgent.acquisition.v103_handoff_extension --output snapshots/v103-handoff --question-id "$CASE_ID"
           else
             python -u -m ForecastAgent.acquisition.v103_handoff_trial --output snapshots/v103-handoff --question-id "$CASE_ID"
