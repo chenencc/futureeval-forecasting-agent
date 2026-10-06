@@ -7,7 +7,7 @@ on:
       candidate_policy:
         description: 'Separately frozen candidate strategy; never migrate prior case state'
         type: choice
-        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores', 'full_chain_ten']
+        options: ['v1', 'v2', 'v3', 'delivery', 'handoff_scores', 'full_chain_ten', 'release_1_0_2']
         default: 'v1'
         required: true
       resume_run:
@@ -24,8 +24,74 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release_offline:
+    if: inputs.candidate_policy == 'release_1_0_2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - run: python -m unittest discover -s ForecastAgent/tests
+      - run: python -m ForecastAgent.releases.stress --root snapshots/release-1.0.2-offline --count 100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-1.0.2-offline
+          path: snapshots/release-1.0.2-offline/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  release_providers:
+    if: inputs.candidate_policy == 'release_1_0_2'
+    needs: release_offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        kind: ['binary', 'multiple_choice', 'numeric', 'discrete', 'date']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Require exact saved state on retries
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = '1' || { echo 'Restore prior artifacts via resume_run'; exit 1; }
+      - uses: actions/download-artifact@v4
+        if: inputs.resume_run != ''
+        with:
+          name: release-1.0.2-provider-${{ matrix.kind }}
+          run-id: ${{ inputs.resume_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/release-1.0.2-providers/${{ matrix.kind }}
+      - name: Bounded collection, supplement and frozen analysis; no delivery
+        run: python -u -m ForecastAgent.releases.pilot --root "snapshots/release-1.0.2-providers/$CASE_KIND" --kind "$CASE_KIND"
+        env:
+          CASE_KIND: ${{ matrix.kind }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+          EXA_API_KEY: ${{ secrets.EXA_API }}
+          FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          FORECAST_MODEL_FALLBACK_SUPER: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-1.0.2-provider-${{ matrix.kind }}
+          path: snapshots/release-1.0.2-providers/${{ matrix.kind }}/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
   compare:
-    if: inputs.candidate_policy != 'handoff_scores' && inputs.candidate_policy != 'full_chain_ten'
+    if: inputs.candidate_policy != 'handoff_scores' && inputs.candidate_policy != 'full_chain_ten' && inputs.candidate_policy != 'release_1_0_2'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
