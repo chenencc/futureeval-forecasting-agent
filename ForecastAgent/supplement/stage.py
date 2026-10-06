@@ -15,6 +15,7 @@ from ForecastAgent.readers.browser import render_page, BrowserCaptureError
 from ForecastAgent.readers.loader import load_response
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.providers.ultra import SafeRedirects, public_url
+from ForecastAgent.tavily_research import canonical_url
 
 
 def now():
@@ -140,6 +141,7 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
             parent_identity={name:hashlib.sha256(source.read(name)).hexdigest()
                 for name in ['campaign.json']+[f'tasks/{ident}/bundle.json' for ident in ids]}
         identity={'protocol':'supplement_v1','parent_files_sha256':parent_identity,
+            'routing_policy':'observed_frontier_v2',
             'ids':ids,'network_enabled':network,'browser_limit_per_task':browser_limit,
             'http_limit_per_task':http_limit,'browser_request_limit_per_render':25,
             'source_run_id':__import__('os').environ.get('SUPPLEMENT_SOURCE_RUN_ID')}
@@ -200,21 +202,25 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                         repair['finished_at_utc']=now();save(path,child)
                 captures={r.get('url'):r.get('page') or {} for r in bundle.get('failed_captures',[])}
                 captures.update(bundle.get('pages',{}))
-                candidates=[r for r in plan['failed_fetches'] if r['task_id']==ident]
+                captures={canonical_url(u):p for u,p in captures.items()}
+                candidates=sorted([r for r in plan['failed_fetches'] if r['task_id']==ident],
+                    key=lambda r:(r['kind']!='unattempted_lead',-r.get('priority',0),r['url']))
                 for row in candidates:
-                    url=row['url'];category=row['category'];page=captures.get(url,{})
-                    if category=='already_recovered' or any(a['url']==url for a in child['attempts']):continue
+                    url=row['url'];category=row['category'];page=captures.get(canonical_url(url),{})
+                    if category=='already_recovered' or any(canonical_url(a['url'])==canonical_url(url) for a in child['attempts']):continue
                     method=None
                     if page.get('raw_response_base64') and category in {'format_or_parser_gap','encoding_gap'}:method='reparse'
-                    elif network and bundle.get('mode')!='historical_strict' and category=='javascript_shell':method='browser'
-                    elif network and bundle.get('mode')!='historical_strict' and category in {'format_or_parser_gap','size_limit','service_failure','transport_or_unknown'}:method='http'
+                    elif network and bundle.get('mode')!='historical_strict' and category in {'javascript_shell','index_or_banner','empty_or_interstitial_unknown'}:method='browser'
+                    elif network and bundle.get('mode')!='historical_strict' and category in {'format_or_parser_gap','size_limit','service_failure','transport_or_unknown','unattempted_observed_source'}:method='http'
                     if method is None:continue
                     cap=browser_limit if method=='browser' else http_limit if method=='http' else 8
                     if sum(a['method']==method for a in child['attempts'])>=cap:continue
-                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved'}
+                    attempt={'url':url,'method':method,'started_at_utc':now(),'status':'reserved',
+                        'origin':row.get('origin'), 'gap_kind':row['kind']}
                     child['attempts'].append(attempt);save(path,child)
                     try:
                         result=parse_saved(page) if method=='reparse' else render_page(url,retrieved_at=now()) if method=='browser' else fetch_document(url)
+                        result['body_diagnostics']=body_diagnostics(result.get('content',''),documents=result.get('documents',[]))
                         key=hashlib.sha256((method+url).encode()).hexdigest()
                         result['supplement_provenance']={'parent_bundle_sha256':child['parent_bundle_sha256'],'task_id':ident,'method':method}
                         save(folder/'captures'/f'{key}.json',result)
@@ -253,6 +259,14 @@ def analysis_overlay(bundle,supplement_root,ident):
     if child['task_id']!=ident or child['parent_bundle_json_sha256']!=digest(bundle):
         raise ValueError('Supplement does not belong to this parent bundle')
     overlay=copy.deepcopy(bundle)
+    quality_gaps=[]
+    for url,page in overlay.get('pages',{}).items():
+        old=page.get('body_diagnostics',{})
+        fresh=body_diagnostics(page.get('content',''),documents=page.get('documents',[]))
+        page['body_diagnostics']=fresh
+        if not fresh['usable_text']:
+            quality_gaps.append({'url':url,'state':fresh['state'],
+                'prior_state':old.get('state'), 'scope':'Body unreadable; event absence not inferred.'})
     for url,entry in child['captures'].items():
         if not entry['readable']:continue
         path=(folder/entry['file']).resolve()
@@ -262,6 +276,13 @@ def analysis_overlay(bundle,supplement_root,ident):
         if not body_diagnostics(page.get('content',''))['usable_text']:raise ValueError('Unreadable supplement')
         overlay.setdefault('pages',{})[url]=page
     overlay['supplement_lineage']=child['analysis_handoff']
+    unresolved=[r for r in child['remaining_gaps'] if not child['captures'].get(r['url'],{}).get('readable')]
+    quality_gaps=[g for g in quality_gaps if not overlay['pages'][g['url']]['body_diagnostics']['usable_text']]
+    overlay['capture_gaps']=quality_gaps+unresolved
+    if overlay['capture_gaps']:
+        overlay['gaps']=list(bundle.get('gaps',bundle.get('result',{}).get('gaps',[])))+[{
+            'capture_gap_count':len(overlay['capture_gaps']), 'capture_gaps':overlay['capture_gaps'],
+            'scope':'Observed capture limits; not relevance verification or event absence.'}]
     return overlay
 
 

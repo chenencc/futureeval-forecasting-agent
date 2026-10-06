@@ -644,7 +644,9 @@ class RetrievalTask:
                     outcomes.append({'url':url,'ok':not view.get('blocked',False),
                         'source_header_preview':view.get('content','')[:1800],
                         **{k:view[k] for k in ('blocked','warning','body_warning','temporal_isolation') if k in view}})
-                except Exception as exc: outcomes.append({'url':url,'ok':False,'error':str(exc)[:180]})
+                except Exception as exc:
+                    outcomes.append({'url':url,'ok':False,'error':str(exc)[:180],
+                        **({'contract_error':exc.details} if isinstance(exc,ContractError) else {})})
             from ForecastAgent.runtime.collection_actions import primary_rescue
             selected_keys = {canonical_url(u) for u in urls}
             rescue = [r for r in primary_rescue(self) if canonical_url(r['url']) in selected_keys]
@@ -849,6 +851,13 @@ class RetrievalTask:
                     # Deferred candidates remain an explicit recall limitation.
                     b['result']['acquisition_complete'] = bool(b['result']['acquisition_complete'] and
                         not report['deferred_passage_count'])
+            if b['control'].get('forced_close'):
+                from ForecastAgent.runtime.source_frontier import unread_candidates
+                pending = unread_candidates(b)
+                if pending:
+                    b['result']['gaps'].append('Program stopped with '+str(len(pending))+' prioritized observed sources unattempted; this is not evidence of event absence.')
+                    b['result']['acquisition_complete'] = False
+                    b['result']['unattempted_source_candidates'] = pending
             self.save()
             return b["result"]
         if name == "list_sources":
@@ -1233,7 +1242,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         else:
             system = SYSTEM + '\nSkill catalog: '+json.dumps(catalog)
         versions = task.bundle.setdefault('execution_versions', [])
-        versions.append({'started_at_utc': utc_now(), 'model': configured_model(), 'code_commit': os.environ.get('GITHUB_SHA'),
+        versions.append({'started_at_utc': utc_now(), 'model': configured_model(),
+            'code_commit': os.environ.get('FORECAST_RELEASE_COMMIT') or os.environ.get('GITHUB_SHA'),
+            'infrastructure_commit': os.environ.get('GITHUB_SHA'),
             'system_sha256': hashlib.sha256(system.encode()).hexdigest(),
             'tools_sha256': hashlib.sha256(json.dumps(available_tools, sort_keys=True).encode()).hexdigest(),
             'collection_only': collection, 'max_model_turns_per_run': COLLECTION_MAX_TURNS if collection else MAX_TURNS,
@@ -1266,10 +1277,18 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     task.execute('finish_collection', {'gaps':[]}, tavily_key)
                     task.save()
                     break
-            if collection and task.raw_recall:
+            if collection and task.raw_recall and not control.get('source_recovery_delivery_pending'):
                 from ForecastAgent.runtime.collection_actions import raw_stop_reason
                 reason=raw_stop_reason(task)
                 if reason:
+                    if reason == 'raw_no_progress_limit' and turn < turn_limit-2:
+                        from ForecastAgent.runtime.source_frontier import recover_before_stall
+                        recovery = recover_before_stall(task, tavily_key)
+                        if recovery is not None:
+                            control['source_recovery_delivery_pending'] = True
+                            messages.append({'role':'user','content':json.dumps({'program_source_recovery':model_view(recovery)},ensure_ascii=False)})
+                            task.save()
+                            continue
                     termination_reason=reason
                     control['raw_stop_decision']={'reason':reason,'budget_remaining':task.budget(),
                         'at_utc':utc_now(),'full_recall_verified':False}
@@ -1282,8 +1301,20 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 control['forced_close'] = True
                 break
             stall = collection and control.get('no_progress_turns',0)>=3
-            hard_close = (turn >= turn_limit-2 or control["consecutive_errors"] >= 3 or
+            recovery_delivery = control.pop('source_recovery_delivery_pending', False)
+            if recovery_delivery:
+                stall = False  # Deliver the capture once; do not invent progress credit.
+            hard_close = (turn >= turn_limit-2 or control["consecutive_errors"] >= 3 and not recovery_delivery or
                           collection and len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)
+            if collection and (stall or control['consecutive_errors'] >= 3) and not recovery_delivery and turn < turn_limit-2 and len(task.bundle.get('model_attempts',[]))-dispatch_start < COLLECTION_HTTP_PER_DISPATCH-2:
+                from ForecastAgent.runtime.source_frontier import recover_before_stall
+                recovery = recover_before_stall(task, tavily_key)
+                if recovery is not None:
+                    control['source_recovery_delivery_pending'] = True
+                    messages.append({'role':'user','content':json.dumps({'program_source_recovery':model_view(recovery),
+                        'instruction':'A bounded capture batch preserved known unread sources. Read and assess saved material, or finish with precise gaps. No allowance was reset.'},ensure_ascii=False)})
+                    task.save()
+                    continue
             from ForecastAgent.runtime.delivery_control import pending_reads
             drain = pending_reads(task) if stall and not hard_close else []
             if drain:

@@ -7,9 +7,22 @@ def navigation_shell(content):
     links = re.findall(r'\[[^\]\n]*\]\([^\n]*?\)', content)
     residue = re.sub(r'!?\[[^\]\n]*\]\([^\n]*?\)', '', content)
     paragraphs = [line.strip(' *+#\t') for line in residue.splitlines()]
-    substantive = [line for line in paragraphs if len(line) >= 160 and len(line.split()) >= 20]
+    substantive = [line for line in paragraphs if len(line) >= 100 and len(line.split()) >= 15]
     controls = bool(re.search(r'select tags|showing results?\b|loading\.{2,}|javascript:void', content, re.I))
-    return len(links) >= 20 and controls and not substantive
+    if len(links) >= 20 and controls and not substantive:
+        return True
+    # Extract vendors may flatten menus into plain text and return a valid
+    # article title separately. A title is not proof that the article was read.
+    nonempty = [line for line in paragraphs if line]
+    menu_signals = len(set(re.findall(r'\b(?:toggle menu|skip to (?:main )?content|'
+        r'privacy policy|terms of (?:use|service)|sign in|subscribe|contact us|'
+        r'politico live|events|newsletters|navigation|menu)\b', content, re.I)))
+    short_lines = sum(len(line.split()) <= 8 for line in nonempty)
+    plain_menu = (len(nonempty) >= 12 and menu_signals >= 4 and
+                  short_lines >= len(nonempty)*0.8 and not substantive)
+    search_form = (bool(re.search(r'^\s*#?\s*Code Search\s*$', content, re.I | re.M)) and
+                   len(links) >= 3 and not substantive)
+    return plain_menu or search_form
 
 
 def body_diagnostics(content, *, kind='', metadata=None, documents=()):

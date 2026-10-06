@@ -24,7 +24,11 @@ def quoted_dates(text):
 
 def source_urls(text):
     # Decode Markdown/HTML link syntax without inventing any path or authority.
-    text = re.sub(r'\\([&?_#=])', r'\1', unescape(text))
+    text = re.sub(r'\\([&?_#=])', r'\1', text)
+    # html.unescape also accepts incomplete entity prefixes: &sectionNum
+    # would become a section sign plus ionNum. Decode terminated entities only.
+    text = re.sub(r'&(?:#[0-9]+|#x[0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]+);',
+                  lambda match: unescape(match.group()), text)
     return list(dict.fromkeys(u.rstrip('.,;') for u in re.findall(r'https?://[^\s<>"\[\]()]+', text) if canonical_url(u)))
 
 

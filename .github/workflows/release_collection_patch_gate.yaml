@@ -1,0 +1,39 @@
+name: Release collection patch gate
+
+on:
+  push:
+    branches: ['fix/release-production-collection']
+    paths: ['ForecastAgent/**', '.github/workflows/release_collection_patch_gate.yaml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install document readers
+        run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - name: Verify frozen source and unchanged analysis core
+        run: |
+          python -m ForecastAgent.releases.manifest
+          python -c "from ForecastAgent.acquisition.pipeline import verify_baseline; verify_baseline(); print('Frozen analysis core verified')"
+      - name: Offline collection and release regressions
+        run: python -m unittest ForecastAgent.tests.test_production_collection ForecastAgent.tests.test_supplement ForecastAgent.tests.test_runtime_contracts ForecastAgent.tests.test_release_1_0_2
+      - name: Probe observed public HTML and PDF sources
+        run: python -m ForecastAgent.releases.collection_gate --urls-file ForecastAgent/tests/fixtures/production_46056_sources.json --output snapshots/patch-gate --fetch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-collection-patch-gate-${{ github.run_id }}
+          path: snapshots/patch-gate
+          if-no-files-found: warn
+          retention-days: 30

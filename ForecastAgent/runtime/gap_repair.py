@@ -14,6 +14,10 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from ForecastAgent.readers.quality import body_diagnostics
+from ForecastAgent.tavily_research import canonical_url
+from ForecastAgent.runtime.source_frontier import unread_candidates
+
 
 def classify(attempt: dict, capture: dict | None = None) -> dict:
     capture = capture or {}
@@ -63,21 +67,39 @@ def inventory(archive: Path) -> dict:
             task = campaign['tasks'].get(task_id, {})
             captures = {r.get('url'):r.get('page') or {} for r in bundle.get('failed_captures', [])}
             captures.update(bundle.get('pages', {}))
+            captures = {canonical_url(u):{**p, 'body_diagnostics':body_diagnostics(p.get('content',''))}
+                        for u,p in captures.items()}
             seen = set()
             for attempt in bundle.get('fetch_attempts', []):
                 if attempt.get('status') != 'failed':
                     continue
                 all_failed += 1
                 url = attempt.get('url','')
-                if url in seen:
+                if canonical_url(url) in seen:
                     continue
-                seen.add(url)
+                seen.add(canonical_url(url))
                 # Match exact URLs first. Do not erase query strings carrying data IDs.
-                capture = captures.get(url, {})
+                capture = captures.get(canonical_url(url), {})
                 row = {'task_id':task_id, 'task_state':task.get('status'), 'url':url,
                     'domain':urlsplit(url).hostname, 'kind':'failed_fetch',
                     'attempted_at':attempt.get('at'), **classify(attempt,capture)}
                 rows.append(row)
+            # Observable failed extraction and unread saved leads are separate
+            # from HTTP failure. Neither category is a truth/relevance verdict.
+            for url, capture in captures.items():
+                if url in seen or capture['body_diagnostics']['usable_text']:
+                    continue
+                rows.append({'task_id':task_id, 'task_state':task.get('status'),
+                    'url':capture.get('url',url), 'domain':urlsplit(url).hostname,
+                    'kind':'unreadable_capture', **classify({},capture)})
+                seen.add(url)
+            for lead in unread_candidates(bundle):
+                if lead['canonical_url'] in seen:
+                    continue
+                rows.append({'task_id':task_id, 'task_state':task.get('status'),
+                    **lead, 'domain':urlsplit(lead['url']).hostname,
+                    'kind':'unattempted_lead', 'category':'unattempted_observed_source',
+                    'proposed_route':'bounded_http_capture', 'execution_authorized':False})
             quality = task.get('quality_inventory') or {}
             gaps.append({'task_id':task_id, 'task_state':task.get('status'),
                 'raw_capture_count':quality.get('raw_capture_count'),
@@ -95,7 +117,8 @@ def inventory(archive: Path) -> dict:
         'parent_input_sha256':campaign.get('input_sha256'),
         'state_distribution':dict(Counter(t.get('status') for t in campaign['tasks'].values())),
         'failed_physical_fetch_attempts':all_failed,
-        'unique_failed_task_url_pairs':len(rows),
+        'unique_failed_task_url_pairs':sum(r['kind']=='failed_fetch' for r in rows),
+        'repair_candidate_task_url_pairs':len(rows),
         'failure_categories':dict(Counter(r['category'] for r in rows)),
         'failed_domains':dict(Counter(r['domain'] for r in rows).most_common()),
         'proposed_routes':dict(Counter(r['proposed_route'] for r in rows)),
@@ -106,7 +129,7 @@ def inventory(archive: Path) -> dict:
             'new_capture_requires_child_lineage':True,
             'page_readability_does_not_establish_relevance':True},
         'limitations':['HTTP status alone does not identify JavaScript rendering needs.',
-            'Unattempted leads and reported semantic gaps are separate from failed HTTP attempts.',
+            'Unread observed candidates are routing hints, not required resolution facts.',
             'Browser rendering cannot grant access to private forecasts or historical content.',
             'Routes are proposals; this inventory contains no crawler or repair executor.']}
 

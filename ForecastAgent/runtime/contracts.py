@@ -1,5 +1,6 @@
 """Validate model tool calls before any resource reservation or network request."""
 import re
+from copy import deepcopy
 from datetime import datetime
 from urllib.parse import urlsplit
 
@@ -46,7 +47,13 @@ def check_schema(value, schema, path='arguments', required=True):
                              expected in {'integer', 'number'} and isinstance(value, bool)):
         raise ContractError('invalid_type', path, f'{path} must be {expected}.')
     if 'enum' in schema and value not in schema['enum']:
-        raise ContractError('invalid_choice', path, f'Choose a listed value for {path}.', schema['enum'])
+        # URL spelling is not source identity. Keep all other enums strict and
+        # accept only canonical equivalents of an explicitly offered source.
+        url_field = path.endswith('.url') or bool(re.search(r'\.urls\[\d+\]$', path))
+        equivalent = (url_field and isinstance(value, str) and
+                      canonical_url(value) in {canonical_url(v) for v in schema['enum'] if isinstance(v, str)})
+        if not equivalent:
+            raise ContractError('invalid_choice', path, f'Choose a listed value for {path}.', schema['enum'])
     if isinstance(value, dict):
         properties = schema.get('properties', {})
         if required:
@@ -90,6 +97,11 @@ def validate(task, name, args, tools=None):
             raise ContractError('unavailable_tool', 'tool', 'Choose an available tool or finish with gaps.',
                                 [t['function']['name'] for t in tools])
         # Old profiles accepted omitted optional planning/search metadata.
+        if name in {'read_sources', 'fetch_pages'}:
+            # Child fetches validate discovery independently. A guessed item
+            # must not prevent valid items in the same bounded batch from running.
+            schema = deepcopy(schema)
+            schema.get('properties', {}).get('urls', {}).get('items', {}).pop('enum', None)
         check_schema(args, schema, required=task.optimized)
     known = sorted(n['id'] for n in task.bundle.get('plan') or [])
     def needs(value, path='arguments'):
@@ -114,6 +126,8 @@ def validate(task, name, args, tools=None):
             raise ContractError('invalid_type', 'urls', 'Use a list of discovered URLs.')
         available = task.bundle['pages'] if name in SAVED else {**task.catalog(), **task.bundle['pages']}
         for url in urls:
+            if name in {'read_sources', 'fetch_pages'}:
+                continue  # Each child validates before any HTTP reservation.
             if not isinstance(url, str) or urlsplit(url).scheme not in {'http', 'https'} or canonical_url(url) not in available:
                 raise ContractError('unknown_source', 'url', 'Copy an exact saved/discovered URL; archive replay URLs are not source keys.', list(available))
         if args.get('url') and name in SAVED and name != 'list_documents':
