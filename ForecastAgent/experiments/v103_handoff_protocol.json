@@ -23,7 +23,7 @@
   },
   "fixed_release_dependencies": 47,
   "experiment_sources_sha256_lf": {
-    "ForecastAgent/acquisition/v103_handoff_trial.py": "9334b39aa96bfbe5fb737581a8810a53be93ee72d992cf649644a45bda7d4b44",
+    "ForecastAgent/acquisition/v103_handoff_trial.py": "3b69efb4dc4e92db24311608458f3e5968252c9abc14037a631adb864ec63895",
     "ForecastAgent/acquisition/context_handoff.py": "341c5854d2734b91542b099cbc1ff3ede7d2e5b933de73e4236b0c452334f3ba"
   },
   "labels_sha256_lf": {

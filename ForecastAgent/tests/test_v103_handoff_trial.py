@@ -11,6 +11,19 @@ from ForecastAgent.tests.test_material_handoff import fixture
 
 
 class HandoffTrialTests(TestCase):
+    def test_public_case_entry_creates_the_directory_before_acquiring_its_lock(self):
+        bundle = fixture('Original Alpha and Beta report.')
+        bundle['request']['id'] = '123'
+        cohort = {'cases': [{'question_id': '123', 'phase': 'regression', 'route_order': ['release', 'context']}]}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'not-created-yet'
+            with patch.object(trial, 'inputs', return_value=({}, cohort, {'123': bundle})), \
+                 patch.object(trial.chain, 'call', return_value={'answers': {'event_yes': {'noul': .3}}}), \
+                 patch.object(trial.chain, 'route', return_value=[]):
+                result = trial.run_case(output, '123')
+            self.assertEqual(result['arms']['release']['probability_yes'], .3)
+            self.assertTrue((output / '123/comparison.json').exists())
+
     def test_completed_prediction_is_reused_without_reopening_a_provider_stage(self):
         bundle = fixture('Original report Alpha and Beta.\n')
         response = {'answers': {'event_yes': {'noul': .3}}}

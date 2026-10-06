@@ -191,6 +191,7 @@ def run_case(output, qid):
     if case is None:
         raise ValueError('Question outside frozen cohort')
     root = Path(output) / qid
+    root.mkdir(parents=True, exist_ok=True)
     with task_lock(root):
         bundle = bundles[qid]
         rows = {arm: run_arm(bundle, root / arm, arm) for arm in case['route_order']}
