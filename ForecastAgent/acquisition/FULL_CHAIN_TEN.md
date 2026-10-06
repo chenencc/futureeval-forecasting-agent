@@ -102,3 +102,47 @@ This additional amendment changes only the raw-material stage handoff. Both
 scoring arms retain the original protocol, model, source package, request bounds
 and score budgets. The aggregate distinguishes downstream completion from
 semantic or collection completion.
+
+## Completed ten-case result
+
+Final restored run `37393064392` completed all ten downstream cases. Every case
+received an old and new first score; eight received a saved-body expansion in
+both arms. Hurricane and Starlink had fewer than 900 new coordinate characters
+available, so their second requests were explicitly skipped.
+
+| Paired metric | Old packing | New packing |
+| --- | ---: | ---: |
+| First clipped Brier, ten cases | 0.189645 | 0.185832 |
+| Final production-policy clipped Brier, ten cases | 0.179521 | 0.188634 |
+| Final clipped log loss, ten cases | 0.587462 | 0.683160 |
+| Final accuracy at 0.5 | 8/10 | 8/10 |
+| Yes recall | 1/3 | 1/3 |
+| First Brier on the same eight reread cases | 0.233623 | 0.229500 |
+| Reread Brier on those eight cases | 0.220967 | 0.233003 |
+| Actual decision HTTP requests | 18 | 18 |
+| Reported decision tokens | 924,743 | 772,497 |
+
+The new first pack is slightly better on Brier and uses 16.46% fewer decision
+tokens, but its final scores are worse. This trial does not justify promoting
+the new packing or treating saved-body expansion as a guaranteed improvement.
+Both routes miss the Royal Mail and Dai Dai Yes outcomes in the archived labels.
+Their captured material lacks the relevant later event-window observations.
+
+Cumulative physical usage is 97 Ultra attempts, 36 Mercury requests (20 first,
+16 second), 12 Tavily basic searches, ten Exa searches, 38 initial fetch
+reservations and four basic Extract batches. The supplement made two unreadable
+Chromium attempts and one failed SEC HTTP attempt, adding no readable capture.
+There are 33 machine-readable source bodies across ten packages. Known tokens
+total 2,585,806; three failed collection attempts have unknown token usage.
+
+The final continuation added only four Mercury requests for the interrupted
+case. Native collection manifests for all ten cases, the initial four preserved
+ledgers, and nine cached score pairs were checked byte for byte. No collection
+or search calls repeated and no budget renewed. Forty scoped tests passed; the
+original frozen dependency and source-coordinate audits also passed.
+
+English structured evidence and a ten-row CSV are archived locally under
+`E:/metaculus_data/reports/full-chain-ten-37393064392/`, with the aggregate
+`E:/metaculus_data/reports/full-chain-ten-37393064392.json`. The artifact archive
+was checksum verified. These are retrospective current-information diagnostics,
+not leakage-free forecasts or a live competition performance claim.
