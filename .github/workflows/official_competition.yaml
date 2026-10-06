@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
-      FORECAST_MODEL_FALLBACK_SUPER: '1'
+      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '0'
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
       METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
