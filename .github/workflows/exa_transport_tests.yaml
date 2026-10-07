@@ -1,0 +1,39 @@
+name: Exa credit failover offline acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ForecastAgent/infrastructure/exa_failover.py'
+      - 'ForecastAgent/infrastructure/test_exa_failover.py'
+      - '.github/workflows/exa_transport_tests.yaml'
+      - '.github/workflows/official_competition.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Verify transport, durable budgets and state storage without provider calls
+        run: python -m unittest ForecastAgent.infrastructure.test_exa_failover ForecastAgent.tests.test_exa_search ForecastAgent.infrastructure.test_storage_monitor -v
+      - name: Check out immutable production release
+        uses: actions/checkout@v4
+        with:
+          ref: v1.0.4
+          path: .release
+          persist-credentials: false
+      - name: Verify release entry and argument forwarding without forecasting
+        working-directory: .release
+        run: |
+          python ../ForecastAgent/infrastructure/exa_failover.py --root ../snapshots/offline-exa --module ForecastAgent.releases.v1_0_4 -- --root ../snapshots/offline-exa --help
+          test "$(git describe --tags --exact-match)" = "v1.0.4"
+          git diff --exit-code
