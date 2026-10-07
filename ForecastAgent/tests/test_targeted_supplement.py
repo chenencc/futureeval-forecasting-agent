@@ -1,11 +1,42 @@
 """Durable sidecar allowances must not reset, repeat or mutate parent files."""
 import tempfile
+import os
 from pathlib import Path
 from unittest import TestCase
-from ForecastAgent.supplement.targeted import Ledger,parent_counts
+from unittest.mock import patch
+from ForecastAgent.supplement import targeted
+from ForecastAgent.supplement.targeted import Ledger,parent_counts,eligible
+from ForecastAgent.supplement.stage import save
 
 
 class TargetedBudgetTests(TestCase):
+    def test_new_sidecar_keeps_original_and_replay_uses_no_calls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);parent=root/'original'
+            save(parent/'bundle.json',{'request':{'id':'1','question':'Official growth report',
+                'resolution_criteria':'Missing official rules'},'result':{'status':'empty'}})
+            original=(parent/'bundle.json').read_bytes()
+            config={'id':'1','parent_collection':str(parent),'query':'Official growth report'}
+            search={'results':[{'url':'https://example.org/report','title':'Official growth report'}]}
+            body='This official publication describes economic observations, reporting periods and data sources. '*25
+            with patch.dict(os.environ,{'TAVILY_API_KEY':'offline','EXA_API_KEY':'offline'}), \
+                 patch.object(targeted,'search_batch',return_value=search) as tavily, \
+                 patch.object(targeted,'exa_search',return_value=search) as exa, \
+                 patch.object(targeted,'fetch_document',return_value={'content':body,'retrieved_at_utc':'2026-10-07T01:00:00Z',
+                     'body_diagnostics':{'usable_text':True}}) as fetch:
+                first=targeted.run_one(config,root/'new-deep-directory/tasks')
+                second=targeted.run_one(config,root/'new-deep-directory/tasks')
+            self.assertEqual(first,second);self.assertEqual(first['usable_bodies'],1)
+            self.assertEqual(tavily.call_count,1);self.assertEqual(exa.call_count,1)
+            self.assertEqual(fetch.call_count,1)
+            self.assertEqual((parent/'bundle.json').read_bytes(),original)
+
+    def test_private_literal_and_platform_urls_are_excluded(self):
+        for url in ('http://127.0.0.1/','http://10.0.0.1/','http://localhost/','https://x.local/a',
+                    'https://www.metaculus.com/questions/1/'):
+            self.assertFalse(eligible(url))
+        self.assertTrue(eligible('https://example.org/report'))
+
     def test_reserved_unknown_search_is_consumed_and_not_repeated_after_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'ledger.json';identity={'parent_counts':{'tavily_basic':2}}
