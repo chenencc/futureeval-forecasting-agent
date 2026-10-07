@@ -171,6 +171,7 @@ def run_one(config,output):
     if sp and sp.exists():frozen['parent_supplement_sha256']=sha(sp)
     if prior:frozen['prior_repair_bundle_sha256']=sha(prior/'collection/bundle.json')
     folder=Path(output)/str(ident)
+    folder.mkdir(parents=True,exist_ok=True)
     with task_lock(folder):
         ledger=Ledger(folder/'ledger.json',frozen)
         if not ledger.data['finished']:
