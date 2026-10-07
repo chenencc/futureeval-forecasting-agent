@@ -39,6 +39,14 @@ access checks remain active. No URLs are invented.
 
 ## Interpretation limits
 
+After execution, `python -m ForecastAgent.supplement.targeted_review --root
+timestamped-child-directory` produces `checked-supplement-package.json` and a
+body-screen report without network or model calls. It isolates obvious short
+login and redirect shells while preserving their original response captures.
+Each checked package binds to the SHA-256 of its immutable raw package. Short
+numeric records remain eligible; this mechanical check does not validate dates,
+entities, metrics or source claims.
+
 Usable body text does not certify that the material concerns the exact target
 period or supplies a resolution. Missing official MiniBench rules are retained
 as a gap. Pages may contain only context, earlier reports or navigation to a

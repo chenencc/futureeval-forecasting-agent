@@ -7,6 +7,7 @@ from unittest.mock import patch
 from ForecastAgent.supplement import targeted
 from ForecastAgent.supplement.targeted import Ledger,parent_counts,eligible
 from ForecastAgent.supplement.stage import save
+from ForecastAgent.supplement.targeted_review import shell_reason
 
 
 class TargetedBudgetTests(TestCase):
@@ -36,6 +37,14 @@ class TargetedBudgetTests(TestCase):
                     'https://www.metaculus.com/questions/1/'):
             self.assertFalse(eligible(url))
         self.assertTrue(eligible('https://example.org/report'))
+
+    def test_shell_screen_retains_short_data_and_isolates_login_or_redirect(self):
+        self.assertIsNone(shell_reason('Market Data\nDelta Air Lines Inc (DAL) Stock Price\nOctober 6, 2026\n$83.65\nClose'))
+        self.assertIsNone(shell_reason('Official release: The agency published the requested report on October 6, 2026.'))
+        self.assertEqual(shell_reason('Us Gasoline Price National Average April 2026\n Log InSign Up'),
+                         'title_and_login_navigation_only')
+        self.assertEqual(shell_reason('You will be redirected to a website that is not owned by Delta Air Lines. Would you like to continue?'),
+                         'redirect_consent_only')
 
     def test_reserved_unknown_search_is_consumed_and_not_repeated_after_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
