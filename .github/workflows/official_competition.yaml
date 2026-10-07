@@ -33,8 +33,10 @@ jobs:
       FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
       FORECAST_MODEL_FALLBACK_SUPER: '0'
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      OPENROUTER_API_KEY2: ${{ secrets.OPENROUTER2 }}
       METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY2 }}
       EXA_API_KEY: ${{ secrets.EXA_API }}
       EXA_API_KEY2: ${{ secrets.EXA_API2 }}
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -142,7 +144,7 @@ jobs:
           fi
           args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
           if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
-          python .infrastructure/ForecastAgent/infrastructure/exa_failover.py --root snapshots/official/exa-transport --module ForecastAgent.releases.v1_0_5 -- "${args[@]}"
+          python .infrastructure/ForecastAgent/infrastructure/provider_failover.py --root snapshots/official/provider-transport --exa-root snapshots/official/exa-transport --module ForecastAgent.releases.v1_0_5 -- "${args[@]}"
         env:
           SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
           RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}

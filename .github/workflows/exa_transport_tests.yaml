@@ -1,4 +1,4 @@
-name: Exa credit failover offline acceptance
+name: Provider key failover offline acceptance
 
 on:
   push:
@@ -6,6 +6,8 @@ on:
     paths:
       - 'ForecastAgent/infrastructure/exa_failover.py'
       - 'ForecastAgent/infrastructure/test_exa_failover.py'
+      - 'ForecastAgent/infrastructure/provider_failover.py'
+      - 'ForecastAgent/infrastructure/test_provider_failover.py'
       - '.github/workflows/exa_transport_tests.yaml'
       - '.github/workflows/official_competition.yaml'
   workflow_dispatch:
@@ -24,16 +26,23 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
       - name: Verify transport, durable budgets and state storage without provider calls
-        run: python -m unittest ForecastAgent.infrastructure.test_exa_failover ForecastAgent.tests.test_exa_search ForecastAgent.infrastructure.test_storage_monitor -v
+        run: python -m unittest ForecastAgent.infrastructure.test_provider_failover ForecastAgent.infrastructure.test_exa_failover ForecastAgent.tests.test_exa_search ForecastAgent.infrastructure.test_storage_monitor -v
       - name: Check out immutable production release
         uses: actions/checkout@v4
         with:
-          ref: v1.0.4
+          ref: v1.0.5
           path: .release
           persist-credentials: false
       - name: Verify release entry and argument forwarding without forecasting
         working-directory: .release
+        env:
+          OPENROUTER_API_KEY: offline-primary
+          OPENROUTER_API_KEY2: offline-backup
+          TAVILY_API_KEY: offline-tavily-primary
+          TAVILY_API_KEY2: offline-tavily-backup
+          EXA_API_KEY: offline-exa-primary
+          EXA_API_KEY2: offline-exa-backup
         run: |
-          python ../ForecastAgent/infrastructure/exa_failover.py --root ../snapshots/offline-exa --module ForecastAgent.releases.v1_0_4 -- --root ../snapshots/offline-exa --help
-          test "$(git describe --tags --exact-match)" = "v1.0.4"
+          python ../ForecastAgent/infrastructure/provider_failover.py --root ../snapshots/offline-provider --exa-root ../snapshots/offline-exa --module ForecastAgent.releases.v1_0_5 -- --root ../snapshots/offline-release --help
+          test "$(git describe --tags --exact-match)" = "v1.0.5"
           git diff --exit-code
