@@ -40,6 +40,21 @@ invalidates the old routing decision. If both roles are exhausted, calls fail fa
 until a recorded retry deadline. Two OpenRouter keys may share the same account
 quota; switching does not create additional quota.
 
+After **more than three** successful fallback requests (the fourth), the working
+alternative becomes the persistent default for that provider. Each observation
+requires the old default to have a confirmed quota rejection or to remain inside
+its recorded exhaustion cooldown, and the alternative to return HTTP 200. Cached
+exhaustion is not counted as an additional HTTP failure; no blocked key is probed
+just to reach the threshold. Ordinary HTTP service or authentication failures
+do not authorize promotion. An unsuccessful fallback or a recovered default
+breaks the streak. The promoted default persists across dispatches and calendar
+resets. If it later exhausts its quota, the other key remains eligible and can
+be promoted through the same rule. Credential rotation resets route preference.
+The transport changes routing, not the stored Actions secrets. Exa keeps its
+existing monthly failover policy.
+HTTP 200 confirms request acceptance here; the immutable provider still validates
+response format and forecast content independently.
+
 ## Accounting and recovery
 
 `snapshots/official/provider-transport/<provider>/route.json` stores credential
@@ -49,6 +64,8 @@ Credentials, prompts, query text and response bodies are not stored there. Usage
 is `unknown` at the transport layer; original release receipts retain reported
 usage. Count transport receipts to audit actual HTTP attempts, rather than adding
 them to logical release reservation counts.
+`promotions/*.json` records default-role transitions and their successful-request
+count without credential contents.
 
 The storage splitter preserves these files in the resumable checkpoint. Failover
 never changes task search limits or resets model/provider budgets. Child Python

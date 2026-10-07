@@ -31,6 +31,89 @@ def error(code, message="Insufficient credits", metadata=None, headers=None):
 
 
 class Acceptance(unittest.TestCase):
+    def test_four_successful_fallbacks_promote_and_persist_across_reset(self):
+        for provider, code in (("openrouter", 402), ("tavily", 432)):
+            with self.subTest(provider=provider), TemporaryDirectory() as root:
+                now = [datetime(2026, 10, 7, tzinfo=timezone.utc)]
+                original = Mock(side_effect=[error(code)] + [io.BytesIO(b"{}") for _ in range(5)])
+                for count in range(1, 5):
+                    transport = ProviderTransport(original, CREDENTIALS, root, lambda: now[0])
+                    transport(request(provider))
+                    state = transport.load(provider)
+                    self.assertEqual(state.get("default_role", "primary"), "backup" if count == 4 else "primary")
+                # Three requests used saved quota rejection, not three additional HTTP failures.
+                self.assertEqual(original.call_count, 5)
+                self.assertEqual(len(list(Path(root).rglob("promotions/*.json"))), 1)
+                event = state["last_promotion"]
+                self.assertEqual(event["successful_fallback_requests"], 4)
+                self.assertFalse(event["budget_reset"])
+                now[0] += timedelta(days=40)
+                ProviderTransport(original, CREDENTIALS, root, lambda: now[0])(request(provider))
+                self.assertEqual(original.call_args.args[0].get_header("Authorization"),
+                                 "Bearer " + CREDENTIALS[provider][1])
+
+    def test_promoted_default_can_fail_back_and_promote_original(self):
+        with TemporaryDirectory() as root:
+            now = [datetime(2026, 10, 7, tzinfo=timezone.utc)]
+            original = Mock(side_effect=[error(402)] + [io.BytesIO(b"{}") for _ in range(4)] +
+                                       [error(402)] + [io.BytesIO(b"{}") for _ in range(5)])
+            transport = ProviderTransport(original, CREDENTIALS, root, lambda: now[0])
+            for _ in range(4):
+                transport(request())
+            self.assertEqual(transport.load("openrouter")["default_role"], "backup")
+            now[0] += timedelta(hours=2)
+            for _ in range(4):
+                transport(request())
+            self.assertEqual(transport.load("openrouter")["default_role"], "primary")
+            self.assertEqual(len(list(Path(root).rglob("promotions/*.json"))), 2)
+            transport(request())
+            self.assertEqual(original.call_args.args[0].get_header("Authorization"), "Bearer primary-test")
+
+    def test_failed_alternative_breaks_promotion_streak(self):
+        with TemporaryDirectory() as root:
+            original = Mock(side_effect=[error(402), io.BytesIO(b"{}"), io.BytesIO(b"{}"), error(502)] +
+                                       [io.BytesIO(b"{}") for _ in range(3)])
+            transport = ProviderTransport(original, CREDENTIALS, root)
+            transport(request())
+            transport(request())
+            with self.assertRaises(HTTPError):
+                transport(request())
+            for _ in range(3):
+                transport(request())
+            state = transport.load("openrouter")
+            self.assertEqual(state.get("default_role", "primary"), "primary")
+            self.assertEqual(state["alternative_success_streak"]["count"], 3)
+
+    def test_default_recovery_and_key_rotation_reset_promotion_evidence(self):
+        with TemporaryDirectory() as root:
+            now = [datetime(2026, 10, 7, tzinfo=timezone.utc)]
+            original = Mock(side_effect=[error(402), io.BytesIO(b"{}"), io.BytesIO(b"{}"), io.BytesIO(b"{}")])
+            transport = ProviderTransport(original, CREDENTIALS, root, lambda: now[0])
+            transport(request())
+            self.assertEqual(transport.load("openrouter")["alternative_success_streak"]["count"], 1)
+            now[0] += timedelta(hours=2)
+            transport(request())
+            self.assertEqual(transport.load("openrouter")["alternative_success_streak"]["count"], 0)
+            state = transport.load("openrouter")
+            state["default_role"] = "backup"
+            Path(root, "openrouter/route.json").write_text(json.dumps(state))
+            rotated = ProviderTransport(original, {"openrouter": ("primary-test", "rotated-backup")}, root)
+            rotated(request())
+            self.assertEqual(original.call_args.args[0].get_header("Authorization"), "Bearer primary-test")
+
+    def test_fail_fast_both_exhausted_resets_streak(self):
+        with TemporaryDirectory() as root:
+            transport = ProviderTransport(Mock(), CREDENTIALS, root)
+            transport.mark_exhausted("openrouter", "primary", "free_daily_limit", 429)
+            transport.mark_exhausted("openrouter", "backup", "free_daily_limit", 429)
+            state = transport.load("openrouter")
+            state["alternative_success_streak"] = {"role": "backup", "count": 3}
+            Path(root, "openrouter/route.json").write_text(json.dumps(state))
+            with self.assertRaises(HTTPError):
+                transport(request())
+            self.assertEqual(transport.load("openrouter")["alternative_success_streak"]["count"], 0)
+            transport.original.assert_not_called()
+
     def test_all_endpoints_identical_payload_and_sticky_restore(self):
         for provider, path, status in [("openrouter", "/api/v1/chat/completions", 402),
                 ("openrouter", "/api/alpha/decisions", 402), ("tavily", "/search", 432),

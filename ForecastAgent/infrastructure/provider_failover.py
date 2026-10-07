@@ -26,6 +26,7 @@ ENDPOINTS = {
     "openrouter": ("openrouter.ai", {"/api/v1/chat/completions", "/api/alpha/decisions"}),
     "tavily": ("api.tavily.com", {"/search", "/extract"}),
 }
+PROMOTION_THRESHOLD = 4
 
 
 def utcnow():
@@ -121,6 +122,29 @@ class ProviderTransport:
             "observed_at_utc": now.isoformat(), "retry_at_utc": retry.isoformat()}
         _write(self.root / provider / "route.json", state)
 
+    def observe_route(self, provider, role, default_role, unavailable_default, group, success):
+        """Promote after four successful fallback requests, without probing a blocked key."""
+        state = self.load(provider)
+        streak = state.get("alternative_success_streak", {})
+        eligible = success and role != default_role and unavailable_default
+        if eligible:
+            count = streak.get("count", 0) + 1 if streak.get("role") == role else 1
+            state["alternative_success_streak"] = {"role": role, "count": count}
+            if count >= PROMOTION_THRESHOLD:
+                state["default_role"] = role
+                state["alternative_success_streak"] = {"role": None, "count": 0}
+                event = {"schema_version": 1, "provider": provider,
+                    "from_role": default_role, "to_role": role, "successful_fallback_requests": count,
+                    "logical_transport_id": group, "at_utc": self.clock().isoformat(),
+                    "reason": "confirmed_quota_exhaustion_and_alternative_success", "budget_reset": False}
+                state["last_promotion"] = event
+                _write(self.root / provider / "promotions" / (uuid.uuid4().hex + ".json"), event)
+        elif streak.get("count", 0):
+            state["alternative_success_streak"] = {"role": None, "count": 0}
+        else:
+            return
+        _write(self.root / provider / "route.json", state)
+
     def request(self, req, provider, role, group, args, kwargs):
         key = self.credentials[provider][role == "backup"]
         headers = {k: v for k, v in req.header_items() if k.lower() != "authorization"}
@@ -175,19 +199,35 @@ class ProviderTransport:
             state = self.load(provider)
             primary, backup = self.credentials[provider]
             roles = ["primary"] + (["backup"] if backup and backup != primary else [])
+            default_role = state.get("default_role", "primary")
+            if default_role not in roles:
+                default_role = "primary"
+            roles = [default_role] + [r for r in roles if r != default_role]
+            unavailable_default = self.blocked(state, default_role)
             group = uuid.uuid4().hex
             last = None
             for role in roles:
                 if self.blocked(state, role):
                     continue
                 try:
-                    return self.request(req, provider, role, group, args, kwargs)
+                    response = self.request(req, provider, role, group, args, kwargs)
+                    self.observe_route(provider, role, default_role, unavailable_default, group,
+                                       getattr(response, "status", 200) == 200)
+                    return response
                 except urllib.error.HTTPError as error:
                     if not getattr(error, "forecast_exhaustion", None):
+                        self.observe_route(provider, role, default_role, unavailable_default, group, False)
                         raise
+                    if role == default_role:
+                        unavailable_default = True
                     last = error
+                except Exception:
+                    self.observe_route(provider, role, default_role, unavailable_default, group, False)
+                    raise
             if last is not None:
+                self.observe_route(provider, roles[-1], default_role, unavailable_default, group, False)
                 raise last
+            self.observe_route(provider, roles[-1], default_role, unavailable_default, group, False)
             # All configured credentials are in a persisted exhaustion cooldown.
             entry = state["exhausted"].get(roles[-1], {})
             status = entry.get("http_status", 402)
@@ -245,6 +285,8 @@ def main():
     print(json.dumps({"provider_key_failover": "installed", "logical_budget_reset": False,
         "backup_configured": {p: bool(pair[1] and pair[1] != pair[0])
                               for p, pair in urllib.request.urlopen.credentials.items()},
+        "default_roles": {p: urllib.request.urlopen.load(p).get("default_role", "primary")
+                          for p in urllib.request.urlopen.credentials},
         "exa_transport_installed": bool(getattr(urllib.request.urlopen, "_forecast_exa_transport", False))}))
     arguments = options.arguments[1:] if options.arguments[:1] == ["--"] else options.arguments
     sys.argv = [options.module] + arguments
