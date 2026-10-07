@@ -1488,6 +1488,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         if not task.bundle["result"]:
             if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
                 task.bundle['control']['forced_close'] = True
+                from ForecastAgent.runtime.source_frontier import rescue_before_close
+                rescue_before_close(task, tavily_key)
                 from ForecastAgent.runtime.material_protocol import enabled as v3
                 if v3(task):
                     task.bundle['control']['material_stop_reason'] = termination_reason or 'program_dispatch_limit'

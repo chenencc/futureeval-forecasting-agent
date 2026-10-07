@@ -38,6 +38,7 @@ def native_manifest(root):
 
 
 def raw_handoff_eligible(bundle):
+    from ForecastAgent.acquisition.recovery import supplement_ready
     r=bundle.get('result') or {}; e=r.get('execution_report') or {}
     readable=any(p.get('content') and p.get('body_diagnostics',{}).get('usable_text')
                  for p in bundle.get('pages',{}).values())
@@ -46,7 +47,7 @@ def raw_handoff_eligible(bundle):
     local=(r.get('status')=='partial' and r.get('termination_reason')=='context_projection_failure' and
            e.get('owner')=='program' and e.get('interrupted') is True and bundle.get('model_attempts') and
            all(v.get('status')=='received' for v in bundle['model_attempts']))
-    return bool(readable and (normal or closed or local))
+    return bool(readable and (normal or closed or local) or supplement_ready(bundle))
 
 
 def handoff(directory):
@@ -115,6 +116,19 @@ def collect(request, retrieval):
         result=pipeline.run(request,directory,supplement_network=True)
     raw=load(directory/'collection/bundle.json')
     if result.get('state')!='complete':return raw
+    from ForecastAgent.acquisition.recovery import has_readable_material
+    package_bundle=load(directory/'package.json')
+    if not has_readable_material(package_bundle) and not package_bundle.get('market_snapshots'):
+        save(directory/'material-unavailable.json',{'supplement_completed':True,
+             'readable_material_available':False,'collector_result_unchanged':True,
+             'budget_reset':False,'analysis_started':False})
+        unavailable=copy.deepcopy(raw)
+        unavailable['original_collector_result']=copy.deepcopy(raw['result'])
+        unavailable['result']={'status':'material_unavailable','incomplete':True,'resumable':False,
+            'termination_reason':'supplement_without_material',
+            'scope':'Raw export completed without usable bodies or market material; analysis has not started.'}
+        save(Path(retrieval)/'bundle.json',unavailable)
+        return unavailable  # Preserve the native result and surface an honest live gate.
     receipt=directory/'raw-handoff.json'
     if receipt.exists() and native_manifest(directory/'collection')!=load(receipt)['native_files_sha256']:
         raise ValueError('Raw export changed native acquisition state')
@@ -364,7 +378,9 @@ def main():
     parser.add_argument('--submit',action='store_true')
     parser.add_argument('--once',action='store_true')
     parser.add_argument('--limit',type=int,default=5)
-    args=parser.parse_args();pipeline.verify_baseline();verify_release()
+    args=parser.parse_args();pipeline.verify_baseline();manifest=verify_release()
+    if args.submit and manifest.get('development_only'):
+        raise ValueError('Development collection repair is not authorized for production submission')
     if args.once:result=once(args.root,args.snapshots,enabled=args.submit)
     else:result=supervise(args.root,args.snapshots,submit=args.submit,limit=args.limit)
     print(json.dumps(result))

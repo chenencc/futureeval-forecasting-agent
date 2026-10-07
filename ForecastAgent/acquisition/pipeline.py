@@ -83,7 +83,8 @@ def identity(request, supplement_network):
     base = verify_baseline()
     paths = ['ForecastAgent/runtime/'+name+'.py' for name in (
         'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition', 'material_protocol', 'delivery', 'delivery_control', 'progress')]
-    paths += ['ForecastAgent/acquisition/pipeline.py', 'ForecastAgent/prompts/intelligent_materials.md',
+    paths += ['ForecastAgent/acquisition/pipeline.py', 'ForecastAgent/acquisition/recovery.py',
+              'ForecastAgent/runtime/source_frontier.py', 'ForecastAgent/prompts/intelligent_materials.md',
               'ForecastAgent/tools/registry.py', 'ForecastAgent/runtime/contracts.py',
               'ForecastAgent/runtime/tool_selection.py', 'ForecastAgent/supplement/stage.py']
     for prefix in ('ForecastAgent/readers', 'ForecastAgent/evidence', 'ForecastAgent/providers', 'ForecastAgent/skills', 'ForecastAgent/prompts'):
@@ -118,6 +119,8 @@ def resource_report(bundle, collection_root, supplement_root):
     known = 0
     unknown = 0
     models = {}
+    transport_errors = {}
+    unknown_http_status_failures = 0
     for attempt in attempts:
         usage = attempt.get('usage')
         if isinstance(usage, dict) and isinstance(usage.get('total_tokens'), int):
@@ -133,15 +136,25 @@ def resource_report(bundle, collection_root, supplement_root):
             if hashlib.sha256(path.read_bytes()).hexdigest() != attempt['sha256']:
                 raise ValueError('Model record hash mismatch')
             model = record.get('request', {}).get('model') or record.get('model') or 'not_recorded'
+            if record.get('status') == 'transport_error':
+                error_type = record.get('error') or 'not_recorded'
+                if not isinstance(error_type,str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,79}',error_type):
+                    error_type = 'not_recorded'
+                transport_errors[error_type] = transport_errors.get(error_type,0)+1
+            if record.get('status') != 'received' and record.get('http_status') is None:
+                unknown_http_status_failures += 1
         models[model] = models.get(model, 0)+1
     supplements = []
     for path in supplement_root.glob('tasks/*/supplement.json'):
         supplements.extend(json.loads(path.read_text(encoding='utf-8')).get('attempts', []))
     return {'model_http_attempts': len(attempts), 'model_attempts_by_backend': models,
             'known_reported_tokens': known, 'unknown_usage_attempts': unknown,
+            'model_transport_error_types': transport_errors,
+            'model_failures_without_http_status': unknown_http_status_failures,
             'tavily_basic_attempts': len(bundle.get('searches', [])),
             'exa_attempts': len(bundle.get('exa_searches', [])),
             'initial_source_http_attempts': len(bundle.get('fetch_attempts', [])),
+            'initial_source_attempts_scope': 'Reserved fetch operations including preflight failures; not a verified HTTP request count.',
             'extract_batches': len(bundle.get('extract_attempts', [])),
             'supplement_attempts': supplements}
 
@@ -174,12 +187,16 @@ def run(request, directory, *, supplement_network=False):
             return json.loads((directory/'report.json').read_text(encoding='utf-8'))
         task_dir = directory/'collection'
         if state['stage'] == 'collection':
-            with route_environment():
-                from ForecastAgent.providers.model import reset_route
-                reset_route()
-                bundle = run_research(frozen['request'], task_dir)
-            if not bundle.get('result') or bundle['result'].get('incomplete'):
-                state.update(stage='collection', interrupted=True, resumable=bundle.get('result', {}).get('resumable', False))
+            from ForecastAgent.acquisition.recovery import supplement_ready, execution_state
+            existing = task_dir/'bundle.json'
+            bundle = json.loads(existing.read_text(encoding='utf-8')) if existing.exists() else None
+            if not bundle or not supplement_ready(bundle):
+                with route_environment():
+                    from ForecastAgent.providers.model import reset_route
+                    reset_route()
+                    bundle = run_research(frozen['request'], task_dir)
+            if (not bundle.get('result') or bundle['result'].get('incomplete')) and not supplement_ready(bundle):
+                state.update(stage='collection', **execution_state(bundle))
                 save(state_path, state)
                 report = {'state': state, 'input_warnings': frozen['input_warnings'],
                           'resources': resource_report(bundle, task_dir, directory/'supplement'),
@@ -189,10 +206,12 @@ def run(request, directory, *, supplement_network=False):
             raw = (task_dir/'bundle.json').read_bytes()
             archive = directory/'parent.zip'
             with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
-                z.writestr('campaign.json', json.dumps({'tasks': {frozen['request']['id']: {'status': 'acquired'}}}))
+                status = 'closed_with_gaps' if bundle['result'].get('incomplete') or not bundle['result'].get('acquisition_complete') else 'acquired'
+                z.writestr('campaign.json', json.dumps({'tasks': {frozen['request']['id']: {'status': status}}}))
                 z.writestr('tasks/'+frozen['request']['id']+'/bundle.json', raw)
             state.update(stage='supplement', parent_bundle_sha256=hashlib.sha256(raw).hexdigest(),
                          parent_archive_sha256=hashlib.sha256(archive.read_bytes()).hexdigest(), interrupted=False)
+            state['collector_execution'] = execution_state(bundle)
             save(state_path, state)
         raw = (task_dir/'bundle.json').read_bytes()
         if hashlib.sha256(raw).hexdigest() != state['parent_bundle_sha256']:
@@ -209,9 +228,12 @@ def run(request, directory, *, supplement_network=False):
         task.bundle = overlay  # Inspection only; do not save the overlay into the parent ledger.
         materials = terminal_report(task)
         acceptance = collection_acceptance(overlay)
+        from ForecastAgent.acquisition.recovery import has_readable_material
         report = {'schema': 'intelligent-acquisition-report-v1', 'state': 'complete',
                   'input_warnings': frozen['input_warnings'], 'material_report': materials,
                   'capture_integrity': acceptance,
+                  'readable_material_available': has_readable_material(overlay),
+                  'analysis_readiness_note': 'Export completion does not establish factual adequacy. Empty bodies remain explicit gaps.',
                   'resources': resource_report(bundle, task_dir, directory/'supplement'),
                   'scope': 'Raw material capture and unverified adequacy declarations; no relevance certification or forecast score.',
                   'analysis_run': False, 'submitted': False}

@@ -119,8 +119,13 @@ def primary_rescue(task):
     rows=[]
     for url in task.rescue_candidates():
         host=(urlsplit(url).hostname or '').lower()
-        labels=set(re.findall(r'[a-z0-9]{4,}',(urlsplit(url).hostname or '').lower()))
-        matches=[n['id'] for n in needs if labels & set(re.findall(r'[a-z0-9]{4,}',n.get('expected_source','').lower()))]
+        # Short issuer names such as IMF, WHO and AAA are meaningful host tokens.
+        # Common domain/navigation words are not issuer identity evidence.
+        generic={'www','com','org','net','gov','edu','int','co','uk','us','en',
+                 'data','api','news','media','official','website','source'}
+        labels=set(re.findall(r'[a-z0-9]{2,}',host))-generic
+        matches=[n['id'] for n in needs if labels &
+                 (set(re.findall(r'[a-z0-9]{2,}',n.get('expected_source','').lower()))-generic)]
         if matches:
             rows.append({'url':url,'need_ids':matches,'reason':'Failed discovered host matches a named critical expected source; a routing hint, not authority verification.'})
     return rows[:5]

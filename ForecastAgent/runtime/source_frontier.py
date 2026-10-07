@@ -94,10 +94,40 @@ def recover_before_stall(task, key):
         query = need.get('query') or need.get('condition') or b['request']['question']
         result = task.execute('read_sources', {'urls': urls,
             'queries':[{'query':query,'need_ids':[need['id']]}], 'rescue_failed': False}, key)
-        event['status'] = 'completed_with_gaps' if result.get('error') else 'completed'
+        event['status'] = 'completed_with_gaps' if result.get('error') or not any(
+            row.get('ok') for row in result.get('reads', [])) else 'completed'
     except Exception as exc:
         result = {'error': type(exc).__name__}
         event['status'] = 'failed'
     b['transcript'].append({'tool': 'program_source_recovery', 'result': result})
+    task.save()
+    return result
+
+
+def rescue_before_close(task, key):
+    """One critical basic Extract rescue from its existing reserved allowance."""
+    b = task.bundle
+    if (not key or task.cutoff or b['request'].get('recover_sources_before_stall') is not True or
+            b['control'].get('final_extract_rescue')):
+        return None
+    from ForecastAgent.runtime.collection_actions import primary_rescue
+    candidates = primary_rescue(task)
+    if not candidates:
+        return None
+    event = {'status':'reserved','urls':[r['url'] for r in candidates],
+             'model_calls':0,'search_calls':0,'budget_reset':False}
+    b['control']['final_extract_rescue'] = event
+    task.save()
+    try:
+        result = task.execute('extract_failed_pages', {'urls':event['urls'],
+            'need_ids':sorted({n for r in candidates for n in r['need_ids']}),
+            'reason':'Final bounded rescue of failed critical issuer sources using the remaining basic Extract allowance'},key)
+        event['status'] = 'completed' if any(
+            b['pages'].get(canonical_url(u),{}).get('body_diagnostics',{}).get('usable_text')
+            for u in event['urls']) else 'completed_with_gaps'
+    except Exception as exc:
+        result = {'error':type(exc).__name__,'attempt_preserved':True}
+        event['status'] = 'failed'
+    b['transcript'].append({'tool':'program_final_extract_rescue','result':result})
     task.save()
     return result
