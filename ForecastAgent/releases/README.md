@@ -1,6 +1,10 @@
-# ForecastAgent release 1.0.4
+# ForecastAgent release 1.0.5
 
-Release 1.0.4 is based on the immutable `v1.0.3` tag. Acquisition and independent
+Release 1.0.5 adds bounded collection recovery over immutable `v1.0.4`.
+See [collection recovery changes](../docs/RELEASE_1_0_5.md). Production uses
+`ForecastAgent.releases.v1_0_5`; analysis and original-context delivery remain frozen.
+
+The prior Release 1.0.4 is based on the immutable `v1.0.3` tag. Acquisition and independent
 supplement remain unchanged. The evidence delivery adapter preserves every
 previously visible original coordinate and adds complete paragraphs and table
 contexts before invoking the frozen 1.0.1 Mercury registry and scoring rules.

@@ -1,6 +1,6 @@
 {
   "schema": "forecastagent-release-source-v1",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "composition": "V3 acquisition + independent supplement + unchanged 1.0.1 live analysis core",
   "analysis_core_tag": "v1.0.1",
   "analysis_core_commit": "c9bfab44a670f4307ebc2330866479c82aec71ef",
@@ -117,6 +117,7 @@
     "ForecastAgent/docs/QUESTION_LIFECYCLE.md": "6157539230345efb07ca363c4e8b7c5cebc16babbc6d48f667be323d4c051952",
     "ForecastAgent/docs/RAW_ACQUISITION_REPAIRS.md": "9a55ec2771b18c4a9fa9a446689ce5bd19403bef6db08b2de477b1269c42859c",
     "ForecastAgent/docs/RAW_RECALL.md": "e9a56386009f71a85fb1a4acbf4af28b2ad5d56826490c89e6b52ea174515173",
+    "ForecastAgent/docs/RELEASE_1_0_5.md": "2b3b4d961f7472b09c22c0f2889c75d4dbdd8ab9121ca7409e794e52f8c5d2b9",
     "ForecastAgent/docs/RUNTIME.md": "5c7aac68fdbdc501556cfeb7c4dd7ac4d3c2ce9c5bea37131a7eda221d2167aa",
     "ForecastAgent/docs/TOOL_DELIVERY.md": "d14dd600c5db127bf1902347d9966da99fc141c580c3b5bf4895829386af6547",
     "ForecastAgent/evidence/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -180,15 +181,16 @@
     "ForecastAgent/releases/collection_replay.py": "9dcd9eadd02b2da5b686023a2e454a97cb18b2f5f1a181f8c41a0035fa55c9f4",
     "ForecastAgent/releases/context_decisions.py": "b36ec865daf1fa0d4b32b392208748a34b5b70b86895afc345cb0f62d4dc2dd1",
     "ForecastAgent/releases/guard.py": "cfdb1c80e09e0758210c7d6eeb096bad8295da5cbfbb7bcc56aac172cb04758d",
-    "ForecastAgent/releases/manifest.py": "56378778c3016432b79bbc7f9ec20e308cc4a298fdc26eac07f01e90054b52bb",
+    "ForecastAgent/releases/manifest.py": "c218d9561c74b4576f1ea7360523fb30caac718884cf8a89264dcf72cb93e99f",
     "ForecastAgent/releases/pilot.py": "c37378cbf277eec12c18aae9f66ce3b9a925c84c1fd624097647037bec9b57ee",
-    "ForecastAgent/releases/README.md": "6c6f5cbc695c02d4382cc8b5efdf7afa3a5475ed008d24fca33a09cc064b8944",
+    "ForecastAgent/releases/README.md": "7eec2d7fc21b3ef188c1ec154a59c7321aebe8abd66ebc3e95e2998642a90f1e",
     "ForecastAgent/releases/review.py": "0c095a38643c269f90bfdaadac23c70a0635e9f5676e2a357841e98816ba39a4",
     "ForecastAgent/releases/stress.py": "2e7fdc4fcd3be1c453c5e3784bf9d88c7d1d6786a7fb254d045896f38602e849",
     "ForecastAgent/releases/surfaces.py": "4e88f1bac566973d9d45e43fe9cff57d3d06d945412a43ea05dda8bfc1ef3068",
     "ForecastAgent/releases/v1_0_2.py": "75c7c384c849918082bb7fc0448d04579671a4a7318d860e29f3049ad8e4d2db",
     "ForecastAgent/releases/v1_0_3.py": "74a5b55c2d5c63b63543ed007abefe5cae125eee2c55041722736f0e772c73d8",
-    "ForecastAgent/releases/v1_0_4.py": "f333281d9e49c65fdf2bd88285f67a33291fe49a855205ae21ea655a6760970a",
+    "ForecastAgent/releases/v1_0_4.py": "9dcb64674632555d4a692d1fb573414e47374f5d7170a7e54f2e209e9c6514d8",
+    "ForecastAgent/releases/v1_0_5.py": "0ab5125e3175f02156b0f35944f4ada3c1240100fa81e0329e4ff3b62f0d1012",
     "ForecastAgent/requirements-retrieval.txt": "0ab834aa405d082d590315d7527b3ee425e98ed37b09742278eb1303a8f52a7e",
     "ForecastAgent/requirements-supplement.txt": "57798a4e4b8e24764a2ee14286c0b1369d81273b3005ca91d144fd17b6c3e687",
     "ForecastAgent/retrieval_agent.py": "03e2c074453a03f693541e6b71c3be43dd50d82819c888d3afe4a7b699736fa5",
@@ -251,8 +253,8 @@
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027"
   },
-  "development_only": true,
   "base_release_tag": "v1.0.4",
   "base_release_commit": "478def7ed18d2046afb4be88a79c1c2c56173acf",
-  "repair_protocol": "minibench-collection-recovery-v1"
+  "repair_protocol": "minibench-collection-recovery-v1",
+  "analysis_context_protocol": "official-mercury-context-delivery-1.0.4"
 }

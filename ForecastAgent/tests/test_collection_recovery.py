@@ -12,7 +12,7 @@ from ForecastAgent.runtime.retrieval import RetrievalTask
 from ForecastAgent.runtime.collection_actions import primary_rescue
 from ForecastAgent.runtime.source_frontier import rescue_before_close, recover_before_stall
 from ForecastAgent.competition.queue import save, load, digest
-from ForecastAgent.releases import v1_0_4 as release
+from ForecastAgent.releases import v1_0_5 as release
 
 REQUEST = {'id':'1','question':'What is the IMF global growth projection?',
            'resolution_criteria':'Use IMF published data','question_type':'numeric',
@@ -53,7 +53,7 @@ class RecoveryTests(TestCase):
 
     def test_release_empty_export_does_not_proceed_to_analysis_or_rewrite_native_result(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);native=root/'release-1.0.4';raw=closed_bundle()
+            root=Path(directory);native=root/'release-1.0.5';raw=closed_bundle()
             raw['result']['incomplete']=False
             save(native/'collection/bundle.json',raw);save(native/'package.json',raw)
             save(native/'state.json',{'stage':'complete'})

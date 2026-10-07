@@ -27,7 +27,7 @@ def build(root=ROOT, version='1.0.3'):
 
 def verify(root=ROOT, expected_version=None):
     root=Path(root);m=load(root/PATH)
-    if m.get('schema')!='forecastagent-release-source-v1' or m.get('version') not in {'1.0.2','1.0.3','1.0.4'}:raise ValueError('Wrong release manifest')
+    if m.get('schema')!='forecastagent-release-source-v1' or m.get('version') not in {'1.0.2','1.0.3','1.0.4','1.0.5'}:raise ValueError('Wrong release manifest')
     if expected_version and m['version']!=expected_version:raise ValueError('Unexpected production release version')
     for name,expected in m['files_sha256_lf'].items():
         path=(root/name).resolve()

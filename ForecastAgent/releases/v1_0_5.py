@@ -19,14 +19,14 @@ from ForecastAgent.releases import surfaces, context_decisions
 from ForecastAgent.releases.manifest import verify
 from ForecastAgent.runtime.task_lock import task_lock
 
-VERSION='1.0.4'
+VERSION='1.0.5'
 CORE_VERSION='1.0.1'
 STOPS={'program_dispatch_limit','model_dispatch_budget','stalled','program_forced_close',
        'repeated_tool_errors','review_round_limit'}
 
 
 def verify_release():
-    return verify(expected_version='1.0.4')
+    return verify(expected_version='1.0.5')
 
 
 def file_hash(path):
@@ -38,6 +38,7 @@ def native_manifest(root):
 
 
 def raw_handoff_eligible(bundle):
+    from ForecastAgent.acquisition.recovery import supplement_ready
     r=bundle.get('result') or {}; e=r.get('execution_report') or {}
     readable=any(p.get('content') and p.get('body_diagnostics',{}).get('usable_text')
                  for p in bundle.get('pages',{}).values())
@@ -46,7 +47,7 @@ def raw_handoff_eligible(bundle):
     local=(r.get('status')=='partial' and r.get('termination_reason')=='context_projection_failure' and
            e.get('owner')=='program' and e.get('interrupted') is True and bundle.get('model_attempts') and
            all(v.get('status')=='received' for v in bundle['model_attempts']))
-    return bool(readable and (normal or closed or local))
+    return bool(readable and (normal or closed or local) or supplement_ready(bundle))
 
 
 def handoff(directory):
@@ -104,7 +105,7 @@ def collect(request, retrieval):
                    recover_sources_before_stall=True,
                    source_recovery_policy_sha256=hashlib.sha256((Path(__file__).parents[1]/'runtime/source_frontier.py').read_bytes().replace(b'\r\n',b'\n')).hexdigest(),
                    exa_search_policy='required')
-    directory=Path(retrieval)/'release-1.0.4'
+    directory=Path(retrieval)/'release-1.0.5'
     if not directory.exists() and Path(retrieval).exists() and any(Path(retrieval).iterdir()):
         raise ValueError('Previous acquisition files exist; preserve budgets and require explicit migration')
     if (directory/'state.json').exists() and (directory/'collection/bundle.json').exists():
@@ -115,6 +116,19 @@ def collect(request, retrieval):
         result=pipeline.run(request,directory,supplement_network=True)
     raw=load(directory/'collection/bundle.json')
     if result.get('state')!='complete':return raw
+    from ForecastAgent.acquisition.recovery import has_readable_material
+    package_bundle=load(directory/'package.json')
+    if not has_readable_material(package_bundle) and not package_bundle.get('market_snapshots'):
+        save(directory/'material-unavailable.json',{'supplement_completed':True,
+             'readable_material_available':False,'collector_result_unchanged':True,
+             'budget_reset':False,'analysis_started':False})
+        unavailable=copy.deepcopy(raw)
+        unavailable['original_collector_result']=copy.deepcopy(raw['result'])
+        unavailable['result']={'status':'material_unavailable','incomplete':True,'resumable':False,
+            'termination_reason':'supplement_without_material',
+            'scope':'Raw export completed without usable bodies or market material; analysis has not started.'}
+        save(Path(retrieval)/'bundle.json',unavailable)
+        return unavailable  # Preserve the native result and surface an honest live gate.
     receipt=directory/'raw-handoff.json'
     if receipt.exists() and native_manifest(directory/'collection')!=load(receipt)['native_files_sha256']:
         raise ValueError('Raw export changed native acquisition state')
@@ -140,7 +154,7 @@ def collect(request, retrieval):
 
 
 def supplement(adapter, folder, ident):
-    directory=Path(folder)/'retrieval/release-1.0.4'
+    directory=Path(folder)/'retrieval/release-1.0.5'
     marker=adapter.get('release_acquisition') or {}
     name=marker.get('package_file','package.json')
     if name not in {'package.json','raw-export-package.json'}:raise ValueError('Invalid material package filename')
@@ -171,7 +185,7 @@ def analyze(source, folder, ident):
         candidate=context_decisions.analyze(source,core,ident)
     candidate.update(release_version=VERSION,analysis_core_release_version=CORE_VERSION,
                      acquisition_release_version=VERSION,evidence_delivery_version='1.0.4')
-    candidate['comment']=candidate['comment'].replace('# ForecastAgent 1.0.1', '# ForecastAgent 1.0.4')
+    candidate['comment']=candidate['comment'].replace('# ForecastAgent 1.0.4', '# ForecastAgent 1.0.5')
     candidate['comment']+='\n\nAnalysis core: release 1.0.1. Evidence delivery: release 1.0.4. Raw collection completion does not certify evidence adequacy.'
     validate_payload(load(source)['request'],candidate['payload'])
     save(marker,{'source_file_sha256':file_hash(source),'candidate_sha256':digest(candidate),
@@ -231,8 +245,16 @@ def deliver(client,task,candidate,comment,folder,*,enabled=False):
     return live.deliver(client,task,candidate,comment,folder,enabled=enabled)
 
 
+def collect_for_worker(request, retrieval):
+    """Keep empty, nonresumable exports visible without futile worker retries."""
+    result=collect(request,retrieval)
+    if result.get('result',{}).get('status')=='material_unavailable':
+        raise RuntimeError('Collection material cap exhausted without readable bodies or market material; preserved gaps require source recovery')
+    return result
+
+
 def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=None, collector=None, limit=1):
-    snapshots=surfaces.snapshots(snapshots,Path(root)/'incoming-1.0.4')
+    snapshots=surfaces.snapshots(snapshots,Path(root)/'incoming-1.0.5')
     seed(root,snapshots)
     state=load(Path(root)/'campaign.json')
     for task in state['tasks'].values():
@@ -244,7 +266,7 @@ def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=
     save(Path(root)/'campaign.json',state)
     client=surfaces.Client(client or live.Client(os.environ.get('METACULUS_TOKEN','')))
     report=live.run(root,snapshots,enabled=enabled,client=client,
-                    collect=collector or collect,supplement=supplement,infer=infer or analyze,deliver_fn=deliver_fn or deliver,limit=limit)
+                    collect=collector or collect_for_worker,supplement=supplement,infer=infer or analyze,deliver_fn=deliver_fn or deliver,limit=limit)
     report.update(worker_release_version=VERSION,analysis_core_release_version=CORE_VERSION)
     save(Path(root)/'report.json',report)
     return report
@@ -318,7 +340,7 @@ def supervise(root,snapshots, *, submit=False, limit=5, task_seconds=1500, batch
     root=Path(root).resolve();snapshots=Path(snapshots).resolve()
     (root/'.supervisor').mkdir(parents=True,exist_ok=True)
     with task_lock(root/'.supervisor'):
-        snapshots=surfaces.snapshots(snapshots,root/'incoming-1.0.4')
+        snapshots=surfaces.snapshots(snapshots,root/'incoming-1.0.5')
         seed(root,snapshots);start=time.monotonic();attempts=[]
         if submit:
             for _ in range(limit):
@@ -331,7 +353,7 @@ def supervise(root,snapshots, *, submit=False, limit=5, task_seconds=1500, batch
                     except ValueError as exc:
                         task.update(stage='blocked_integrity',last_error=str(exc));save(root/'campaign.json',state)
                         attempts.append({'question_id':ident,'status':'blocked_integrity','error':str(exc)});continue
-                command=[sys.executable,'-u','-m','ForecastAgent.releases.v1_0_4','--once',
+                command=[sys.executable,'-u','-m','ForecastAgent.releases.v1_0_5','--once',
                          '--root',str(root),'--snapshots',str(snapshots),'--submit']
                 result=process_runner(command,root/'worker-logs'/f'{ident}-{len(attempts)}.log',
                                       min(task_seconds,remaining),cwd=str(pipeline.ROOT))
@@ -364,7 +386,9 @@ def main():
     parser.add_argument('--submit',action='store_true')
     parser.add_argument('--once',action='store_true')
     parser.add_argument('--limit',type=int,default=5)
-    args=parser.parse_args();pipeline.verify_baseline();verify_release()
+    args=parser.parse_args();pipeline.verify_baseline();manifest=verify_release()
+    if args.submit and manifest.get('development_only'):
+        raise ValueError('Development collection repair is not authorized for production submission')
     if args.once:result=once(args.root,args.snapshots,enabled=args.submit)
     else:result=supervise(args.root,args.snapshots,submit=args.submit,limit=args.limit)
     print(json.dumps(result))
