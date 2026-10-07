@@ -23,3 +23,4 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
       - run: python -m unittest discover -s ForecastAgent/tests
+      - run: python -m unittest ForecastAgent.infrastructure.test_exa_failover -v

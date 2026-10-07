@@ -4,6 +4,36 @@ Fall production forecasting checks out immutable `v1.0.4`. These infrastructure
 utilities are checked out separately from `main`; they do not alter model routing,
 research quotas, probability policy or submission rules.
 
+## Exa credit failover
+
+`exa_failover.py` wraps the immutable release at startup. Actions maps `EXA_API`
+to `EXA_API_KEY` and optional `EXA_API2` to `EXA_API_KEY2`. It intercepts only
+authenticated Exa `/search` requests, retaining their exact payload. HTTP 402
+tags `NO_MORE_CREDITS`, `API_KEY_BUDGET_EXCEEDED` and `TEAM_BUDGET_EXCEEDED`
+allow one backup attempt within the existing logical search reservation.
+Other errors keep the existing failure behavior. Missing or identical backup
+credentials never retry. See [official error codes](https://exa.ai/docs/admin/error-codes).
+
+No model, release tag, task budget or submission policy changes. An opt-in Python
+startup hook propagates the transport to child processes even when `PYTHONPATH`
+changes. Route and request receipts are preserved in `snapshots/official/exa-transport`
+or the corresponding collection root. Both HTTP attempts are recorded separately;
+receipts do not contain credentials, headers or error body text, and unknown
+provider usage remains unknown. The provider's successful response retains its
+normal cost metadata. Failed primary exhaustion is remembered per UTC calendar
+month and key digest, with primary retried after rotation or the next month;
+this local routing policy does not assume an Exa credit reset date.
+
+```bash
+python -m unittest ForecastAgent.infrastructure.test_exa_failover -v
+python ForecastAgent/infrastructure/exa_failover.py --root snapshots/task/exa-transport --module ForecastAgent.collection_campaign -- --help
+```
+
+Use the `--` separator to preserve release arguments such as `--root`. Do not
+replace a running frozen experiment's environment; newly started tasks inherit
+the configured backup. Local secure setup is documented in
+[Local development](../docs/LOCAL_DEVELOPMENT.md).
+
 MiniBench has independent monitoring, recovery and delivery artifacts. See
 [MiniBench production entry](MINIBENCH.md) for its immutable routing extension,
 activation flags and evidence required to claim accepted participation.

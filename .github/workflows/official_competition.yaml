@@ -36,6 +36,7 @@ jobs:
       METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
       EXA_API_KEY: ${{ secrets.EXA_API }}
+      EXA_API_KEY2: ${{ secrets.EXA_API2 }}
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
       FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
     steps:
@@ -141,7 +142,7 @@ jobs:
           fi
           args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
           if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
-          python -m ForecastAgent.releases.v1_0_4 "${args[@]}"
+          python .infrastructure/ForecastAgent/infrastructure/exa_failover.py --root snapshots/official/exa-transport --module ForecastAgent.releases.v1_0_4 -- "${args[@]}"
         env:
           SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
           RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}

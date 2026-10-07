@@ -119,11 +119,11 @@ jobs:
             exit 1
           fi
           if [ -n "$SELECTED_QUESTION" ]; then
-            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit 1 --question "$SELECTED_QUESTION" --resume-reason "$RESUME_REASON"
+            python -u ForecastAgent/infrastructure/exa_failover.py --root "$CAMPAIGN_ROOT/exa-transport" --module ForecastAgent.collection_campaign -- run --root "$CAMPAIGN_ROOT" --limit 1 --question "$SELECTED_QUESTION" --resume-reason "$RESUME_REASON"
           elif [ -n "$SELECTED_QUESTIONS" ]; then
-            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT" --questions "$SELECTED_QUESTIONS"
+            python -u ForecastAgent/infrastructure/exa_failover.py --root "$CAMPAIGN_ROOT/exa-transport" --module ForecastAgent.collection_campaign -- run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT" --questions "$SELECTED_QUESTIONS"
           else
-            python -u -m ForecastAgent.collection_campaign run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
+            python -u ForecastAgent/infrastructure/exa_failover.py --root "$CAMPAIGN_ROOT/exa-transport" --module ForecastAgent.collection_campaign -- run --root "$CAMPAIGN_ROOT" --limit "$DISPATCH_LIMIT"
           fi
         env:
           DISPATCH_LIMIT: ${{ inputs.limit }}
@@ -134,6 +134,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
           EXA_API_KEY: ${{ secrets.EXA_API }}
+          EXA_API_KEY2: ${{ secrets.EXA_API2 }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.run }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/raw-collection-100-v1
