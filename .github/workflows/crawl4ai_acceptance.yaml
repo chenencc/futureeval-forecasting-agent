@@ -8,7 +8,9 @@ on:
       - 'ForecastAgent/readers/crawl4ai.py'
       - 'ForecastAgent/acquisition/nextgen.py'
       - 'ForecastAgent/acquisition/verify_nextgen.py'
+      - 'ForecastAgent/acquisition/paired_sources.py'
       - 'ForecastAgent/tests/test_crawl4ai_adapter.py'
+      - 'ForecastAgent/tests/test_paired_sources.py'
       - 'ForecastAgent/requirements-crawl4ai.txt'
       - '.github/workflows/crawl4ai_acceptance.yaml'
 
@@ -36,7 +38,7 @@ jobs:
           python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
       - name: Verify local parsing, accounting and release compatibility
-        run: python -m unittest ForecastAgent.tests.test_crawl4ai_adapter ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair
+        run: python -m unittest ForecastAgent.tests.test_paired_sources ForecastAgent.tests.test_crawl4ai_adapter ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair
       - name: Verify actual browser rendering on deterministic fixtures
         run: python -m ForecastAgent.acquisition.verify_nextgen --output snapshots/crawl4ai-ci-proof
       - uses: actions/upload-artifact@v4

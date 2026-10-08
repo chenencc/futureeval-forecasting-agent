@@ -160,6 +160,11 @@ or an explicit recorded gap.
 
 ## Validation and release gate
 
+The next bounded experiment uses [paired source-reader trials](acquisition/PAIRED_READERS.md).
+It freezes shared agent discovery and official-rule URLs before comparing
+identical HTTP response bytes and alternating live browser captures. It does not
+rerun search, analysis or submission, and it preserves explicit future-data gaps.
+
 Use the same saved bytes for parser comparisons. For dynamic capture, freeze the
 URLs, wait conditions and per-backend allowance before navigation. Report actual
 requests, elapsed time, readable bodies, complete table rows and recorded gaps.
