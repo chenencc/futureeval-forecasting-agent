@@ -613,3 +613,85 @@ Packaged audit: `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financi
 The canonical executed audit stays in the analysis run directory. The packaged
 report adds download provenance and per-task request-cap checks. It preserves
 all original model generations, decisions, source snapshots and failure records.
+
+## Financial source review and typed derivations
+
+The next additive local experiment separates four different checks:
+
+1. `review.py` merges overlapping exact original spans and restores local table
+   headers, fiscal labels and distant adjustment footnotes. Source hashes,
+   coordinates and the complete archives remain unchanged. Date-unknown
+   background series are context only; they cannot become dated predictors.
+2. `review_trial.py` asks Mercury for source-interpretation diagnostics, then
+   requests one restricted Super formula and one independent Mercury outcome
+   distribution. Source approval probabilities are fallible diagnostics, not
+   evidence truth or forecast probabilities. This per-variable review is an
+   expensive experimental option, not the recommended default for every task.
+3. `derivation.py` provides source-bound templates for guidance midpoints,
+   after-tax net margin/share projections and same-fiscal-quarter GAAP EPS
+   growth. The program owns unit conversion, `(1 + growth_rate)`, fiscal-period
+   compatibility and cost-removal sensitivity. Previously reported net income
+   is never taxed twice. Guidance already includes management's growth outlook;
+   the fixed midpoint template forbids adding that growth again.
+4. `template_correction.py` repairs only rejected derivations, with at most one
+   additional Super request per rejected task. An unchanged independent decision
+   is retained. Changed source material requires a separately bounded Mercury
+   decision. Invalid model assumptions remain rejected; a program baseline is
+   labeled separately and is never presented as repaired model output.
+
+All new stage reservations are persisted before HTTP. Neither source acquisition
+nor an earlier analysis budget is restarted. The workflow keeps original
+generations, rejections, request identities, executed source copies and provider
+usage records. Later offline gates are explicitly reported as post-hoc.
+
+### Four-question review observation, 2026-10-08
+
+The first review used 12 physical requests and 551,098 reported tokens. It
+produced four valid distributions, but inspection found growth rates used as
+level multipliers, an adjacent quarter called a year-over-year comparable,
+withheld-variable reuse, undeclared constants and duplicate scenario formulas.
+Numeric/format success did not establish semantic correctness.
+
+One newly downloaded official Apple PDF was visually checked on pages 1 and 4.
+Its current-year quarterly diluted EPS is USD 1.85. The separate non-GAAP
+reconciliation concerns 2024, not the 2025 current figure. This resolves the
+ambiguous headline interpretation without rewriting the earlier Mercury
+rejection. The PDF has a later Last-Modified date, so an immutable original
+publication vintage remains unauthenticated.
+
+Three selective Super corrections plus one Apple changed-source Mercury
+decision bring the total to **7 Super + 9 Mercury = 16 physical requests**.
+The final report includes **619,112 reported tokens**, zero unknown usage and
+USD 0 reported cost. All requests returned HTTP 200 on the primary credential.
+This is **138.8% more reported tokens** than the preceding 259,298-token trial.
+Additional contexts and diagnostic heads changed together; no controlled
+model-only comparison or accuracy improvement is claimed.
+
+| Target | Previous Mercury median | Final independent Mercury median | Final derivation observation |
+| --- | ---: | ---: | --- |
+| Apple Q4 FY2026 EPS, USD/share | 1.9321 | 2.0369 | Same-quarter program formula valid; Super assumes zero growth, only a persistence baseline |
+| Microsoft Q1 FY2027 revenue, USD billion | 90.5649 | 90.5792 | Unchanged supported guidance midpoint: 90.4 |
+| Amazon Q3 FY2026 revenue, USD billion | 200.6571 | 200.5630 | Super applied 10.5% growth again to current guidance; rejected; separate program midpoint: 199.5 |
+| Meta Q3 FY2026 EPS, USD/share | 6.2364 | 6.3519 | Program EPS: 6.9511 under an unverified 50% prior-cost removal assumption |
+
+The executed template validator initially accepted all four numeric derivations.
+The later independent semantic gate rejects Amazon's guidance double counting;
+the original generation and execution report are preserved. Final status:
+**four format-valid CDFs, three accepted model derivations, one separately labeled
+program baseline fallback, zero declared ready for automatic delivery**.
+
+Apple's corrective analyst view omitted approved recent EPS growth predictors.
+Future template context selection now retains approved supporting context, not
+only variables in the final equation. This and the improved source-conflict
+diagnostic were verified offline and were not rerun as provider experiments.
+Future growth, net-margin persistence, cost recurrence and diluted shares remain
+assumptions. Historical error data and rolling probability coverage are still
+missing. No automatic probability blend or forecast submission occurred.
+
+**104 offline tests** pass, including rate-as-level, incompatible guidance periods,
+adjacent-quarter proxies, GAAP/adjusted EPS, share dimensions and repeated-tax
+counterexamples. The **245 frozen release files** remain unchanged. Keep this
+trial isolated from the production worker.
+
+Final independent audit:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-review-four-20261008-final.json`.
