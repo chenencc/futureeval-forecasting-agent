@@ -44,7 +44,7 @@ Limits are 25 allowed browser requests, a 20-second render deadline, three data
 response reservations, and 2 MB of **archived decoded response bytes**. The
 last limit is not a network-transfer ceiling: when Content-Length is absent,
 the browser response must be read before its size can be checked. Reads and
-cleanup have separate bounded timeouts. No cookies, credentials, POSTs,
+cleanup have separate bounded timeouts. No supplied authentication cookies, credentials, POSTs,
 service workers, stealth mode or WebSocket sessions are enabled. WebSocket
 dependence is an explicit transport gap.
 
