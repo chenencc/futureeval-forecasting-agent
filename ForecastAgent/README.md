@@ -1,5 +1,8 @@
 # ForecastAgent
 
+For the v1.0.5-based development collector with registered Crawl4AI/source tools,
+shared budgets and recovery guards, see [release source-tool integration](acquisition/RELEASE_SOURCE_TOOLS.md).
+
 For the optional next-generation browser and saved-HTML experiment based on
 release 1.0.5, see [Crawl4AI research and integration](CRAWL4AI_RESEARCH.md).
 

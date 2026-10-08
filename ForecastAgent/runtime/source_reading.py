@@ -13,9 +13,9 @@ from ForecastAgent.supplement.stage import now
 POLICY = 'crawl4ai_v1'
 MAX_RENDERS = 2
 TOOLS = [
-    tool('inspect_source_structure', 'Read saved HTML roles, HTML table/JSON/CSV rows or observed iframe/data addresses. No network. offset >= 0; limit is 1-10 (default 10); use next_offset to continue. Navigation/footer remain archived. Resources are leads, never truth verdicts.',
+    tool('inspect_source_structure', 'Read saved HTML roles, HTML table/JSON/CSV rows or observed iframe/data addresses. No network. offset >= 0; requested limit is 1-100 but each response is capped at TEN items (default 10); use next_offset to continue. Navigation/footer remain archived. Resources are leads, never truth verdicts.',
          {'url': dict(STRING), 'view': {'type':'string','enum':['resources','sections','data']},
-          'offset': {'type':'integer','minimum':0}, 'limit': {'type':'integer','minimum':1,'maximum':10}}, ['url','view']),
+          'offset': {'type':'integer','minimum':0}, 'limit': {'type':'integer','minimum':1,'maximum':100}}, ['url','view']),
     tool('follow_source_resource', 'Fetch ONE exact resource_id returned by inspect_source_structure. Shares the existing eight fetch attempts; duplicate successes/failures are not re-fetched. New timestamps and parent hashes are preserved.',
          {'resource_id':dict(STRING),'need_ids':{'type':'array','items':dict(STRING)},'reason':dict(STRING)}, ['resource_id','need_ids','reason']),
     tool('render_source', 'Repair an accepted failed/thin HTML source or observed embedded page with Crawl4AI. At most TWO browser attempts per task, also spending shared eight-fetch slots. 25 dependency requests/20-second deadline. Legacy browser fallback spends a separate reservation; repeated URL attempts do not retry. Not for PDFs or historical captures.',
@@ -101,9 +101,12 @@ def bounded_view(task, url, args):
         from ForecastAgent.runtime.collection_v2 import eligible
         if not eligible(page, task.cutoff):
             raise ValueError('Audit-only current content cannot be read as a historical snapshot')
-    offset, limit = args.get('offset',0), args.get('limit',10)
+    offset, requested_limit = args.get('offset',0), args.get('limit',10)
+    limit = min(requested_limit,10)
     result = {'url':key,'source_sha256':page['sha256'],'retrieved_at_utc':page.get('retrieved_at_utc'),
-              'network_calls':0,'truth_verified':False,'relevance_verified':False}
+              'network_calls':0,'truth_verified':False,'relevance_verified':False,
+              'requested_limit':requested_limit,'effective_limit':limit,
+              'limit_clamped':requested_limit!=limit}
     supported = ['resources','sections','data'] if page.get('content_type') in {'text/html','application/xhtml+xml'} else ['data']
     result['available_views'] = supported
     if args['view'] not in supported:

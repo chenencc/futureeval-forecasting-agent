@@ -9,8 +9,10 @@ requires a new immutable release and its dependency installation.
 ## Agent tools
 
 - `inspect_source_structure`: verify original saved bytes and read bounded,
-  paginated source roles, observed resources or JSON/CSV rows. It can inspect
+  paginated source roles, observed resources or HTML table/JSON/CSV rows. It can inspect
   preserved failed HTML captures. It does not fetch or call models/search.
+  Requested page sizes above ten are explicitly clamped to ten with a correct
+  next offset. This avoids corrective model calls without increasing output limits.
 - `follow_source_resource`: select a source-bound resource ID from that parent.
   The parent raw hash must still match. Existing HTTP fetching, public URL checks,
   byte limits, caching and the shared ledger own the request.
@@ -58,7 +60,9 @@ on Linux, checks actual collector tool execution, shared-budget/restart/timeout
 fallback/error/preservation cases, runs v1.0.5 worker regressions and verifies
 the unchanged analysis baseline. Eight real browser fixtures cover dynamic HTML,
 tables, interstitials, failed/partial renders, JSON data, iframe data and API errors.
-Provider-free worker regressions include binary, numeric, date, multiple-choice,
+The real browser fixture also executes registered release tools, archives chart
+response rows and confirms that a resumed duplicate does not issue another HTTP
+request. Provider-free worker regressions include binary, numeric, date, multiple-choice,
 groups/conditionals, replay and mixed 100-question accounting; they do not test
 live platform submission.
 

@@ -26,6 +26,17 @@ def rendered(body='A current official report with detailed publication informati
 
 
 class SourceRuntimeTests(TestCase):
+    def test_read_only_requested_page_size_cannot_expand_output_or_spend_budget(self):
+        with TemporaryDirectory() as root:
+            task=self.task(root)
+            task.bundle['pages'][URL]=page('<main>'+''.join('<p>Report row '+str(i)+'</p>' for i in range(25))+'</main>',url=URL)
+            result=task.execute('inspect_source_structure',{'url':URL,'view':'sections','limit':20},'')
+            self.assertEqual(len(result['items']),10)
+            self.assertTrue(result['limit_clamped'])
+            self.assertEqual(result['requested_limit'],20)
+            self.assertEqual(result['next_offset'],10)
+            self.assertEqual(task.bundle['fetch_attempts'],[])
+
     def test_dynamic_constraints_do_not_alias_unrelated_arguments(self):
         with TemporaryDirectory() as root:
             task=self.task(root)

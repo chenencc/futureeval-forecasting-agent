@@ -1,8 +1,9 @@
 # Experimental source reading and observed resource follow-up
 
 This optional reader is developed on `codex/acquisition-next-crawl4ai` against
-the immutable `v1.0.5` acquisition baseline. Production agent registration,
-analysis, search allocation, forecasting and submission are unchanged.
+the immutable `v1.0.5` acquisition baseline. The development collector now
+registers the tools described in [release integration](RELEASE_SOURCE_TOOLS.md).
+The production tag, analysis, search allocation and submission remain unchanged.
 
 ## Capabilities
 

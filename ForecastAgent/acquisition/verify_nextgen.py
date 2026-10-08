@@ -53,7 +53,7 @@ class FixtureHandler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(html.encode())
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             pass
 
 
@@ -129,6 +129,38 @@ def main():
                   'browser_channel': args.browser_channel,
                   'provider_calls': {'models': 0, 'tavily': 0, 'exa': 0},
                   'scope': 'Deterministic browser fixture proof, not live-site or forecast-quality validation.'}
+        # Exercise the registered release executor with a real browser, not a
+        # mocked capture. Only this local harness permits its loopback fixture.
+        from ForecastAgent.runtime.retrieval import RetrievalTask
+        from ForecastAgent.runtime.source_reading import POLICY
+        from ForecastAgent.runtime.contracts import validate
+        from ForecastAgent.runtime.tool_selection import active_tools
+        from ForecastAgent.runtime.source_reading import TOOLS
+        request={'id':'900000','question':'Read the fixture observations',
+            'resolution_criteria':prefix+'/response-data','mode':'live',
+            'pipeline':'collection','acquisition_profile':'collection_v3',
+            'source_reading_policy':POLICY}
+        task=RetrievalTask(args.output/'release-tool-task',request)
+        task.bundle['plan']=[{'id':'n','priority':'critical','condition':'Observation rows',
+                             'query':'Observation rows','expected_source':'Fixture'}]
+        task.bundle['pages'][prefix+'/response-data']=json.loads((args.output/'response-data-candidate.json').read_text())
+        task.save()
+        def fixture_reader(url, **kwargs):
+            return candidate(url,**{**kwargs,'_public_check':allowed,'browser_channel':args.browser_channel})
+        tool_args={'url':prefix+'/response-data','need_ids':['n'],'reason':'Read chart response rows missing from the thin wrapper'}
+        validate(task,'render_source',tool_args,active_tools(task,TOOLS))
+        with patch('ForecastAgent.readers.crawl4ai.render_page',side_effect=fixture_reader):
+            task.execute('render_source',tool_args,'')
+            resumed=RetrievalTask(task.directory,request)
+            cached=resumed.execute('render_source',tool_args,'')
+        rows=resumed.execute('inspect_source_structure',{'url':prefix+'/observations.json','view':'data'},'')
+        assert rows['total']==2
+        assert cached['no_network']
+        assert len(resumed.bundle['fetch_attempts'])==1
+        assert resumed.budget()['page_fetch_remaining']==7
+        assert resumed.bundle['fetch_attempts'][0]['backend']=='crawl4ai'
+        report['registered_release_tools']={'real_browser':True,'structured_rows':rows['total'],
+            'shared_fetch_attempts':1,'duplicate_after_resume_http_calls':0,'source_bound':True}
         save(args.output/'report.json', report)
         print(json.dumps(report, indent=2))
     finally:

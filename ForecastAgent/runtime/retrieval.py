@@ -222,7 +222,7 @@ class RetrievalTask:
             if not any(c['id']=='source_reading' for c in channels):
                 channels.append({'id':'source_reading','kind':'optional_reader','tools':sorted(NAMES),
                     'availability':'implemented_opt_in','cost':'No model or search calls inside the tool',
-                    'credentials':[],'formats':['html_roles','observed_resources','json_csv_rows'],
+                    'credentials':[],'formats':['html_roles','html_table_rows','observed_resources','json_csv_rows'],
                     'limits':'Two browser attempts lifetime, also shared eight-fetch slots; 25 dependencies/20 seconds each. Failed reservations count. Local reads are free.',
                     'temporal_support':'Live browser/follow-up only; saved reads require eligible original bytes.'})
         self.bundle.setdefault("extract_attempts", [])
