@@ -11,6 +11,15 @@ from ForecastAgent.readers.loader import load_response
 
 
 class PairedTrialTests(unittest.TestCase):
+    def test_partial_render_cannot_replace_complete_body(self):
+        from ForecastAgent.acquisition.paired_sources import prefer_capture
+        complete = {'content': 'Complete dated source body', 'body_diagnostics': {'usable_text': True}}
+        partial = {'content': 'Initial browser title', 'capture_status': {'usable_text': True, 'render_complete': False}}
+        self.assertIs(prefer_capture(complete, partial), complete)
+        self.assertIs(prefer_capture(None, partial), partial)
+        denied = {'content': 'HTTP denial', 'capture_status': {'usable_text': False}}
+        self.assertIs(prefer_capture(complete, denied), complete)
+
     def test_resume_preserves_failures_and_checks_capture_hashes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

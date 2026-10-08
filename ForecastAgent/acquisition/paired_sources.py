@@ -95,6 +95,74 @@ def checks(page, rubric):
     return results
 
 
+def prefer_capture(existing, incoming):
+    """A partial render is an additional version, not a complete-body replacement."""
+    if not incoming or not metrics(incoming)['readable']:
+        return existing
+    if (incoming.get('capture_status', {}).get('render_complete') is False and
+            existing and metrics(existing)['readable'] and
+            existing.get('capture_status', {}).get('render_complete') is not False):
+        return existing
+    return incoming
+
+
+def export_preserved_versions(manifest, trial_root, output):
+    """Repackage verified saved captures; never resume or rewrite the live trial."""
+    validate(manifest)
+    trial_root, output = Path(trial_root), Path(output)
+    frozen = json.loads((trial_root/'identity.json').read_text(encoding='utf-8'))
+    if frozen['manifest'] != manifest:
+        raise ValueError('Export manifest differs from original trial')
+    state = json.loads((trial_root/'state.json').read_text(encoding='utf-8'))
+    output.mkdir(parents=True, exist_ok=True)
+    export_identity = {'parent_identity_sha256': file_hash(trial_root/'identity.json'),
+                       'parent_state_sha256': file_hash(trial_root/'state.json'),
+                       'selection_policy': 'complete_body_before_partial_dom_v1',
+                       'code_sha256': file_hash(Path(__file__)), 'network_calls': 0}
+    with task_lock(output):
+        if (output/'identity.json').exists() and json.loads((output/'identity.json').read_text(encoding='utf-8')) != export_identity:
+            raise ValueError('Saved export identity changed')
+        save(output/'identity.json', export_identity)
+        selected = []
+        for case in manifest['cases']:
+            ident = case['request']['id']
+            for arm in ('release', 'candidate'):
+                package = json.loads(Path(case['parent_file']).read_text(encoding='utf-8'))
+                version_rows = []
+                for source in case['sources']:
+                    url = source['url']
+                    stages = ('common', 'reparse', 'candidate') if arm == 'candidate' else ('common', 'release')
+                    primary = None
+                    for stage in stages:
+                        key = ident+':'+stage+':'+url
+                        record = next((a for a in state['attempts'] if a['key'] == key), None)
+                        if not record:
+                            continue
+                        page = read_capture(trial_root, record) if record.get('capture_file') else None
+                        previous = primary
+                        primary = prefer_capture(primary, page)
+                        version_rows.append({'url': url, 'record_key': key, 'status': record['status'],
+                            'capture_file': record.get('capture_file'), 'raw_sha256': record.get('raw_sha256'),
+                            'selected_when_seen': primary is page and page is not None,
+                            'complete_body_preserved': previous is primary and page is not None and
+                                page.get('capture_status', {}).get('render_complete') is False})
+                    if primary:
+                        package['pages'][url] = primary
+                    selected.append({'question_id': ident, 'arm': arm, 'url': url,
+                        'raw_sha256': primary.get('sha256') if primary else None,
+                        'metrics': metrics(primary) if primary else None,
+                        'checks': checks(primary, case['checks']) if primary else []})
+                package['paired_reader_lineage'] = {**export_identity, 'parent_bundle_sha256': case['parent_sha256'],
+                    'arm': arm, 'request': case['request'], 'source_versions': version_rows,
+                    'all_versions_root': str(trial_root.resolve()), 'analysis_run': False, 'submitted': False}
+                save(output/'packages'/ident/(arm+'.json'), package)
+        report = {'schema': 'paired_source_preserved_export_v1', 'identity': export_identity,
+                  'selected': selected, 'provider_calls': {'models': 0, 'tavily': 0, 'exa': 0},
+                  'analysis_run': False, 'submitted': False}
+        save(output/'report.json', report)
+        return report
+
+
 def run(manifest, root, *, browser_channel='chromium', _fetch=None, _release=None, _candidate=None):
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
@@ -169,9 +237,11 @@ def run(manifest, root, *, browser_channel='chromium', _fetch=None, _release=Non
                     if arm == 'candidate':
                         kwargs.update(browser_channel=browser_channel, query=case['request']['question'])
                     page = operation(ident+':'+arm+':'+url, lambda: renderer(url, **kwargs), 'browser_'+arm)
-                    usable = bool(page and metrics(page)['readable'])
-                    if usable:
-                        packages[arm]['pages'][url] = page
+                    existing = packages[arm]['pages'].get(url)
+                    selected = prefer_capture(existing, page)
+                    usable = selected is page and page is not None
+                    if selected:
+                        packages[arm]['pages'][url] = selected
                     rows.append({'question_id': ident, 'source_id': source['id'], 'url': url, 'arm': arm,
                                  'phase': 'live_browser', 'state': 'captured' if page else 'failed',
                                  'admitted_as_replacement': usable, 'metrics': metrics(page) if page else None,
@@ -205,8 +275,14 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--browser-channel', choices=['chromium', 'chrome', 'msedge'], default='chromium')
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--export-preserved', type=Path,
+                        help='Repackage original saved captures into a separate output without network.')
     args = parser.parse_args()
     manifest = json.loads(args.manifest.read_text(encoding='utf-8'))
+    if args.export_preserved:
+        result = export_preserved_versions(manifest, args.output, args.export_preserved)
+        print(json.dumps({'selected_sources': len(result['selected']), 'network_calls': 0}))
+        return
     if not args.execute:
         print(json.dumps(freeze(manifest, args.browser_channel), ensure_ascii=True))
         return

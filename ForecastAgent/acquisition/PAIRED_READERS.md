@@ -88,3 +88,50 @@ Snippet shape may reveal the reader; reviewer masking is not fully blind.
 Promotion requires inspected target evidence, bounded consumption and no
 material regression. Five questions cannot establish forecast accuracy or
 general reliability across all sites.
+
+## Observed pilot results
+
+The frozen October 8 trial completed all ten source selections and nine browser
+pairs. It used ten shared HTTP operations, eighteen browser reservations, eight
+local reparses and **zero** new model, Tavily or Exa calls. Original five parent
+bundles and previous search allowances remained unchanged. All 33 stored
+response/DOM capture files passed checksum verification.
+
+| Observation | Release reader | Crawl4AI reader |
+| --- | ---: | ---: |
+| Fresh readable selected sources / 10 | 8 | 9 |
+| Captured browser results / 9 | 8 | 9 |
+| Explicit deadline-partial DOM captures | 0 | 2 |
+| Allowed routed browser requests | 171 | 201 |
+| Median browser audit elapsed seconds | 5.98 | 7.16 |
+
+Release browser successes are not proof of complete target data. Candidate
+browser captures include two explicitly partial pages. Readability does not
+establish the correct entity, time or metric.
+
+The candidate recovered the TEPCO news index and retained additional NOAA
+station context and parliamentary bill titles. It did not recover the embedded
+ECDC country-count dashboard, NOAA six-minute observations or a FELG-specific
+announcement from this source pool. Navigation/footer years produced misleading
+regex matches, and an April robotic-arm arrival notice is not an October
+operating-status report. The target dates are future at collection time.
+
+The original trial remains immutable. A separate **offline** export retains a
+complete HTTP body when a render ends in partial DOM. The partial versions stay
+in the original capture journal, with independent hashes and timestamps. Use:
+
+```sh
+python -m ForecastAgent.acquisition.paired_sources \
+  --manifest frozen-manifest.json --output snapshots/original-trial \
+  --export-preserved snapshots/preserved-export
+```
+
+This command performs no network requests and binds the original trial identity
+and state hashes. New live trials use the same complete-before-partial selection
+rule. Original pre-correction live ledgers refuse execution after a code change;
+they are not reset or silently rerun.
+
+The promotion decision remains **optional backend only**. The next independent
+capabilities to test are observed iframe/data-response discovery and explicit
+article/table/navigation/footer roles. Source artifacts and the English
+per-question audit are archived outside the public repository.
