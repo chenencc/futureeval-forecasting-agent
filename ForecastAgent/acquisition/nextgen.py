@@ -22,7 +22,8 @@ def now():
 
 def code_identity():
     root = Path(__file__).resolve().parents[2]
-    names = ('ForecastAgent/readers/crawl4ai.py', 'ForecastAgent/acquisition/nextgen.py')
+    names = ('ForecastAgent/readers/crawl4ai.py', 'ForecastAgent/acquisition/nextgen.py',
+             'ForecastAgent/readers/material_structure.py', 'ForecastAgent/readers/network_data.py')
     return {name: hashlib.sha256((root/name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() for name in names}
 
 
@@ -35,6 +36,12 @@ def capability_catalog():
             {'name': 'reparse_saved_html', 'purpose': 'Verify saved bytes, then add Markdown and structured tables without network.',
              'cost': {'network': 0, 'models': 0, 'searches': 0}},
             {'name': 'discover_saved_details', 'purpose': 'Rank observed same-host links with parent hashes; fetch selected details under the remaining page allowance.',
+             'cost': {'network': 0, 'models': 0, 'searches': 0}},
+            {'name': 'discover_embedded_resources', 'purpose': 'List observed iframe, alternate and browser data-request URLs with source provenance. Cross-origin resources require public destination checks.',
+             'cost': {'network': 0, 'models': 0, 'searches': 0}},
+            {'name': 'inspect_source_sections', 'purpose': 'Read source-bound article, table, navigation and footer roles; retain every original body.',
+             'cost': {'network': 0, 'models': 0, 'searches': 0}},
+            {'name': 'read_structured_response', 'purpose': 'Read saved JSON/CSV rows with exact requested parameters and separate reported metadata. Errors are gaps.',
              'cost': {'network': 0, 'models': 0, 'searches': 0}},
         ], 'limits': {'max_pages_per_experiment': 8, 'max_observed_link_depth': 1,
                       'max_scroll_steps': 4, 'automatic_retries': 0},

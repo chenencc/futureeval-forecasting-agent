@@ -132,7 +132,10 @@ def enrich_html(snapshot, *, query='', max_chars=150_000):
             link_rows.append({'url': item.get('href', ''), 'text': str(item.get('text') or '')[:500], 'role': role})
     extras['links_truncated'] = len(link_rows) > 1000
     extras['observed_links'] = link_rows[:1000]
-    result = dict(snapshot, crawl4ai=extras, documents=documents)
+    from ForecastAgent.readers.material_structure import discover_resources, source_sections
+    structure = source_sections(snapshot)
+    result = dict(snapshot, crawl4ai=extras, documents=documents, source_structure=structure)
+    result['embedded_resources'] = discover_resources(snapshot)
     result['documents_truncated'] = bool(snapshot.get('documents_truncated')) or tables_truncated
     result['links'] = list(dict.fromkeys(list(snapshot.get('links', [])) + [r['url'] for r in link_rows[:1000] if r['url']]))
     # Judge the unfiltered body: a filter must never hide a challenge or login.
@@ -233,6 +236,8 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
     from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
     started = time.monotonic()
     guard = RequestGuard(request_limit, started + timeout_ms / 1000, _public_check, validated_url=url)
+    from ForecastAgent.readers.network_data import DataResponseObserver
+    data_observer = DataResponseObserver(url, guard)
     audit = {'backend': 'crawl4ai', 'backend_version': BACKEND_VERSION, 'cache_mode': 'DISABLED',
              'browser_channel': browser_channel,
              'model_calls': 0, 'automatic_retries': 0, 'elapsed_seconds': None}
@@ -248,8 +253,14 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
                 audit['navigation_http_status'] = response.status
                 audit['final_url'] = response.url
         page.on('response', observed_response)
+        page.on('response', data_observer.observe)
         await context.route('**/*', guard.route)
-        await context.route_web_socket('**/*', lambda socket: socket.close())
+        def close_socket(socket):
+            audit.setdefault('transport_gaps', [])
+            if len(audit['transport_gaps']) < 10:
+                audit['transport_gaps'].append({'transport': 'websocket', 'reason': 'Disabled by read-only capture policy'})
+            socket.close()
+        await context.route_web_socket('**/*', close_socket)
         # No service workers can make unaccounted background requests.
         await page.add_init_script("if ('serviceWorker' in navigator) {navigator.serviceWorker.register = () => Promise.reject(new Error('Disabled in acquisition'));}")
         return page
@@ -292,6 +303,9 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
             snapshot['capture_status']['render_complete'] = True
         audit.update(guard.audit(), elapsed_seconds=round(time.monotonic() - started, 3))
         snapshot['browser_audit'] = audit
+        snapshot['data_response_capture'] = data_observer.export()
+        from ForecastAgent.readers.material_structure import discover_resources
+        snapshot['embedded_resources'] = discover_resources(snapshot)
         return snapshot
 
     try:
@@ -299,6 +313,7 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
             await crawler.start()
             return await crawler.arun(url=url, config=config)
         captured = await asyncio.wait_for(execute(), timeout=timeout_ms / 1000)
+        await data_observer.finish()
         # arun() returns a CrawlResultContainer even for a single URL in 0.9.4.
         result = captured[0] if hasattr(captured, '__getitem__') else captured
         html = (result.html or '').encode('utf-8')
@@ -311,6 +326,7 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
             raise ValueError('Final destination is not public')
         return snapshot_from_dom(html, final_url, crawler_success=bool(result.success))
     except Exception as exc:
+        await data_observer.finish()
         audit['failure_type'] = type(exc).__name__
         # No new navigation or dispatch: rescue only the DOM already in memory.
         if isinstance(exc, TimeoutError) and pages:
@@ -323,6 +339,8 @@ async def render_page_async(url, *, retrieved_at, request_limit=25, timeout_ms=2
             except Exception as rescue_error:
                 audit['partial_dom_gap'] = type(rescue_error).__name__
         audit.update(guard.audit(), elapsed_seconds=round(time.monotonic() - started, 3))
+        # Completed data captures survive even when no usable parent DOM exists.
+        audit['data_response_capture'] = data_observer.export()
         raise BrowserCaptureError(str(exc) or type(exc).__name__, audit) from exc
     finally:
         try:

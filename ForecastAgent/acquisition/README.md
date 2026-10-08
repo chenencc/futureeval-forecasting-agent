@@ -140,6 +140,10 @@ the bounded frozen-frontier and untouched live pair specified in the design.
 
 ## Saved-material delivery
 
+[Experimental source reading](SOURCE_READING.md) documents the optional Crawl4AI
+resource discovery, source roles, bounded JSON/CSV archives and observed-resource
+follow-up tool. These capabilities are independent of production agent registration.
+
 [Saved-material handoff](HANDOFF.md) documents the opt-in offline first-request
 packer, exact source/view bindings, protected old-visible text, omission
 manifest, and same-bundle paired replay. It repairs the acquisition-to-analysis

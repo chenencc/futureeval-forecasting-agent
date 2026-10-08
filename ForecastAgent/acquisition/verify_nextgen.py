@@ -19,6 +19,7 @@ class FixtureHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         code = 200
+        kind = 'text/html; charset=utf-8'
         if self.path == '/dynamic':
             html = '<html><body><nav>'+('Navigation menu content. '*25)+'</nav><main id="result">Loading...</main><script>setTimeout(() => {document.querySelector("main").innerHTML = "<article data-loaded=true>Official October release: the policy rate is 4.5%. The rate applies from October 8, 2026.</article>";}, 1200);</script></body></html>'
         elif self.path == '/challenge':
@@ -34,11 +35,21 @@ class FixtureHandler(BaseHTTPRequestHandler):
         elif self.path == '/slow-asset':
             threading.Event().wait(6)
             html = ''
+        elif self.path == '/embedded':
+            html = '<html><body><h1>Official surveillance</h1><p>Data is presented in the embedded dashboard.</p><iframe title="Observed data" src="/response-data"></iframe></body></html>'
+        elif self.path in {'/response-data', '/data-error'}:
+            endpoint = '/observations.json' if self.path == '/response-data' else '/error.json'
+            html = '<html><body><h1>Official observations chart</h1><p>Values are provided by the page data service.</p><canvas></canvas><script>fetch("'+endpoint+'").then(r=>r.json()).then(d=>{window.chartData=d;});</script></body></html>'
+        elif self.path in {'/observations.json', '/error.json'}:
+            kind = 'application/json; charset=utf-8'
+            html = json.dumps({'error': {'message': 'No observations for this date'}} if self.path == '/error.json' else {
+                'metadata': {'station': 'DEMO-17', 'datum': 'MLLW', 'units': 'feet', 'time_zone': 'UTC'},
+                'data': [{'time': '2026-10-08T00:00:00Z', 'value': '6.12'}, {'time': '2026-10-08T00:06:00Z', 'value': '5.90'}]})
         else:
             code = 404
             html = '<html><body>Missing fixture.</body></html>'
         self.send_response(code)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Type', kind)
         self.end_headers()
         try:
             self.wfile.write(html.encode())
@@ -70,7 +81,7 @@ def main():
             return original_launch(browser_type, **dict(kwargs, channel=args.browser_channel))
         patches.enter_context(patch.object(BrowserType, 'launch', launch))
     try:
-        for path in ('/dynamic', '/table', '/challenge', '/denied', '/slow'):
+        for path in ('/dynamic', '/table', '/challenge', '/denied', '/slow', '/response-data', '/embedded', '/data-error'):
             stamp = datetime.now(timezone.utc).isoformat()
             snapshot = candidate(prefix+path, retrieved_at=stamp, _public_check=allowed,
                 wait_for_css='[data-loaded]' if path == '/dynamic' else None,
@@ -95,6 +106,21 @@ def main():
                 assert '4.5%' in snapshot['content']
                 assert not snapshot['capture_status']['render_complete']
                 assert snapshot['render_gaps']
+            elif path in {'/response-data', '/embedded', '/data-error'}:
+                records = snapshot['data_response_capture']['records']
+                payloads = [r['snapshot'] for r in records if r.get('snapshot')]
+                assert len(payloads) == 1, 'The browser data response was not archived'
+                payload = payloads[0]
+                if path == '/data-error':
+                    assert payload['structured_data']['state'] == 'remote_error'
+                    assert not payload['capture_status']['usable_text']
+                else:
+                    assert payload['structured_data']['row_count'] == 2
+                    assert payload['structured_data']['reported_metadata']['$.metadata']['station'] == 'DEMO-17'
+                    assert payload['sha256'] != snapshot['sha256'], 'DOM and data bodies need separate hashes'
+                row['data_response_state'] = payload['structured_data']['state']
+                row['data_rows'] = payload['structured_data'].get('row_count', 0)
+                assert snapshot['data_response_capture']['network_calls_added'] == 0
             else:
                 assert not snapshot['body_diagnostics']['usable_text'], 'A failure became readable evidence'
             assert snapshot['browser_audit']['allowed_requests'] <= 25
