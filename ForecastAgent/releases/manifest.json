@@ -51,7 +51,7 @@
     "ForecastAgent/acquisition/protocol_replay.py": "5b4b115fc0d261a60ef30071fe176502962dd09fac967b812de57c94efbded8c",
     "ForecastAgent/acquisition/README.md": "09f53f652ed93893343c2450bbdb580021df82ceeba681aa9dd1f018869667d9",
     "ForecastAgent/acquisition/recovery.py": "f69aeee6e13e982f881a4f65555cad32a8424dc5a0d98414cd87787042212286",
-    "ForecastAgent/acquisition/RELEASE_SOURCE_TOOLS.md": "a9079c90e241d545c92d12ec7fd9d8279aff982e711a0caea6b29bf0dd7402c0",
+    "ForecastAgent/acquisition/RELEASE_SOURCE_TOOLS.md": "9c065e53507d80da15e70e3168e1e65e180609df093e00dba9bdd66b423cb181",
     "ForecastAgent/acquisition/repair_replay.py": "6338c4685ad24247f50a9f3cbd5444dfae2d6e0bd25923c8a43696800eb5e670",
     "ForecastAgent/acquisition/SOURCE_READING.md": "2d005f7940f5c3626832f002d8927f3b87141844a64fafa8d795093b1c648434",
     "ForecastAgent/acquisition/source_tools.py": "7b96dddef87808229831f15f967f23c14e43c55505781b12d8f12cd834d29c84",
@@ -267,8 +267,7 @@
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027"
   },
-  "development_only": true,
   "source_reading_policy": "crawl4ai_v1",
   "base_release_tag": "v1.0.5",
-  "candidate_name": "v105-source-tools"
+  "release_variant": "crawl4ai.1"
 }

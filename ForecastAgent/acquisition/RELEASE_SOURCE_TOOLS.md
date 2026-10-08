@@ -1,10 +1,11 @@
-# Source-tool integration candidate based on v1.0.5
+# Source-tool integration based on v1.0.5
 
 This branch retains the immutable production `v1.0.5` tag and analysis core.
-Its development manifest enables `source_reading_policy=crawl4ai_v1` in the
-release collector entry point. It is not a retagged production v1.0.5 release.
-The CLI submission guard refuses the development manifest. Production promotion
-requires a new immutable release and its dependency installation.
+The production patch tag `v1.0.5-crawl4ai.1` enables
+`source_reading_policy=crawl4ai_v1` in the release collector entry point.
+The original production v1.0.5 tag remains immutable. Development manifests are
+refused by the CLI submission guard; this production patch has a verified
+production manifest. Its worker installs the pinned optional backend and Chromium.
 
 ## Agent tools
 

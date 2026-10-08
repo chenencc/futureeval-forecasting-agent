@@ -1,13 +1,24 @@
 name: FutureEval official competition worker
 
 on:
+  workflow_dispatch:
+    inputs:
+      monitor_run_id:
+        description: Completed main monitor run with fresh complete snapshots
+        required: true
+        type: string
+      verification_only:
+        description: Verify preserved inventory without model calls or submission
+        required: true
+        default: true
+        type: boolean
   workflow_run:
     workflows: ['FutureEval official question monitor']
     types: [completed]
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 concurrency:
   group: futureeval-official-worker
@@ -15,29 +26,60 @@ concurrency:
 
 jobs:
   compete:
-    if: vars.FORECAST_COMPETITION_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    if: (github.event_name == 'workflow_dispatch' && (inputs.verification_only || vars.FORECAST_COMPETITION_ENABLED == 'true')) || (github.event_name == 'workflow_run' && vars.FORECAST_COMPETITION_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      FORECAST_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
-      FORECAST_MODEL_FALLBACK_SUPER: '1'
+      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '0'
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      OPENROUTER_API_KEY2: ${{ secrets.OPENROUTER2 }}
       METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY2 }}
       EXA_API_KEY: ${{ secrets.EXA_API }}
+      EXA_API_KEY2: ${{ secrets.EXA_API2 }}
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
       FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
+      CRAWL4_AI_BASE_DIRECTORY: ${{ github.workspace }}/snapshots/crawl4ai-cache
+      FORECAST_RELEASE_TAG: v1.0.5-crawl4ai.1
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1.0.1
+          ref: v1.0.5-crawl4ai.1
+      - name: Check out independent infrastructure utilities
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .infrastructure
+          persist-credentials: false
+          sparse-checkout: ForecastAgent/infrastructure
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Verify immutable production release
         run: |
-          test "$(git describe --tags --exact-match)" = "v1.0.1"
+          test "$(git describe --tags --exact-match)" = "v1.0.5-crawl4ai.1"
           echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Validate triggering official monitor
+        id: source
+        uses: actions/github-script@v7
+        env:
+          INPUT_MONITOR_RUN_ID: ${{ inputs.monitor_run_id }}
+          INPUT_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const manual=context.eventName==='workflow_dispatch';
+            const id=manual?process.env.INPUT_MONITOR_RUN_ID:String(context.payload.workflow_run.id);
+            if(!/^[1-9][0-9]*$/.test(id)||!Number.isSafeInteger(Number(id))) throw new Error('Invalid monitor run identity');
+            const {data}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:Number(id)});
+            if(data.name!=='FutureEval official question monitor'||data.head_branch!=='main'||data.conclusion!=='success')
+              throw new Error('A successful official main monitor is required');
+            const artifacts=await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{owner,repo,run_id:Number(id)});
+            if(!artifacts.some(a=>a.name===`futureeval-questions-${id}`&&!a.expired)) throw new Error('Monitor snapshots unavailable');
+            core.setOutput('run_id',id);
+            core.setOutput('submit',!manual||process.env.INPUT_VERIFICATION_ONLY!=='true'?'true':'false');
       - name: Find latest exact official state and legacy collection ledgers
         id: previous
         uses: actions/github-script@v7
@@ -85,25 +127,105 @@ jobs:
       - name: Read triggering complete question snapshots
         uses: actions/download-artifact@v4
         with:
-          name: futureeval-questions-${{ github.event.workflow_run.id }}
-          run-id: ${{ github.event.workflow_run.id }}
+          name: futureeval-questions-${{ steps.source.outputs.run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/incoming
+      - name: Verify restored checkpoint hashes
+        if: steps.previous.outputs.official != ''
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py verify --root snapshots/official
       - name: Install free readers and browser
         run: |
-          python -m pip install -r ForecastAgent/requirements-supplement.txt
+          mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
+          python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
+      - name: Record verified acquisition tool deployment
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from ForecastAgent.readers.crawl4ai import require_backend, BACKEND_VERSION
+          from ForecastAgent.releases.v1_0_5 import verify_release
+          from ForecastAgent.runtime.source_reading import POLICY
+          from ForecastAgent.supplement.stage import save
+          m=verify_release()
+          assert not m.get('development_only')
+          assert m['source_reading_policy']==POLICY
+          require_backend()
+          save(Path('snapshots/official/release-runtime.json'), {
+              'tag':os.environ['FORECAST_RELEASE_TAG'],
+              'commit':os.environ['FORECAST_RELEASE_COMMIT'],
+              'release_version':m['version'], 'source_reading_policy':POLICY,
+              'crawl4ai_version':BACKEND_VERSION, 'browser_channel':'chromium',
+              'model':os.environ['FORECAST_MODEL'], 'budget_reset':False})
+          PY
       - name: Acquire analyze and submit eligible questions
-        run: python -m ForecastAgent.competition.live --root snapshots/official --snapshots snapshots/incoming --legacy-root snapshots/official/legacy --limit 5 --submit
+        run: |
+          if [ -n "$RESTORED_LEGACY_RUN" ]; then
+            echo "Legacy collection state is preserved; explicit migration is required before new collection."
+            exit 1
+          fi
+          args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
+          if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
+          python .infrastructure/ForecastAgent/infrastructure/provider_failover.py --root snapshots/official/provider-transport --exa-root snapshots/official/exa-transport --module ForecastAgent.releases.v1_0_5 -- "${args[@]}"
         env:
+          SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
+          RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}
           FORECAST_COMPLETED_RESTORE_RUNS: ${{ steps.previous.outputs.completed }}
           FORECAST_RESTORED_STATE_ROOT: snapshots/official
+      - name: Split recovery checkpoint and changed evidence
+        if: always() && hashFiles('snapshots/official/campaign.json') != ''
+        id: split
+        run: python .infrastructure/ForecastAgent/infrastructure/storage.py split --root snapshots/official --output snapshots/storage-export
+      - name: Archive changed evidence
+        if: always() && steps.split.outcome == 'success'
+        id: evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-evidence-${{ github.run_id }}
+          path: snapshots/storage-export/evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Preserve official campaign and delivery receipts
-        if: always()
+        if: always() && steps.evidence.outcome == 'success'
+        id: checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-state
+          path: snapshots/storage-export/checkpoint/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Emergency full recovery if storage export failed
+        if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/official/campaign.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: futureeval-official-state
           path: snapshots/official/
           include-hidden-files: true
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 90
+      - name: Publish small private listener control ledger
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: futureeval-official-control
+          path: snapshots/storage-export/checkpoint/campaign.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Rotate superseded recovery checkpoints
+        if: always() && steps.checkpoint.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const artifacts=await github.paginate(github.rest.actions.listArtifactsForRepo,{owner,repo,per_page:100});
+            const current=artifacts.find(a=>String(a.id)==='${{ steps.checkpoint.outputs.artifact-id }}'&&!a.expired);
+            if(!current || current.name!=='futureeval-official-state') throw new Error('Uploaded checkpoint not confirmed');
+            for(const name of ['futureeval-official-state','futureeval-official-control']) {
+              const checkpoints=artifacts.filter(a=>a.name===name&&!a.expired)
+                .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||b.id-a.id);
+              for(const artifact of checkpoints.slice(3,13))
+                await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
+            }

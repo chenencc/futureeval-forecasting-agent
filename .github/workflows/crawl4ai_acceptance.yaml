@@ -51,10 +51,10 @@ jobs:
           python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
       - name: Verify local parsing, accounting and release compatibility
-        run: python -m unittest ForecastAgent.tests.test_source_reading_runtime ForecastAgent.tests.test_source_tools ForecastAgent.tests.test_material_structure ForecastAgent.tests.test_paired_sources ForecastAgent.tests.test_crawl4ai_adapter ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair ForecastAgent.tests.test_production_collection ForecastAgent.tests.test_runtime_contracts ForecastAgent.tests.test_release_1_0_5.ProductionReleaseTests
-      - name: Verify development release guard and frozen analysis
+        run: python -m unittest ForecastAgent.tests.test_source_reading_runtime ForecastAgent.tests.test_source_tools ForecastAgent.tests.test_material_structure ForecastAgent.tests.test_paired_sources ForecastAgent.tests.test_crawl4ai_adapter ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair ForecastAgent.tests.test_production_collection ForecastAgent.tests.test_runtime_contracts ForecastAgent.tests.test_release_1_0_5
+      - name: Verify production release guard and frozen analysis
         run: |
-          python -c "from ForecastAgent.releases.v1_0_5 import verify_release; from ForecastAgent.acquisition.pipeline import verify_baseline; m=verify_release(); assert m['development_only']; assert m['source_reading_policy']=='crawl4ai_v1'; verify_baseline()"
+          python -c "from ForecastAgent.releases.v1_0_5 import verify_release; from ForecastAgent.acquisition.pipeline import verify_baseline; m=verify_release(); assert not m.get('development_only'); assert m['source_reading_policy']=='crawl4ai_v1'; verify_baseline()"
       - name: Verify actual browser rendering on deterministic fixtures
         run: python -m ForecastAgent.acquisition.verify_nextgen --output snapshots/crawl4ai-ci-proof
       - uses: actions/upload-artifact@v4
