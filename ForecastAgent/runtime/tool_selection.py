@@ -42,6 +42,27 @@ def active_tools(task, tools, forced=None):
     b=task.bundle
     budget=task.budget()
     excluded=set()
+    from ForecastAgent.runtime.source_reading import enabled as source_enabled, source as saved_source
+    if source_enabled(task):
+        original_urls=[]
+        for url in {**task.catalog(),**b['pages']}:
+            try:
+                _, page=saved_source(task,url)
+                if not task.cutoff or eligible(page,task.cutoff): original_urls.append(url)
+            except ValueError:
+                pass
+        if not original_urls: excluded.add('inspect_source_structure')
+        if not b.get('observed_resources') or b['mode']!='live' or budget['page_fetch_remaining']<=0:
+            excluded.add('follow_source_resource')
+        if b['mode']!='live' or budget['page_fetch_remaining']<=0 or budget.get('source_browser_remaining',0)<=0:
+            excluded.add('render_source')
+        for entry in tools:
+            if entry['function']['name']=='inspect_source_structure' and original_urls:
+                entry['function']['parameters']['properties']['url']['enum']=original_urls
+            if entry['function']['name']=='render_source' and task.catalog():
+                entry['function']['parameters']['properties']['url']['enum']=list({**task.catalog(),**b['pages']})
+            if entry['function']['name']=='follow_source_resource' and b.get('observed_resources'):
+                entry['function']['parameters']['properties']['resource_id']['enum']=list(b['observed_resources'])
     if ready(task) and not b['control'].get('forced_close'):
         excluded.add('finish_collection')
     if b['plan'] is not None:

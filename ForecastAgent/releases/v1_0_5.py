@@ -102,6 +102,7 @@ def collect(request, retrieval):
     verify_release()
     request=copy.deepcopy(request)
     request.update(acquisition_strategy='intelligent_materials_v3',drain_unseen_reads_before_stall=True,
+                   source_reading_policy='crawl4ai_v1',
                    recover_sources_before_stall=True,
                    source_recovery_policy_sha256=hashlib.sha256((Path(__file__).parents[1]/'runtime/source_frontier.py').read_bytes().replace(b'\r\n',b'\n')).hexdigest(),
                    exa_search_policy='required')

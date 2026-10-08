@@ -210,6 +210,21 @@ class RetrievalTask:
         self.bundle.setdefault('update_attempts', [])
         self.bundle.setdefault('channel_decisions', {})
         self.bundle.setdefault('selected_sources', {})
+        policy=request.get('source_reading_policy','disabled')
+        if policy not in {'disabled','crawl4ai_v1'}:
+            raise ValueError('Unknown source reading policy')
+        if policy=='crawl4ai_v1' and self.bundle['pipeline']!='collection':
+            raise ValueError('Source reading tools are collection only')
+        if policy=='crawl4ai_v1':
+            self.bundle.setdefault('observed_resources',{})
+            from ForecastAgent.runtime.source_reading import NAMES
+            channels=self.bundle['channel_catalog']['channels']
+            if not any(c['id']=='source_reading' for c in channels):
+                channels.append({'id':'source_reading','kind':'optional_reader','tools':sorted(NAMES),
+                    'availability':'implemented_opt_in','cost':'No model or search calls inside the tool',
+                    'credentials':[],'formats':['html_roles','observed_resources','json_csv_rows'],
+                    'limits':'Two browser attempts lifetime, also shared eight-fetch slots; 25 dependencies/20 seconds each. Failed reservations count. Local reads are free.',
+                    'temporal_support':'Live browser/follow-up only; saved reads require eligible original bytes.'})
         self.bundle.setdefault("extract_attempts", [])
         self.bundle.setdefault("source_leads", {})
         self.bundle.setdefault("control", {"consecutive_errors": 0, "forced_close": False})
@@ -244,6 +259,8 @@ class RetrievalTask:
     def page_view(self, page, start=0):
         from ForecastAgent.readers.quality import body_diagnostics
         diagnostic = body_diagnostics(page['content'])
+        if self.bundle['request'].get('source_reading_policy')=='crawl4ai_v1' and page.get('structured_data',{}).get('state')=='rows_available':
+            diagnostic.update(usable_text=True,state='structured_rows')
         if not diagnostic['usable_text']:
             return {'url':page.get('url',''), 'content':'', 'blocked':True,
                     'body_diagnostics':diagnostic, 'warning':'Unreadable body; do not count this capture as readable material.'}
@@ -256,7 +273,8 @@ class RetrievalTask:
         if type(start) is not int or start < 0 or start > len(text):
             raise ValueError("Invalid page offset")
         end = min(start+18000, len(text))
-        view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content", "documents"}}
+        view = {k: v for k, v in page.items() if k not in {"raw_response_base64", "rows", "content", "documents",
+                "crawl4ai", "source_structure", "embedded_resources", "data_response_capture", "structured_data"}}
         if 'page_date_metadata' in view:
             view['page_date_metadata']={k:v for k,v in view['page_date_metadata'].items() if k!='tables'}
         view.update(content=text[start:end], next_start=end if end < len(text) else None, saved_chars=len(text))
@@ -281,12 +299,15 @@ class RetrievalTask:
             export_intelligence(self.bundle, self.directory)
 
     def budget(self):
-        return {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
+        result = {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
                 'exa_search_remaining': self.exa_limit - len(self.bundle['exa_searches']),
                 "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
                 'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
                 'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
                 "basic_extract_batches_remaining": MAX_EXTRACT_BATCHES - len(self.bundle["extract_attempts"])}
+        if self.bundle['request'].get('source_reading_policy')=='crawl4ai_v1':
+            result['source_browser_remaining']=max(0,2-sum(a.get('channel')=='source_browser' for a in self.bundle['fetch_attempts']))
+        return result
 
     def store_page(self, url, page):
         """Keep old raw versions so previously recorded coordinates remain usable."""
@@ -497,6 +518,9 @@ class RetrievalTask:
             validate(self, name, args)
         if not isinstance(args, dict):
             raise ValueError('Tool arguments must be an object')
+        from ForecastAgent.runtime.source_reading import NAMES, execute as source_execute
+        if name in NAMES:
+            return source_execute(self,name,args,key)
         if name in {'inspect_materials', 'assess_materials'}:
             from ForecastAgent.runtime.intelligent_acquisition import enabled, frontier, assess, TOOLS
             if not enabled(self):
@@ -650,6 +674,10 @@ class RetrievalTask:
             from ForecastAgent.runtime.collection_actions import primary_rescue
             selected_keys = {canonical_url(u) for u in urls}
             rescue = [r for r in primary_rescue(self) if canonical_url(r['url']) in selected_keys]
+            from ForecastAgent.runtime.source_reading import browser_repairs
+            browser_candidates = browser_repairs(self, rescue)
+            browser_keys = {canonical_url(r['url']) for r in browser_candidates}
+            rescue = [r for r in rescue if canonical_url(r['url']) not in browser_keys]
             rescue_result = None
             if args.get('rescue_failed', True) and rescue:
                 try:
@@ -666,6 +694,8 @@ class RetrievalTask:
                             row.update(self.page_view(page))
                             row['ok'] = not row.get('blocked', False)
             result={'reads':outcomes, 'rescue':rescue_result, **({'located_material':[]} if self.raw_recall else locate(self,args))}
+            if browser_candidates:
+                result['browser_repair_candidates'] = browser_candidates
             if len(b['fetch_attempts']) > fetches_before or any(r.get('ok') for r in outcomes):
                 b['control']['read_after_discovery'] = len(b['searches']) + len(b['exa_searches'])
             from ForecastAgent.runtime.collection_actions import named_primary, STATUS_WORDS
@@ -984,11 +1014,15 @@ class RetrievalTask:
                 try:
                     fetcher = (lambda source: fetch_public_page(source,preserve_raw_on_failure=True)) if self.raw_recall else fetch_public_page
                     page = fetch_structured(url, self.cutoff, fetcher) or fetcher(url)
+                    from ForecastAgent.runtime.source_reading import enrich
+                    page = enrich(self,page)
                     text = page["content"]
                     fresh_diagnostics = body_diagnostics(text, documents=page.get('documents', []))
                     fresh_diagnostics['table_count'] = (page.get('body_diagnostics') or {}).get('table_count', fresh_diagnostics['table_count'])
+                    structured_ok = self.bundle['request'].get('source_reading_policy')=='crawl4ai_v1' and page.get('structured_data',{}).get('state')=='rows_available'
+                    if structured_ok: fresh_diagnostics.update(usable_text=True,state='structured_rows')
                     page['body_diagnostics'] = fresh_diagnostics
-                    if not page.get('body_diagnostics',{}).get('usable_text',True) or len(text.strip()) < 80 or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
+                    if not page.get('body_diagnostics',{}).get('usable_text',True) or len(text.strip()) < 80 and not structured_ok or re.search(r"just a moment|verify you are human|enable javascript and cookies", text, re.I):
                         b.setdefault('failed_captures',[]).append({'url':url,'page':page,'reason':'Unreadable or blocked body'})
                         raise ValueError("Empty page or access interstitial")
                     page["published_at"] = hits[0].get("published_date")
@@ -1229,6 +1263,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             available_tools = [t for t in available_tools if t['function']['name'] != 'search_exa']
         from ForecastAgent.runtime.intelligent_acquisition import configure_tools
         available_tools = configure_tools(task, available_tools)
+        from ForecastAgent.runtime.source_reading import configure as configure_source_tools
+        available_tools = configure_source_tools(task,available_tools)
         if collection:
             task.bundle['control']['operating_clock_utc'] = utc_now()
             current_session['http_attempt_limit'] = COLLECTION_HTTP_PER_DISPATCH
@@ -1236,6 +1272,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             current_session['transport_failure_limit'] = MODEL_FAILURES_PER_DISPATCH
             from ForecastAgent.runtime.guidance import collection_system
             system = collection_system(task, catalog)
+            from ForecastAgent.runtime.source_reading import enabled as source_enabled, guide as source_guide
+            if source_enabled(task): system += source_guide()
             for entry in available_tools:
                 if entry['function']['name'] == 'search_tavily':
                     entry['function']['description'] = f'Primary basic discovery, at most {task.search_limit} lifetime attempts. Use concrete task entities/events, not internal IDs. Failures count.'

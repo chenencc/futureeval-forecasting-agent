@@ -86,6 +86,7 @@ def identity(request, supplement_network):
     paths += ['ForecastAgent/acquisition/pipeline.py', 'ForecastAgent/acquisition/recovery.py',
               'ForecastAgent/runtime/source_frontier.py', 'ForecastAgent/prompts/intelligent_materials.md',
               'ForecastAgent/tools/registry.py', 'ForecastAgent/runtime/contracts.py',
+              'ForecastAgent/runtime/source_reading.py',
               'ForecastAgent/runtime/tool_selection.py', 'ForecastAgent/supplement/stage.py']
     for prefix in ('ForecastAgent/readers', 'ForecastAgent/evidence', 'ForecastAgent/providers', 'ForecastAgent/skills', 'ForecastAgent/prompts'):
         paths.extend(str(p.relative_to(ROOT)).replace('\\', '/') for p in (ROOT/prefix).rglob('*')

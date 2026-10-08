@@ -132,6 +132,18 @@ def primary_rescue(task):
 
 
 def next_action(task):
+    action = _next_action(task)
+    if not action or action['tool'] != 'extract_failed_pages':
+        return action
+    from ForecastAgent.runtime.source_reading import browser_repairs
+    repairs = browser_repairs(task, action['candidates'])
+    if repairs:
+        return {'tool': 'render_source', 'candidates': repairs,
+                'instruction': 'Choose one failed named HTML source for bounded free browser repair before paid Extract. Preserve its exact URL and associated need IDs. A failed or interrupted browser reservation is not retried.'}
+    return action
+
+
+def _next_action(task):
     from ForecastAgent.runtime.intelligent_acquisition import enabled, repaired
     if enabled(task):
         if repaired(task):
