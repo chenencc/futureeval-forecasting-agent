@@ -13,6 +13,7 @@ from ForecastAgent.tests.test_material_structure import page
 from ForecastAgent.tests.test_collection import URL, call
 from ForecastAgent.tools.registry import COLLECTION_TOOLS
 from ForecastAgent.runtime.tool_selection import active_tools
+from ForecastAgent.runtime.contracts import validate, ContractError
 
 REQUEST={**LIVE,'source_reading_policy':tools.POLICY}
 
@@ -25,6 +26,42 @@ def rendered(body='A current official report with detailed publication informati
 
 
 class SourceRuntimeTests(TestCase):
+    def test_dynamic_constraints_do_not_alias_unrelated_arguments(self):
+        with TemporaryDirectory() as root:
+            task=self.task(root)
+            task.bundle['source_leads']['https://example.org/unsaved']={'url':'https://example.org/unsaved','origin':'question_resolution_criteria'}
+            task.execute('inspect_source_structure',{'url':URL,'view':'resources'},'')
+            available=active_tools(task,tools.TOOLS)
+            inspect=next(t['function']['parameters']['properties'] for t in available if t['function']['name']=='inspect_source_structure')
+            follow=next(t['function']['parameters']['properties'] for t in available if t['function']['name']=='follow_source_resource')
+            self.assertEqual(inspect['url']['enum'],[URL])
+            self.assertNotIn('enum',follow['reason'])
+            with self.assertRaises(ContractError):
+                validate(task,'inspect_source_structure',{'url':'https://example.org/unsaved','view':'sections'},available)
+            self.assertEqual(active_tools(task,tools.TOOLS,'inspect_source_structure')[0]['function']['parameters']['properties']['url']['enum'],[URL])
+            self.assertNotIn('enum',tools.TOOLS[0]['function']['parameters']['properties']['url'])
+
+    def test_html_table_rows_and_json_view_guidance(self):
+        with TemporaryDirectory() as root:
+            task=self.task(root)
+            task.bundle['pages'][URL]=page('<table><tr><th>Date</th><th>Value</th></tr><tr><td>2026-10-08</td><td>6.2</td></tr></table>',url=URL)
+            data=task.execute('inspect_source_structure',{'url':URL,'view':'data'},'')
+            self.assertEqual(data['items'][0]['cells'],['2026-10-08','6.2'])
+            self.assertEqual(data['items'][0]['columns'],['Date','Value'])
+            task.bundle['pages'][URL]=page('{"data":[{"v":1}]}','application/json',URL)
+            hint=task.execute('inspect_source_structure',{'url':URL,'view':'resources'},'')
+            self.assertEqual(hint['available_views'],['data'])
+            self.assertEqual(hint['state'],'unsupported_view')
+
+    def test_terminal_task_cannot_follow_resources(self):
+        with TemporaryDirectory() as root:
+            task=self.task(root)
+            rid=task.execute('inspect_source_structure',{'url':URL,'view':'resources'},'')['items'][0]['resource_id']
+            task.bundle['result']={'status':'partial'}
+            with self.assertRaisesRegex(ValueError,'unfinished'):
+                task.execute('follow_source_resource',{'resource_id':rid,'need_ids':['n'],'reason':'Read data'},'')
+            self.assertEqual(task.bundle['fetch_attempts'],[])
+
     def failed_primary(self, root, request=REQUEST, url=URL):
         task = self.task(root, request)
         task.bundle['pages'].clear()

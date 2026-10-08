@@ -13,13 +13,13 @@ from ForecastAgent.supplement.stage import now
 POLICY = 'crawl4ai_v1'
 MAX_RENDERS = 2
 TOOLS = [
-    tool('inspect_source_structure', 'Read saved HTML roles or JSON/CSV rows and observed iframe/data addresses. No network. Navigation/footer remain archived. Returned resources are leads, never relevance or truth verdicts.',
-         {'url': STRING, 'view': {'type':'string','enum':['resources','sections','data']},
+    tool('inspect_source_structure', 'Read saved HTML roles, HTML table/JSON/CSV rows or observed iframe/data addresses. No network. offset >= 0; limit is 1-10 (default 10); use next_offset to continue. Navigation/footer remain archived. Resources are leads, never truth verdicts.',
+         {'url': dict(STRING), 'view': {'type':'string','enum':['resources','sections','data']},
           'offset': {'type':'integer','minimum':0}, 'limit': {'type':'integer','minimum':1,'maximum':10}}, ['url','view']),
     tool('follow_source_resource', 'Fetch ONE exact resource_id returned by inspect_source_structure. Shares the existing eight fetch attempts; duplicate successes/failures are not re-fetched. New timestamps and parent hashes are preserved.',
-         {'resource_id':STRING,'need_ids':{'type':'array','items':STRING},'reason':STRING}, ['resource_id','need_ids','reason']),
+         {'resource_id':dict(STRING),'need_ids':{'type':'array','items':dict(STRING)},'reason':dict(STRING)}, ['resource_id','need_ids','reason']),
     tool('render_source', 'Repair an accepted failed/thin HTML source or observed embedded page with Crawl4AI. At most TWO browser attempts per task, also spending shared eight-fetch slots. 25 dependency requests/20-second deadline. Legacy browser fallback spends a separate reservation; repeated URL attempts do not retry. Not for PDFs or historical captures.',
-         {'url':STRING,'need_ids':{'type':'array','items':STRING},'reason':STRING}, ['url','need_ids','reason']),
+         {'url':dict(STRING),'need_ids':{'type':'array','items':dict(STRING)},'reason':dict(STRING)}, ['url','need_ids','reason']),
 ]
 NAMES = {t['function']['name'] for t in TOOLS}
 
@@ -104,6 +104,11 @@ def bounded_view(task, url, args):
     offset, limit = args.get('offset',0), args.get('limit',10)
     result = {'url':key,'source_sha256':page['sha256'],'retrieved_at_utc':page.get('retrieved_at_utc'),
               'network_calls':0,'truth_verified':False,'relevance_verified':False}
+    supported = ['resources','sections','data'] if page.get('content_type') in {'text/html','application/xhtml+xml'} else ['data']
+    result['available_views'] = supported
+    if args['view'] not in supported:
+        return {**result,'state':'unsupported_view','items':[],'total':0,'next_offset':None,
+                'instruction':'Use an available view for this saved source format.'}
     if args['view']=='resources':
         value = discover_resources(page)
         rows=[]
@@ -137,8 +142,8 @@ def bounded_view(task, url, args):
 
 
 def follow(task, args, key):
-    if task.bundle['mode']!='live':
-        raise ValueError('Observed resource follow-up is live only')
+    if task.bundle['mode']!='live' or task.bundle.get('result'):
+        raise ValueError('Observed resource follow-up requires an unfinished live collection')
     record=task.bundle.get('observed_resources',{}).get(args['resource_id'])
     if not record:
         raise ValueError('Use a resource_id returned by inspecting the saved parent')

@@ -184,7 +184,23 @@ def structured_rows(snapshot, *, max_rows=2000, max_chars=150000):
         result.update(state='http_error', http_status=code, row_count=0)
         return result
     tables = []
-    if kind in {'text/csv', 'application/csv'}:
+    if kind in {'text/html', 'application/xhtml+xml'}:
+        tree = html_tree(snapshot)
+        for table in tree.xpath('//table[not(.//table)]')[:10]:
+            records=[]
+            headings=[]
+            for index, row in enumerate(table.xpath('.//tr')[:max_rows+2]):
+                cells=row.xpath('./th | ./td')
+                values=[re.sub(r'\s+', ' ', cell.text_content()).strip() for cell in cells[:40]]
+                if not values: continue
+                if index==0 and all(str(cell.tag).lower()=='th' for cell in cells):
+                    headings=values
+                else:
+                    records.append(values)
+            tables.append((tree.getroottree().getpath(table),headings,records))
+        result['html_cell_grid_warning']='Literal cell order; rowspan/colspan are not expanded. Inspect saved HTML for ambiguous alignment. Navigation tables remain archived and are not target observations.'
+        result['structure_truncated']=len(tree.xpath('//table[not(.//table)]'))>10
+    elif kind in {'text/csv', 'application/csv'}:
         reader = csv.reader(io.StringIO(text))
         original_headers = next(reader, [])
         headers = original_headers[:40]
@@ -233,7 +249,7 @@ def structured_rows(snapshot, *, max_rows=2000, max_chars=150000):
             result['reported_metadata'] = {'bounded_json_preview': encoded[:16000]}
             result['metadata_truncated'] = True
     else:
-        raise ValueError('Expected saved JSON or CSV data')
+        raise ValueError('Expected saved HTML table, JSON or CSV data')
     remaining, count = max_chars, 0
     for path, headers, records in tables:
         rows = []
