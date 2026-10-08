@@ -15,7 +15,7 @@ import threading
 from urllib.parse import urlsplit
 import zipfile
 
-from ForecastAgent.market_pulse.financial import issuer_profile, instruction, research_contract, url_scope, page_scope
+from ForecastAgent.market_pulse.financial import issuer_profile, instruction, research_contract, brief_contract, url_scope, page_scope
 from ForecastAgent.market_pulse.quality import diagnostics, page_diagnostics, BASE_DIAGNOSTICS
 from ForecastAgent.supplement.stage import digest
 
@@ -32,7 +32,8 @@ def prepare(request):
     result = copy.deepcopy(request)
     profile = issuer_profile(result)
     policy = {'version': profile['schema'], 'source_sha256': policy_hashes(),
-              'issuer': profile, 'research': research_contract(profile)}
+              'issuer': profile, 'research': research_contract(profile),
+              'model_view': 'compact_financial_roles_v1', 'model_output_tokens': 6000}
     if 'financial_acquisition_policy' in result and result['financial_acquisition_policy'] != policy:
         raise ValueError('Financial acquisition policy changed; an explicit new experiment is required')
     result['financial_acquisition_policy'] = policy
@@ -105,8 +106,9 @@ def acquisition_policy():
         raise RuntimeError('Financial acquisition policy requires an isolated child process')
     replacements = []
     try:
-        from ForecastAgent.runtime import retrieval, guidance, task_protocol, source_frontier, gap_repair
+        from ForecastAgent.runtime import retrieval, guidance, task_protocol, source_frontier, gap_repair, context
         from ForecastAgent.supplement import stage
+        from ForecastAgent.providers import ultra
         original_frontier = source_frontier.unread_candidates
         original_inventory = gap_repair.inventory
         original_parse = stage.parse_saved
@@ -114,6 +116,8 @@ def acquisition_policy():
         original_view = task_protocol.task_view
         original_catalog = retrieval.RetrievalTask.catalog
         original_page_view = retrieval.RetrievalTask.page_view
+        original_model = ultra.ask_ultra
+        original_bounded = context.bounded
         def checked_diagnostics(content, **kwargs):
             result = diagnostics(content, **kwargs)
             key = hashlib.sha256(content.encode()).hexdigest()
@@ -171,8 +175,27 @@ def acquisition_policy():
 
         def view(task):
             result = original_view(task)
-            result['financial_acquisition'] = research_contract(issuer_profile(task.bundle['request']))
+            result['financial_acquisition'] = brief_contract(issuer_profile(task.bundle['request']))
             return result
+
+        def model(*args, **kwargs):
+            # Hidden reasoning and the structured tool result share the cap.
+            # This changes output capacity, never HTTP/search lifetime limits.
+            kwargs.setdefault('max_output_tokens', 6000)
+            return original_model(*args, **kwargs)
+
+        def bounded(value, *args, **kwargs):
+            # Plan replies repeat immutable rule fields once per target. They
+            # are administrative bindings, not newly read source passages.
+            # Remove repeated quote text only from the model projection; keep
+            # coordinates/hashes, authoritative task fields and native replies.
+            payload = original_bounded(value, *args, **kwargs)
+            if isinstance(payload, dict) and payload.get('tool') == 'plan_evidence':
+                for need in payload.get('data', {}).get('plan', []):
+                    for span in need.get('question_spans', []):
+                        span.pop('quote', None)
+                payload['financial_projection_notice'] = 'Repeated immutable field quotes omitted from this administrative plan reply. Field IDs, hashes and coordinates remain. Exact original rules are in task_protocol; native reply and plan are unchanged.'
+            return payload
 
         def catalog(task):
             profile = issuer_profile(task.bundle['request'])
@@ -203,7 +226,8 @@ def acquisition_policy():
         for original, replacement in ((BASE_DIAGNOSTICS, checked_diagnostics),
                 (original_frontier, frontier), (original_inventory, inventory),
                 (original_parse, parse), (stage.analysis_overlay, overlay),
-                (original_system, system), (original_view, view)):
+                (original_system, system), (original_view, view), (original_model, model),
+                (original_bounded, bounded)):
             # Keep the adapter's own captured baseline callable unchanged.
             replace_function(original, replacement)
         retrieval.RetrievalTask.catalog = catalog

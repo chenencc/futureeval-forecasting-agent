@@ -289,4 +289,32 @@ python -m ForecastAgent.market_pulse.pilot run --root <new-pilot-directory> --id
 This selects Apple EPS, Microsoft revenue, Amazon revenue, Meta EPS and NVIDIA
 revenue. It runs two acquisition children concurrently and preserves all task
 results; it does not analyze or submit. The current inventory/runner/financial
-regression suite has **34 passing tests**.
+regression suite has **42 passing tests**.
+
+### Explicit empty-start recovery
+
+The five-question pilot exposed output truncation and instruction duplication
+before any discovery or capture. The financial model view now uses compact roles,
+exact question handles and a 6,000-token output ceiling. This does not increase
+the number of model requests, searches or captures allowed by the release.
+Administrative plan projections omit repeated original-field quotations while
+retaining their hashes and coordinates. Original task fields, source-reading
+replies, full plans and transcripts remain on disk.
+
+`recovery.py` creates a separate recovery directory only for audited, empty
+pre-search failures. It checks all completed model receipt hashes, copies every
+prior attempt and session, and changes only the financial policy identity and
+resumable result. It rejects acquired material, changed question/budget fields,
+an exhausted three-execution cap, active/incomplete pilots and reused directories.
+No quota is reset. The source directory must remain byte-identical.
+
+```text
+python -m ForecastAgent.market_pulse.recovery --source <finished-empty-pilot> --root <new-recovery-directory>
+python -m ForecastAgent.market_pulse.pilot run --root <new-recovery-directory> --ids <same-frozen-ids>
+```
+
+Use the same Super model and disabled fallback environment during preparation
+and execution. Secure provider transport must be installed before HTTP imports.
+The recovery receipt records original source-file hashes, cumulative model
+attempts and preserved limits. Recovery is acquisition-only; it cannot analyze
+or submit forecasts. Passing offline context replay does not certify live recall.

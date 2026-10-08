@@ -8,12 +8,14 @@ import re
 from urllib.parse import urlsplit
 
 from ForecastAgent.competition.queue import load, save
+from ForecastAgent.market_pulse.financial import issuer_profile
 
 
 def issuer_domain(url, issuer):
     host = (urlsplit(url).hostname or '').lower()
-    domain = 'tesla.com' if issuer == 'Tesla' else 'apple.com' if issuer == 'Apple' else None
-    return bool(domain and (host == domain or host.endswith('.' + domain)))
+    # A lexical domain hint only, never proof that a page is official.
+    label = re.sub(r'[^a-z0-9]', '', issuer.lower())
+    return bool(label and label in host.split('.'))
 
 
 def page_view(url, page, issuer):
@@ -42,11 +44,13 @@ def run(root):
         folder = root / 'tasks' / row['id']
         result = load(folder / 'collection-result.json')
         native = folder / 'retrieval/release-1.0.5'
-        raw = load(native / 'collection/bundle.json')
-        marker = load(folder / 'retrieval/bundle.json').get('release_acquisition') or {}
+        raw = load(native / 'collection/bundle.json') if (native / 'collection/bundle.json').exists() else {}
+        adapter = folder / 'retrieval/bundle.json'
+        marker = (load(adapter).get('release_acquisition') or {}) if adapter.exists() else {}
         package = load(native / marker['package_file']) if marker.get('package_file') else (
             load(native / 'package.json') if (native / 'package.json').exists() else raw)
-        issuer = 'Tesla' if row['id'] in ('46190', '46197') else 'Apple'
+        requests = load(root / row['input'])
+        issuer = issuer_profile(requests)['issuer_label'] or 'unknown'
         pages = [page_view(url, page, issuer) for url, page in package.get('pages', {}).items()]
         journals = []
         for attempt in raw.get('model_attempts', []):
@@ -66,7 +70,6 @@ def run(root):
         captures = [p for p in pages if (p.get('body_diagnostics') or {}).get('usable_text')]
         searches = [{k: s.get(k) for k in ('query', 'topic', 'search_role', 'status', 'options', 'error')}
                     for s in raw.get('searches', [])]
-        requests = load(root / row['input'])
         reports.append({'id': row['id'], 'issuer': issuer, 'title': row['title'],
                         'state': result['status'], 'collector_termination': (raw.get('result') or {}).get('termination_reason'),
                         'target_unit': requests.get('unit'), 'type': requests['question_type'],
@@ -81,11 +84,23 @@ def run(root):
                         'material_needs': raw.get('plan', []),
                         'material_assessments': raw.get('material_assessments', []),
                         'supplement_manifest': str(native / 'supplement'),
+                        'logical_tavily_basic': len(raw.get('searches', [])),
+                        'logical_exa': len(raw.get('exa_searches', [])),
+                        'cache_events': raw.get('cache_events', []),
+                        'financial_excluded_pages': [page_view(u, p, issuer)
+                            for u, p in package.get('financial_audit_pages', {}).items()],
                         'analysis_run': False, 'submitted': False})
     receipts = [load(p) for p in (root / 'provider-transport').glob('*/attempts/*.json')]
     exa_receipts = [load(p) for p in (root / 'exa-transport').rglob('attempts/*.json')]
-    shared = sorted(set(p['source_sha256'] for p in reports[0]['pages'] if p['source_sha256']) &
-                    set(p['source_sha256'] for p in reports[1]['pages'] if p['source_sha256']))
+    shared_counts = Counter(sha for row in reports for sha in
+        {p['source_sha256'] for p in row['pages'] if p['source_sha256']})
+    executed = root / 'executed-runner-source.py'
+    preimport = None
+    if executed.exists():
+        if hashlib.sha256(executed.read_bytes()).hexdigest() != manifest['runner_sha256']:
+            raise ValueError('Executed runner archive changed')
+        source = executed.read_text(encoding='utf-8')
+        preimport = source.find('runpy.run_path') < source.find('from ForecastAgent.') if 'runpy.run_path' in source else False
     report = {'schema': 'market-pulse-pilot-capture-audit-v1',
               'reviewed_at_utc': datetime.now(timezone.utc).isoformat(),
               'scope': 'Saved raw capture, provider usage and gaps; relevance requires manual reading.',
@@ -94,14 +109,17 @@ def run(root):
               'known_model_tokens': sum((a.get('usage') or {}).get('total_tokens', 0) for r in reports for a in r['provider_journals']),
               'unknown_model_usage_attempts': sum(not isinstance((a.get('usage') or {}).get('total_tokens'), int) for r in reports for a in r['provider_journals']),
               'provider_http_receipts': dict(Counter(f"{r.get('provider')}:{r.get('endpoint')}:{r.get('http_status')}" for r in receipts)),
-              'transport_receipt_coverage_note': 'Initial executed runner installed transport after some release imports. Receipts cover Extract only; successful model journals and basic Search records remain available. This is fixed before imports in the next runner revision, without rerunning this pilot.',
+              'transport_preimport_installation': preimport,
+              'transport_receipt_coverage_note': 'Provider receipts and hashed native journals are audited separately. Pre-import installation is checked against the archived executed runner; missing receipts are not zero consumption.',
               'exa_transport_receipts': len(exa_receipts),
-              'logical_tavily_basic': sum(len(load(root / 'tasks' / r['id'] / 'retrieval/release-1.0.5/collection/bundle.json').get('searches', [])) for r in reports),
-              'logical_exa': sum(len(load(root / 'tasks' / r['id'] / 'retrieval/release-1.0.5/collection/bundle.json').get('exa_searches', [])) for r in reports),
-              'tavily_limit_respected': all((r.get('resources') or {}).get('tavily_basic_attempts', 0) <= 3 for r in reports),
-              'exa_limit_respected': all((r.get('resources') or {}).get('exa_attempts', 0) <= 1 for r in reports),
-              'tesla_shared_capture_hashes': shared,
-              'cross_task_cache_enabled': False, 'financial_customization': 'Unchanged release acquisition baseline',
+              'logical_tavily_basic': sum(r['logical_tavily_basic'] for r in reports),
+              'logical_exa': sum(r['logical_exa'] for r in reports),
+              'tavily_limit_respected': all(r['logical_tavily_basic'] <= 3 for r in reports),
+              'exa_limit_respected': all(r['logical_exa'] <= 1 for r in reports),
+              'shared_capture_hashes': sorted(sha for sha, count in shared_counts.items() if count >= 2),
+              'cross_task_cache_observed': any(r['cache_events'] for r in reports),
+              'financial_customization': manifest.get('financial_customization'),
+              'audit_source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'analysis_run': False, 'submitted': False, 'budget_reset': False, 'questions': reports}
     save(root / 'audit.json', report)
     return report

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from ForecastAgent.market_pulse.financial import issuer_profile, url_scope, page_scope, research_contract
+from ForecastAgent.market_pulse.financial import issuer_profile, url_scope, page_scope, research_contract, brief_contract
 from ForecastAgent.market_pulse.quality import diagnostics, page_diagnostics
 from ForecastAgent.market_pulse.collection import acquisition_policy, prepare, overlay, scoped_pages
 from ForecastAgent.supplement.stage import digest, save
@@ -181,7 +181,8 @@ class GuidanceTests(unittest.TestCase):
                 self.assertIn('Baseline instructions', text)
                 self.assertIn('published_financial_history', text)
                 self.assertEqual(view['question']['resolution_criteria'], request()['resolution_criteria'])
-                self.assertEqual(view['financial_acquisition'], research_contract(issuer_profile(request())))
+                self.assertEqual(view['financial_acquisition'], brief_contract(issuer_profile(request())))
+                self.assertLess(len(json.dumps(view['financial_acquisition'])), 1500)
         self.assertIs(guidance.collection_system, original)
 
     def test_release_collector_runs_inside_policy_with_bound_request(self):
@@ -196,6 +197,31 @@ class GuidanceTests(unittest.TestCase):
             self.assertEqual(collect(request(), Path('unused')), {'stub': True})
         self.assertIn('financial_acquisition_policy', observed['request'])
         self.assertFalse(any('AMD' in r['url'] for r in observed['rows']))
+
+    def test_model_output_capacity_and_request_count_are_separate(self):
+        from ForecastAgent.providers import ultra
+        with patch.object(ultra, 'ask_ultra', return_value={'test': True}) as provider:
+            with acquisition_policy():
+                self.assertEqual(ultra.ask_ultra([], 'nonsecret-test'), {'test': True})
+            self.assertEqual(provider.call_count, 1)
+            self.assertEqual(provider.call_args.kwargs['max_output_tokens'], 6000)
+
+    def test_plan_projection_preserves_native_quotes_and_source_replies(self):
+        from ForecastAgent.runtime import context
+        plan = {'tool': 'plan_evidence', 'data': {'plan': [{'question_spans': [{'quote': 'Original rule', 'sha256': 'hash', 'field': 'background'}]}]}}
+        source = {'tool': 'read_document', 'data': {'content': 'Full source passage'}}
+        messages = [{'role': 'tool', 'content': json.dumps(payload)} for payload in (plan, source)]
+        task = SimpleNamespace(bundle={'messages': messages})
+        def check(task):
+            projected = [context.bounded(json.loads(m['content'])) for m in task.bundle['messages']]
+            self.assertNotIn('quote', projected[0]['data']['plan'][0]['question_spans'][0])
+            self.assertEqual(projected[1], source)
+            return projected
+        with patch.object(context, 'collection_context', side_effect=check):
+            with acquisition_policy():
+                context.collection_context(task)
+        self.assertIs(task.bundle['messages'], messages)
+        self.assertEqual(json.loads(messages[0]['content']), plan)
 
 
 if __name__ == '__main__':

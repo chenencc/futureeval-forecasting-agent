@@ -123,4 +123,11 @@ def research_contract(profile):
 
 
 def instruction(profile):
-    return '\nFinancial acquisition objectives (research routing, not amended resolution rules):\n' + json.dumps(research_contract(profile))
+    return '\nFinancial acquisition guidance:\n' + json.dumps(brief_contract(profile))
+
+
+def brief_contract(profile):
+    """A small model view; full research objectives stay in the frozen request."""
+    return {'issuer': profile['issuer_label'], 'metric': profile['metric'],
+        'roles': [r['role'] for r in research_contract(profile)['objectives']],
+        'instruction': 'Start with ONE short critical need for already published issuer financial history; add at most one useful need for available drivers/guidance/dated estimates. Collect quarter tables and original units; GAAP EPS differs from adjusted EPS. Pending future release is metadata, not a prerequisite for currently available research. Copy exact original_question_handles into question_refs, one or two relevant handles per need. Never put the operating date or guessed reporting dates in condition; research dates belong only in query. Keep conditions concise. Check saved issuer identity; calendars and press indexes are discovery leads. Export genuine gaps within the existing budget; do not infer event absence.'}
