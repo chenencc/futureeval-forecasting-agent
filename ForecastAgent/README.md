@@ -1,5 +1,9 @@
 # ForecastAgent
 
+For the optional next-generation browser and saved-HTML experiment based on
+release 1.0.5, see [Crawl4AI research and integration](CRAWL4AI_RESEARCH.md).
+
+
 For release 1.0.4, its immutable entrypoint and cutover/rollback contracts, see
 [release documentation](releases/README.md). It retains release 1.0.3 acquisition
 and the release 1.0.1 analysis core, with complete original-context delivery.

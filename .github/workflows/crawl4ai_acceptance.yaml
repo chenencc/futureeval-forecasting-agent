@@ -1,0 +1,38 @@
+name: Crawl4AI experimental acquisition acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crawl4ai-experimental-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CRAWL4_AI_BASE_DIRECTORY: ${{ github.workspace }}/snapshots/crawl4ai-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install optional backend and existing readers
+        run: |
+          mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
+          python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
+          python -m playwright install --with-deps chromium
+      - name: Verify local parsing, accounting and release compatibility
+        run: python -m unittest ForecastAgent.tests.test_crawl4ai_adapter ForecastAgent.tests.test_supplement ForecastAgent.tests.test_gap_repair
+      - name: Verify actual browser rendering on deterministic fixtures
+        run: python -m ForecastAgent.acquisition.verify_nextgen --output snapshots/crawl4ai-ci-proof
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crawl4ai-experimental-proof
+          path: snapshots/crawl4ai-ci-proof/
+          retention-days: 30
