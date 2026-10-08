@@ -851,3 +851,33 @@ coverage and prospective forecast quality remain unvalidated.
 
 Independent final audit:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-saved-report-20261009-final.json`.
+
+## Authorized four-question delivery, 2026-10-09
+
+`manual_delivery.py` freezes existing independently generated distributions and
+their private explanations. It performs no collection, analysis, quota reset or
+scheduling. Fresh authenticated account, tournament participation, leaf rules,
+scales, deadlines and own forecast history are checked before delivery. The
+existing atomic forecast/private-comment transport reserves each POST and
+reconciles uncertain outcomes before any further delivery attempt.
+
+All four authorized forecasts were accepted with HTTP 201 and matching platform
+readback: Apple EPS (46176), Microsoft revenue (46195), Amazon revenue (46193)
+and Meta EPS (46181). Apple uses the additive saved-source distribution; the
+other three retain their exact previously audited distributions. The full
+201-point CDFs and private comments were delivered, not only the medians.
+
+The initial burst received HTTP 429 on reads after Apple was accepted. Its
+receipt and the original execution/progress were preserved. The resumed run
+spaced requests by at least eight seconds and reused Apple's receipt. Only GET
+429 responses receive bounded retries that respect `Retry-After`; POST is never
+automatically retried. A short adjacent parent-read cache is copied on access
+and invalidated before POST so confirmation reads remain fresh.
+
+Four offline pacing/cache tests and 16 existing transport tests passed. Final
+confirmation: **4/4 matching own forecasts and private-comment receipts**, zero
+new model/search calls. This one-off authorization does not enable a continuous
+Market Pulse worker or change the frozen release or production listener.
+
+Frozen plan, original failure, recovery copy, preflight snapshots and receipts:
+`E:/metaculus_data/tournaments/market-pulse-26q4/deliveries/financial-four-20261009/report.json`.
