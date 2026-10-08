@@ -7,12 +7,17 @@ from ForecastAgent.market_pulse.financial_chain import finite, obj
 
 def fiscal_period(text):
     text = str(text)
+    # A comparison period never establishes the observation or forecast period.
+    text = re.sub(r'(?:compared\s+(?:with|to)|versus)\s+(?:the\s+)?(?:first|second|third|fourth)\s+quarter\s+(?:of\s+)?20\d{2}', '', text, flags=re.I)
     match = re.search(r'Q([1-4])\s*FY\s*(20\d{2})', text, re.I)
     if match:
         return int(match[1]), int(match[2])
     match = re.search(r'fiscal\s+(20\d{2})\s+(first|second|third|fourth)\s+quarter', text, re.I)
     if match:
         return ('first', 'second', 'third', 'fourth').index(match[2].lower()) + 1, int(match[1])
+    match = re.search(r'\b(first|second|third|fourth)\s+quarter\s+(?:of\s+)?(20\d{2})\b', text, re.I)
+    if match:
+        return ('first', 'second', 'third', 'fourth').index(match[1].lower()) + 1, int(match[2])
     return None
 
 
@@ -20,14 +25,42 @@ def period(v):
     return fiscal_period(v.get('period_interpretation') or v.get('period_claim'))
 
 
+def guidance_applies(v, target):
+    """Match explicit local forecast labels or a source-bound remaining scope.
+
+    No quarter is inferred from a calendar date. An explicit reviewed fiscal
+    interpretation takes precedence; local original text can supply a missing
+    label, while comparison-period clauses are excluded.
+    """
+    if v.get('period_interpretation'):
+        return period(v) == target
+    refs = v.get('period_original_refs', [])
+    local = refs[0]['quote'] if refs else v.get('period_claim', '')
+    explicit = fiscal_period(local)
+    if explicit:
+        return explicit == target
+    remaining = re.search(r'remaining\s+quarters\s+of\s+(20\d{2})', local, re.I)
+    if remaining and int(remaining[1]) == target[1]:
+        observations = {fiscal_period(r['quote']) for r in refs[1:]}
+        observations.discard(None)
+        return len(observations) == 1 and next(iter(observations))[1] == target[1] and next(iter(observations))[0] < target[0]
+    return period(v) == target
+
+
 def templates(variables, allowed, financial):
+    target = fiscal_period(financial.get('target_period', ''))
+    if not target:
+        raise ValueError('An explicit target fiscal quarter is required')
     vs = [v for v in variables if v['fact_id'] in allowed]
     mapping = {v['fact_id']: v for v in vs}
-    guides = [v for v in vs if v['metric'] == 'revenue' and v['role'] == 'management_guidance']
+    guides = [v for v in vs if v['metric'] == 'revenue' and v['role'] == 'management_guidance'
+        and guidance_applies(v, target)]
     result = []
-    guide_periods = {v.get('period_interpretation') or v.get('period_claim') for v in guides}
-    if len(guides) == 2 and len(guide_periods) == 1 and None not in guide_periods and all(v['normalized_unit'] == 'USD' for v in guides):
+    guide_sources = {v['original_row_ref'].get('url') for v in guides}
+    if len(guides) == 2 and len(guide_sources) == 1 and all(v['normalized_unit'] == 'USD' for v in guides):
         guides.sort(key=lambda v: v['normalized_value'])
+        if not 0 < guides[0]['normalized_value'] < guides[1]['normalized_value']:
+            raise ValueError('Guidance endpoints must form a positive increasing range')
         refs = {'guidance_lower': guides[0]['fact_id'], 'guidance_upper': guides[1]['fact_id']}
         if financial['metric'] == 'quarterly_revenue':
             result.append({'method': 'guidance_midpoint', 'refs': refs,
@@ -36,6 +69,10 @@ def templates(variables, allowed, financial):
             for ni in vs:
                 if ni['metric'] != 'net_income' or ni['role'] != 'actual' or ni['basis'] != 'GAAP' or not period(ni):
                     continue
+                observation = period(ni)
+                lag = (target[1] - observation[1]) * 4 + target[0] - observation[0]
+                if not 1 <= lag <= 4:
+                    continue
                 revenues = [v for v in vs if v['metric'] == 'revenue' and v['role'] == 'actual' and v['basis'] == 'GAAP' and period(v) == period(ni)]
                 shares = [v for v in vs if v['metric'] == 'diluted_shares' and v['role'] == 'actual' and v['basis'] == 'GAAP' and period(v) == period(ni)]
                 if len(revenues) != 1 or len(shares) != 1:
@@ -43,24 +80,28 @@ def templates(variables, allowed, financial):
                 costs = [v['fact_id'] for v in vs if v['metric'] == 'one_off' and period(v) == period(ni)
                     and re.search(r'legal|severance|pretax|pre-tax', v['original_row_ref']['quote'], re.I)
                     and not re.search(r'income tax charge', v['original_row_ref']['quote'], re.I)]
-                taxes = [v for v in vs if v['metric'] == 'tax_rate' and v['role'] == 'management_guidance']
+                taxes = [v for v in vs if v['metric'] == 'tax_rate' and v['role'] == 'management_guidance'
+                    and guidance_applies(v, target) and v['normalized_unit'] == 'fraction'
+                    and 0 <= v['normalized_value'] <= 1]
                 taxes.sort(key=lambda v: v['normalized_value'])
                 source_refs = {**refs, 'net_income': ni['fact_id'], 'prior_revenue': revenues[0]['fact_id'],
                     'shares': shares[0]['fact_id'], 'pretax_costs': costs}
-                if len(taxes) == 2:
+                if len(taxes) == 2 and len({v['original_row_ref'].get('url') for v in taxes}) == 1:
                     source_refs.update(tax_lower=taxes[0]['fact_id'], tax_upper=taxes[1]['fact_id'])
                 result.append({'method': 'net_margin_projection', 'refs': source_refs,
                     'predictor_period': period(ni),
                     'growth_rate_meaning': 'Assumed relative change in PRIOR NET MARGIN, not a revenue growth rate.',
                     'cost_removed_fraction_meaning': 'Fraction of identified prior pretax costs that will not recur; not an observed future fact.'})
     if financial['metric'] == 'gaap_diluted_eps':
-        target = fiscal_period(financial['target_period'])
         for v in vs:
             if (target and v['metric'] == 'diluted_eps' and v['basis'] == 'GAAP' and v['role'] == 'actual'
                     and period(v) == (target[0], target[1] - 1)):
                 result.append({'method': 'comparable_quarter_eps_growth', 'refs': {'prior_eps': v['fact_id']},
                     'predictor_period': period(v),
                     'growth_rate_meaning': 'Assumed year-over-year EPS growth from the SAME fiscal quarter of the prior year.'})
+    # Prefer the most recent compatible margin predictor; retain alternatives.
+    result.sort(key=lambda t: (t['method'] != 'net_margin_projection',
+        tuple(-x for x in reversed(t.get('predictor_period', (0, 0))))))
     for i, template in enumerate(result, 1):
         template['template_id'] = 'T' + str(i)
         ids = set(value for value in template['refs'].values() if isinstance(value, str))
@@ -102,9 +143,11 @@ def evaluate(choice, candidates):
         if g or removal or shares_change:
             raise ValueError('Guidance already includes growth; the guidance-midpoint baseline accepts no additional growth, cost or share adjustment')
         anchor = (v('guidance_lower', 'USD') + v('guidance_upper', 'USD')) / 2
-        center = anchor * (1 + g); unit = 'USD'
-        equation = '(guidance_lower + guidance_upper) / 2 * (1 + growth_rate)'
-        sensitivities = [{'growth_rate': rate, 'value': anchor * (1 + rate), 'probability': None} for rate in sorted({g - .02, g, g + .02})]
+        center = anchor; unit = 'USD'
+        equation = '(guidance_lower + guidance_upper) / 2'
+        # Published endpoints are scenario anchors, never probability quantiles.
+        sensitivities = [{'guidance_endpoint': role, 'value': v(role, 'USD'), 'probability': None}
+            for role in ('guidance_lower', 'guidance_upper')]
     elif t['method'] == 'comparable_quarter_eps_growth':
         if removal or shares_change:
             raise ValueError('Comparable EPS growth already includes shares; separate adjustments forbidden')

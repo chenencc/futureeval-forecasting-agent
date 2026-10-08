@@ -695,3 +695,73 @@ trial isolated from the production worker.
 
 Final independent audit:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-review-four-20261008-final.json`.
+
+## Compact source-bound financial experiment, 2026-10-09
+
+`compact_trial.py` reuses completed source-interpretation diagnostics and hashes
+the previous independent request. The original question, exact evidence library
+and canonical variable rows must match the previous exposure byte for byte.
+Source approvals remain fallible diagnostics; original full archives are kept.
+Acquisition, source-review reservations and previous analyst budgets are preserved.
+
+Typed templates now require target-period revenue guidance, both endpoints from
+the same source, compatible fiscal-period tax guidance and recent prior net
+income/share data. Local original forecast labels such as "third quarter 2026"
+are recognized; prior-year comparison clauses cannot establish the target.
+"Remaining quarters" tax guidance requires an original report-quarter label and
+an explicitly covered year. No fiscal quarter is inferred from a calendar date.
+
+The bounded stage uses no Super call for a fixed revenue-guidance midpoint and
+one Super call per EPS template. The assumption schema fixes speculative cost
+removal and share changes to zero in the central projection. A nonzero growth
+assumption must cite original financial predictors. Historical costs remain
+unweighted sensitivity cases; references do not prove a future assumption.
+Apple's complete approved context includes observed EPS-growth predictors that
+the previous corrective projection omitted.
+
+One Mercury outcome head per task reads the same original source exposure,
+without analyst assumptions, calculated centers, scenario values or previous
+forecasts. Other independent model diagnostic heads are omitted. Literal source
+bindings, dimensional calculations and distribution uncertainty checks run
+offline. No automatic average, arbitrary distribution widening or calibrated
+probability claim is introduced.
+
+### Four-case local observation
+
+All six physical requests returned HTTP 200 on the primary credential:
+**2 Super + 4 Mercury**, **72,889 reported tokens**, zero unknown usage and USD 0
+reported cost. The previous four final derivation/decision stages used eight
+physical requests and **219,183 tokens**: conditional stage consumption is down
+**66.7%**. The entire preceding source-review/correction experiment used 16
+requests and 619,112 tokens. That total includes source review now reused, so it
+is not a fair from-scratch cost comparison. New questions may need source review.
+
+| Target | Previous independent median | New independent median | Program or analyst observation |
+| --- | ---: | ---: | --- |
+| Apple Q4 FY2026 EPS, USD/share | 2.0369 | 2.0120 | Super cites 19%/22% observed EPS growth, assumes 20% future growth; program projection 2.22, unverified |
+| Microsoft Q1 FY2027 revenue, USD billion | 90.5792 | 90.4753 | Program guidance midpoint 90.4; no analyst request |
+| Amazon Q3 FY2026 revenue, USD billion | 200.5630 | 199.3816 | Program guidance midpoint 199.5; no additional guidance-growth multiplier |
+| Meta Q3 FY2026 EPS, USD/share | 6.3519 | 6.2446 | Persistence projection 6.3487; speculative cost disappearance excluded from the center |
+
+All four 201-point CDFs are format-valid. Microsoft and Amazon's 10th percentiles
+lie below the platform range: respectively **below USD 90.2 billion** and
+**below USD 198 billion**. An open tail is preserved rather than filled with an
+invented point estimate. Apple and Meta's new 80-percent widths are 0.4639 and
+1.5348 USD/share; wider intervals are not evidence of improved calibration.
+
+The executed gate accepted one of two EPS analyst responses. It incorrectly
+rejected Meta's zero-growth premise because its references included tax rates.
+Tax, one-off expense and diluted-share evidence are valid financial context.
+The corrected gate replays the saved generation offline and accepts it, with
+**zero additional provider calls**. `compact_audit.py` records original and replay
+acceptance separately and preserves the executed source, rejection and raw
+response. Independent probabilities are unchanged by this post-generation gate.
+
+**123 offline tests** pass; the 245-file release remains unchanged. Four development
+cases support mechanism and cost observations only. First-publication error
+history, source-interpretation accuracy, out-of-sample performance and probability
+coverage remain unvalidated. Zero questions are marked ready for automatic
+delivery; no forecasts were submitted and the production worker was not changed.
+
+Final immutable audit:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-compact-four-20261009-final.json`.
