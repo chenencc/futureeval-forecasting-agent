@@ -41,10 +41,12 @@ jobs:
       EXA_API_KEY2: ${{ secrets.EXA_API2 }}
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
       FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
+      CRAWL4_AI_BASE_DIRECTORY: ${{ github.workspace }}/snapshots/crawl4ai-cache
+      FORECAST_RELEASE_TAG: v1.0.5-crawl4ai.1
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1.0.5
+          ref: v1.0.5-crawl4ai.1
       - name: Check out independent infrastructure utilities
         uses: actions/checkout@v4
         with:
@@ -57,7 +59,7 @@ jobs:
           python-version: '3.11'
       - name: Verify immutable production release
         run: |
-          test "$(git describe --tags --exact-match)" = "v1.0.5"
+          test "$(git describe --tags --exact-match)" = "v1.0.5-crawl4ai.1"
           echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Validate triggering official monitor
         id: source
@@ -134,8 +136,29 @@ jobs:
         run: python .infrastructure/ForecastAgent/infrastructure/storage.py verify --root snapshots/official
       - name: Install free readers and browser
         run: |
-          python -m pip install -r ForecastAgent/requirements-supplement.txt
+          mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
+          python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
+      - name: Record verified acquisition tool deployment
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from ForecastAgent.readers.crawl4ai import require_backend, BACKEND_VERSION
+          from ForecastAgent.releases.v1_0_5 import verify_release
+          from ForecastAgent.runtime.source_reading import POLICY
+          from ForecastAgent.supplement.stage import save
+          m=verify_release()
+          assert not m.get('development_only')
+          assert m['source_reading_policy']==POLICY
+          require_backend()
+          save(Path('snapshots/official/release-runtime.json'), {
+              'tag':os.environ['FORECAST_RELEASE_TAG'],
+              'commit':os.environ['FORECAST_RELEASE_COMMIT'],
+              'release_version':m['version'], 'source_reading_policy':POLICY,
+              'crawl4ai_version':BACKEND_VERSION, 'browser_channel':'chromium',
+              'model':os.environ['FORECAST_MODEL'], 'budget_reset':False})
+          PY
       - name: Acquire analyze and submit eligible questions
         run: |
           if [ -n "$RESTORED_LEGACY_RUN" ]; then
