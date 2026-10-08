@@ -289,7 +289,7 @@ python -m ForecastAgent.market_pulse.pilot run --root <new-pilot-directory> --id
 This selects Apple EPS, Microsoft revenue, Amazon revenue, Meta EPS and NVIDIA
 revenue. It runs two acquisition children concurrently and preserves all task
 results; it does not analyze or submit. The current inventory/runner/financial
-regression suite has **42 passing tests**.
+regression suite has **43 passing tests**.
 
 ### Explicit empty-start recovery
 
@@ -318,3 +318,11 @@ and execution. Secure provider transport must be installed before HTTP imports.
 The recovery receipt records original source-file hashes, cumulative model
 attempts and preserved limits. Recovery is acquisition-only; it cannot analyze
 or submit forecasts. Passing offline context replay does not certify live recall.
+
+For a still-empty task with no frozen plan, an explicit final recovery can use
+`--ids <failed-id> --seed-published-history`. The generic template is validated
+by the release tool before execution. It binds published financial-history
+material to original question handles; it does not infer settlement facts. Prior
+invalid plans, failure counts, sessions and provider attempts remain preserved.
+Only the terminal plan latch is removed after successful plan validation. The
+same three-execution lifetime guard still applies.

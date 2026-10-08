@@ -55,7 +55,46 @@ def release_request(request):
     return result
 
 
-def prepare(source, root):
+def seed_history(collection):
+    """Bind a generic research objective through the release's own validator.
+
+    This is not an inferred settlement rule, factual assessment or forecast.
+    The invalid model plans and their failure counters remain in the transcript.
+    """
+    from ForecastAgent.runtime.retrieval import RetrievalTask
+    from ForecastAgent.runtime.intelligent_acquisition import question_handles
+    from ForecastAgent.market_pulse.financial import issuer_profile
+    from ForecastAgent.market_pulse.collection import acquisition_policy
+    bundle = load(collection / 'bundle.json')
+    if bundle.get('plan') is not None:
+        raise ValueError('A frozen plan cannot be replaced by a recovery template')
+    original_result = copy.deepcopy(bundle['result'])
+    with acquisition_policy():
+        task = RetrievalTask(collection, bundle['request'])
+        task.bundle['result'] = None
+        profile = issuer_profile(task.bundle['request'])
+        metric = 'GAAP diluted earnings per share' if profile['metric'] == 'gaap_diluted_eps' else 'reported revenue'
+        refs = [h['id'] for h in question_handles(task) if h['field'] in {'question', 'resolution_criteria'}]
+        args = {'needs': [{'id': 'published_financial_history',
+            'condition': f"Acquire already published {profile['issuer_label']} quarterly {metric} tables, original units and comparable prior-year figures as available predictor material.",
+            'priority': 'critical', 'expected_source': 'Issuer investor relations earnings releases or SEC filings',
+            'query': f"{profile['issuer_label']} latest quarterly earnings {metric} investor relations",
+            'rule_time_fields': [], 'question_refs': refs}]}
+        reply = task.execute('plan_evidence', args, '')
+        task.bundle['financial_recovery']['program_history_template'] = {
+            'arguments': args, 'validated_reply': reply, 'semantic_verified': False,
+            'previous_terminal_control': {k: copy.deepcopy(task.bundle['control'].get(k))
+                for k in ('material_plan_stop', 'material_stop_reason')},
+            'scope': 'Available predictor acquisition only; original settlement rules remain authoritative.'}
+        # A successfully validated plan resolves this local terminal latch.
+        # Lifetime plan-failure history, model receipts and resource caps survive.
+        task.bundle['control'].pop('material_plan_stop', None)
+        task.bundle['control'].pop('material_stop_reason', None)
+        task.bundle['result'] = original_result
+        task.save()
+
+
+def prepare(source, root, *, ids=None, seed_published_history=False):
     source, root = Path(source).resolve(), Path(root).resolve()
     if root.exists() or root.is_relative_to(source) or source.is_relative_to(root):
         raise ValueError('Recovery needs a new disjoint directory')
@@ -73,7 +112,11 @@ def prepare(source, root):
     originals = native_manifest(source)
     prepared = []
     # Validate all five inputs and receipts before creating any target files.
-    for row in manifest['rows']:
+    selected = set(pilot.selected_ids(ids)) if ids is not None else None
+    source_rows = [row for row in manifest['rows'] if selected is None or row['id'] in selected]
+    if selected is not None and {r['id'] for r in source_rows} != selected:
+        raise ValueError('Recovery selection is absent from the frozen source pilot')
+    for row in source_rows:
         if pilot.sha(source / row['input']) != row['input_sha256']:
             raise ValueError('Frozen input changed')
         native = source / 'tasks' / row['id'] / 'retrieval/release-1.0.5'
@@ -94,8 +137,10 @@ def prepare(source, root):
         fixed['financial_recovery'] = {'source_bundle_sha256': pilot.sha(native / 'collection/bundle.json'),
             'original_result': copy.deepcopy(bundle['result']), 'created_at_utc': pilot.now(),
             'budget_reset': False, 'preserved_model_attempts': len(bundle['model_attempts'])}
+        if bundle.get('financial_recovery'):
+            fixed['financial_recovery']['previous_recovery'] = copy.deepcopy(bundle['financial_recovery'])
         for key in bundle:
-            if key not in {'request', 'request_hash', 'result'} and fixed[key] != bundle[key]:
+            if key not in {'request', 'request_hash', 'result', 'financial_recovery'} and fixed[key] != bundle[key]:
                 raise ValueError('Recovery modified the prior ledger')
         prepared.append((row, native, request, frozen, fixed))
     root.mkdir(parents=True)
@@ -107,6 +152,8 @@ def prepare(source, root):
         save(destination / 'identity.json', frozen)
         save(destination / 'state.json', {'stage': 'collection', 'identity_sha256': pipeline.digest(frozen)})
         save(destination / 'collection/bundle.json', fixed)
+        if seed_published_history:
+            seed_history(destination / 'collection')
         save(root / row['input'], request)
         rows.append({**row, 'input_sha256': pilot.sha(root / row['input'])})
         receipts.append({'id': row['id'], 'model_attempts_preserved': len(fixed['model_attempts']),
@@ -114,7 +161,9 @@ def prepare(source, root):
             'original_collection_files_sha256': native_manifest(native / 'collection')})
     manifest = {**manifest, 'created_at_utc': pilot.now(), 'rows': rows,
         'runner_sha256': pilot.sha(pilot.__file__), 'financial_policy_source_sha256': policy_hashes(),
-        'new_pilot': False, 'recovery_from': str(source), 'budget_reset': False}
+        'new_pilot': False, 'recovery_from': str(source), 'budget_reset': False,
+        'program_history_template': seed_published_history,
+        'recovery_runner_sha256': pilot.sha(__file__)}
     (root / 'executed-runner-source.py').write_bytes(Path(pilot.__file__).read_bytes())
     save(root / 'manifest.json', manifest)
     save(root / 'recovery-receipt.json', {'source': str(source), 'source_files_sha256': originals,
@@ -128,6 +177,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--ids', help='Only empty failed IDs from the frozen source pilot')
+    parser.add_argument('--seed-published-history', action='store_true')
     args = parser.parse_args()
-    result = prepare(args.source, args.root)
+    result = prepare(args.source, args.root,
+                     ids=args.ids.split(',') if args.ids else None,
+                     seed_published_history=args.seed_published_history)
     print(json.dumps({'prepared': len(result['rows']), 'budget_reset': False}))

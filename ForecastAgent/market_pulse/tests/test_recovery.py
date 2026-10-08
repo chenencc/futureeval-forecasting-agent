@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from ForecastAgent.market_pulse.recovery import eligible, without_policy
+from ForecastAgent.market_pulse.recovery import eligible, without_policy, seed_history, release_request
 
 
 class RecoveryTests(unittest.TestCase):
@@ -47,6 +47,34 @@ class RecoveryTests(unittest.TestCase):
     def test_only_policy_is_removed_for_identity_comparison(self):
         self.assertEqual(without_policy({'question': 'immutable', 'limit': 3,
             'financial_acquisition_policy': {'old': True}}), {'question': 'immutable', 'limit': 3})
+
+    def test_generic_history_template_uses_validator_without_resetting_failures(self):
+        from ForecastAgent.acquisition.pipeline import prepare
+        from ForecastAgent.market_pulse.collection import prepare as financial_prepare
+        from ForecastAgent.runtime.retrieval import RetrievalTask
+        from ForecastAgent.competition.queue import load
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            request, _ = prepare(release_request(financial_prepare({
+                'id': '123', 'question': 'First earnings per share? (Apple)',
+                'resolution_criteria': 'Use the first official GAAP diluted EPS release.',
+                'background': '', 'fine_print': ''})))
+            task = RetrievalTask(root, request)
+            task.bundle.update(financial_recovery={'budget_reset': False},
+                result={'incomplete': True, 'resumable': True},
+                sessions=[{'id': 1}, {'id': 2}])
+            task.bundle['control']['material_plan_failures'] = [{'error': 'prior invalid plan'}] * 2
+            task.bundle['control']['material_plan_stop'] = 'plan_repair_limit'
+            task.save()
+            before = load(root / 'bundle.json')
+            seed_history(root)
+            after = load(root / 'bundle.json')
+            self.assertIn('GAAP diluted earnings per share', after['plan'][0]['condition'])
+            for key in ('model_attempts', 'sessions', 'acquisition_limits', 'request'):
+                self.assertEqual(before.get(key), after.get(key))
+            self.assertEqual(before['control']['material_plan_failures'], after['control']['material_plan_failures'])
+            self.assertNotIn('material_plan_stop', after['control'])
+            self.assertFalse(after['financial_recovery']['program_history_template']['semantic_verified'])
 
 
 if __name__ == '__main__':
