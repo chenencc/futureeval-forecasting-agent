@@ -171,7 +171,7 @@ concurrent request bounds, interrupted reservations, resume hashes and the
 legacy supplement seam. Additional real-source replay and live evidence are
 saved outside source code under `snapshots/crawl4ai-next-20261008`.
 
-Before production adoption, run the manual Linux workflow, then a bounded
+Before production adoption, require Linux acceptance and a bounded
 question-level paired collection trial. Review target metric/date/issuer recall,
 not just technical readability. Decide whether browser lifecycle pooling is
 needed after measuring memory and latency. Existing production release and
@@ -199,14 +199,18 @@ only after the complete official wheel matched its PyPI SHA-256.
 
 The two live trials reserved three and two pages respectively, with independent
 frozen identities and preserved first-run failures. No OpenRouter, Tavily or Exa
-calls were made. No forecasts were analyzed or submitted. The Linux workflow
-was prepared but has not run; GitHub CLI authentication was unavailable during
-this development turn. No production readiness or forecast-quality improvement
-is inferred from these technical tests. Subsequent GitHub authorization became
-available. The new workflow was not registered on the default branch, so a
-development-branch-only push trigger was added to run Linux acceptance without
-changing the production branch. Its final result is recorded in the acceptance
-report rather than inferred from local success.
+calls were made. No forecasts were analyzed or submitted. GitHub authorization
+was rechecked and available. The new workflow was not registered on the default
+branch, so a development-branch-only push trigger ran Linux acceptance without
+changing the production branch.
+
+[Linux acceptance run 37744969078](https://github.com/chenencc/futureeval-forecasting-agent/actions/runs/37744969078)
+passed installation, all 31 focused tests, all five actual Chromium cases and
+artifact upload on commit `8cd3a0132d040273440165bb53c8cd9ba927392c`.
+The downloaded browser evidence was inspected, including the 200-row grid,
+excluded challenge/403 bodies and partial DOM after a deadline. No production
+readiness or forecast-quality improvement is inferred from these technical
+tests. A question-level paired trial remains the next release gate.
 
 ## Primary sources
 
