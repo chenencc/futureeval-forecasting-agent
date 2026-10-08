@@ -204,3 +204,71 @@ parent discovery and removed from acquisition children.
 
 Inventory and runner tests: **13 passing**. The frozen release manifest remains
 valid with all 245 existing source files unchanged.
+
+## Financial P0 acquisition overlay
+
+The next pilot uses `market_pulse.collection.collect`, which verifies the v105
+release and installs a versioned, acquisition-only financial policy in each
+isolated child process. This is a branch experiment, not a production release.
+The policy does not change analysis, model routing, resource caps, or submission.
+
+1. **Issuer scope.** Decode explicit group list rows and observed ticker URLs.
+   Exclude known sibling issuer routes from the model catalog, free recovery
+   frontier and independent supplement queue before truncating candidates.
+   Keep shared SEC and unknown independent sources. A hostname is only a routing
+   hint; unknown CIK, reporting period and metric remain unverified. A calendar
+   URL's symbol filter is checked against the saved body and cannot establish
+   issuer identity by itself.
+2. **Body quality.** Reject short CDN error references and flattened financial
+   menus, while retaining brief substantive financial statements. A saved raw
+   version's explicit access rejection survives reparse and generic diagnostics.
+   Empty parser failures can still recover. Invalid original and supplementary
+   bodies are retained in `financial_audit_pages`, outside active evidence;
+   parent capture status, source hashes, gaps and sidecar lineage remain auditable.
+3. **Available information.** Supply the same research contract to the system
+   guidance and per-turn task view: published financial history, operating
+   drivers, management guidance, dated estimates, and the separate eventual
+   settlement artifact. An unpublished release is `pending_publication`, not
+   missing evidence of current predictors or an event-absence conclusion. The
+   contract preserves original rules, dates, GAAP/adjusted distinctions, table
+   units, quarter/cumulative columns and historical enforcement.
+
+The new input contains `financial_acquisition_policy` with immutable original
+field hashes and SHA-256 hashes of `financial.py`, `quality.py` and `collection.py`.
+The pilot manifest binds those hashes. Changing the policy requires an explicit
+new experiment; it cannot silently migrate a completed or resumed ledger.
+Runtime aliases are restored on exit, including modules imported during the
+collector run. Concurrent activation in the same process is rejected.
+
+### Offline acceptance
+
+Run:
+
+```text
+python -m unittest ForecastAgent.market_pulse.tests.test_inventory ForecastAgent.market_pulse.tests.test_pilot ForecastAgent.market_pulse.tests.test_financial
+python -m ForecastAgent.market_pulse.replay_p0 --root <immutable-pilot-root> --output <new-report-directory>
+```
+
+The three-question paired replay uses the identical archived bodies. It blocks
+network/model access, checks all original file hashes and preserves accepted text.
+
+| Question | Old reported usable pages | New active body pages | Reviewed useful pages lost |
+| --- | ---: | ---: | ---: |
+| Tesla EPS | 5 | 3 | 0 |
+| Tesla revenue | 2 | 0 | 0 |
+| Apple revenue | 4 | 2 | 0 |
+
+Six false inclusions are isolated: two CDN error shells, one pure navigation
+page and three calendars without the correct target issuer. The five previously
+reviewed useful background bodies remain byte-identical. This verifies routing
+and acceptance, not fresh recall improvement or forecast readiness. Tesla revenue
+still has no active evidence; a future live pilot must acquire published financial
+tables and other available predictors. No provider calls, tokens or budget resets
+were used for the offline acceptance. **32 tests pass**; the release's 245 frozen
+files remain unchanged.
+
+Evidence archive:
+`E:/metaculus_data/tournaments/market-pulse-26q4/experiments/financial-p0-offline-20261008/report.json`.
+Per-task `overlay.json` files preserve the separate active/audit page branches.
+Do not rerun the completed original pilot root with this runner. Use a new bounded
+experiment to measure actual agent source choice and acquisition quality.

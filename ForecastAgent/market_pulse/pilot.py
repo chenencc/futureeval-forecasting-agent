@@ -35,10 +35,14 @@ def now():
 
 def prepare(root, *, adopt_startup_fix=False):
     from ForecastAgent.releases.v1_0_5 import verify_release
+    from ForecastAgent.market_pulse.collection import policy_hashes, prepare as financial_prepare
     verify_release()
     manifest_path = root / 'manifest.json'
     if manifest_path.exists():
         manifest = load(manifest_path)
+        if (manifest.get('financial_policy_source_sha256') is not None and
+                manifest['financial_policy_source_sha256'] != policy_hashes()):
+            raise ValueError('Frozen financial acquisition policy changed')
         if manifest['release_manifest_sha256'] != sha(WORKSPACE / 'ForecastAgent/releases/manifest.json'):
             raise ValueError('Frozen release changed')
         for row in manifest['rows']:
@@ -70,7 +74,7 @@ def prepare(root, *, adopt_startup_fix=False):
     for ident in SELECTED:
         packet = load(root / 'official/inputs' / f'{ident}.json')
         relative = f'inputs/{ident}.json'
-        save(root / relative, packet['request'])
+        save(root / relative, financial_prepare(packet['request']))
         rows.append({'id': ident, 'post_id': selected[ident]['post_id'],
                      'title': selected[ident]['title'], 'input': relative,
                      'input_sha256': sha(root / relative),
@@ -83,7 +87,8 @@ def prepare(root, *, adopt_startup_fix=False):
                 'transport_module_sha256': sha(transport) if transport else None,
                 'limits': {'tavily_basic_per_task': 3, 'exa_per_task': 1},
                 'existing_campaign_budget_reset': False, 'new_pilot': True,
-                'financial_customization': 'Frozen release baseline; financial profile is an audit sidecar.',
+                'financial_customization': 'Versioned issuer routing, body checks and available-information objectives over frozen release.',
+                'financial_policy_source_sha256': policy_hashes(),
                 'analysis_run': False, 'submitted': False, 'rows': rows}
     save(manifest_path, manifest)
     return manifest
@@ -93,7 +98,7 @@ def child(source, folder):
     """Only release acquisition is reachable; no token reaches the collector."""
     if os.environ.get('METACULUS_TOKEN'):
         raise ValueError('Platform credential must not reach acquisition child')
-    from ForecastAgent.releases.v1_0_5 import collect
+    from ForecastAgent.market_pulse.collection import collect
     from ForecastAgent.acquisition.pipeline import resource_report
     folder.mkdir(parents=True, exist_ok=True)
     try:
