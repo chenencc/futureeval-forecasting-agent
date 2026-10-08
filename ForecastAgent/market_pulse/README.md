@@ -881,3 +881,64 @@ Market Pulse worker or change the frozen release or production listener.
 
 Frozen plan, original failure, recovery copy, preflight snapshots and receipts:
 `E:/metaculus_data/tournaments/market-pulse-26q4/deliveries/financial-four-20261009/report.json`.
+
+## Remaining open-question campaign, 2026-10-09
+
+`open_campaign.py` is a local, one-off orchestration adapter. It freezes a fresh
+authenticated tournament/account inventory, skips existing forecasts, shares
+exact saved issuer bodies with capture-owner provenance, and runs missing issuer
+acquisition with the original v105 financial collection overlay. No listener or
+production release is changed. Rules, source packages and delivery plans remain
+independent immutable records.
+
+`batch_analysis.py` applies source-bound financial fact extraction, Mercury
+source-compatibility checks, optional Super assumption analysis and an independent
+Mercury outcome distribution. The scorer never receives Super's forecast or a
+program midpoint. Analysis subprocesses receive no platform or search credentials.
+Quarterly/annual/YTD columns, accounting basis, stock/share units and one-offs
+remain explicit. Source compatibility is a fallible diagnostic; accepted format
+is not prospective accuracy or proven calibration.
+
+The authenticated inventory contained **19 open leaves**. Four already had
+forecasts. **Eleven additional forecasts were accepted with HTTP 201**, private
+comments and exact CDF readback: Tesla EPS/revenue, Apple revenue, Microsoft EPS,
+Amazon EPS, Meta revenue, AMD EPS/revenue, SpaceX EPS/revenue and NVIDIA EPS. The
+four original forecasts still match the latest authenticated readback and were
+not reposted. Total current coverage is **15 of 19**.
+
+Four leaves remain explicitly held, with no POST reservation or forecast:
+
+- NVIDIA revenue (46198): the independent distribution remains inconsistent with
+  the scale of supplied prior quarterly actuals. A bounded original-source unit
+  reread did not resolve the disagreement; the original candidate is preserved.
+- NVIDIA guidance revenue, GAAP gross margin and GAAP operating expenses
+  (46248/46249/46250): title/criteria target a different fiscal guidance quarter
+  from the fine print, and the stated release timing also requires clarification.
+
+Recoveries preserved all earlier attempts and original bodies. They addressed
+omitted EPS rows in bounded context, duplicated source-context metadata, invented
+fact identifiers, official-page HTTP 403 responses and a transient decisions
+HTTP 429. Tesla's observed official financial PDFs were rescued with basic
+Extract. A further parser counterexample exposed `$28.2B` being truncated to
+`28`; full decimal currency tokens and explicit B/M unit literals are now bound
+without silently rewriting saved facts. The failed Tesla revenue output was
+never submitted. All eleven accepted analyses pass the offline complete-token
+audit after this repair.
+
+Actual new consumption: **48 Super and 27 Mercury HTTP attempts**, including one
+Mercury 429; **2,225,298 reported tokens**, one attempt with unknown usage, and
+USD 0 reported cost for responses with reported billing. New acquisition used
+**four Tavily basic searches, three Exa searches and five basic Extract batches**.
+Reused issuer bodies incur no new searches. Tesla's original two searches plus
+one supplementary search remain at the lifetime maximum of three. New AMD,
+SpaceX and NVIDIA acquisition each used one basic and one Exa search. No existing
+budget was reset, and every reused capture-parent hash remains unchanged.
+
+**153 Market Pulse tests and 16 official transport tests passed.**
+`campaign_audit.py` independently reconstructs counts, provider attempts, numeric
+bindings, parent hashes and fresh submission readback from saved records.
+
+Aggregate report and all per-leaf preserved stages:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-open-20261009.json`.
+Campaign root:
+`E:/metaculus_data/tournaments/market-pulse-26q4/campaigns/open-20261009/`.

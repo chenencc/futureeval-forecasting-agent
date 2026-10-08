@@ -9,7 +9,9 @@ from urllib.parse import urlsplit
 
 from ForecastAgent.market_pulse.analysis import digest, analysis_view
 
-NUMBER = re.compile(r'(?<![\w])(?:\(\s*)?-?\d[\d,]*(?:\.\d+)?(?:\s*\))?(?![\w])')
+NUMBER = re.compile(
+    r'(?<![\w.])(?:\(\s*)?-?\d[\d,]*(?:\.\d+)?(?:\s*\))?'
+    r'(?!\d|,\d|\.\d)(?=[BMK](?!\w)|[^\w]|$)', re.I)
 METRIC = re.compile(r'\b(?:total net sales|net sales|revenue|net income|operating income|'
                     r'diluted|income taxes|tax rate|gross margin|earnings per share|estimated EPS|actual EPS)\b', re.I)
 UNITS = re.compile(r'\b(?:millions?|billions?|thousands?|per.share|EPS|shares|percent)\b|\$', re.I)
@@ -36,7 +38,8 @@ def numeric_tokens(text):
             right=text.find('|',match.end());right=len(text) if right<0 else right
             cell=text[left:right]
             # Digits in product/metric labels are not quantitative data cells.
-            if re.search(r'[A-Za-z]',cell) and not re.fullmatch(r'\s*(?:USD\s*)?\$?\s*[-()\d.,% ]+\s*',cell): continue
+            if re.search(r'[A-Za-z]',cell) and not re.fullmatch(
+                    r'\s*(?:USD\s*)?\$?\s*[-()\d.,% ]+\s*[BMK]?\s*', cell, re.I): continue
         raw = match.group().strip(); negative = raw.startswith('(')
         value = float(raw.replace(',', '').replace('(', '').replace(')', '').strip())
         result.append({'raw': raw, 'value': -value if negative else value,

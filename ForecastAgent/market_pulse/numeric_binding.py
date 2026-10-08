@@ -10,7 +10,8 @@ import re
 from ForecastAgent.market_pulse import facts, financial_chain as chain
 
 UNIT_SUPPORT = {
-    'USD_millions': r'\bmillions?\b', 'USD_billions': r'\bbillions?\b',
+    'USD_millions': r'\bmillions?\b|\$\s*\d[\d,]*(?:\.\d+)?\s*[Mm]\b',
+    'USD_billions': r'\bbillions?\b|\$\s*\d[\d,]*(?:\.\d+)?\s*[Bb]\b',
     'shares_millions': r'\bmillions?\b', 'shares_thousands': r'\bthousands?\b',
     'USD': r'\$|USD|dollars', 'USD_per_share': r'per.share|EPS|\$',
     'shares': r'\bshares\b', 'percent': r'%|percent',

@@ -25,6 +25,13 @@ def report():
 
 
 class NumericBindingTests(unittest.TestCase):
+    def test_currency_abbreviation_requires_literal_numeric_currency_expression(self):
+        import re
+        self.assertRegex('Revenue was $28.2B.', n.UNIT_SUPPORT['USD_billions'])
+        self.assertRegex('Revenue was $900M.', n.UNIT_SUPPORT['USD_millions'])
+        self.assertIsNone(re.search(n.UNIT_SUPPORT['USD_billions'], 'Revenue was $28.2.', re.I))
+        self.assertIsNone(re.search(n.UNIT_SUPPORT['USD_billions'], 'A class B share pays $28.2.', re.I))
+
     def test_explicit_percent_and_million_scales_reproduce_raw_dollars(self):
         r=n.compile_derivation(report(),bound_facts(),{'metric':'quarterly_revenue'})
         self.assertEqual(r['calculations'][0]['program_value'],91800000000)
