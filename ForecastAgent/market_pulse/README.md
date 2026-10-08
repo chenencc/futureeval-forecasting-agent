@@ -520,3 +520,96 @@ CDFs, and counts original provider receipts rather than trusting stage counters.
 Initial failed and recovery ledgers are byte-identical. **67 offline tests pass**;
 the 245 frozen release source files remain unchanged. This isolated pilot has
 not been promoted to the production worker.
+
+## Official supplements and formula-only strengthening
+
+The additive local experiment has four separate artifacts:
+
+1. `enrichment.py` saves bounded official HTML/JSON downloads, raw bytes,
+   timestamps, request receipts, source hashes and explicit failures. CIKs come
+   from observed SEC archive URLs. Its SEC company-facts normalizer excludes
+   annual/YTD durations and future filings, retains the earliest available SEC
+   filing vintage, and never claims that this proves the first earnings release.
+2. `formulas.py` binds reviewed variables to original numeric tokens, unit
+   captions and period/header coordinates. Original background series receive
+   variable IDs without invented fiscal dates. Shared headers and source spans
+   are deduplicated in the model view; full material stays archived. Only
+   explicit sibling list rows are omitted, with source hashes and coordinates.
+3. `formula_trial.py` asks Super for assumptions and named equations. The program
+   computes all values and dimensions. `formula_recovery.py` permits at most one
+   additional compact repair after the two initial reservations. Decisions and
+   rejected generations are preserved. Mercury scores original evidence
+   independently, without the Super center or scenarios. A previous valid
+   independent decision can be retained with explicit request provenance.
+4. `strengthening_audit.py` replays source and arithmetic bindings independently.
+   Exact copies or exact means of referenced source quantities can be linked
+   numerically without changing any value. Their future persistence and fiscal
+   interpretation assumptions remain unverified. Wrong unit scales stay
+   rejected. `projections.py` supplies separately labeled guidance anchors and
+   unweighted EPS sensitivities, never silently repaired model forecasts.
+
+`error_distribution.py` requires time-bound forecast/actual pairs, compatible
+metric/units and forecasting method, first-release verification, unique target
+periods and at least 12 usable samples. That sample threshold is a development
+gate, not proof of sufficient calibration. A nondegenerate empirical residual
+candidate still needs rolling out-of-sample coverage, CRPS/interval-score and
+width checks. Guidance endpoints and unweighted scenarios are not probability
+intervals. Platform bounds are not a forecast prior; the full raw distribution
+is retained and the existing export adapter clips CDF probabilities to 0.02–0.98.
+
+### Four-question strengthening observation, 2026-10-08
+
+The official supplement used **14 free download attempts**, of which nine
+returned readable reports. All four SEC company-facts requests returned HTTP
+403; one observed Amazon historical URL returned 404. Original acquisition
+snapshots remain unchanged. New materials are archived separately under
+`E:/metaculus_data/tournaments/market-pulse-26q4/supplements/financial-strengthening-four-20261008`.
+No Tavily, Exa or new collection-agent call was made.
+
+The material now includes Apple Q4 FY2025 EPS, Microsoft Q1 FY2027 total-company
+guidance, Meta Q2 FY2026 legal/severance costs and the prior Q3 tax outlier, plus
+two Amazon historical guidance/result pairs. Those two release pages have not
+been independently authenticated as immutable first-publication vintages; they
+are diagnostic history, not an admitted calibration sample.
+
+| Target | Prior Mercury median | Independent enriched Mercury median | Program guidance anchor |
+| --- | ---: | ---: | ---: |
+| Apple Q4 FY2026 GAAP diluted EPS | 1.9411 | 1.9321 | Not applicable |
+| Microsoft Q1 FY2027 revenue, USD billion | 91.7950 | 90.5649 | 90.4000 |
+| Amazon Q3 FY2026 revenue, USD billion | 199.4552 | 200.6571 | 199.5000 |
+| Meta Q3 FY2026 GAAP diluted EPS | 6.3925 | 6.2364 | See unweighted EPS sensitivities |
+
+All four independently scored CDFs pass the 201-point export format. Three Super
+formula outputs can be source-bound and computed after an explicitly recorded
+offline compatibility replay. Meta remains rejected: it declares 62.5 raw USD
+and 2.566 raw shares rather than their billion-scale source quantities. Its
+standalone program baseline and cost-recurrence sensitivities are archived
+separately. They are not model repairs or calibrated distributions.
+
+Important semantic gaps remain. Apple Super wrongly interprets an adjustment to
+the **2024 comparison** as a missing **2025 GAAP EPS** and invents a difference.
+Its two scenario names also reference the same calculation. Microsoft/Amazon
+still interpret date-unknown background sequence elements as particular fiscal
+quarters. Meta's formula omits the newly supplied expense/tax distinctions.
+These findings block delivery; source binding and arithmetic alone do not
+validate the reasoning. The new distributions are not empirically calibrated.
+
+Accounting includes the first failed run, continuation and final missing
+decision: **10 Super + 4 Mercury = 14 physical provider requests**, all HTTP 200
+on the primary key, **259,298 reported tokens**, with no unknown usage and USD 0
+reported cost. Prior trial: 14 requests and 712,354 reported tokens. Context
+compression reduced reported tokens by **63.6%**; request-count optimization
+has **not** succeeded. Logical journal caps and actual credential-transport
+attempts are audited separately; no credential failover happened in this trial.
+No old reservations were reset. Parent and continuation journals are hash-verified.
+
+Four unresolved targets are mechanism tests, not an accuracy comparison. Material
+coverage, analyst schema and independent decision exposure changed together.
+There is no historical-error distribution or blending result for these four
+tasks, and **zero are declared ready for delivery**. Keep this branch isolated.
+All **89 offline tests** pass, and **245 frozen release files** remain unchanged.
+
+Packaged audit: `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-strengthening-four-20261008.json`.
+The canonical executed audit stays in the analysis run directory. The packaged
+report adds download provenance and per-task request-cap checks. It preserves
+all original model generations, decisions, source snapshots and failure records.
