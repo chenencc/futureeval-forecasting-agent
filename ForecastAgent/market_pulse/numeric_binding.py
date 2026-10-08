@@ -28,10 +28,10 @@ def unit(value, name):
     return chain.finite(value) * scale, kind, scale
 
 
-def bind(bundle, table, selections):
+def bind(bundle, table, selections, *, minimum_facts=4):
     """Bind exact visible tokens; retain period claims separately from quotations."""
-    if not 4 <= len(selections) <= 9:
-        raise ValueError('Four to nine selected facts required')
+    if minimum_facts not in range(1, 5) or not minimum_facts <= len(selections) <= 9:
+        raise ValueError(f'{minimum_facts} to nine selected facts required')
     tokens = {n['token_id']: (row, n) for row in table['candidates'] for n in row['numbers']}
     bound, audit, aliases = [], [], {}
     for i, item in enumerate(selections, 1):

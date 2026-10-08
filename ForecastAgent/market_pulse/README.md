@@ -765,3 +765,89 @@ delivery; no forecasts were submitted and the production worker was not changed.
 
 Final immutable audit:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-compact-four-20261009-final.json`.
+
+## Additive saved-report coverage, 2026-10-09
+
+`source_coverage.py` distinguishes **saved original report**, **period-bound fact**
+and **actual model exposure**. It reads the target period from the original rules,
+then checks the most recent explicitly identified saved report, the immediately
+preceding fiscal quarter, the same quarter of the prior fiscal year and existing
+target revenue guidance. A pending future release is not a required historical
+input. There is no issuer, question ID, fiscal date or financial value in the
+reusable mechanism.
+
+Only original fiscal/release/highlights labels establish report periods. Quarter
+end dates and URLs cannot establish a fiscal quarter. Comparisons, outlooks,
+ambiguous labels and unknown periods remain diagnostic gaps. The latest identified
+saved report need not be the latest publicly available report. Coverage alone is
+neither proof of fiscal semantics nor factual verification.
+
+`saved_source_trial.py` consumes a frozen cohort and explicitly selected task IDs.
+Only missing saved narrative facts receive one new bounded Super extraction.
+Numbers, units and literal report labels bind to original offsets and document
+hashes. Existing V identifiers, values, archived pages and provider budgets remain
+unchanged. New table tokens are withheld until an explicit quarter/annual/YTD
+column review can establish applicability. Existing reviewed table facts are
+retained. Withheld rows and reasons are recorded, not discarded as absent data.
+
+The independent timestamped supplement includes the new facts and original
+adjustment paragraphs. Reported EPS, comparative adjusted growth, gross-margin
+components and one-off EPS components remain distinct. No component is silently
+subtracted from reported GAAP EPS; future recurrence/removal stays uncertain.
+New semantic interpretations are provisionally admitted after literal binding,
+not declared independently verified. Old source diagnostics remain fallible.
+
+The EPS task then receives one Super assumption call and one independent Mercury
+outcome head. Mercury reads the expanded original exposure, without Super's
+projection, program baseline or previous probabilities. Other selected-policy
+compatible tasks retain their original templates and predictions and receive
+offline coverage checks. `saved_source_audit.py` reconstructs numeric bindings,
+exposure and probabilities from saved responses with zero network requests.
+
+### Apple validation and three-case preservation
+
+The frozen Apple package already contained its Q3 FY2026 issuer release, but the
+previous fact table and model exposure omitted it. The generic mechanism found
+this gap and appended **seven** source-bound interpretations: revenue USD 109.4
+billion, revenue growth 16%, gross margin 50.1%, reported diluted EPS USD 2.02,
+EPS growth 29%, a roughly two-percentage-point gross-margin refund effect and a
+USD 0.11 EPS refund effect. Both refund disclosures remain in the original view.
+The original nine variables are unchanged. The latest-quarter metric/exposure
+gap is closed; target guidance is still not established from the saved sources.
+
+| Apple Q4 FY2026 EPS, USD/share | Previous independent result | Expanded saved-source result |
+| --- | ---: | ---: |
+| 10th percentile | 1.8062 | 1.8295 |
+| Median | 2.0120 | 2.0416 |
+| 90th percentile | 2.2701 | 2.2137 |
+
+Super assumes 30% future EPS growth and produces a separate 2.405 program
+projection, compared with the earlier 20%/2.22. Its growth rationale cites recent
+headline growth but does not discuss the disclosed refund component. The audit
+flags that limited rationale without altering either model output or averaging
+the predictions. Mercury's original request contains the refund disclosure.
+Expanded evidence and new stochastic draws are not a controlled model A/B or
+proof of improved accuracy or calibration.
+
+Actual consumption: **three HTTP requests, two Super and one Mercury**, all
+HTTP 200, **38,724 reported tokens**, zero unknown usage, USD 0 reported cost.
+There were no search/fetch calls, old budget resets, forecasts or production
+changes. The other three cases preserve their exact original source exposure,
+templates and predictions. Their new offline diagnostics retain unknown fiscal
+mapping/history gaps; those warnings do not revoke prior accepted results.
+
+An execution-only report compatibility bug initially failed after all model
+responses were saved: audited reports use `independent_quantiles`, while execution
+reports use `quantiles`. Both schemas are now explicitly checked before provider
+calls. The original failure is preserved; the final audit recovers the distribution
+offline without another model call, reservation reset or probability change.
+
+**141 offline tests** pass, including an unseen synthetic issuer/year, calendar
+versus fiscal labels, comparisons, target guidance versus prior actuals, ambiguous
+periods, withheld cumulative table columns, original-token preservation and report
+schema compatibility. The 245-file frozen release is unchanged. These tests and
+four archived cases validate a bounded mechanism; broader company/document
+coverage and prospective forecast quality remain unvalidated.
+
+Independent final audit:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-saved-report-20261009-final.json`.
