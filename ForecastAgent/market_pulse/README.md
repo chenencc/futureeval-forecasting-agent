@@ -422,7 +422,101 @@ all 245 frozen release source files remain unchanged.
    delivery. Keep service availability and submission status separate from semantic
    readiness, and retain a validated first response on a reread service failure.
 
-This five-step successor has not run. Freeze it and compare on the same four
-evidence packages before expanding. Evaluate numeric CRPS, interval coverage,
-tail calibration and official scoring after first-report resolutions arrive;
-these quantities do not have binary accuracy or Brier scores.
+This five-step successor was subsequently run on the same four evidence packages.
+The measured results and limits are recorded below. Evaluate numeric CRPS,
+interval coverage, tail calibration and official scoring after first-report
+resolutions arrive; these quantities do not have binary accuracy or Brier scores.
+
+## Financial fact table and short analyst pilot
+
+The local successor uses this sequence:
+
+```text
+Immutable saved financial reports
+  -> exact numeric tokens, table headers and original source coordinates
+  -> Super: explicit assumptions and short named equations
+  -> program: unit normalization and arithmetic checks
+  -> Mercury Decisions: numeric outcome bins and independent diagnostics
+  -> valid 201-point CDF, disagreement checks and uncertainty review
+```
+
+`facts.py` discovers rows locally and keeps all candidates. `numeric_binding.py`
+binds selected numbers to exact original tokens, retains original unit captions
+and headers, and converts currency/share scales and percentages explicitly.
+Fiscal-quarter labels and GAAP interpretations remain model claims. A quoted
+header is not proof that the model selected the correct column. Publication
+times and missing comparable-quarter predictors are not fabricated.
+
+The compatibility layer can resolve a number ID used where a row reference was
+expected. It records that repair, rejects unknown/foreign references, and never
+changes source values. An explicit conversion identity such as 62.5 billion
+times a declared conversion factor of 1000 equals 62,500 million preserves the
+physical dollar quantity. An ordinary business multiplier does not receive that
+exception. Wrong arithmetic, unnamed constants and thousandfold share-count
+errors are rejected before decision scoring.
+
+The fresh entry point is `financial_chain.py`. It has two initial Super
+reservations, then one compact derivation repair if necessary: **three cumulative
+Super reservations per task**, not a refreshed initial budget. Mercury has one
+first decision and at most one same-evidence recheck. State/request hashes,
+executed source, original messages, provider receipts and rejected outputs are
+preserved. A changed frozen request is rejected. Credential transport receipts
+are audited separately from logical reservations.
+
+```text
+FORECAST_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+python -m ForecastAgent.market_pulse.financial_chain --root <new-directory> --baseline <frozen-four-question-baseline>
+```
+
+Load local credentials through the existing hidden DPAPI launcher. Do not put
+secret values in command arguments or documentation. This experiment has no
+Metaculus credential, new search, acquisition, or submission.
+
+### Observed result on 2026-10-08
+
+All four tasks produced valid distributions over unchanged acquisition packages.
+The first strict schema trial failed before Mercury: numeric and reference IDs
+were mixed, millions/billions were expressed inconsistently, and real arithmetic
+errors were present. The failed responses remain archived. Apple and Amazon were
+recovered offline; Microsoft and Meta used one additional compact repair each.
+Meta's corrected response required an audited explicit unit-conversion identity;
+that second recovery made no additional Super call. Prior Mercury results were
+reused only under an identical request identity.
+
+| Target | Super median | Mercury median | Mercury central 80% interval |
+| --- | ---: | ---: | --- |
+| Apple Q4 FY2026 GAAP diluted EPS | USD 1.9625/share | USD 1.9411/share | USD 1.8952–1.9871/share |
+| Microsoft Q1 FY2027 revenue | USD 91.807 billion | USD 91.7950 billion | USD 91.3324–91.9019 billion |
+| Amazon Q3 FY2026 revenue | USD 199.5 billion | USD 199.4552 billion | USD 198.8997–200.0449 billion |
+| Meta Q3 FY2026 GAAP diluted EPS | USD 6.345/share | USD 6.3925/share | USD 6.3499–6.4352/share |
+
+Those Mercury intervals are **8.6–16.6 times narrower** than the analyst's
+intervals. The original format/arithmetic gate passed, but this is not empirical
+calibration. A post-hoc diagnostic now routes an interval compressed by more than
+four times to uncertainty review without editing the model distribution. Report
+that gate as post-hoc when inspecting this already-frozen trial. All four remain
+**not ready for delivery** under the financial/uncertainty review.
+
+Apple uses prior Q3 EPS as an explicitly weak Q4 proxy because comparable Q4
+evidence is absent. Microsoft's alternative formula uses Q2 as a Q1 seasonal
+proxy and its sequential assumption is not independently established. Amazon
+has explicit current Q3 management sales guidance of USD 197–202 billion; that
+guidance is not a predictive probability interval. Meta assumes Q2 net margin
+and diluted shares persist; future tax/expense effects are not separately modeled
+by its accepted net-margin equation.
+
+Actual accounting includes failed and repair requests: **10 Super + 4 Mercury
+physical HTTP attempts**, all HTTP 200; Super reports **394,987 tokens** and
+Mercury **317,367 tokens**, total **712,354**. Every receipt reports usage and
+USD 0. No Ultra calls occurred. Request keys stayed on the primary credential.
+The four numerical targets are unresolved; no accuracy, CRPS or calibration win
+is claimed. Compared with the prior Mercury-only run, context selection,
+analyst derivation and the diagnostic rubric changed together.
+
+Structured independent audit:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-super-mercury-four-20261008.json`.
+It rechecks source hashes and exact coordinates, recomputes equations, validates
+CDFs, and counts original provider receipts rather than trusting stage counters.
+Initial failed and recovery ledgers are byte-identical. **67 offline tests pass**;
+the 245 frozen release source files remain unchanged. This isolated pilot has
+not been promoted to the production worker.
