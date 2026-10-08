@@ -326,3 +326,103 @@ material to original question handles; it does not infer settlement facts. Prior
 invalid plans, failure counts, sessions and provider attempts remain preserved.
 Only the terminal plan latch is removed after successful plan validation. The
 same three-execution lifetime guard still applies.
+
+## Financial analysis pilot
+
+`analysis.py` is an additive local prototype over immutable release packages.
+It does not change the frozen v105 analysis or the FutureEval worker. It refuses
+a process containing `METACULUS_TOKEN`, performs no search/capture/submission,
+and requires only already-configured OpenRouter credentials.
+
+The first pilot selects Apple GAAP diluted EPS `46176`, Microsoft revenue
+`46195`, Amazon revenue `46193`, and Meta GAAP diluted EPS `46181`. Each input
+is bound to its acquisition adapter SHA-256 and original rule-field hashes.
+An exact issuer rule row supplies the fiscal period. Revenue history from the
+platform background is converted from explicitly stated USD millions to raw USD;
+no quarter dates or verified issuer actuals are invented for that background.
+
+The analysis-only view excludes same-body duplicates, unusable shells, observed
+foreign issuer routes, filing search navigation and social share pages. Original
+packages and their gaps remain byte-identical. Full source bodies remain archived;
+selected model input is bounded and does not imply that every body was read.
+
+The prototype uses the Mercury **Decisions** endpoint: one typed distribution
+plus financial interpretation diagnostics, then at most one conditional local
+reread. The first/second request caps are 40,000/56,000 JSON bytes. They are byte
+bounds, not token guarantees. There are at most two durable decision-stage
+reservations per task. Credential transport may retry a quota-exhausted key on
+the backup; audit its physical receipts separately from those reservations.
+
+Forecast intervals are conditional on valid numeric resolution. Administrative
+annulment is not zero revenue/EPS or outside-range mass. Original first-report
+rules, units, boundaries and 200-bin metadata remain visible. The output is a
+validated 201-point CDF clipped through the existing release formatter. If the
+median is in an open tail, its exact numeric value remains unknown; the code
+reports the tail boundary instead of inventing a point estimate.
+
+```text
+python -m ForecastAgent.market_pulse.analysis --root <new-analysis-directory> --report <financial-five-report.json>
+python -m unittest discover -s ForecastAgent/market_pulse/tests
+```
+
+The manifest freezes the four input paths/hashes, source report, implementation,
+model and caps. Restarting under a changed identity is rejected; provider
+reservations are not replenished. Preserve the executed source when changing
+implementation after a completed experiment.
+
+### Observed first run: completed, not ready for submission
+
+Local run completed on **2026-10-08 at 13:36 UTC**. All four emitted valid CDFs;
+the five physical HTTP requests returned 200 using the primary credential. Apple,
+Microsoft and Meta used the first decision; Amazon used a second original-text
+read. No forecast was submitted or acquisition budget reset.
+
+| Target | Original model probability below platform lower boundary |
+| --- | ---: |
+| Apple Q4 FY2026 EPS, below USD 0.995/share | 79.52% |
+| Microsoft Q1 FY2027 revenue, below USD 90.2 billion | 69.20% |
+| Amazon Q3 FY2026 revenue, below USD 198 billion | 95.01% |
+| Meta Q3 FY2026 EPS, below USD 5.345/share | 80.52% |
+
+These are experimental outputs, not verified outcomes. The dominant open-tail
+pattern raises a quality gate. Amazon's selected second input contains target
+guidance of USD 197–202 billion, yet the model assigns approximately 95% below
+USD 198 billion without an inspectable numeric derivation. This is not proof of
+an incorrect future outcome, but is insufficient evidence to deploy this pilot.
+
+Two further design limitations were observed: inherited sufficiency rubric
+levels still ask for decisive observation coverage despite future-quarter
+instructions, and the generic 900-character reread threshold is not a guarantee
+that missing financial headers/rows were selected. Do not use format validity
+or model diagnostic confidence as financial prediction calibration.
+
+The native Decisions receipts report **536,567 input + 50 output tokens** and
+**USD 0**. The original run summary incorrectly assumed `total_tokens` existed;
+the independent report contains corrected accounting. The formatter now accepts
+the Decisions input/output fields without inventing unknown/zero usage.
+
+Evidence: `E:/metaculus_data/tournaments/market-pulse-26q4/analysis/financial-mercury-four-20261008/`.
+Review: `E:/metaculus_data/tournaments/market-pulse-26q4/reports/financial-analysis-four-20261008.json`.
+The original manifest, requests, answers, summary, source coordinates, acquisition
+hash checks and executed analysis source are preserved. **49 offline tests pass**;
+all 245 frozen release source files remain unchanged.
+
+### Proposed next analysis contract
+
+1. Bind an issuer, fiscal quarter, exact metric, unit and first-report rule.
+2. Create a quote-bound financial fact table with the complete column header,
+   fiscal period, source unit, conversion, publication time and source role.
+   Separate official actuals, management guidance and adjusted analyst estimates.
+3. Use one short Super financial interpretation over the same originals: revenue
+   growth/seasonality and supplied guidance; EPS margins, taxes, diluted share
+   count and observed one-offs. Require calculation and exact evidence references.
+4. Ask Mercury for the final distribution and independent consistency diagnostics.
+   Keep raw probabilities, formatting changes and open-tail limitations visible.
+5. Route material unit/period/guidance conflicts to bounded local rereading before
+   delivery. Keep service availability and submission status separate from semantic
+   readiness, and retain a validated first response on a reread service failure.
+
+This five-step successor has not run. Freeze it and compare on the same four
+evidence packages before expanding. Evaluate numeric CRPS, interval coverage,
+tail calibration and official scoring after first-report resolutions arrive;
+these quantities do not have binary accuracy or Brier scores.
