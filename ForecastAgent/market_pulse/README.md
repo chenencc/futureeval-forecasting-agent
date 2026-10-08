@@ -942,3 +942,47 @@ Aggregate report and all per-leaf preserved stages:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-open-20261009.json`.
 Campaign root:
 `E:/metaculus_data/tournaments/market-pulse-26q4/campaigns/open-20261009/`.
+
+### Held-question diagnostic review, 2026-10-09
+
+`held_review.py` preserves the four held candidates and obtains fresh official
+GET snapshots. All four semantic rules and API grids were unchanged. Public
+comments returned HTTP 403; the browser was unavailable, so no staff
+clarification is claimed. No forecast or public comment was sent.
+
+The NVIDIA revenue question has raw-USD cutpoints of USD 10.5–11.6 billion,
+while its saved official Q2 actual is USD 96.221 billion and Q3 management
+guidance is USD 108 billion. A readable USD/billion representation and an
+independent three-region decision were prepared without changing those official
+cutpoints. Mercury returned HTTP 429 twice, including one explicitly bounded
+transport retry after cooldown. Both reservations remain in the ledger. The
+second decision head was not called; the proposed Mercury repair is unvalidated.
+
+One independent Super diagnostic reused the same source exposure and returned
+10/50/90 percentiles of USD 95/108/121 billion. Its limitations field violated
+the requested array schema, and its unclipped region probabilities were extreme.
+The diagnostic supports investigating scale/interval anchoring, but is not an
+accepted replacement distribution or a calibration result. No CDF was created
+from it and no arbitrary probability was inserted.
+
+`guidance.py` provides an issuer-independent, quote-bound adapter for guidance
+revenue, GAAP gross margin and GAAP operating expenses. It separates publishing
+release, forward quarter and administrative annulment conditions; distinguishes
+billions from raw USD and percentage points from fractions; and models primary
+guidance midpoint/single-value rounding. Exact halfway rounding ties require
+review. The adapter never clears a delivery hold itself.
+
+A finer reading of the three guidance leaves identifies the Q3-in-Q2 clause as
+an annulment prerequisite, rather than automatically treating it as a competing
+definition of the future Q4-in-Q3 numeric target. The prior official Outlook
+contains all three guidance metrics, so that prerequisite is not triggered under
+its literal reading. The stale August expected publication date still needs
+official clarification; previous Q3 figures must never be submitted as future
+Q4 guidance. This interpretation is disclosed, not presented as staff approval.
+
+**162 offline Market Pulse tests passed**, including 9 new unit, target, fiscal
+rollover, rounding and malformed-output counterexamples. The aggregate audit
+preserves the previous 75 model attempts and every original capture-parent hash.
+New diagnostics used two failed Mercury attempts and one Super attempt, no new
+searches, no new forecasts and no production changes. Diagnostic report:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-held-four-20261009.json`.
