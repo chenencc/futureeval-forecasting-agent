@@ -2,6 +2,15 @@ name: Crawl4AI experimental acquisition acceptance
 
 on:
   workflow_dispatch:
+  push:
+    branches: ['codex/acquisition-next-crawl4ai']
+    paths:
+      - 'ForecastAgent/readers/crawl4ai.py'
+      - 'ForecastAgent/acquisition/nextgen.py'
+      - 'ForecastAgent/acquisition/verify_nextgen.py'
+      - 'ForecastAgent/tests/test_crawl4ai_adapter.py'
+      - 'ForecastAgent/requirements-crawl4ai.txt'
+      - '.github/workflows/crawl4ai_acceptance.yaml'
 
 permissions:
   contents: read

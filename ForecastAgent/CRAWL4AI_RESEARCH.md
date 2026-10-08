@@ -147,7 +147,8 @@ python -m ForecastAgent.acquisition.nextgen pipeline --input question.json --roo
 python -m ForecastAgent.acquisition.nextgen pipeline --input question.json --root snapshots/crawl4ai-task --execute --supplement-network
 ```
 
-The manual `crawl4ai_acceptance.yaml` workflow runs on Linux without API secrets.
+The `crawl4ai_acceptance.yaml` workflow runs on Linux without API secrets, by
+manual dispatch or a source change on `codex/acquisition-next-crawl4ai` only.
 It installs Chromium and tests actual rendering against deterministic fixtures.
 Preparing the workflow does not establish a successful GitHub Actions run.
 For local tests with an already installed Chrome, use
@@ -201,7 +202,11 @@ frozen identities and preserved first-run failures. No OpenRouter, Tavily or Exa
 calls were made. No forecasts were analyzed or submitted. The Linux workflow
 was prepared but has not run; GitHub CLI authentication was unavailable during
 this development turn. No production readiness or forecast-quality improvement
-is inferred from these technical tests.
+is inferred from these technical tests. Subsequent GitHub authorization became
+available. The new workflow was not registered on the default branch, so a
+development-branch-only push trigger was added to run Linux acceptance without
+changing the production branch. Its final result is recorded in the acceptance
+report rather than inferred from local success.
 
 ## Primary sources
 
