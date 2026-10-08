@@ -144,3 +144,63 @@ tests; the initial branch has not enabled production submissions.
 - [Official tournament](https://www.metaculus.com/tournament/market-pulse-26q4/)
 - [Official project API](https://www.metaculus.com/api/projects/tournaments/market-pulse-26q4/)
 - [SEC EDGAR APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
+
+## Initial three-question acquisition pilot
+
+Completed locally on **2026-10-08 at 11:55 UTC** with the unchanged v105
+acquisition/supplement chain and Super. Acquisition IDs: Tesla EPS `46190`,
+Tesla revenue `46197`, and Apple revenue `46191`. No analysis or submission ran.
+
+| Question | Program-readable captures | Reviewed useful background | Finding |
+| --- | ---: | ---: | --- |
+| Tesla EPS | 5 | 3 | Operating data and secondary EPS estimates; original GAAP history still missing |
+| Tesla revenue | 2 | 0 | CDN error reference and an unrelated daily calendar |
+| Apple revenue | 4 | 2 | FY2026 Q1 release and FY2026 Q3 SEC 10-Q; target-quarter guidance/estimates remain missing |
+
+The review is assistant reading of saved bodies, not a blind human evaluation or
+truth certification. All three exported packages retain their original gaps.
+Export completion does not establish readiness to forecast.
+
+Consumption: **30 successful Super responses, 303,716 reported tokens**, six
+Tavily basic searches (two per question), three Exa logical searches, and three
+basic Extract batches. No reported token usage is unknown; no task exceeded the
+three-basic/one-Exa limits. Extract batches are separate from basic Search limits.
+
+Priority findings:
+
+1. Shared group rules leak other issuers' URLs into supplemental capture. Every
+   task spent supplementary attempts on AAPL's calendar and AMD's earnings page.
+   The calendar URL did not honor the intended issuer filter in its saved body.
+2. The critical material plan concentrates on a future earnings release. Separate
+   the future resolution artifact from already public predictors: prior-quarter
+   tables, operating releases, management guidance, and dated estimates.
+3. Supplement reparse turns an identical saved CDN error body into usable thin text.
+   Preserve negative capture diagnostics for the same content version and identify
+   navigation separately from issuer financial evidence.
+4. Sibling Tesla questions did not share useful financial evidence. Their common
+   capture hash was an unrelated calendar, not an issuer financial report.
+
+The local runner initially hit the release's previous-ledger guard because runner
+logs were in the collector directory. The failed launch consumed no model/search
+calls. Its failure records, unchanged inputs, and explicit startup migration are
+preserved. Collector state now lives under `tasks/<id>/retrieval`, separately from logs.
+
+The executed runner installed credential transport after some release modules
+captured their HTTP aliases. That run's transport receipts cover Extract only;
+model journals and Search records independently preserve the successful calls.
+The next runner revision installs transport before imports; an offline alias test
+passes. This fix did not trigger another collection or change the original results.
+
+Artifacts: `E:/metaculus_data/tournaments/market-pulse-26q4/pilots/v105-three-20261008/`:
+`manifest.json`, `executed-runner-source.py`, `run-status.json`, `audit.json`,
+`quality-review.json`, and per-task original collection/supplement packages.
+
+Use `python -m ForecastAgent.market_pulse.audit --root <pilot-root>` for a capture
+audit; `review_pilot` is explicitly scoped to this initial three-question review.
+The revised runner's `run` command requires a new experiment root; source-hash
+checks prevent an implicit restart of this frozen, completed pilot. Model/provider
+credentials must already be loaded securely. `METACULUS_TOKEN` is used only in
+parent discovery and removed from acquisition children.
+
+Inventory and runner tests: **13 passing**. The frozen release manifest remains
+valid with all 245 existing source files unchanged.
