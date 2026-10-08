@@ -8,10 +8,26 @@ import unittest
 from unittest.mock import patch
 
 from ForecastAgent.competition.queue import load, save
-from ForecastAgent.market_pulse.pilot import child
+from ForecastAgent.market_pulse.pilot import child, selected_ids, prepare
 
 
 class PilotTests(unittest.TestCase):
+    def test_bounded_distinct_batch_selection(self):
+        self.assertEqual(selected_ids(['46176', '46195', '46193', '46181', '46198']),
+                         ('46176', '46195', '46193', '46181', '46198'))
+        for invalid in ([], ['1'] * 2, ['1', '2', '3', '4', '5', '6'], ['invalid'], ['1/../2']):
+            with self.assertRaisesRegex(ValueError, 'one to five'):
+                selected_ids(invalid)
+
+    def test_existing_selection_cannot_change_or_launch_new_snapshot(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            save(root / 'manifest.json', {'rows': [{'id': '46176'}]})
+            with patch('ForecastAgent.market_pulse.pilot.snapshot') as capture:
+                with self.assertRaisesRegex(ValueError, 'selection changed'):
+                    prepare(root, ids=['46195'])
+                capture.assert_not_called()
+
     def test_runner_logs_are_outside_collector_ledger(self):
         with TemporaryDirectory() as directory:
             folder = Path(directory) / 'task'

@@ -272,3 +272,21 @@ Evidence archive:
 Per-task `overlay.json` files preserve the separate active/audit page branches.
 Do not rerun the completed original pilot root with this runner. Use a new bounded
 experiment to measure actual agent source choice and acquisition quality.
+
+## Bounded next batch
+
+The runner accepts one to five distinct numeric IDs, frozen in its manifest.
+Existing manifests reject changes to the selected IDs, runner, policy or inputs.
+The default remains the original three-question pilot for backward compatibility.
+Provider transport must be installed before imported HTTP aliases, and credentials
+must already be loaded securely. The parent can discover official questions; the
+acquisition child receives no Metaculus token. Model selection remains Super.
+
+```text
+python -m ForecastAgent.market_pulse.pilot run --root <new-pilot-directory> --ids 46176,46195,46193,46181,46198
+```
+
+This selects Apple EPS, Microsoft revenue, Amazon revenue, Meta EPS and NVIDIA
+revenue. It runs two acquisition children concurrently and preserves all task
+results; it does not analyze or submit. The current inventory/runner/financial
+regression suite has **34 passing tests**.

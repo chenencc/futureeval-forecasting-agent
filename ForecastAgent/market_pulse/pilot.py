@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import runpy
+import re
 import subprocess
 import sys
 
@@ -33,13 +34,24 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def prepare(root, *, adopt_startup_fix=False):
+def selected_ids(ids=None):
+    values = tuple(SELECTED if ids is None else ids)
+    if (not 1 <= len(values) <= 5 or len(set(values)) != len(values) or
+            any(not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,20}', value) for value in values)):
+        raise ValueError('Select one to five distinct numeric question IDs')
+    return values
+
+
+def prepare(root, *, adopt_startup_fix=False, ids=None):
     from ForecastAgent.releases.v1_0_5 import verify_release
     from ForecastAgent.market_pulse.collection import policy_hashes, prepare as financial_prepare
     verify_release()
     manifest_path = root / 'manifest.json'
+    requested_ids = selected_ids(ids)
     if manifest_path.exists():
         manifest = load(manifest_path)
+        if ids is not None and tuple(row['id'] for row in manifest['rows']) != requested_ids:
+            raise ValueError('Frozen pilot question selection changed')
         if (manifest.get('financial_policy_source_sha256') is not None and
                 manifest['financial_policy_source_sha256'] != policy_hashes()):
             raise ValueError('Frozen financial acquisition policy changed')
@@ -67,11 +79,11 @@ def prepare(root, *, adopt_startup_fix=False):
     if (root / 'official').exists():
         raise ValueError('Partial pilot preparation exists; inspect rather than silently recapture')
     report = snapshot(root / 'official')
-    selected = {r['question_id']: r for r in report['rows'] if r['question_id'] in SELECTED}
-    if set(selected) != set(SELECTED) or any(not r['automatic_candidate'] for r in selected.values()):
+    selected = {r['question_id']: r for r in report['rows'] if r['question_id'] in requested_ids}
+    if set(selected) != set(requested_ids) or any(not r['automatic_candidate'] for r in selected.values()):
         raise ValueError('Selected live questions are missing or require review')
     rows = []
-    for ident in SELECTED:
+    for ident in requested_ids:
         packet = load(root / 'official/inputs' / f'{ident}.json')
         relative = f'inputs/{ident}.json'
         save(root / relative, financial_prepare(packet['request']))
@@ -90,6 +102,7 @@ def prepare(root, *, adopt_startup_fix=False):
                 'financial_customization': 'Versioned issuer routing, body checks and available-information objectives over frozen release.',
                 'financial_policy_source_sha256': policy_hashes(),
                 'analysis_run': False, 'submitted': False, 'rows': rows}
+    (root / 'executed-runner-source.py').write_bytes(Path(__file__).read_bytes())
     save(manifest_path, manifest)
     return manifest
 
@@ -170,10 +183,10 @@ def progress(root, manifest, state):
     return report
 
 
-def run(root, *, adopt_startup_fix=False):
+def run(root, *, adopt_startup_fix=False, ids=None):
     root.mkdir(parents=True, exist_ok=True)
     with task_lock(root):
-        manifest = prepare(root, adopt_startup_fix=adopt_startup_fix)
+        manifest = prepare(root, adopt_startup_fix=adopt_startup_fix, ids=ids)
         progress(root, manifest, 'running')
         with ThreadPoolExecutor(max_workers=2) as pool:
             jobs = [pool.submit(case, root, row, retry_startup=adopt_startup_fix) for row in manifest['rows']]
@@ -193,8 +206,10 @@ if __name__ == '__main__':
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--input', type=Path)
     parser.add_argument('--adopt-startup-fix', action='store_true')
+    parser.add_argument('--ids', help='One to five comma-separated IDs; frozen on first execution')
     args = parser.parse_args()
     if args.command == 'case':
         child(args.input, args.root)
     else:
-        run(args.root, adopt_startup_fix=args.adopt_startup_fix)
+        run(args.root, adopt_startup_fix=args.adopt_startup_fix,
+            ids=args.ids.split(',') if args.ids is not None else None)
