@@ -1096,4 +1096,8 @@ The additive P0/P1 offline research layer tracks saved, parsed and exposed
 materials separately, and imports exact-cell consensus records with explicit
 issuer, fiscal period, accounting basis, statistic, units, dates and upstream
 lineage. It does not change the current production or submission path.
+The opt-in P2 experiment routes gaps through revenue, EPS and guidance mechanisms,
+reuses saved original documents and observed URLs, and preserves the original
+lifetime limit of three Tavily basic searches and one Exa search. Its bounded
+agent pilot is acquisition-only; it is not automatically enabled in production.
 See [RESEARCH_README.md](RESEARCH_README.md) for commands, schemas and limitations.

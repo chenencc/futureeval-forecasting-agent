@@ -4,6 +4,7 @@ from collections import Counter
 from ForecastAgent.market_pulse import analysis, consensus, derivation, formulas, guidance, source_coverage
 from ForecastAgent.analysis.pilot import digest
 from ForecastAgent.market_pulse.financial import issuer_profile
+from ForecastAgent.market_pulse.research_identity import profile as research_profile
 
 VERSION = 'financial-research-inventory-v1'
 LEADS = {
@@ -53,7 +54,7 @@ def audit(bundle, variables, *, library=None, consensus_packages=(), as_of=None)
     except ValueError as exc:
         try:
             contract = guidance.contract(bundle['request'])
-            contract['issuer'] = issuer_profile(bundle['request'])['issuer_label']
+            contract['issuer'] = research_profile(bundle['request'])['issuer_label']
             target = list(derivation.fiscal_period(contract['target_guidance_period']))
             metric = contract['metric']; basis = 'not_applicable'; unit = contract['normalized_unit']
             history = {'slots': [], 'sources': [], 'diagnostic': 'Historical actual contract not applicable to guidance leaf'}

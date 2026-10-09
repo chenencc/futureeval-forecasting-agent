@@ -1,8 +1,10 @@
 # Financial research inventory and consensus imports
 
-This is an additive, offline research layer for Market Pulse. It does not change
-acquisition budgets, model prompts, forecast distributions or submission behavior.
-No provider credentials are required. The production worker does not invoke it yet.
+This is an additive research layer for Market Pulse. P0/P1 are offline. P2 adds
+explicit experimental acquisition routing and a bounded agent pilot. Existing
+production prompts, forecasts and submission behavior are unchanged. P0/P1 and
+offline P2 planning require no credentials; a live P2 pilot requires the existing
+local provider configuration. The production worker does not invoke P2 yet.
 
 ## P0: material inventory
 
@@ -122,3 +124,99 @@ order. Analyst dispersion is not a calibrated forecast error distribution.
 
 Reports are independent sidecars; existing snapshots and submitted forecasts
 remain intact. All CLI outputs use exclusive creation to prevent replacement.
+
+## P2: operating-mechanism acquisition
+
+Route research gaps through generic mechanisms, without issuer-specific selectors:
+
+| Question family | Candidate mechanisms |
+| --- | --- |
+| Revenue | Volume, price/mix, segments, currency, guidance, consensus, revisions |
+| GAAP diluted EPS | Margins, expenses, taxes, diluted shares, one-offs, guidance, consensus, revisions |
+| Forward guidance | Prior guidance, management language, demand/volume, price/mix, consensus |
+
+The P0 inventory distinguishes saved, parsed and exposed material. A missing slot
+is a research lead, not a mandatory requirement for every issuer. Future actuals
+and unpublished future guidance are not completion requirements. Historical
+guidance can be useful context but does not become target guidance.
+
+`mechanism.plan` creates candidates from saved original bodies/documents and
+observed URLs in rules, searches, source leads and actual page links. It rejects
+outcome fields, credential-bearing links and explicit sibling-issuer routes.
+Original fiscal labels and bound fact references supply provisional source-role
+hints. Calendar-to-fiscal mappings are never inferred. Guidance question issuer
+identity is bound to the original title; a trailing `(Revenue)` is a metric leaf,
+not an issuer name.
+
+Exact passage previews deduplicate derived views within one URL and driver.
+Alternate coordinates remain in the audit. This is not semantic deduplication
+across different sources. Reads retain original hashes and character offsets.
+Each new packet displays up to 9,000 characters with explicit continuation
+coordinates; this avoids claiming a full read when the model saw only a prefix.
+Original source truncation remains a gap even after all saved text is read.
+
+```powershell
+python -m ForecastAgent.market_pulse.research plan-mechanisms `
+  --package saved-package.json --variables reviewed-variables.json `
+  --state source-state.json --output new-mechanism-plan.json
+python -m ForecastAgent.market_pulse.mechanism_trial `
+  --package saved-package.json --variables reviewed-variables.json `
+  --state source-state.json --output new-p2-stage `
+  --model-http 2 --local-reads 4 --free-captures 2 --network
+```
+
+Omit `--network` to disallow new page captures. Configure the existing free model
+with `FORECAST_MODEL` and process-local credentials; never include key values in
+arguments or reports. Super was used for the first bounded pilot.
+
+The standalone agent can choose a saved read, an observed public URL capture, or
+stop. It uses forced function output with program-owned action/driver IDs. Search
+requests are handoffs only: the standalone pilot dispatches **zero Tavily/Exa
+searches**. It does not export forecasts, verify facts, compute probabilities or
+send submissions. New captures and reads stay in timestamped independent sidecars.
+
+For a new explicitly opted-in original-collector experiment:
+
+```python
+from ForecastAgent.market_pulse.mechanism_acquisition import collect
+
+result = collect(original_request, new_task_directory)
+```
+
+This process-local wrapper adds mechanism guidance to the existing collector.
+All original tools, reservations, provider fallback, output formats and budget
+gates still run. Search attempts remain owned by the **same original task ledger**:
+at most **three Tavily basic searches and one Exa search** over its lifetime.
+Failed attempts count. Saved-URL free reads do not consume new search attempts.
+Existing tasks cannot silently migrate to a changed P2 policy.
+
+The standalone stage separately freezes its small model/read/capture limits,
+input hashes, model and implementation identity. A lock prevents duplicate local
+workers. Every HTTP/action reservation is persisted before execution; interrupted
+unknown attempts remain consumed. Restarts do not replenish budgets. A failed
+URL is not automatically repeated, and an HTTP error body is preserved.
+
+### Initial bounded validation on 2026-10-09
+
+- 221 Market Pulse tests passed, including 22 P2 regression tests.
+- Three archived cases: Apple EPS, Microsoft revenue and NVIDIA guidance.
+- Actual pilot: 5 successful Super HTTP responses, 66,754 reported tokens,
+  USD 0 reported cost, zero Tavily/Exa calls and zero new URL captures.
+- Apple selected two derived views of one retrospective "above expectations"
+  passage. These were not qualified target guidance or independent new evidence.
+- Microsoft read saved guidance, then stopped with gaps; the original pilot
+  packet exposed only part of the archived reading to the model.
+- NVIDIA stopped without reading prior-quarter context. Its future target
+  guidance release was not required to complete current acquisition.
+- Offline fixes tightened guidance triggers, removed matching derived passage
+  views, added exact continuation actions and clarified prior-context roles.
+  They were replayed on the same saved inputs with **zero extra provider calls**.
+- Original eight source files and all frozen pilot inputs remained unchanged.
+
+This qualifies bounded execution and offline routing safeguards, **not improved
+new-source recall or forecast performance**. The revised agent choices and the
+opt-in full collector still need a separate bounded live qualification. Consensus
+and revision gaps remain. No production change, quota reset or submission occurred.
+
+Structured report and original pilot receipts:
+`E:/metaculus_data/tournaments/market-pulse-26q4/research/p2-20261009/report.json`.

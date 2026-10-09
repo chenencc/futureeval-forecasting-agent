@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from ForecastAgent.market_pulse import consensus, research_inventory
+from ForecastAgent.market_pulse import consensus, research_inventory, mechanism
 
 
 def load(path):
@@ -33,6 +33,11 @@ def main():
     inv.add_argument('--consensus', action='append', default=[])
     inv.add_argument('--as-of', help='Explicit timestamp with UTC offset')
     inv.add_argument('--output', required=True)
+    mech = sub.add_parser('plan-mechanisms')
+    mech.add_argument('--package', required=True)
+    mech.add_argument('--variables', required=True)
+    mech.add_argument('--state')
+    mech.add_argument('--output', required=True)
     args = parser.parse_args()
     if args.command == 'import-consensus':
         config = load(args.mapping)
@@ -56,9 +61,14 @@ def main():
         state = load(args.state) if args.state else None
         if state is not None and 'original_evidence_library' not in state:
             raise ValueError('Archived state has no recorded exposure library')
-        result = research_inventory.audit(load(args.package), load(args.variables),
-            library=state['original_evidence_library'] if state else None,
-            consensus_packages=[load(p) for p in args.consensus], as_of=args.as_of)
+        if args.command == 'plan-mechanisms':
+            result = mechanism.plan(load(args.package), load(args.variables),
+                library=state['original_evidence_library'] if state else None)
+            result['provider_calls'] = 0
+        else:
+            result = research_inventory.audit(load(args.package), load(args.variables),
+                library=state['original_evidence_library'] if state else None,
+                consensus_packages=[load(p) for p in args.consensus], as_of=args.as_of)
     save(args.output, result)
     print(json.dumps({'output': str(Path(args.output).resolve()), 'schema': result['schema'],
         'provider_calls': result['provider_calls'], 'records': len(result.get('records', [])),
