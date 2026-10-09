@@ -1055,3 +1055,37 @@ Frozen plan, executed code, validation, preflight and final readbacks:
 `E:/metaculus_data/tournaments/market-pulse-26q4/deliveries/guidance-three-20261009/`.
 Aggregate receipt report:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-guidance-delivery-20261009.json`.
+
+### Reissued NVIDIA revenue leaf, 2026-10-09
+
+A fresh full-feed coverage check found new open leaf **46279**, alongside annulled
+leaf 46198. Its semantic rules are unchanged, but the official raw-USD grid is
+**105–116 billion**, ten times the old grid. The new task reuses three unchanged
+issuer pages and seven literal facts. No old forecast was transferred, rescaled
+or overwritten; no source search or original budget reset was performed.
+
+Initial source review withheld the published guidance. A separately archived
+metadata correction bound its literal revenue metric and Q3 fiscal 2027 Outlook
+heading, without changing numeric values; the compatibility head still abstained.
+A final bounded Mercury request read the same original text directly, without
+screening probabilities or prior scores. This one-off fallback does not certify
+the source-review mechanism as repaired or change the production release.
+
+The selected independent CDF has P10/P50/P90 of **USD 107.796/108.022/108.249
+billion**. Coarse/fine region disagreement is **1.68 percentage points**. Its
+80% interval is narrow relative to management's stated tolerance; that tolerance
+is not a probability interval, and calibration remains unvalidated. This
+limitation and the source-review disagreement are disclosed in the private
+submission explanation. All earlier candidates and requests are preserved.
+
+The full **201-point CDF** was accepted with **HTTP 201**, exact forecast readback
+and matching private comment **1162177**. New consumption: **5 Mercury requests**,
+**39,269 reported tokens**, zero unknown usage, USD 0 reported cost and **zero
+searches**. Final full-feed verification at `2026-10-09T01:33:49Z` found **19/19
+bot-visible open leaves with own forecasts**, with one separately annulled leaf.
+Unexposed metadata leaves retain unknown status; no exhaustive platform-wide
+coverage beyond the authenticated visible feed is claimed.
+
+Completion, preserved alternatives, provenance and final coverage:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-reissued-nvidia-completion-20261009.json`.
+`E:/metaculus_data/tournaments/market-pulse-26q4/campaigns/nvidia-reissued-20261009/`.
