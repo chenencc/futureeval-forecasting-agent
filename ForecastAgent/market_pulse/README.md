@@ -986,3 +986,47 @@ preserves the previous 75 model attempts and every original capture-parent hash.
 New diagnostics used two failed Mercury attempts and one Super attempt, no new
 searches, no new forecasts and no production changes. Diagnostic report:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-held-four-20261009.json`.
+
+### Read-only held-question previews, 2026-10-09
+
+`held_preview.py` captures fresh official GET snapshots and produces isolated
+Super and Mercury previews from the unchanged original NVIDIA evidence. It has
+no delivery command, rejects platform credentials in analysis, preserves original
+holds and budgets, and skips non-open leaves. The fresh snapshot labels revenue
+leaf **46198** `Nvidia (annulled)`, with status `resolved` and close time
+`2026-10-08T21:17:00Z`; no new forecast was generated for it.
+
+The three open guidance leaves retain their original dates and rules. Their
+previews explicitly assume Q4 FY2027 guidance in the Q3 FY2027 release; the stale
+August expected publication date remains unresolved. Mercury produces valid
+CDFs with the original grids, open tails and probability clipping. Discrete
+support quantiles are revenue **119/124/131 billion USD**, GAAP gross margin
+**71.2% / above 73.05% / above 73.05%**, and GAAP operating expenses
+**9.6/10.0/10.6 billion USD** for P10/P50/P90. No value is fabricated beyond an
+open tail, and no forecast is averaged with another model.
+
+`held_preview_review.py` permits one bounded, source-preserving consistency
+reread and reconstructs the report offline. The coarse three-region head is
+self-contained and never receives the fine-head or Super probabilities. The
+original fine CDF stays unchanged. Maximum coarse/fine probability differences
+changed from **42.4 to 13.4 percentage points** for revenue, **16.9 to 31.1** for
+gross margin, and **46.7 to 5.9** for operating expenses. Only operating expenses
+passes the experimental 10-point consistency threshold. This diagnostic is not
+accuracy, calibration or an official submission requirement.
+
+Super repair corrected necessary schema/probability checks but exposed semantic
+drift: the margin median changed from 74% to 72.5% with an unbound seasonality
+claim, while the expense median of USD 10.35 billion lacks an explicit bound
+growth calculation. Both remain diagnostic outputs. Manual review is separately
+timestamped; it does not rewrite model evidence or clear submission holds.
+
+All previous provider journals, inputs and protected original records remain
+unchanged. **172 offline Market Pulse tests passed.** This preview used **11
+actual model HTTP attempts** (5 Super, 6 Mercury), **118,283 reported tokens**,
+zero unknown usage, USD 0 reported cost, zero new searches and zero submissions.
+The original executed implementation is archived with its frozen identity hash.
+
+Offline per-question viewer:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reviews/preview-four-20261009/review.html`.
+Structured report:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-held-preview-20261009.json`.
