@@ -220,3 +220,50 @@ and revision gaps remain. No production change, quota reset or submission occurr
 
 Structured report and original pilot receipts:
 `E:/metaculus_data/tournaments/market-pulse-26q4/research/p2-20261009/report.json`.
+
+### Revised P2 live verification on 2026-10-09
+
+Commit `4b9a3b4` was run on the identical three frozen questions and bodies with
+the same free Super model and per-case limits (two actual model HTTP attempts,
+four saved reads, two free capture reservations). The revised validation had its
+own bounded stage; original search ledgers and baseline stage files were retained.
+
+| Case | Observed revised behavior | Qualification |
+| --- | --- | --- |
+| Apple EPS | Selected the original Yahoo earnings-calendar URL as a guidance source; readable response lacked the target issuer/symbol and was rejected | Scope gate worked; calendar-to-guidance candidate routing was wrong |
+| Microsoft revenue | Stopped immediately despite exposed guidance V5/V6 and four visible target-bound guidance candidates | Explanation contradicted the original inventory; no new material acquired |
+| NVIDIA guidance | Read prior-quarter outlook and an adjacent continuation in the same document | Continuation worked; invented calendar mapping and speculative target-guidance availability remain unverified |
+
+Actual consumption was **five successful Super responses**, **96,957 reported
+tokens**, USD 0 reported model cost, **zero Tavily/Exa searches**, and **one free
+page capture attempt**. Accepted new captures: **zero**. NVIDIA's saved reads
+stored `[2620,11620)` and `[11620,20620)` in document 12: 18,000 non-overlapping
+characters. The actual archived HTTP requests exposed only the first 9,000
+characters to the model. The final read was stored after the last model choice
+and had no later model request at the two-request cap. Stored and exposed coverage
+are separate; neither proves understanding. Parent truncation remains explicit.
+
+Reported tokens increased **45.25%** against the first pilot's 66,754 despite the
+same five responses. Repeated source labels and alternate coordinate metadata in
+candidate projections need compression; lower cost is not established. One run
+per version is exploratory and cannot isolate stochastic model variance.
+
+All eight original source files and baseline stage receipts remained unchanged.
+Reopening each revised stage dispatched no HTTP and refused enlarged limits.
+The original collector's saved-read and Tavily reservation branches were also
+exercised with vendor HTTP stubbed: the fourth Tavily and second Exa attempts
+were refused, wrapper functions restored, and v105 release checksums verified.
+This offline seam check does not qualify the full collector/supplement pipeline
+under live provider calls. The Market Pulse test suite still passes 221 tests.
+
+**Promotion gate remains closed.** Bounded execution, coordinates, scope rejection
+and resume preservation passed. New-source recall, financial source selection,
+stop-reason consistency and production readiness did not qualify. The next design
+work should distinguish schedule/report/consensus/guidance roles, reference shared
+catalog metadata compactly, and bind structured stop/gap fields to the immutable
+inventory. Existing forecasts and production behavior remain unchanged.
+
+Detailed receipts, per-question comparison and preservation checks:
+`E:/metaculus_data/tournaments/market-pulse-26q4/research/p2-live-verification-20261009/audited-report-v2.json`.
+This audit supersedes the initial report's model-exposure count; original raw
+receipts and the first report remain preserved.
