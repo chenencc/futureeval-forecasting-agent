@@ -1030,3 +1030,28 @@ Offline per-question viewer:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reviews/preview-four-20261009/review.html`.
 Structured report:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-held-preview-20261009.json`.
+
+### Authorized guidance delivery, 2026-10-09
+
+After inspecting the previews and limitations, the user explicitly requested
+submission. `held_delivery.py` freezes the three displayed Mercury CDFs in a
+separate manual plan. Approval applies only to leaves 46248/46249/46250, exact
+unchanged rules/candidates and the two disclosed guidance review conditions.
+It never converts a closed leaf into an eligible one, clears automatic campaign
+holds or silently approves a new review condition. Private explanations retain
+the conditional quarter interpretation, unresolved expected date, coarse/fine
+diagnostics and unvalidated calibration. Super diagnostic scores are omitted.
+
+All three distributions were accepted with **HTTP 201**, with **3/3 exact own
+CDF readbacks and 3/3 matching private-comment receipts**. Comment IDs are
+1162173, 1162174 and 1162175. Delivery contains the full 19/42/19-point CDFs,
+not only the displayed medians. Annulled leaf 46198 was excluded. Existing
+forecast detection, reserved/unknown outcome reconciliation and single-POST
+transport protections remain enabled. Original campaign and preview records
+are unchanged; this one-off operation enables no scheduled Market Pulse worker.
+
+**177 offline Market Pulse tests passed.** New model/search calls: **zero**.
+Frozen plan, executed code, validation, preflight and final readbacks:
+`E:/metaculus_data/tournaments/market-pulse-26q4/deliveries/guidance-three-20261009/`.
+Aggregate receipt report:
+`E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-guidance-delivery-20261009.json`.
