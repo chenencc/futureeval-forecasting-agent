@@ -1089,3 +1089,11 @@ coverage beyond the authenticated visible feed is claimed.
 Completion, preserved alternatives, provenance and final coverage:
 `E:/metaculus_data/tournaments/market-pulse-26q4/reports/market-pulse-reissued-nvidia-completion-20261009.json`.
 `E:/metaculus_data/tournaments/market-pulse-26q4/campaigns/nvidia-reissued-20261009/`.
+
+## Research inventory and consensus imports
+
+The additive P0/P1 offline research layer tracks saved, parsed and exposed
+materials separately, and imports exact-cell consensus records with explicit
+issuer, fiscal period, accounting basis, statistic, units, dates and upstream
+lineage. It does not change the current production or submission path.
+See [RESEARCH_README.md](RESEARCH_README.md) for commands, schemas and limitations.
