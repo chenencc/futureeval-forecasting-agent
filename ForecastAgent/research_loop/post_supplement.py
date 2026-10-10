@@ -80,7 +80,7 @@ def validate(request):
 
 @contextmanager
 def reserve_collection(request):
-    """Reserve two existing decisions/HTTP slots and final wall time, not new quota."""
+    """Reserve configured decisions/HTTP slots and final wall time, not new quota."""
     from ForecastAgent.runtime import retrieval
     names = ('COLLECTION_MAX_TURNS', 'COLLECTION_HTTP_PER_DISPATCH', 'MAX_RUN_SECONDS')
     old = {k: getattr(retrieval, k) for k in names}

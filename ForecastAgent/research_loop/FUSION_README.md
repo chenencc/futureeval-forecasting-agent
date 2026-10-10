@@ -8,6 +8,29 @@ One Super agent decides both what to collect and how to update a provisional map
 Search, reading, source repair and provider accounting use the existing native
 tools. There is no nested model call inside map or acquisition tools.
 
+## Decision and dispatch accounting
+
+`COLLECTION_MAX_TURNS` limits received model replies, including replies with
+invalid or absent tool calls. Program-only source recovery does not consume a
+model decision. Transport retries and credential/model fallback attempts still
+consume their actual physical HTTP reservations; failure and lifetime caps remain
+independent. A received reply consumes a decision before delivery processing.
+
+Each session records `model_decisions`, `scheduler_iterations`, `program_steps`,
+`program_step_limit` and `decision_count_policy=received_model_replies_v1`.
+The separate local-step guard is `max(8, decision_limit)`; it and the deadline
+bound program-only recovery. `turns[].turn` is the model decision ordinal;
+`turns[].scheduler_iteration` also includes preceding program-only steps.
+`program_dispatch_limit` remains compatible with existing resume handlers;
+`exhausted_budget` distinguishes `model_decisions` from `program_steps`.
+Previous sessions and physical reservations remain unchanged when resuming.
+
+Final review keeps its configured reservation. In the 32-decision/40-HTTP trial,
+reserving six for final review leaves 26 received decisions and 34 physical HTTP
+attempts for native collection. One program-only recovery plus 26 model replies
+therefore requires 27 scheduler iterations. Early completion, stalls and hard
+limits can still stop sooner; remaining allowance does not require empty calls.
+
 ## Feedback loop
 
 1. Freeze the question, exact rules and material plan.

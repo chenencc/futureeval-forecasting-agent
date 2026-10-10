@@ -1338,7 +1338,21 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     messages.append({"role": "tool", "tool_call_id": call["id"], "content": "Interrupted before tool reply; inspect durable bundle; search reservations remain consumed."})
         seen_calls = {tuple(item) for item in task.bundle["control"].get("seen_calls", [])}
         turn_limit = COLLECTION_MAX_TURNS if collection else MAX_TURNS
-        for turn in range(turn_limit):
+        # Decisions count received model replies, not program-only recovery steps.
+        # Keep a separate bounded guard so local recovery cannot loop forever.
+        current_session.update(model_decisions=0, scheduler_iterations=0,
+                               program_steps=0, program_step_limit=max(8, turn_limit),
+                               decision_count_policy='received_model_replies_v1')
+        while current_session['model_decisions'] < turn_limit:
+            turn = current_session['model_decisions']
+            if time.monotonic() >= deadline:
+                termination_reason = 'deadline'
+                break
+            if current_session['program_steps'] >= current_session['program_step_limit']:
+                termination_reason = 'program_dispatch_limit'
+                current_session['exhausted_budget'] = 'program_steps'
+                break
+            current_session['scheduler_iterations'] += 1
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
             from ForecastAgent.research_loop import fusion
@@ -1367,6 +1381,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         if recovery is not None:
                             control['source_recovery_delivery_pending'] = True
                             messages.append({'role':'user','content':json.dumps({'program_source_recovery':model_view(recovery)},ensure_ascii=False)})
+                            current_session['program_steps'] += 1
                             task.save()
                             continue
                     termination_reason=reason
@@ -1394,6 +1409,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     control['source_recovery_delivery_pending'] = True
                     messages.append({'role':'user','content':json.dumps({'program_source_recovery':model_view(recovery),
                         'instruction':'A bounded capture batch preserved known unread sources. Read and assess saved material, or finish with precise gaps. No allowance was reset.'},ensure_ascii=False)})
+                    current_session['program_steps'] += 1
                     task.save()
                     continue
             from ForecastAgent.runtime.delivery_control import pending_reads
@@ -1479,6 +1495,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                         model_messages.append({'role':'user','content':json.dumps({'research_frontier':fusion.frontier(task)})})
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline, **fusion.model_options(task, forced))
+                current_session['model_decisions'] += 1
+                task.save()
                 if collection:
                     from ForecastAgent.runtime.delivery import acknowledge
                     acknowledge(task, model_messages)
@@ -1497,7 +1515,6 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                                       'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
                                       'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')
                 break
-            current_session['model_decisions'] = current_session.get('model_decisions', 0) + 1
             messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": message.get("tool_calls") or []})
             calls = message.get("tool_calls") or []
             if not calls:
@@ -1581,13 +1598,18 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if collection:
                 turn_progress = progress.delta(before_turn, progress.snapshot(task))
                 planner_advanced = fusion.planning_advanced(task, before_planning)
-                current_session['turns'].append({'turn':turn+1, 'failed':turn_failed, **turn_progress,
+                current_session['turns'].append({'turn':turn+1,
+                    'scheduler_iteration':current_session['scheduler_iterations'],
+                    'failed':turn_failed, **turn_progress,
                     'map_planning_advanced':planner_advanced,'map_is_raw_material_progress':False})
                 stalled = not turn_progress['advanced'] and not planner_advanced
                 control['no_progress_turns'] = control.get('no_progress_turns',0)+1 if stalled else 0
             task.save()
             if task.bundle["result"]:
                 break
+        if not task.bundle['result'] and not termination_reason and current_session['model_decisions'] >= turn_limit:
+            termination_reason = 'program_dispatch_limit'
+            current_session['exhausted_budget'] = 'model_decisions'
         if not task.bundle["result"]:
             if collection and (not task.bundle.get('last_error') or len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH):
                 task.bundle['control']['forced_close'] = True
