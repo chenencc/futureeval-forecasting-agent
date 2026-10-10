@@ -6,8 +6,11 @@ import json
 import shutil
 from pathlib import Path
 
-TERMINAL = {'accepted', 'already_forecasted', 'closed', 'deadline_missed',
-            'blocked_integrity', 'provider_blocked', 'platform_rejected'}
+try:
+    from .recovery_policy import TERMINAL, ATTENTION
+except ImportError:
+    from recovery_policy import TERMINAL, ATTENTION
+
 
 
 def sha(path):
@@ -59,7 +62,7 @@ def split(root, output):
         # Preserve every byte of nonterminal tasks, including search/provider ledgers.
         # Terminal evidence is archived; receipts and candidate identities remain online.
         keep = (ident is None and parts[0] not in {'cache', 'legacy'}) or (
-            ident is not None and (state['tasks'][ident]['stage'] not in TERMINAL or
+            ident is not None and (state['tasks'][ident]['stage'] not in TERMINAL or state['tasks'][ident]['stage'] in ATTENTION or
                 len(parts) == 3 and path.name in {'candidate.json', 'submission.json', 'failure.json'}))
         # Legacy ledgers remain necessary until the first official adoption completes.
         if parts[0] == 'legacy':

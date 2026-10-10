@@ -42,11 +42,11 @@ jobs:
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
       FORECAST_SHARED_CACHE_ROOT: snapshots/official/cache
       CRAWL4_AI_BASE_DIRECTORY: ${{ github.workspace }}/snapshots/crawl4ai-cache
-      FORECAST_RELEASE_TAG: v1.0.5-crawl4ai.1
+      FORECAST_RELEASE_TAG: v1.0.5-recovery.1
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v1.0.5-crawl4ai.1
+          ref: v1.0.5-recovery.1
       - name: Check out independent infrastructure utilities
         uses: actions/checkout@v4
         with:
@@ -59,7 +59,7 @@ jobs:
           python-version: '3.11'
       - name: Verify immutable production release
         run: |
-          test "$(git describe --tags --exact-match)" = "v1.0.5-crawl4ai.1"
+          test "$(git describe --tags --exact-match)" = "v1.0.5-recovery.1"
           echo "FORECAST_RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Validate triggering official monitor
         id: source
@@ -134,6 +134,27 @@ jobs:
       - name: Verify restored checkpoint hashes
         if: steps.previous.outputs.official != ''
         run: python .infrastructure/ForecastAgent/infrastructure/storage.py verify --root snapshots/official
+      - name: Detect diagnosed legacy lookup recovery
+        id: recovery
+        if: steps.previous.outputs.official != ''
+        run: |
+          python - <<'PY'
+          import os
+          from ForecastAgent.competition.recovery_store import wanted
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('needed='+str(bool(wanted('snapshots/official'))).lower()+'\n')
+          PY
+      - name: Restore exact parent evidence for diagnosed lookup defect
+        if: steps.recovery.outputs.needed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: futureeval-official-evidence-${{ steps.previous.outputs.official }}
+          run-id: ${{ steps.previous.outputs.official }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/legacy-evidence
+      - name: Verify and rehydrate original task bytes
+        if: steps.recovery.outputs.needed == 'true'
+        run: python -m ForecastAgent.competition.recovery_store --root snapshots/official --evidence snapshots/legacy-evidence
       - name: Install free readers and browser
         run: |
           mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
@@ -229,3 +250,18 @@ jobs:
               for(const artifact of checkpoints.slice(3,13))
                 await github.rest.actions.deleteArtifact({owner,repo,artifact_id:artifact.id});
             }
+      - name: Check task health after preserving receipts and state
+        if: always() && steps.checkpoint.outcome == 'success' && steps.source.outputs.submit == 'true'
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from ForecastAgent.competition.recovery_policy import health
+          state=json.loads(Path('snapshots/official/campaign.json').read_text())
+          report=health(state['tasks'])
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## Official task health\n\n'+json.dumps(report)+'\n')
+          print(json.dumps(report))
+          if report['attention_ids']:raise SystemExit('Official questions need attention; state and receipts preserved')
+          if report['deadline_at_risk_ids']:print('::warning::Unconfirmed questions are close to their deadlines')
+          PY

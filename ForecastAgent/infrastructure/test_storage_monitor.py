@@ -42,6 +42,20 @@ class Acceptance(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'hash mismatch'):
                 verify(checkpoint)
 
+    def test_diagnosed_legacy_block_is_dispatched_and_preserved(self):
+        state={'tasks':{'1':{'id':'1','stage':'blocked_integrity',
+            'last_error':watch._policy.LEGACY_LOOKUP_ERROR}}}
+        self.assertEqual(watch.decision(set(),state),'recovery_due')
+        self.assertEqual(watch.decision(set(),state,active=True),'worker_active')
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'state';folder=root/'tasks/1';folder.mkdir(parents=True)
+            (folder/'analysis-input.json').write_text('{"original":true}')
+            (root/'campaign.json').write_text(json.dumps({'schema':'official-competition-v1',
+                'tournament':'fall-futureeval-2026',**state}))
+            split(root,Path(directory)/'out')
+            self.assertEqual((Path(directory)/'out/checkpoint/tasks/1/analysis-input.json').read_text(),'{"original":true}')
+            self.assertEqual(watch._policy.health(state['tasks'])['attention_ids'],['1'])
+
     def test_dispatch_gate(self):
         state = {'tasks': {'1': {'stage': 'accepted'},
                            '2': {'stage': 'retry_wait', 'retry_at_utc': '2099-01-01T00:00:00Z'}}}
