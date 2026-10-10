@@ -107,3 +107,22 @@ Review source relevance without exposing the version label. A successful fixture
 or more documents alone is not evidence of improved recall or prediction quality.
 Keep scoring fixed while evaluating acquisition. Broaden only after no new
 request, provenance or recovery regression appears.
+
+## Saved-context delivery repair (2026-10-10)
+
+Graph delivery retains the native channel selection guide in the actual model
+system message. Repeated complete tool groups are omitted before source windows;
+whole inspected spans are paged with explicit omitted IDs. Exact source text,
+body hashes, coordinates and immutable question/rules are never shortened.
+Dispatch instructions count against the same delivery ceiling. Oversized local
+projections use ContextProjectionError before issuing model HTTP and are classified
+as context_projection_failure, not provider transport failure. Channel identity
+now also freezes the graph delivery and common context modules.
+
+Existing native tasks remain immutable across code changes. A development
+continuation requires a separate directory, parent file checksums, explicit code
+migration, the same question/rules, original request journals and remaining
+cumulative allowances. An acknowledged operator pause is excluded from the
+remaining active execution clock; it does not renew any request, decision,
+search, capture or graph allowance. This is a recovery trial, not a controlled
+fresh-recall A/B or a production release gate.

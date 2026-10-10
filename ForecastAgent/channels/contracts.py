@@ -45,6 +45,7 @@ def code_identity():
              root / 'runtime/retrieval.py', root / 'runtime/budget.py', root / 'runtime/contracts.py',
              root / 'runtime/tool_selection.py',
              root / 'research_loop/fusion.py', root / 'research_loop/material_events.py',
+             root / 'research_loop/delivery.py', root / 'runtime/context.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',
              *root.joinpath('readers').glob('*.py')]

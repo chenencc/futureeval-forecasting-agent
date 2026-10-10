@@ -1468,12 +1468,14 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 messages.append({'role': 'user', 'content': json.dumps({'acquisition_checkpoint': model_view(checkpoint(task)) if task.optimized else checkpoint(task),
                     'instruction': 'Choose the next collection tool or explicitly defer an optional channel. These suggestions do not grant extra budgets.'}, ensure_ascii=False)})
             try:
-                from ForecastAgent.runtime.context import collection_context
+                from ForecastAgent.runtime.context import collection_context, encode, MAX_CONTEXT_CHARS, ContextProjectionError
                 from ForecastAgent.runtime.tool_selection import active_tools
-                model_messages = collection_context(task,forced_tool=forced) if collection else messages
+                dispatch_message = ({'role': 'user', 'content': json.dumps(
+                    {'research_dispatch': dispatch_choice}, ensure_ascii=False)} if dispatch_choice else None)
+                context_limit = MAX_CONTEXT_CHARS - (len(encode(dispatch_message)) + 1 if dispatch_message else 0)
+                model_messages = collection_context(task,forced_tool=forced, max_chars=context_limit) if collection else messages
                 if dispatch_choice:
-                    model_messages.append({'role': 'user', 'content': json.dumps(
-                        {'research_dispatch': dispatch_choice}, ensure_ascii=False)})
+                    model_messages.append(dispatch_message)
                 if collection and repaired(task) and forced is None and not dispatch_choice:
                     # Projection stages the newest exact read. Bind its review
                     # gate in this same request, before exposing navigation.
@@ -1493,6 +1495,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     model_messages = supplemental_messages(task)
                     if fusion.enabled(task):
                         model_messages.append({'role':'user','content':json.dumps({'research_frontier':fusion.frontier(task)})})
+                if collection and len(encode(model_messages)) > MAX_CONTEXT_CHARS:
+                    raise ContextProjectionError('Context ceiling exceeded after dispatch projection; no model HTTP issued')
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline, **fusion.model_options(task, forced))
                 current_session['model_decisions'] += 1
@@ -1510,7 +1514,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if secret:
                         detail = detail.replace(secret, "[REDACTED]")
                 task.bundle["last_error_detail"] = detail[:1200]
-                termination_reason = ('context_projection_failure' if ('tool group exceeds the delivery budget' in detail or 'Context ceiling' in detail) else
+                from ForecastAgent.runtime.context import ContextProjectionError
+                termination_reason = ('context_projection_failure' if (isinstance(exc, ContextProjectionError) or 'tool group exceeds the delivery budget' in detail or 'Context ceiling' in detail or 'Immutable objective and selected reading window require' in detail) else
                                       'model_dispatch_budget' if 'dispatch budget exhausted' in detail else
                                       'lifetime_model_budget' if 'Lifetime model attempt budget' in detail else
                                       'deadline' if 'deadline' in detail.casefold() else 'model_transport_failure')

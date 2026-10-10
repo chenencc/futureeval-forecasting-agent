@@ -1,9 +1,53 @@
 """One bounded source-bound state for the opt-in integrated acquisition agent."""
+import copy
 import json
 from ForecastAgent.research_loop import fusion, grounding, delta
 
 FIELD = 'research_delivery_policy'
 POLICY = 'bounded_reading_delta_v1'
+
+
+def fit_messages(messages, payload, maximum):
+    """Page whole evidence spans; never slice rules, quotes or source identities."""
+    from ForecastAgent.runtime.context import encode, ContextProjectionError
+    payload = copy.deepcopy(payload)
+    projected = copy.deepcopy(messages[:2])
+    groups = copy.deepcopy(messages[2:])
+    notice = {'omitted_tool_group': False, 'omitted_evidence_ids': [],
+              'omitted_context_ids': [], 'source_text_changed': False}
+    notice['instruction'] = ('Only delivered spans are present in this request. Omitted spans and full '
+        'tool replies remain saved; inspect locally with pagination. Omission is not '
+        'evidence absence or a material-processing receipt. Immutable rules are complete.')
+    payload['delivery_selection'] = notice
+
+    def render():
+        notice['delivered_evidence_ids'] = [s['evidence_id'] for s in
+            (payload.get('research_binding_frame') or {}).get('inspected_evidence', [])]
+        projected[1]['content'] = encode(payload)
+        return projected + groups
+
+    if len(encode(render())) > maximum and groups:
+        # Tool arguments repeat prior graphs and quotes. This whole group remains
+        # in the transcript; the binding frame and acceptance feedback are pinned.
+        groups = []
+        notice['omitted_tool_group'] = True
+    frame = payload.get('research_binding_frame') or {}
+    evidence = frame.get('inspected_evidence', [])
+    contexts = frame.get('source_context', [])
+    pinned = {s['evidence_id'] for s in evidence}
+    duplicates = [s for s in contexts if s['evidence_id'] in pinned]
+    if duplicates:
+        contexts[:] = [s for s in contexts if s['evidence_id'] not in pinned]
+        notice['deduplicated_context_ids'] = [s['evidence_id'] for s in duplicates]
+    while len(encode(render())) > maximum and contexts:
+        notice['omitted_context_ids'].append(contexts.pop()['evidence_id'])
+    while len(encode(render())) > maximum and len(evidence) > 1:
+        notice['omitted_evidence_ids'].append(evidence.pop()['evidence_id'])
+    result = render()
+    if len(encode(result)) > maximum:
+        raise ContextProjectionError('Immutable objective and one exact reading span exceed '
+            f'the delivery budget ({len(encode(result))} > {maximum}); originals remain saved.')
+    return result, notice
 
 
 def enabled(task):
@@ -50,6 +94,9 @@ def context(task, *, forced=None, maximum=28000):
     from ForecastAgent.research_loop import gap_feedback
     if gap_feedback.enabled(b):
         system += gap_feedback.GUIDE
+    from ForecastAgent.channels.native import enabled as channels_enabled, guide as channels_guide
+    if channels_enabled(task):
+        system += channels_guide()
     messages=[{'role':'system','content':system},{'role':'user','content':encode(payload)}]
     # Preserve only the latest complete tool group. Exact readings live once in
     # the pinned frame; the complete original group remains in the durable ledger.
@@ -68,9 +115,9 @@ def context(task, *, forced=None, maximum=28000):
                 'reading_delivery':'Exact inspected evidence is in research_binding_frame; full reply is saved.',
                 'ok':not bool(error) and data.get('committed') is not False})})
         break
+    messages, selection = fit_messages(messages, payload, maximum)
     size=len(encode(messages))
-    if size>maximum:
-        raise ValueError(f'Immutable objective and selected reading window require {size} characters; limit {maximum}. Reduce inspect limit or query scope; full originals remain saved.')
     b.setdefault('context_projections',[]).append({'policy':POLICY,'projected_chars':size,'max_chars':maximum,
-        'original_chars':len(encode(b.get('messages',[]))),'source_text_changed':False,'available_tools':names})
+        'original_chars':len(encode(b.get('messages',[]))),'source_text_changed':False,'available_tools':names,
+        'selection':selection})
     return messages

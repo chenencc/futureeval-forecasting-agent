@@ -8,6 +8,10 @@ from ForecastAgent.readers.quality import body_diagnostics
 MAX_CONTEXT_CHARS = 28000
 
 
+class ContextProjectionError(ValueError):
+    """Local delivery failed before a model HTTP attempt; not a provider failure."""
+
+
 def encode(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
