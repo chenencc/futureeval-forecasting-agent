@@ -21,6 +21,25 @@ def enable(t):
 
 
 class GroundingTests(unittest.TestCase):
+    def test_unique_saved_alias_keeps_original_coordinates_and_scope(self):
+        url='https://example.org/?basin='
+        span={'url':url,'text':'Accessible dated baseline.','start':40,'end':66}
+        material={'sources':{url:{}},'spans':{'R1':span}}
+        before=copy.deepcopy(material)
+        selected=grounding.select(material,{'url':'https://example.org/?basin'})
+        self.assertEqual(selected,[span])
+        self.assertEqual(selected[0]['url'],url)
+        self.assertEqual(material,before)
+        for unavailable in ('https://example.org/?basin=other','https://other.org/?basin'):
+            with self.assertRaises(ValueError):grounding.select(material,{'url':unavailable})
+
+    def test_ambiguous_alias_does_not_choose_a_body(self):
+        material={'sources':{'https://example.org/?basin=':{},'https://EXAMPLE.org/?basin':{}},'spans':{}}
+        with self.assertRaises(ValueError):
+            grounding.select(material,{'url':'https://example.org/?basin&utm_source=x'})
+        # An explicitly named catalog key remains unambiguous.
+        self.assertEqual(grounding.select(material,{'url':'https://example.org/?basin='}),[])
+
     def test_whole_saved_range_is_visible_before_row_pagination(self):
         with tempfile.TemporaryDirectory() as tmp:
             t=enable(task(tmp));text='Market Open.\n\n| Date | Close |\n| --- | --- |\n'

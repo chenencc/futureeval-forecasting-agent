@@ -52,7 +52,15 @@ def select(material, args):
     """Filter exact catalog spans without changing source coordinates or scope."""
     url = args.get('url')
     if url and url not in material['sources']:
-        raise ValueError('Use an exact saved URL from source_catalog')
+        # Use the same conservative normalization as the saved-body reader.
+        # Only accessible catalog keys may match; redirect guesses or another
+        # entity/query are never substituted, even if a hidden page exists.
+        from ForecastAgent.tavily_research import canonical_url
+        key = canonical_url(url)
+        matches = [u for u in material['sources'] if key and canonical_url(u) == key]
+        if len(matches) != 1:
+            raise ValueError('Use an exact saved URL from source_catalog')
+        url = matches[0]
     start, end = args.get('start_date'), args.get('end_date')
     if bool(start) != bool(end):
         raise ValueError('Provide paired start_date and end_date')
