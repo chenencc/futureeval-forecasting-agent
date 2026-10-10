@@ -15,10 +15,15 @@ reserved within these totals for final local review.
 ## Scheduling
 
 1. Preserve mandatory planning and Exa obligations.
+   With discovered URLs but no readable body, bind one capture batch to
+   `read_sources` before empty-map inspection or optional skill navigation.
 2. Read one pending exact source scope; the next phase updates that same source.
 3. After a committed graph, offer one acquisition phase for declared obtainable
    consequential gaps. The agent chooses among available native network tools.
    Future realization requests do not force acquisition.
+   Map action categories such as `page_fetch` to real offered functions. Require
+   the declared gap link. A proposal rejected before a native reservation does
+   not count as completed acquisition; allow one bounded correction.
 4. Review each source scope at most twice. Failed or deferred interpretations
    remain pending and cannot starve other saved sources.
 5. Final review rebuilds the pending-source packet after partial acceptance.

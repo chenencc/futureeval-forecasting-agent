@@ -65,10 +65,12 @@ class DispatchTests(unittest.TestCase):
             t.execute('update_research_state', p, 'test')
             choice = dispatch.choose(t)
             self.assertEqual(choice['phase'], 'acquire_gap')
-            tools = [{'function': {'name': name}} for name in
+            tools = [{'function': {'name': name, 'parameters': {'properties': {}}}} for name in
                      ['fetch_page', 'search_tavily', 'load_research_skill', 'inspect_research_state']]
             self.assertEqual([x['function']['name'] for x in dispatch.tools_for(t, tools, choice)],
                              ['fetch_page', 'search_tavily'])
+            dispatch.record_selection(t, choice)
+            self.assertEqual(dispatch.choose(t)['phase'], 'acquire_gap')
             dispatch.record_selection(t, choice)
             self.assertIsNone(dispatch.choose(t))
             t.bundle['control']['forced_close'] = True
@@ -79,6 +81,32 @@ class DispatchTests(unittest.TestCase):
             t = fresh(root); initial(t)
             self.assertIsNone(dispatch.choose(t))
             self.assertEqual(t.budget()['tavily_basic_remaining'], 3)
+
+    def test_page_intent_maps_to_real_capture_tool_and_requires_gap_link(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root); initial(t)
+            p = proposal(t, [])
+            p['material_requests'] = copy.deepcopy(t.bundle['research_loop']['current']['material_requests'])
+            p['material_requests'][0].update(availability='available', suggested_tool='page_fetch')
+            p['revision_kind'] = 'interpretation_correction'
+            t.execute('update_research_state', p, 'test')
+            choice = dispatch.choose(t)
+            self.assertEqual(choice['tool'], 'read_sources')
+            from ForecastAgent.runtime.tool_selection import active_tools
+            from ForecastAgent.tools.registry import COLLECTION_TOOLS
+            from ForecastAgent.research_loop import runtime
+            tools = active_tools(t, runtime.configure(t, copy.deepcopy(COLLECTION_TOOLS)), choice['tool'])
+            tools = dispatch.tools_for(t, tools, choice)
+            self.assertEqual([x['function']['name'] for x in tools], ['read_sources'])
+            self.assertIn('research_gap_ids', tools[0]['function']['parameters']['required'])
+
+    def test_initial_discovery_captures_before_empty_map_or_skill_navigation(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root); t.bundle['pages'] = {}
+            t.bundle['searches'] = [{'results': [{'url': 'https://example.org/report', 'title': 'Target release'}]}]
+            choice = dispatch.choose(t)
+            self.assertEqual(choice['phase'], 'capture_discovery')
+            self.assertEqual(choice['tool'], 'read_sources')
 
     def test_reserved_reviewer_continues_after_partial_acceptance(self):
         with tempfile.TemporaryDirectory() as root:

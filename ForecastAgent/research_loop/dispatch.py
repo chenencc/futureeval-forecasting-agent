@@ -64,6 +64,19 @@ def choose(task):
     material = state.catalog(task.bundle, task.cutoff)
     revision = task.bundle['research_loop']['revision']
     history = record['selections']
+    if not material['sources']:
+        from ForecastAgent.runtime.collection_actions import discovery_read_action
+        discovery = discovery_read_action(task)
+        discovery_round = len(task.bundle.get('searches', [])) + len(task.bundle.get('exa_searches', []))
+        attempts = sum(s['phase'] == 'capture_discovery' and s.get('discovery_round') == discovery_round
+                       for s in history)
+        if discovery and attempts < 2:
+            return {'phase': 'capture_discovery', 'revision': revision,
+                    'discovery_round': discovery_round, 'tool': 'read_sources',
+                    'candidates': discovery,
+                    'instruction': 'Capture one batch of already discovered exact URLs using '
+                    'read_sources. Do not load skills or inspect an empty map first. '
+                    'Use an actual JSON array for urls. Future outcomes remain unknown.'}
     pending = gap_feedback.pending(task)
     # Two review proposals per exact source scope. Failed interpretations remain
     # pending, but cannot starve all subsequent sources or extend a soft stop.
@@ -76,15 +89,22 @@ def choose(task):
             and g.get('attempts_without_readable_body', 0) < 2]
     # One explicit agent acquisition opportunity after each committed graph.
     # It must use a real declared obtainable gap, not a guessed future outcome.
-    acquired = any(s['phase'] == 'acquire_gap' and s['revision'] == revision for s in history)
+    acquired = any(e['map_revision'] == revision and e.get('research_gap_ids')
+                   for e in task.bundle['research_acquisition']['events'])
+    phase_attempts = sum(s['phase'] == 'acquire_gap' and s['revision'] == revision for s in history)
     budget = task.budget()
     can_network = budget['page_fetch_remaining'] > 0
-    if revision and gaps and can_network and not acquired:
+    if revision and gaps and can_network and not acquired and phase_attempts < 2:
+        # Suggested tools are action categories, not callable function names.
+        # Bind page capture to the native collection interface explicitly.
+        tool = 'read_sources' if gaps[0].get('suggested_tool') == 'page_fetch' and (task.catalog() or task.bundle['pages']) else None
         return {'phase': 'acquire_gap', 'revision': revision,
-                'gaps': gaps[:3], 'tool': None,
+                'gaps': gaps[:3], 'tool': tool,
                 'instruction': 'Choose ONE native acquisition action for an obtainable listed gap. '
                 'Link its research_gap_ids and research_node_ids. Copy saved/discovered URLs only. '
-                'A future realization is not an obtainable document; preserve that uncertainty.'}
+                'A future realization is not an obtainable document; preserve that uncertainty. '
+                'suggested_tool is an intent category, not a function name. Call only an offered '
+                'tool. All array arguments must be JSON arrays, never encoded strings.'}
     remaining = task.bundle['research_loop']['update_cap'] - revision
     reserve = record['limits']['post_review_revisions']
     if usable and remaining > reserve:
@@ -120,7 +140,14 @@ def tools_for(task, tools, choice):
     tools = copy.deepcopy(tools)
     if choice['phase'] == 'acquire_gap':
         from ForecastAgent.tools.capabilities import get
-        return [t for t in tools if 'network' in get(t['function']['name']).effects]
+        selected = [t for t in tools if 'network' in get(t['function']['name']).effects]
+        for entry in selected:
+            schema = entry['function']['parameters']
+            if 'research_gap_ids' in schema.get('properties', {}):
+                schema['properties']['research_gap_ids']['minItems'] = 1
+                schema['properties']['research_gap_ids']['items']['enum'] = [g['gap_id'] for g in choice['gaps']]
+                schema['required'] = list(dict.fromkeys(schema.get('required', []) + ['research_gap_ids']))
+        return selected
     if choice['phase'] == 'process_read':
         for tool in tools:
             if tool['function']['name'] == 'inspect_research_state':
