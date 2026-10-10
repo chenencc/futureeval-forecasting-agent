@@ -81,19 +81,19 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
             'entry_sha256': digest(entry), 'error': str(error)})
     for index, original in enumerate(proposal['nodes']):
         try:
-            if simple:
-                check_schema(original, simple_map.NODE_SCHEMA)
             if isinstance(original, dict) and isinstance(original.get('id'), str) and counts[original['id']] > 1:
                 raise ValueError('Duplicate node ID; every occurrence is quarantined')
             chosen = copy.deepcopy(original)
             scope = set(allowed) if allowed is not None else None
-            if stage_grounding:
+            if stage_grounding and isinstance(chosen, dict):
                 from ForecastAgent.research_loop.grounding import isolate_labels
                 chosen, fields = isolate_labels(chosen, material, scope)
                 rejected.extend(fields)
+            if simple:
+                check_schema(chosen, simple_map.NODE_SCHEMA)
             if map_protocol in {'forecast-map-v3', 'forecast-score-map-v4'}:
                 from ForecastAgent.research_loop.forecast_map import bind_observation
-                bound, chosen, fields = bind_observation(original, material, scope)
+                bound, chosen, fields = bind_observation(chosen, material, scope)
                 rejected.extend(fields)
             else:
                 bound = bind_node(chosen, material, scope, validate_stage=stage_grounding)

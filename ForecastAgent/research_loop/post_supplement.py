@@ -46,6 +46,9 @@ different namespaces. Receipt gap_ids must copy current_gap_ids or be [].
 Earlier same-entity observations may be useful background; time mismatch alone
 does not make them irrelevant. Do not request an unknowable future realization
 as if it were an obtainable missing page. Name its current baseline instead.
+Copy material_sha256 from reading.material_sha256. The current_map is previous
+notes, not the current material identity. Preserve useful old nodes by merge;
+omit unchanged nodes instead of re-emitting them or their original text.
 '''
 
 
@@ -108,6 +111,40 @@ def remaining_failures(bundle, limits):
         a.get('status') != 'received' for a in bundle.get('model_attempts', [])))
 
 
+def reading_candidates(spans, terms):
+    """Navigate literal rows with their headers; no entity or value is inferred."""
+    from ForecastAgent.research_loop.reading_views import substantive
+    def row_kind(span):
+        value=span['text'].strip()
+        if '\n' in value or not value.startswith('|') or not value.endswith('|'):
+            return None
+        cells=[c.strip() for c in value[1:-1].split('|')]
+        if cells and all(re.fullmatch(r'[:\s-]+', c) for c in cells):
+            return 'separator'
+        return 'data' if any(re.search(r'\d', c) for c in cells) else 'header'
+    def score(span):
+        words=set(re.findall(r'\b[a-z0-9]{4,}\b', span['text'].lower()))
+        missing=len(re.findall(r'\|\s*(?:N/A|NA|null|[-–—])\s*(?=\|)',span['text'],re.I))
+        return (len(terms & words), -missing, -span['start'])
+    ranked=sorted(spans,key=score,reverse=True)
+    data=sorted((s for s in spans if row_kind(s)=='data'),key=score,reverse=True)
+    body=[s for s in substantive(ranked) if row_kind(s) not in {'header','separator'}]
+    primary=(data or body or ranked)[:1]
+    context=[]
+    if primary and row_kind(primary[0])=='data':
+        # Only the header of this contiguous table may qualify the selected row.
+        for s in reversed(sorted((s for s in spans if s['end']<=primary[0]['start']),key=lambda s:s['start'])):
+            if not row_kind(s): break
+            if row_kind(s)=='header': context=[s]; break
+    if not context and spans:
+        context=[min(spans,key=lambda s:s['start'])]
+    result, seen=[], set()
+    for s in primary+context+ranked:
+        if s['evidence_id'] not in seen:
+            result.append(s);seen.add(s['evidence_id'])
+    return result
+
+
 def reading_packet(task):
     """Fair source coverage from saved spans; quotas and text are never changed."""
     material = state.catalog(task.bundle, task.cutoff)
@@ -122,19 +159,7 @@ def reading_packet(task):
     evidence, deferred, ranked_sources = [], [], []
     for source in pending:
         spans = [s for s in material['spans'].values() if s['url'] == source['url']]
-        ranked = sorted(spans, key=lambda s: (-len(terms & set(re.findall(
-            r'\b[a-z0-9]{4,}\b', s['text'].lower()))), s['start']))
-        from ForecastAgent.research_loop.reading_views import substantive
-        body = substantive(ranked)
-        # Body first, then its literal header or another useful span. No new
-        # coordinates or text are manufactured by this navigation heuristic.
-        ordered = body[:1] + ([spans[0]] if spans else []) + ranked
-        unique, seen = [], set()
-        for span in ordered:
-            if span['evidence_id'] not in seen:
-                unique.append(span)
-                seen.add(span['evidence_id'])
-        ranked_sources.append((source, unique))
+        ranked_sources.append((source, reading_candidates(spans, terms)))
     # Give every pending source one opportunity before any gets a second span.
     # An omitted source remains pending; a delivered excerpt is not full reading.
     for round_index in range(2):
@@ -159,7 +184,7 @@ def reading_packet(task):
     task.bundle['research_acquisition']['inspected_context_references'] = []
     task.save()
     return {'material_sha256': material['material_sha256'], 'evidence': evidence,
-            'selection_policy': 'source_round_robin_body_before_header_v1',
+            'selection_policy': 'source_round_robin_body_or_table_row_with_header_v2',
             'identifier_registry': gap_feedback.identifiers(task, gap_feedback.materials(task, material)),
             'delivered_materials': [m for m in gap_feedback.materials(task, material).values()
                                     if any(s['url'] == m['url'] for s in evidence)],
@@ -169,6 +194,20 @@ def reading_packet(task):
                 'delivered_spans': sum(s['url'] == m['url'] for s in evidence),
                 'full_read_claimed': False} for m in pending],
             'scope': 'Exact bounded saved excerpts; not full-page reading.'}
+
+
+def prompt_map(task):
+    """Present prior notes once, without stale hash or duplicate bound full text."""
+    current=task.bundle['research_loop'].get('current')
+    if not current:return None
+    from ForecastAgent.research_loop.delta import node_input
+    return {'nodes':[node_input(n) for n in current.get('nodes',[])],
+        'relations':[{k:copy.deepcopy(v) for k,v in r.items() if k!='verified'}
+                     for r in current.get('relations',[])],
+        'material_requests':copy.deepcopy(current.get('material_requests',[])),
+        'instruction':'Prior fallible notes. The server preserves omitted valid nodes '
+            'on merge. Use reading.material_sha256 for this update; literal reading '
+            'handles and the identifier registry control new observations and receipts.'}
 
 
 def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None):
@@ -247,7 +286,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 messages = [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({
                     'question': {k: task.bundle['request'].get(k, '') for k in state.RULE_FIELDS},
                     'expected_revision': task.bundle['research_loop']['revision'],
-                    'current_map': task.bundle['research_loop'].get('current'), 'reading': packet,
+                    'current_map': prompt_map(task), 'reading': packet,
                     'previous_attempt': steps[-1] if steps else None}, ensure_ascii=False)}]
                 try:
                     message = ask_model(messages, os.environ['OPENROUTER_API_KEY'], tools=tools,

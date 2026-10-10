@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 FIELD = 'research_grounding_policy'
 POLICY = 'saved_coverage_stage_v1'
-LABEL_POLICY = 'literal_stage_time_isolation_v1'
+LABEL_POLICY = 'literal_stage_time_isolation_v2'
 DATE = re.compile(r'\b(?:\d{4}-\d{2}-\d{2}|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b', re.I)
 GUIDE = '''
 Saved-coverage discipline: source_catalog describes the whole accessible saved
@@ -168,9 +168,17 @@ def isolate_labels(original, material, allowed=None):
 def isolate_stage(original, material, allowed=None):
     """Keep a valid observation while quarantining unsupported stage metadata."""
     chosen = copy.deepcopy(original)
+    basis = chosen.get('stage_basis', '')
+    if chosen.get('kind') == 'observation' and isinstance(basis, str) and len(basis) > 180:
+        # Preserve the independent literal observation; discard an invalid
+        # annotation, never shorten a claim or invent a stage-supporting quote.
+        chosen.update(event_stage='unknown', stage_basis='')
+        return chosen, [{'section':'node_labels', 'node_id':chosen.get('id'),
+            'field':'stage_basis', 'proposed':basis,
+            'proposed_stage':original.get('event_stage'), 'accepted':'', 'accepted_stage':'unknown',
+            'error':'Stage basis exceeds 180 characters. Annotation isolated; literal observation must still pass all source-binding checks.'}]
     if chosen.get('kind') != 'observation' or chosen.get('event_stage') not in {'planned','ongoing','completed'}:
         return chosen, []
-    basis = chosen.get('stage_basis', '')
     refs = [material['spans'].get(i) for i in chosen.get('evidence_ids', [])
             if allowed is None or i in allowed]
     # A date/number-only measurement row has no source statement about phase.

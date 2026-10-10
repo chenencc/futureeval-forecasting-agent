@@ -170,6 +170,30 @@ class PostSupplementTests(unittest.TestCase):
             self.assertIn('300 characters',props['revision_reason']['description'])
             self.assertIn('180 characters',props['nodes']['items']['properties']['stage_basis']['description'])
 
+    def test_numeric_table_delivers_available_row_and_its_exact_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp); url='https://example.org/history'
+            body='Target revenue history\n\n| Date | Revenue |\n|---|---|\n| 2026-10-10 | N/A |\n| 2026-10-09 | $123 |\n| 2026-10-08 | $121 |\n'
+            t.bundle['pages']={url:{'content':body}}
+            packet=post.reading_packet(t)
+            spans=packet['evidence']
+            self.assertEqual(spans[0]['text'],'| 2026-10-09 | $123 |\n')
+            self.assertEqual(spans[1]['text'],'| Date | Revenue |\n')
+            for s in spans: self.assertEqual(s['text'],body[s['start']:s['end']])
+            self.assertEqual(t.bundle['pages'][url]['content'],body)
+
+    def test_prompt_map_omits_stale_hash_and_duplicate_original_bindings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp); initial(t)
+            current=copy.deepcopy(t.bundle['research_loop']['current'])
+            view=post.prompt_map(t)
+            self.assertNotIn('material_sha256',view)
+            self.assertNotIn('bindings',view['nodes'][0])
+            self.assertEqual(view['nodes'][0]['claim'],current['nodes'][0]['claim'])
+            self.assertEqual(view['nodes'][0]['evidence_ids'],current['nodes'][0]['evidence_ids'])
+            self.assertLess(len(json.dumps(view)),len(json.dumps(current)))
+            self.assertEqual(t.bundle['research_loop']['current'],current)
+
     def test_complete_pipeline_includes_reserved_review_and_caches_without_recollection(self):
         with tempfile.TemporaryDirectory() as tmp:
             t=task(Path(tmp)/'fixture')

@@ -37,6 +37,23 @@ it. Length guidance matches the existing validator, including 300 characters for
 to make it pass. Earlier observations may inform a future forecast as background;
 a future realization is not an obtainable missing document.
 
+For an observation with an overlong stage annotation, the stage field is isolated
+to unknown and its basis is cleared, with the complete rejected annotation retained
+in the audit. The original claim and its references must still pass strict binding
+checks; false quotes are rejected. This extends the existing unsupported-stage
+isolation instead of discarding an otherwise valid observation. It does not
+truncate, rewrite or certify a fact.
+
+When a saved source contains a numeric Markdown table, the reading packet prefers
+a literal data row over a title or separator and includes the header of the same
+contiguous table. Missing-cell penalties are navigation hints only. Dates, values,
+units and table contents are never synthesized. Other rows and unread sources
+remain in the immutable snapshot; two handles are still not complete table reading.
+Prior-map prompt projection contains the same node claims and reference IDs,
+without duplicate binding bodies or the obsolete material hash. The reading
+packet supplies the one authoritative current material hash. This changes prompt
+delivery only; complete prior bindings and graph journals remain in the snapshot.
+
 ## Failure and restart
 
 No reserved allowance, expired wall time, exhausted map revisions, malformed proposals,

@@ -111,6 +111,26 @@ class GroundingTests(unittest.TestCase):
             self.assertTrue(node['stage_basis_binding_verified'])
             self.assertFalse(node['interpretation_verified'])
 
+    def test_overlong_stage_annotation_isolated_but_false_quote_still_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=enable(task(tmp));p=literal_proposal(t.bundle)
+            p['nodes']=p['nodes'][:1];p['material_requests']=[]
+            p['nodes'][0]['stage_basis']='An overlong annotation. '*12
+            before=copy.deepcopy(p)
+            result=t.execute('update_research_state',p,'unused')
+            node=t.bundle['research_loop']['current']['nodes'][0]
+            self.assertEqual(node['claim'],before['nodes'][0]['claim'])
+            self.assertEqual((node['event_stage'],node['stage_basis']),('unknown',''))
+            rejection=next(e for e in result['acceptance']['rejected'] if e.get('field')=='stage_basis')
+            self.assertEqual(rejection['proposed'],before['nodes'][0]['stage_basis'])
+            self.assertEqual(p,before)
+        with tempfile.TemporaryDirectory() as tmp:
+            t=enable(task(tmp));p=literal_proposal(t.bundle)
+            p['nodes']=p['nodes'][:1];p['material_requests']=[]
+            p['nodes'][0].update(stage_basis='Overlong. '*30,claim='An invented value not in the source.')
+            with self.assertRaises(ValueError): t.execute('update_research_state',p,'unused')
+            self.assertIsNone(t.bundle['research_loop']['current'])
+
     def test_unknown_stage_needs_no_extra_observation_or_model_correction(self):
         with tempfile.TemporaryDirectory() as tmp:
             t=enable(task(tmp));p=literal_proposal(t.bundle);p['nodes']=p['nodes'][:1];p['material_requests']=[]
