@@ -1,8 +1,13 @@
 # Native tools, source channels and research integration
 
 Status: isolated development integration, `native_channels_v1`. No production
-release is claimed. Donor parsing code is pinned to Channels commit `dde8b02`;
-the newer official-index discovery experiment is outside this integration.
+release is claimed. Donor parsing code is pinned to Channels commit `15d9f45`.
+The host exposes 14 capabilities, including admitted index discovery and exact
+linked-original download. The standalone compatibility export intentionally
+retains 12; this host supplies the two additional network adapters.
+
+See [acquisition architecture](../intelligence/ACQUISITION_ARCHITECTURE.md) and
+[latest offline integration evidence](LATEST_VALIDATION.json).
 
 ## Responsibilities
 
@@ -28,7 +33,7 @@ paths. A new adapter can be registered without adding another name branch in
 `RetrievalTask.execute` or another acquisition-effect list in research code.
 
 Existing tools retain native handlers through a compatibility adapter. Agent tool
-exposure is validated by the registry. The optional twelve channel/navigation
+exposure is validated by the registry. The optional fourteen channel/navigation
 definitions come from the same registry. The public catalog omits duplicate
 schemas by default; the full manifest is used for frozen identity.
 
@@ -59,7 +64,10 @@ budgets and remain resumable; they are not certified complete by the adapter.
 
 ## Official channel behavior
 
-- Eighteen API/feed contracts and five curated issuer/authority profiles.
+- Twenty-three API/feed contracts and five curated issuer/authority profiles.
+- GDELT offers article leads, DBnomics offers exact statistical series, BLS
+  preserves series/period/footnote identity, and GovInfo offers recent feeds and
+  exact package HTML. Availability is not target applicability or truth.
 - One physical request consumes one existing native HTTP slot. Search, browser,
   Extract and model caps remain owned by their existing ledgers.
 - The toolbox SQLite journal is a capture mirror. Its internal capacity is not
@@ -75,6 +83,29 @@ budgets and remain resumable; they are not certified complete by the adapter.
   its recorded native attempt and journal ID. Unknown interrupted transport
   outcomes remain blocked for review.
 - Current revised observations are not historically archived vintages.
+
+## Index discovery and original download
+
+Use `intelligence_discover` for a catalog route or an exact task-discovered
+RSS, sitemap or issuer index. Issuer discovery requires its curated profile.
+Inspect the returned zero-based candidates, then call
+`intelligence_acquire_link(capture_id, index, need_ids)` for a selected original.
+The host compares immutable parent fields and reparses the saved raw index
+before any request reservation. Downloads retain the parent capture ID, raw
+hash, candidate index and publisher binding. Cache budgets are not source identity.
+
+Discovery captures and feeds populate source leads rather than readable pages.
+Structured observations retain native rows and source roles. Downloaded Office
+files remain `captured_unparsed`; raw bytes are kept without inventing a body.
+Only new readable originals/observations trigger native material-arrival events.
+These request graph processing; they do not certify relevance or close gaps.
+
+The catalog adds current native budget, missing configuration names and GDELT
+cooldown. The agent menu narrows sources and saved capture/URL arguments to
+current prerequisites. GDELT reserves a five-second task-local interval even on
+transport failure; a 429 Retry-After extends it. The tool returns immediately
+without sleeping or retrying. Provider/IP limits across concurrent tasks are
+separate; this is not an account-wide rate limiter.
 
 ## Saved-original reading and coordinate contract
 
@@ -115,6 +146,13 @@ bundle, page history and research journals. A bundle-only copy is insufficient
 for UUID capture replay.
 
 ## Verification boundaries
+
+The 2026-10-10 absorption run passed 222 targeted offline tests, including 15
+new host integration gates and the existing research scheduling, material
+processing, decision-count and tool-menu suites. Transports were fixtures; no
+live provider or model requests were made. The committed donor assets were
+checked against `15d9f45`. Linux execution, fresh task agent selection and actual
+recall improvement still require independent bounded trials.
 
 The [structured validation record](VALIDATION.json) records 118 passing targeted
 tests and a six-original replay across issuer HTML, US bills/law, UK statute XML

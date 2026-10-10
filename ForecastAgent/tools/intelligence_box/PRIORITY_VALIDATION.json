@@ -1,0 +1,487 @@
+{
+  "schema": "priority_domain_audit_v2",
+  "audited_at_utc": "2026-10-10T06:34:12.032345+00:00",
+  "network_requests_during_audit": 0,
+  "model_requests": 0,
+  "physical_request_budget": {
+    "maximum_http_attempts": 25,
+    "reserved_attempts": 14,
+    "remaining": 11
+  },
+  "capture_count": 14,
+  "original_status_distribution": {
+    "usable": 10,
+    "failed": 3,
+    "empty": 1
+  },
+  "all_available_raw_hashes_match": true,
+  "configuration_only_cases": [
+    {
+      "label": "SEC Tesla revenue concept",
+      "source_id": "sec_concept",
+      "status": "configuration_required",
+      "capture_id": null,
+      "url": null,
+      "records": 0,
+      "raw_bytes": null,
+      "error": null,
+      "configuration_names": [
+        "SEC_USER_AGENT"
+      ],
+      "quality": null,
+      "limitations": null,
+      "source_binding": null
+    }
+  ],
+  "tesla_saved_recovery": {
+    "source_capture_id": "fe03d879-ac8d-405a-a2fe-5c40edea76fa",
+    "raw_sha256": "cf19adfbc01d3959fa9f1b4fe97429c7947c4a687680a337ac6ff20ac8b77bd7",
+    "original_status": "failed",
+    "replay_status": "usable",
+    "original_capture_unchanged": true,
+    "http_requests": 0,
+    "model_requests": 0
+  },
+  "recovery_original_still_failed": true,
+  "tesla_readable_pages": 33,
+  "tesla_visual_review": {
+    "pages": [
+      4,
+      27,
+      30
+    ],
+    "checks": [
+      "Unaudited label",
+      "USD millions and per-share exception",
+      "Q2 2026 column",
+      "Separate GAAP and non-GAAP diluted EPS"
+    ],
+    "scope": "Sample financial pages only; no full-document factual certification"
+  },
+  "saved_html_table_inspection": {
+    "capture_id": "0b71dccc-7361-46b1-9ae4-fa93c889e704",
+    "total_tables": 11,
+    "rows": 181,
+    "tables_truncated": false,
+    "network_requests": 0,
+    "units_and_financial_basis_inferred": false
+  },
+  "saved_law_lookup": {
+    "capture_id": "60a72aa5-d32f-4383-a82d-8289d34b7094",
+    "raw_sha256": "3bb297d3037031cd36bc09e10a5857d05e71a9cd08f86bab789390b228786889",
+    "provision_id": "section-138",
+    "network_requests": 0,
+    "status": "found",
+    "text_truncated": false,
+    "xml_excerpt_truncated": false
+  },
+  "known_gaps": [
+    "Tesla IR index blocked with HTTP 403; original PDF discovered independently on official IR page",
+    "UK bill list timed out; exact bill identity reused from preserved earlier official response",
+    "Bill 4038 publications returned valid empty, not an extraction failure",
+    "PDF structured table extraction is bounded to the first 20 pages; later financial pages retain text and visible extraction gaps",
+    "Rotated PDF text may be incomplete",
+    "SEC adapters are fixture-tested but live requests await SEC_USER_AGENT contact configuration",
+    "Election portals and calendars do not certify winners",
+    "Enacted statute text does not establish later amendments or commencement"
+  ],
+  "captures": [
+    {
+      "capture_id": "0b71dccc-7361-46b1-9ae4-fa93c889e704",
+      "source": "profile:microsoft_ir",
+      "url": "https://www.microsoft.com/en-us/Investor/earnings/FY-2026-Q4/press-release-webcast",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:03.815177+00:00",
+      "raw_bytes": 809009,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 28156,
+          "paragraph_count": 1408,
+          "table_count": 11,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "microsoft_ir",
+        "entity": "Microsoft Corporation",
+        "jurisdiction": null,
+        "cik": "0000789019",
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "1b996479-bf08-4639-837d-b10e06dbca15",
+      "source": "federal_register",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=5&order=newest&conditions%5Bterm%5D=artificial+intelligence",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:18:08.550326+00:00",
+      "raw_bytes": 12087,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 5,
+        "usable_observation_count": null
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "200246a8-d168-42b9-8359-00cfd21fbfa5",
+      "source": "profile:fec_election_directory",
+      "url": "https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:31.992942+00:00",
+      "raw_bytes": 37579,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 6678,
+          "paragraph_count": 74,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "fec_election_directory",
+        "entity": "Federal Election Commission",
+        "jurisdiction": "US",
+        "cik": null,
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "25f158c5-8603-46a6-abf9-3bdae56618e1",
+      "source": "profile:tesla_ir",
+      "url": "https://ir.tesla.com/",
+      "status": "failed",
+      "captured_at_utc": "2026-10-10T06:17:01.580644+00:00",
+      "raw_bytes": 529,
+      "hash_matches": true,
+      "error": {
+        "type": "ValueError",
+        "message": "HTTP 403"
+      },
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": false
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "36e0be82-30ac-45b6-b54a-2ffc1c96d93d",
+      "source": "profile:california_elections",
+      "url": "https://www.sos.ca.gov/elections/upcoming-elections/general-election-november-3-2026/key-dates-deadlines",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:13.964955+00:00",
+      "raw_bytes": 67784,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 4889,
+          "paragraph_count": 103,
+          "table_count": 1,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "california_elections",
+        "entity": "California Secretary of State",
+        "jurisdiction": "US-CA",
+        "cik": null,
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "4c788e7a-fa38-4126-8bac-f7632cbca9e0",
+      "source": "profile:california_elections",
+      "url": "https://elections.cdn.sos.ca.gov/statewide-elections/2026-primary/election-guide/section-07-general-election-calendar.pdf",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:23.825415+00:00",
+      "raw_bytes": 298031,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 19,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 70020,
+          "paragraph_count": 986,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "california_elections",
+        "entity": "California Secretary of State",
+        "jurisdiction": "US-CA",
+        "cik": null,
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "60a72aa5-d32f-4383-a82d-8289d34b7094",
+      "source": "uk_legislation_xml",
+      "url": "https://www.legislation.gov.uk/ukpga/2025/18/enacted/data.xml",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:55.573058+00:00",
+      "raw_bytes": 1646021,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 500,
+        "usable_observation_count": null
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "a8477f25-9e18-4cc2-8dfd-01eca9eb7c58",
+      "source": "profile:california_elections",
+      "url": "https://www.sos.ca.gov/elections/upcoming-elections/general-election-november-3-2026",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:11.097399+00:00",
+      "raw_bytes": 69329,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 3450,
+          "paragraph_count": 71,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "california_elections",
+        "entity": "California Secretary of State",
+        "jurisdiction": "US-CA",
+        "cik": null,
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "aaed6eb0-892d-4812-9753-d993da2b4ad1",
+      "source": "federal_register_detail",
+      "url": "https://www.federalregister.gov/api/v1/documents/2026-20674.json",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:18:09.464942+00:00",
+      "raw_bytes": 3237,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "b385af1b-6a8d-4588-ad1d-794a901334b5",
+      "source": "uk_bill_detail",
+      "url": "https://bills-api.parliament.uk/api/v1/Bills/4038",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:24:07.525681+00:00",
+      "raw_bytes": 1143,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "cf1884c2-86b2-4b92-93f0-5506011db87a",
+      "source": "uk_bill_publications",
+      "url": "https://bills-api.parliament.uk/api/v1/Bills/4038/Publications",
+      "status": "empty",
+      "captured_at_utc": "2026-10-10T06:24:11.213470+00:00",
+      "raw_bytes": 33,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 0,
+        "usable_observation_count": null
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "d4bfc6b1-8eb3-4d9f-b52f-73cba4bffa38",
+      "source": "profile:brazil_tse",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T06:17:28.597462+00:00",
+      "raw_bytes": 152142,
+      "hash_matches": true,
+      "error": null,
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1,
+        "usable_observation_count": null,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 7075,
+          "paragraph_count": 147,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "readable_document": true
+      },
+      "source_binding": {
+        "profile_id": "brazil_tse",
+        "entity": "Tribunal Superior Eleitoral",
+        "jurisdiction": "BR",
+        "cik": null,
+        "basis": "Curated issuer/authority host; target period, metric and outcome remain unverified"
+      }
+    },
+    {
+      "capture_id": "d8de0cf8-5353-431f-9391-5d490665f023",
+      "source": "uk_bills",
+      "url": "https://bills-api.parliament.uk/api/v1/Bills?Take=5&SearchTerm=finance",
+      "status": "failed",
+      "captured_at_utc": "2026-10-10T06:17:34.111025+00:00",
+      "raw_bytes": null,
+      "hash_matches": null,
+      "error": {
+        "type": "TimeoutError",
+        "message": "Acquisition failed; inspect HTTP metadata and local transport logs"
+      },
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": false
+      },
+      "source_binding": null
+    },
+    {
+      "capture_id": "fe03d879-ac8d-405a-a2fe-5c40edea76fa",
+      "source": "profile:tesla_ir",
+      "url": "https://assets-ir.tesla.com/tesla-contents/IR/TSLA-Q2-2026-Update.pdf",
+      "status": "failed",
+      "captured_at_utc": "2026-10-10T06:22:51.292004+00:00",
+      "raw_bytes": 10552832,
+      "hash_matches": true,
+      "error": {
+        "type": "DocumentRejected",
+        "message": "No readable document body; raw response preserved"
+      },
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": false,
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "empty_text",
+          "chars": 0,
+          "paragraph_count": 0,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": false,
+          "truth_verified": false
+        }
+      },
+      "source_binding": null
+    }
+  ],
+  "truth_verification_performed": false,
+  "production_integration_complete": false
+}

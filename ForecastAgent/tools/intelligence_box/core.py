@@ -80,13 +80,15 @@ def build_url(source_id, params):
         raise ValueError("Unknown parameters; inspect the source catalog")
     if any(not isinstance(v,(str,int,float)) or len(str(v))>300 for v in params.values()):
         raise ValueError("Parameters must be bounded scalar values")
+    from .public_channels import validate
+    validate(source_id, params)
     paths = source.get("path_parameters", [])
     if source_id.startswith('congress_'):
         from .congress import validate_parameters
         validate_parameters(params)
     for key in paths:
         value = str(params.get(key,""))
-        if not value or not all(c.isalnum() or c in "._-" for c in value):
+        if not value or not all(c.isalnum() or c in ("._-:" if source_id=="dbnomics_series" else "._-") for c in value):
             raise ValueError("An exact safe path parameter is required: "+key)
     if source_id.startswith("sec_"):
         if not re.fullmatch(r"[0-9]{10}",str(params.get("cik",""))): raise ValueError("SEC CIK must have exactly ten digits")
@@ -99,16 +101,25 @@ def build_url(source_id, params):
         version=str(params.get("version",""))
         if version and version not in {"enacted","made"} and not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}",version): raise ValueError("Invalid statute version")
         return source["endpoint"].format(**params).replace("/data.xml",("/"+version if version else "")+"/data.xml")
+    if source_id=='govinfo_feed':
+        return source['endpoint'].format(collection=params['collection'].lower())
     if source_id == "fred_csv" and ("id" not in params or any(c not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_" for c in str(params["id"]))):
         raise ValueError("An exact single FRED series ID is required")
     endpoint = source["endpoint"].format(**{k:params[k] for k in paths})
     query = dict(source["defaults"], **{k:v for k,v in params.items() if k not in paths})
+    if source_id=='gdelt_news' and 'startdatetime' in params: query.pop('timespan',None)
     return endpoint + ("?"+urlencode(query) if query else "")
 
 
 def parse(source, raw):
     """Keep native records intact. Never synthesize an observation date."""
     fmt = source["format"]
+    if fmt=='discovery':
+        from .discovery import parse_discovery
+        return parse_discovery(source,raw)
+    if source.get("records") in {"gdelt", "dbnomics", "bls"}:
+        from .public_channels import parse_channel
+        return parse_channel(source,raw)
     total, more = None, None
     if fmt == "json":
         body = json.loads(raw)
@@ -285,10 +296,69 @@ class Toolbox:
         source={"domain":profile["domain"],"role":profile["role"],"format":"document","caveat":profile["caveat"],"profile":profile,"profile_id":profile_id}
         return self._acquire("profile:"+profile_id,{},source,target,cache_max_age_seconds)
 
+    def discover(self,url,kind,profile_id=None,offset=0,limit=40,*,cache_max_age_seconds=900):
+        from .discovery import KINDS
+        from .profiles import resolve_profile
+        if kind not in KINDS: raise ValueError('Unknown discovery kind')
+        if type(offset) is not int or not 0<=offset<=100000: raise ValueError('offset must be in 0..100000')
+        if type(limit) is not int or not 1<=limit<=100: raise ValueError('limit must be in 1..100')
+        self._check_read_url(url)
+        profile=None
+        if profile_id: profile,url=resolve_profile(profile_id,url)
+        if kind=='ir' and not profile: raise ValueError('Issuer discovery requires a curated profile_id')
+        hosts=profile['hosts'] if profile else [urlsplit(url).hostname]
+        params={'kind':kind,'profile_id':profile_id,'offset':offset,'limit':limit,'parser_version':'discovery_v1'}
+        source={'format':'discovery','domain':profile['domain'] if profile else 'official_index',
+                'role':'issuer_discovery' if profile else 'publisher_discovery',
+                'discovery_parameters':params,'discovery_hosts':hosts,
+                'caveat':'Discovery index is not full evidence or a complete archive. Linked originals require separate budgeted acquisition.'}
+        return self._acquire('discovery:'+kind,params,source,url,cache_max_age_seconds)
+
+    def acquire_link(self,capture_id,index,*,cache_max_age_seconds=900):
+        from .discovery import parse_discovery
+        from .profiles import PROFILES
+        capture,raw=self._saved(capture_id)
+        if not capture['source_id'].startswith('discovery:') or capture['status'] not in {'usable','empty'}:
+            raise ValueError('Requires a successful discovery capture')
+        if type(index) is not int or not 0<=index<len(capture['records']): raise ValueError('Invalid candidate index')
+        params=capture['parameters']
+        profile=PROFILES[params['profile_id']] if params.get('profile_id') else None
+        source={'discovery_parameters':params,'final_url':capture['http']['final_url'],
+                'discovery_hosts':profile['hosts'] if profile else [urlsplit(capture['request_url']).hostname],
+                'response_headers':capture['http'].get('response_headers',{})}
+        records,_=parse_discovery(source,raw)
+        candidate=records[index]
+        # Policy eligibility can tighten or expand after a curated host update;
+        # the actual URL/label and source fields must still match original bytes.
+        intrinsic=lambda record:{k:v for k,v in record.items() if k not in {'eligible','within_profile_hosts'}}
+        if intrinsic(candidate)!=intrinsic(capture['records'][index]): raise ValueError('Candidate does not match saved raw index')
+        if not candidate['eligible']: raise ValueError('Candidate host or credential policy rejected')
+        if candidate['target_kind']=='sitemap': raise ValueError('Child sitemap requires an explicit discover call')
+        url=candidate['url']; self._check_read_url(url)
+        if urlsplit(url).hostname in {'data.sec.gov','www.sec.gov'} and not self._sec_agent():
+            return {'status':'configuration_required','configuration_names':['SEC_USER_AGENT'],'http_attempted':False,'budget':self.budget()}
+        binding={'parent_capture_id':capture_id,'parent_raw_sha256':capture['raw_sha256'],
+                 'candidate_index':index,'candidate':candidate,'discovery_captured_at_utc':capture['captured_at_utc'],
+                 'profile_id':params.get('profile_id'),'entity':profile['entity'] if profile else None,
+                 'parent_candidate_eligible':capture['records'][index]['eligible'],
+                 'current_allowed_hosts':source['discovery_hosts'],
+                 'cik':profile.get('cik') if profile else None,'basis':'Saved official index link, not verified event or reporting-period equivalence'}
+        source={'format':'document','domain':capture['domain'],'role':'discovered_original',
+                'discovery_binding':binding,'caveat':'Linked original; index timestamp is not proof of publication time. Retain target-period and source applicability gaps.'}
+        return self._acquire('discovered_original',{'parent_capture_id':capture_id,'index':index},source,url,cache_max_age_seconds)
+
+    @staticmethod
+    def _readable_original(capture):
+        if capture.get('http',{}).get('status')!=200 or capture.get('http',{}).get('truncated'):
+            raise ValueError('Offline extraction requires a complete HTTP 200 original')
+        if capture.get('status') not in {'usable','empty'}:
+            raise ValueError('Use explicit navigation/recovery for a failed or unparsed original')
+
     def links(self,capture_id,limit=40):
         from .profiles import PROFILES,inventory
-        if not isinstance(limit,int) or not 1<=limit<=100: raise ValueError("Link limit must be in 1..100")
+        if type(limit) is not int or not 1<=limit<=100: raise ValueError("Link limit must be in 1..100")
         capture,raw=self._saved(capture_id)
+        self._readable_original(capture)
         if capture["http"]["content_type"] not in {"text/html","application/xhtml+xml"}: raise ValueError("Link inventory requires a saved HTML response")
         profile=PROFILES.get(capture["source_id"].removeprefix("profile:"))
         return dict(inventory(raw,capture["http"]["final_url"],profile,limit),capture_id=capture_id,raw_sha256=capture["raw_sha256"],network_requests=0)
@@ -304,14 +374,16 @@ class Toolbox:
 
     def tables(self,capture_id,max_rows=200):
         from .profiles import tables
-        if not isinstance(max_rows,int) or not 1<=max_rows<=1000: raise ValueError("Row limit must be in 1..1000")
+        if type(max_rows) is not int or not 1<=max_rows<=1000: raise ValueError("Row limit must be in 1..1000")
         capture,raw=self._saved(capture_id)
+        self._readable_original(capture)
         if capture["http"]["content_type"] not in {"text/html","application/xhtml+xml"}: raise ValueError("HTML table reading requires saved HTML")
         return dict(tables(raw,max_rows),capture_id=capture_id,raw_sha256=capture["raw_sha256"],network_requests=0)
 
     def provisions(self,capture_id,provision_id=None,max_chars=30000):
-        if not isinstance(max_chars,int) or not 500<=max_chars<=100000: raise ValueError("Provision text cap must be in 500..100000")
+        if type(max_chars) is not int or not 500<=max_chars<=100000: raise ValueError("Provision text cap must be in 500..100000")
         capture,raw=self._saved(capture_id)
+        self._readable_original(capture)
         if capture["source_id"]!="uk_legislation_xml": raise ValueError("Provision lookup requires a saved CLML capture")
         if b"<!DOCTYPE" in raw.upper() or b"<!ENTITY" in raw.upper(): raise ValueError("DTD and entity declarations forbidden")
         root=ET.fromstring(raw)
@@ -357,7 +429,7 @@ class Toolbox:
     def _acquire(self,source_id,params,source,url,cache_max_age_seconds):
         cache_warning=None
         # Cached evidence retains original capture time; failures are never cached.
-        for (capture,) in self.db.execute("SELECT capture FROM attempts WHERE url=? AND status IN ('usable','empty') ORDER BY created DESC LIMIT 1",(url,)):
+        for (capture,) in self.db.execute("SELECT capture FROM attempts WHERE url=? AND status IN ('usable','empty','captured_unparsed') ORDER BY created DESC LIMIT 1",(url,)):
             try:
                 saved=json.loads((self.root/capture).read_text(encoding="utf-8"))
                 body_path=self.root/saved["raw_path"]
@@ -377,6 +449,7 @@ class Toolbox:
         folder.mkdir(parents=True)
         result={"version":"intelligence_capture_v1","id":attempt,"source_id":source_id,"domain":source["domain"],"role":source["role"],"request_url":url,"parameters":params,"captured_at_utc":now(),"status":"failed","records":[],"cache_hit":False,"quality":{"truth_verified":False,"target_relevance_verified":False,"full_article_body":False,"historical_vintage_verified":False},"limitations":[source["caveat"]],"analysis_started":False,"submitted":False}
         if cache_warning: result["limitations"].append(cache_warning)
+        if source.get('discovery_binding'): result['source_binding']=source['discovery_binding']
         try:
             byte_cap=self.max_document_bytes if source["format"] in {"document","clml"} else 2_000_000
             result["byte_cap"]=byte_cap
@@ -392,9 +465,27 @@ class Toolbox:
             result.update(http=response,raw_path=str(body_path.relative_to(self.root)),raw_sha256=digest(raw),raw_bytes=len(raw))
             if response["status"] != 200: raise ValueError("HTTP "+str(response["status"]))
             if response.get("truncated"): raise ValueError("Response exceeded byte cap; raw prefix preserved")
-            parse_source=dict(source,url=url,final_url=response["final_url"],content_type=response["content_type"],captured_at=result["captured_at_utc"],decoded_byte_cap=byte_cap,response_headers=response.get("response_headers",{}))
+            result['quality']['original_download_complete']=True
+            office_types={'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                          'application/msword','application/vnd.ms-excel','application/vnd.ms-powerpoint'}
+            if source['format']=='document' and response['content_type'] in office_types:
+                # Original acquisition is complete; no binary-to-text decoding
+                # or hidden external document service is attempted.
+                result.update(status='captured_unparsed',coverage={'total_reported':None,'more_available':None,
+                    'scope':'complete downloaded original; document parser unavailable','native_metadata':{'content_type':response['content_type']}})
+                result['quality'].update(readable_document=False,structure_valid=None)
+                result['limitations'].append('Original file downloaded; Office document parsing is not implemented')
+                return self._finish_capture(result,folder,attempt)
+            parse_source=dict(source,request_parameters=params,url=url,final_url=response["final_url"],content_type=response["content_type"],captured_at=result["captured_at_utc"],decoded_byte_cap=byte_cap,response_headers=response.get("response_headers",{}))
             records,coverage=parse(parse_source,raw)
             metadata=coverage["native_metadata"]
+            if source_id=='govinfo_text':
+                expected='/content/pkg/'+params['package']+'/html/'+params['package']+'.htm'
+                if urlsplit(response['final_url']).path!=expected: raise ValueError('GovInfo returned a different package path')
+                result['source_binding']={'package_id':params['package'],'collection':params['package'].split('-')[0],
+                    'basis':'Exact requested GovInfo public rendition path; legal stage and relevance remain unverified'}
             if source_id in {'congress_bill','congress_actions','congress_texts'}:
                 from .congress import bind_identity
                 result['source_binding']=bind_identity(source_id,params,metadata)
@@ -417,6 +508,7 @@ class Toolbox:
                     p=source["profile"]
                     result["source_binding"]={"profile_id":source["profile_id"],"entity":p["entity"],"jurisdiction":p.get("jurisdiction"),"cik":p.get("cik"),"basis":"Curated issuer/authority host; target period, metric and outcome remain unverified"}
                 if source.get('congress_text_binding'): result['source_binding']=source['congress_text_binding']
+                if source.get('discovery_binding'): result['source_binding']=source['discovery_binding']
             if not records: result["limitations"].append("Valid zero-result response; not proof of event absence")
             if coverage["more_available"]: result["limitations"].append("Additional records exist; this is a bounded result window")
         except Exception as exc:
@@ -424,6 +516,9 @@ class Toolbox:
             result["error"]={"type":type(exc).__name__,"message":str(exc) if isinstance(exc,(ValueError,json.JSONDecodeError,ET.ParseError)) else "Acquisition failed; inspect HTTP metadata and local transport logs"}
             result["quality"]["structure_valid"]=False
             if isinstance(exc,DocumentRejected): result["quality"]["body_diagnostics"]=exc.diagnostics
+        return self._finish_capture(result,folder,attempt)
+
+    def _finish_capture(self,result,folder,attempt):
         result["completed_at_utc"]=now()
         result["budget"]=self.budget()
         capture_path=folder/"capture.json"
@@ -434,6 +529,10 @@ class Toolbox:
 
     def call(self, tool, arguments):
         """Dispatch ordinary JSON function calls from any agent framework."""
+        from .contracts import validate_call
+        validate_call(tool,arguments,TOOL_DEFINITIONS)
+        if tool=='intelligence_discover': return self.discover(**arguments)
+        if tool=='intelligence_acquire_link': return self.acquire_link(**arguments)
         if tool in {"intelligence_outline", "intelligence_search", "intelligence_part"}:
             from .navigation import navigate
             args=dict(arguments)
@@ -453,8 +552,8 @@ class Toolbox:
 
 TOOL_DEFINITIONS=[
     {"type":"function","function":{"name":"intelligence_bill_text","description":"Read one official original text selected from a hash-verified Congress text index. Use zero-based version and format indices. Public/private law formats require detail_capture_id with matching official law number. Preserves version and parent captures; counts one request, with no automatic redirects. Draft/enrolled text is not proof of enactment.","parameters":{"type":"object","properties":{"capture_id":{"type":"string"},"version_index":{"type":"integer","minimum":0},"format_index":{"type":"integer","minimum":0},"detail_capture_id":{"type":"string"}},"required":["capture_id","version_index"],"additionalProperties":False}}},
-    {"type":"function","function":{"name":"intelligence_catalog","description":"List available source contracts and parameter guidance. Use before fetch. Key onboarding entries are not executable.","parameters":{"type":"object","properties":{"domain":{"type":"string","enum":["finance","politics","health","environment","science"]}},"additionalProperties":False}}},
-    {"type":"function","function":{"name":"intelligence_fetch","description":"Fetch one bounded official data or metadata response. Raw capture, native records, limitations and budget are returned. A usable status does not verify relevance or truth. No automatic retries or pagination.","parameters":{"type":"object","properties":{"source_id":{"type":"string","enum":list(SOURCES)},"parameters":{"type":"object","description":"Only keys declared by this source in intelligence_catalog."}},"required":["source_id"],"additionalProperties":False}}},
+    {"type":"function","function":{"name":"intelligence_catalog","description":"List available source contracts and parameter guidance. Use before fetch. Key onboarding entries are not executable.","parameters":{"type":"object","properties":{"domain":{"type":"string","enum":["finance","politics","health","environment","science","news"]}},"additionalProperties":False}}},
+    {"type":"function","function":{"name":"intelligence_fetch","description":"Fetch one bounded source data, news lead, public file, or metadata response. Raw capture, native records, limitations and budget are returned. A usable status does not verify relevance or truth. No automatic retries or pagination.","parameters":{"type":"object","properties":{"source_id":{"type":"string","enum":list(SOURCES)},"parameters":{"type":"object","description":"Only keys declared by this source in intelligence_catalog."}},"required":["source_id"],"additionalProperties":False}}},
     {"type":"function","function":{"name":"intelligence_budget","description":"Inspect the persistent HTTP attempt budget, including failed and interrupted attempts.","parameters":{"type":"object","properties":{},"additionalProperties":False}}},
     {"type":"function","function":{"name":"intelligence_read","description":"Read a saved discovery URL on an explicitly allowed host. Reuses HTML, PDF, JSON and CSV readers; retains raw data and parse failures. Inspect document diagnostics. No browser fallback or OCR is automatic.","parameters":{"type":"object","properties":{"url":{"type":"string"}},"required":["url"],"additionalProperties":False}}},
     {"type":"function","function":{"name":"intelligence_profile","description":"Read a curated issuer or election-authority page. Catalog lists profile IDs and hosts. Optional detail URL must belong to that profile. Source identity does not prove event stage, target metric or outcome.","parameters":{"type":"object","properties":{"profile_id":{"type":"string"},"url":{"type":"string"}},"required":["profile_id"],"additionalProperties":False}}},
@@ -465,3 +564,5 @@ TOOL_DEFINITIONS=[
 
 from .navigation import definitions as navigation_definitions
 TOOL_DEFINITIONS.extend(navigation_definitions())
+from .discovery import definitions as discovery_definitions
+TOOL_DEFINITIONS.extend(discovery_definitions())

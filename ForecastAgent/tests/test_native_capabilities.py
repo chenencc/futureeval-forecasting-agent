@@ -209,12 +209,12 @@ class NativeCapabilityTests(unittest.TestCase):
             self.assertIn(d['function']['name'], capabilities.registry())
         self.assertEqual(before, COLLECTION_TOOLS)
 
-    def test_opt_in_exposes_exact_twelve_tools_only_once(self):
+    def test_opt_in_exposes_exact_fourteen_tools_only_once(self):
         with tempfile.TemporaryDirectory() as root:
             t = task(root)
             configured = capabilities.configure(t, copy.deepcopy(COLLECTION_TOOLS))
             names = [d['function']['name'] for d in configured]
-            self.assertEqual(len([n for n in names if n.startswith('intelligence_')]), 12)
+            self.assertEqual(len([n for n in names if n.startswith('intelligence_')]), 14)
             self.assertEqual(len(names), len(set(names)))
 
     def test_old_task_retains_old_catalog_and_blocks_channel_execution(self):

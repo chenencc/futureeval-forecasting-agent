@@ -1,0 +1,105 @@
+{
+  "capture_id_note": "Replace fixture IDs and selected indexes with exact saved records from the same task root. Requests are examples, not an automatic batch.",
+  "calls": [
+    {
+      "name": "intelligence_catalog",
+      "arguments": {
+        "domain": "finance"
+      }
+    },
+    {
+      "name": "intelligence_budget",
+      "arguments": {}
+    },
+    {
+      "name": "intelligence_fetch",
+      "arguments": {
+        "source_id": "bls_series",
+        "parameters": {
+          "series": "CUUR0000SA0"
+        }
+      }
+    },
+    {
+      "name": "intelligence_read",
+      "arguments": {
+        "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+      }
+    },
+    {
+      "name": "intelligence_profile",
+      "arguments": {
+        "profile_id": "tesla_ir"
+      }
+    },
+    {
+      "name": "intelligence_discover",
+      "arguments": {
+        "url": "https://www.govinfo.gov/rss/plaw.xml",
+        "kind": "rss",
+        "limit": 10
+      }
+    },
+    {
+      "name": "intelligence_acquire_link",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "index": 2
+      }
+    },
+    {
+      "name": "intelligence_links",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "limit": 10
+      }
+    },
+    {
+      "name": "intelligence_tables",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "max_rows": 40
+      }
+    },
+    {
+      "name": "intelligence_provisions",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "provision_id": "section-1"
+      }
+    },
+    {
+      "name": "intelligence_bill_text",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "version_index": 0,
+        "format_index": 0
+      }
+    },
+    {
+      "name": "intelligence_outline",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "limit": 40
+      }
+    },
+    {
+      "name": "intelligence_search",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "query": "Total revenues",
+        "limit": 10
+      }
+    },
+    {
+      "name": "intelligence_part",
+      "arguments": {
+        "capture_id": "00000000-0000-0000-0000-000000000000",
+        "unit_id": "table:1",
+        "row_start": 0,
+        "max_rows": 40,
+        "max_chars": 12000
+      }
+    }
+  ]
+}

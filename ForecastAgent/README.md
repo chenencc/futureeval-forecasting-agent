@@ -1,5 +1,10 @@
 # ForecastAgent
 
+For the current development acquisition architecture, state-bound source selection
+and the integrated 23 source contracts / 14 native capabilities, see
+[gap-driven acquisition](intelligence/ACQUISITION_ARCHITECTURE.md) and
+[native channel integration](channels/README.md).
+
 For the v1.0.5-based development collector with registered Crawl4AI/source tools,
 shared budgets and recovery guards, see [release source-tool integration](acquisition/RELEASE_SOURCE_TOOLS.md).
 

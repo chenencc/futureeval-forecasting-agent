@@ -1,0 +1,349 @@
+{
+  "schema": "native_channel_absorption_validation_v1",
+  "date": "2026-10-10",
+  "branch": "codex/official-intelligence-v106",
+  "base_commit": "106fcff26523359c67da300939467cbbf13daeec",
+  "donor_commit": "15d9f457aaad92167901560308834635830d3767",
+  "source_contract_count": 23,
+  "native_capability_count": 14,
+  "tests": {
+    "passed": 222,
+    "failures": 0,
+    "errors": 0,
+    "suites": [
+      "ForecastAgent.test_intelligence_box",
+      "ForecastAgent.test_intelligence_congress",
+      "ForecastAgent.test_intelligence_navigation",
+      "ForecastAgent.test_intelligence_discovery",
+      "ForecastAgent.test_intelligence_public_channels",
+      "ForecastAgent.test_intelligence_agent_interface",
+      "ForecastAgent.test_intelligence_compatibility",
+      "ForecastAgent.tests.test_channel_absorption",
+      "ForecastAgent.tests.test_native_capabilities",
+      "ForecastAgent.tests.test_decision_budget",
+      "ForecastAgent.tests.test_research_dispatch",
+      "ForecastAgent.tests.test_research_gap_feedback",
+      "ForecastAgent.tests.test_research_fusion",
+      "ForecastAgent.tests.test_post_supplement_map",
+      "ForecastAgent.tests.test_tool_selection"
+    ],
+    "new_host_gate_tests": 15,
+    "live_socket_attempts": 0,
+    "live_provider_calls": 0,
+    "live_model_calls": 0
+  },
+  "verified": [
+    "shared native physical request reservations",
+    "immutable index to original provenance",
+    "index leads never projected as readable bodies",
+    "structured observations retain native identity and missing values",
+    "unparsed Office original retained without body",
+    "failed captures replay without extra HTTP",
+    "interrupted original projection recovers without duplicate HTTP",
+    "persistent task-local GDELT cooldown and Retry-After",
+    "state-bound source credentials and URL/capture menus",
+    "existing research dispatch, receipts and decision count regressions"
+  ],
+  "donor_assets": [
+    {
+      "path": "ForecastAgent/test_intelligence_agent_interface.py",
+      "sha256": "8477c0918292c06fbe95ea62bb665c8a5ec87b0ed6ef5176282abd23d46fd04c"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_box.py",
+      "sha256": "fe42871cd6d51933ea4ea906b92266d1d4e4fc8761031b4668db17db17fb5762"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_compatibility.py",
+      "sha256": "ae35618e08782b9e3b8c674777aef3ec018e104bae76a8f1e864703acb0a4278"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_congress.py",
+      "sha256": "1c8a772faad38e5239919644729de34c80fafa4dcbdab0db3b2ac6706160f6ec"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_discovery.py",
+      "sha256": "842b43af1dc9e6cec475d9cf34e0826a41439f84ca7b0a2b022c4f2782ac4057"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_navigation.py",
+      "sha256": "27370a7607e32e623f0ad9daa8025a1420591aa541b2a95a6efcc43dadbf934f"
+    },
+    {
+      "path": "ForecastAgent/test_intelligence_public_channels.py",
+      "sha256": "ad1ac4361549a87feea415add1543a36354683550ecfb2c3b64317dedd1b2956"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/AGENT_ACCEPTANCE.json",
+      "sha256": "253f17afc1bd0294ef3e2078fc96de0e09f7c3e38cd3e3ad8c14ed63f2ee7061"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/CONGRESS_VALIDATION.json",
+      "sha256": "16390226735ffd23e58df86bc08aee57ab67077cf39bd8eec147a143004e6e40"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/DISCOVERY_VALIDATION.json",
+      "sha256": "904691bb3502745a1c43f5e2e5bda1bbfef7fcb7cc3a389660492d6a1e9d8eb3"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/NATIVE_COMPATIBILITY_VALIDATION.json",
+      "sha256": "87bac9fd3065e72067906e54c7db22c57f080602415307714dd1c585de11bbd2"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/NAVIGATION_VALIDATION.json",
+      "sha256": "cee01c81f5c82611d0f18b9b874698130c3c98bfeb40709aaf8deb9a7bd5a162"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/PRIORITY_VALIDATION.json",
+      "sha256": "9ebe92c038832bc29cd598c64d05e72ac2ef570e57a8a9113aaeea5874584a58"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/PUBLIC_CHANNELS_VALIDATION.json",
+      "sha256": "5c88a1befca419185639eb699e8b01a42c22f62e89e2aca1b34ff0268c8d930f"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/README.md",
+      "sha256": "8fbc5a87c848ab5fed031ef1a13c3bb28dd584bda7a8cf63151df768d9fe8232"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/SEC_VALIDATION.json",
+      "sha256": "49f2a3c82641474e6b553bbdf96c72935c1934a2cf07e72c06af458033b43ebb"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/VALIDATION.json",
+      "sha256": "002f4170a25f9bfe271104b34fcaa57674eff0692552e1e85d5021630b4dc374"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/__init__.py",
+      "sha256": "6fbe6710865eeb3f796b6529f19efaf791109714a985c0ad96981fe3610acef7"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/__main__.py",
+      "sha256": "f4c08c5bd2b90a3afcf6b66c1692c52164c0ed1324619a32a02ff0d764ba597c"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/audit.py",
+      "sha256": "0d819b7317b2d84d05b57faa423010a641c507ddc8c8cbc39d0f89cfc4ac8a53"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/audit_congress.py",
+      "sha256": "2f4744ba59f17926488e3e9cafcad5ff33f276a44cfb70c5a6fd166c02e5fb98"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/audit_discovery.py",
+      "sha256": "d222ccb05e8d5acac2ad1efc551cdbbf94e905941f6b352e44078d909e3b11bb"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/audit_priority.py",
+      "sha256": "88fb98ee690c84d600db2852c1d25489c7afb45f5b7ebaa6c647d5bfc499f075"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/audit_saved_pilots.py",
+      "sha256": "78b8adf188cc9705390ad4b39dab31c6786881059b1453ba625182d7a0e7d35b"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/catalog.py",
+      "sha256": "b5b7ad9a26cbcdcbe9618d269a657b4fcbdf532f984211454da01bfece40f8b0"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/compatibility.py",
+      "sha256": "200acfcda3f2580a954a6cdb79e683c700d891d46689d66c3304d59fb14767d1"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/configure_congress.ps1",
+      "sha256": "01ad5fe0fd016a5a622f8e700f7413596c9d9c06d2e9b83b004175923ee11c76"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/configure_sec.ps1",
+      "sha256": "99f3b8ea1033698c7ca199c2339e95e680e3546233fa02f03f1f9a854dabf945"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/congress.py",
+      "sha256": "bea1246e8f78ffd9a75eb443f19fdea6d0c93e538de44630830dbee141d8b540"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/contracts.py",
+      "sha256": "e8bd9acaf743242b2afc820b3caa3d6febe2222a1c80413e9a0c6f478d876d33"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/core.py",
+      "sha256": "29a2f3f4424c4e8fc54fd0a236e6d404a68ce9c4460255671f7c8445a23a7b48"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/discovery.py",
+      "sha256": "cc864094a082e701e30217b1885bb7feb48b4223129ebd128cfa35cfd9772311"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/documents.py",
+      "sha256": "198434a120f848068934178ba15ba0fcc4534e8e4543f240d7f0b2c11c311417"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/follow_priority.py",
+      "sha256": "811c9ece1c60e82e5eeb11715a170f6f7ba54c5d1922c763b6ffde5c80753b0f"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/followup.py",
+      "sha256": "190a3c4d96885ad1f981d18f9db9cf14282a117b7a096727cd9e27f70ba7ed90"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/navigation.py",
+      "sha256": "461d95a0416b8cbefbf9348251fcd9f91d9c12d5b5858da3327ff98285210758"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/profiles.py",
+      "sha256": "a956a4398a8223fd66fd50c5747669b0a5f5eabacbf078950a46c08997bfbcef"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/public_channels.py",
+      "sha256": "14b771f617bc757a06ba4c9538e2adecc689b6731e85ce06120c9bc4014a4c21"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/replay_priority.py",
+      "sha256": "cacc7991b4387a52a7920fcdb57f1fc72263648cbb7b2ec3d2c5e9140f35e1fc"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/SKILL.md",
+      "sha256": "51350de7acae62b7055811a5eb081fe3a7f2494c328a78cd03cf16c19dff6570"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/examples.json",
+      "sha256": "bf5a0a6407d82c18866dcbee1e23f84a59777c628be91d31b4d02dc5e44e3a01"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/invocation.md",
+      "sha256": "f8232746ed8594cd42d25d59782c9f24a39bb003199227b970ac1a9a5938b5a4"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/native-compatibility.md",
+      "sha256": "aa3f749c934c4ff4a49641106b0d343b42876162a5270b1b2402ff1d18991923"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/routes.md",
+      "sha256": "2fe55d426ec4316c30fe2dad63e8575f759e29e9a64c92dd9bb20218fe5b20ce"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/tool-contracts.json",
+      "sha256": "c62523abcc09a7b3816045fbcb0ad4dcf3d2b2e189bc794fbce5ee91ddd9a818"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/validation.md",
+      "sha256": "78e3fa83a838ef3858ab9b2e3d1d7451557d967f63c1958e88475274e2c89452"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify.py",
+      "sha256": "991f198a9dc51198daa6f8f0b7c5370553cd9b81277d1c0fd7b2d178797b8f55"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_congress.py",
+      "sha256": "970892a6d66a0ef498e9a1de3c8e846e4170c51afe4e240d6875b4fae2273dcc"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_congress_chain.py",
+      "sha256": "3ed5fd13e6a785a5be43dd64c25a04761d6f3ee5ad46a4159d6ab798aaceac0b"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_congress_followup.py",
+      "sha256": "27902b54948df8f97278d4b9546b5f494e1a4c56b0dd81bc10d8e0f544bec0c6"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_discovery.py",
+      "sha256": "288a45823fea1a75574ac44e4c3f10565a9786dd743320fedc38b06ef43d173c"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_native_compatibility.py",
+      "sha256": "3ff111008d6f5ad7e3aa324ec77da7ad1c6ec618957e3c7216b6d78a2f322d13"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_navigation.py",
+      "sha256": "6bdab34445544462d91505766ebd98dc069305e6ce9874ae524cd8eeab057416"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_priority.py",
+      "sha256": "4b074083ccbacafa096540b5f090db2db91633418f0da359513d9af0b302b4db"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_public_channels.py",
+      "sha256": "64ea32e2e60faee4873f5f7c6f2fd76f46e6838adc4e94ba8714de6e8a8eafa6"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_sec.py",
+      "sha256": "bcecb46d18237412d521cb4d9d19d1abc40f64ea2246ea72e027aa30dfc41018"
+    }
+  ],
+  "code_identity": {
+    "channels/__init__.py": "1be0a47d9d40ce651806158ceac66a4b3ea211358a675b0b065f540fd9f76637",
+    "channels/contracts.py": "771a77ffc2f0ccae094f68cab2220cfff136e56653c1a758a58ee3658a005585",
+    "channels/discovery.py": "d7df4d42ab56580397ac3f6d8e92361be505152543ec4ae8feb4868200fd9d87",
+    "channels/native.py": "6d1f1e9c6c26559993024ff888c96410ad8fc9a89ede5d5101fb9e8cb7b769fc",
+    "channels/official.py": "c12c5212aa535d392c521b6734e406fd5bc7885969a5dee208bc42d69775e158",
+    "channels/replay.py": "60503e0f49ef4d3c11a1ef7db36f5e82583760790a5144d8a12ec7896956f4a7",
+    "channels/selection.py": "fe5c431bfb9d549fc753f22065862d89ae3d2d346b30579d046390f8f250e67e",
+    "intelligence/development_collection.py": "deb9570c2fd9d3da0a07a1f31e3fe1694b061366dd927988d24fb26160ffe76f",
+    "intelligence/pipeline.py": "e8efc3e79eecebc88355687172753a295b0c701b859f3a5eecb9731863956e65",
+    "readers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "readers/browser.py": "5d5dee041dbe3a2053ebe3783c59963c2196f9ba486ff2a5285445f5ddd7f9e3",
+    "readers/crawl4ai.py": "819b71d5d163f282e7b9af5b950cd0b255bffc462956b0ae5d531701553fd260",
+    "readers/datasets.py": "148c94352c22ceeb60ba2a45884f9aefe895aa957dbeec87015d4a1f4fc33622",
+    "readers/encoding.py": "5c1709f39dbc2c706a269da6d65e0f71f937b24ae52838f18d74217bfa845736",
+    "readers/feed.py": "ad6bf4a37888db79ff0f7f00abd7881dae1b5002548c8d25240d1e75616d1dbb",
+    "readers/html.py": "93b7f4dc1abdadd75faad95b64579dd963a2f70934ed55183d8871693aa6c978",
+    "readers/loader.py": "e388e56910952d2d41d31ba6d9e6f7495e473fc2f0a043b84ec6e214cc90d929",
+    "readers/material_structure.py": "565c6579fe9993afa564dd1e70a84c6b41baac912d5687bd555ed4ff1e936854",
+    "readers/metaculus_rules.py": "8d29534f4b2a001200d032975d12166e754d9bf8376f51d08fde1f3108c73a0f",
+    "readers/network_data.py": "eed7c2035cea9b402a1431fe064764c1591598168e16608c1c3422d0067a2e8f",
+    "readers/passages.py": "9263ce6fa83bf4ca83aada30c5df4ff71f9d1667af50fcaa274f1f06b979f7f5",
+    "readers/pdf.py": "0f66e52570fb29b4c80aae9f7353c03f945cad5a749eee1d2620dbadad8c5dcb",
+    "readers/quality.py": "936777ae9a019947bf4e1793d0f9e63ae2b0ad90b2a17c06f98f0e4b37853cb4",
+    "readers/saved.py": "5000fbf62f619628de64d4050852e861302dad00a157512b7af2321479661dfa",
+    "readers/structured.py": "aee0d3ae986e80cc62c737a1cad7cc4d037cc8e18801c1c56b8ac4dc74934601",
+    "research_loop/fusion.py": "3f242c95f8c6db7c4ad00462ed48a1dd42a81c95750063687dce4789f23f21a1",
+    "research_loop/material_events.py": "cb2a530512913c53e6d30b4823d5edac16eb2094e2788f80851cbc33dc437824",
+    "runtime/budget.py": "5db37f78c03e05a522af3757c833ac82df3a754975732b6e76a0cff6546fd979",
+    "runtime/contracts.py": "7ce5d4bbe6e52312d9661ad63eb15feb6d2dedb862bae6c017129bc03f74c8ad",
+    "runtime/retrieval.py": "a744a6da8ab2267776d5cc92bb124cd7b3fa18882a31b069455d68b33fac103e",
+    "runtime/tool_selection.py": "d95007d90762d4ae945bb8c982460f597189cd69f28a77279b1aea42cdd8c1a5",
+    "tools/capabilities.py": "f91d2c7f1bb0d19fdc49c938b4a54371e92ba1acfbbd9d7b3c4b2dd8b90fe9a8",
+    "tools/channels.py": "9a3b31ec15bcd9c0a31716c301c94eb467438d133318cb49e9fe47bb94f8f651",
+    "tools/intelligence_box/__init__.py": "6fbe6710865eeb3f796b6529f19efaf791109714a985c0ad96981fe3610acef7",
+    "tools/intelligence_box/__main__.py": "f4c08c5bd2b90a3afcf6b66c1692c52164c0ed1324619a32a02ff0d764ba597c",
+    "tools/intelligence_box/audit.py": "0d819b7317b2d84d05b57faa423010a641c507ddc8c8cbc39d0f89cfc4ac8a53",
+    "tools/intelligence_box/audit_congress.py": "2f4744ba59f17926488e3e9cafcad5ff33f276a44cfb70c5a6fd166c02e5fb98",
+    "tools/intelligence_box/audit_discovery.py": "d222ccb05e8d5acac2ad1efc551cdbbf94e905941f6b352e44078d909e3b11bb",
+    "tools/intelligence_box/audit_priority.py": "88fb98ee690c84d600db2852c1d25489c7afb45f5b7ebaa6c647d5bfc499f075",
+    "tools/intelligence_box/audit_saved_pilots.py": "78b8adf188cc9705390ad4b39dab31c6786881059b1453ba625182d7a0e7d35b",
+    "tools/intelligence_box/catalog.py": "b5b7ad9a26cbcdcbe9618d269a657b4fcbdf532f984211454da01bfece40f8b0",
+    "tools/intelligence_box/compatibility.py": "200acfcda3f2580a954a6cdb79e683c700d891d46689d66c3304d59fb14767d1",
+    "tools/intelligence_box/congress.py": "bea1246e8f78ffd9a75eb443f19fdea6d0c93e538de44630830dbee141d8b540",
+    "tools/intelligence_box/contracts.py": "e8bd9acaf743242b2afc820b3caa3d6febe2222a1c80413e9a0c6f478d876d33",
+    "tools/intelligence_box/core.py": "29a2f3f4424c4e8fc54fd0a236e6d404a68ce9c4460255671f7c8445a23a7b48",
+    "tools/intelligence_box/discovery.py": "cc864094a082e701e30217b1885bb7feb48b4223129ebd128cfa35cfd9772311",
+    "tools/intelligence_box/documents.py": "198434a120f848068934178ba15ba0fcc4534e8e4543f240d7f0b2c11c311417",
+    "tools/intelligence_box/follow_priority.py": "811c9ece1c60e82e5eeb11715a170f6f7ba54c5d1922c763b6ffde5c80753b0f",
+    "tools/intelligence_box/followup.py": "190a3c4d96885ad1f981d18f9db9cf14282a117b7a096727cd9e27f70ba7ed90",
+    "tools/intelligence_box/navigation.py": "461d95a0416b8cbefbf9348251fcd9f91d9c12d5b5858da3327ff98285210758",
+    "tools/intelligence_box/profiles.py": "a956a4398a8223fd66fd50c5747669b0a5f5eabacbf078950a46c08997bfbcef",
+    "tools/intelligence_box/public_channels.py": "14b771f617bc757a06ba4c9538e2adecc689b6731e85ce06120c9bc4014a4c21",
+    "tools/intelligence_box/replay_priority.py": "cacc7991b4387a52a7920fcdb57f1fc72263648cbb7b2ec3d2c5e9140f35e1fc",
+    "tools/intelligence_box/verify.py": "991f198a9dc51198daa6f8f0b7c5370553cd9b81277d1c0fd7b2d178797b8f55",
+    "tools/intelligence_box/verify_congress.py": "970892a6d66a0ef498e9a1de3c8e846e4170c51afe4e240d6875b4fae2273dcc",
+    "tools/intelligence_box/verify_congress_chain.py": "3ed5fd13e6a785a5be43dd64c25a04761d6f3ee5ad46a4159d6ab798aaceac0b",
+    "tools/intelligence_box/verify_congress_followup.py": "27902b54948df8f97278d4b9546b5f494e1a4c56b0dd81bc10d8e0f544bec0c6",
+    "tools/intelligence_box/verify_discovery.py": "288a45823fea1a75574ac44e4c3f10565a9786dd743320fedc38b06ef43d173c",
+    "tools/intelligence_box/verify_native_compatibility.py": "3ff111008d6f5ad7e3aa324ec77da7ad1c6ec618957e3c7216b6d78a2f322d13",
+    "tools/intelligence_box/verify_navigation.py": "6bdab34445544462d91505766ebd98dc069305e6ce9874ae524cd8eeab057416",
+    "tools/intelligence_box/verify_priority.py": "4b074083ccbacafa096540b5f090db2db91633418f0da359513d9af0b302b4db",
+    "tools/intelligence_box/verify_public_channels.py": "64ea32e2e60faee4873f5f7c6f2fd76f46e6838adc4e94ba8714de6e8a8eafa6",
+    "tools/intelligence_box/verify_sec.py": "bcecb46d18237412d521cb4d9d19d1abc40f64ea2246ea72e027aa30dfc41018",
+    "tools/original_navigation.py": "4afa4678cc9eda08bc5433e38f0a8b127ade1267cfe7a30510086dacdd3eb5b9"
+  },
+  "budget_changes": false,
+  "frozen_task_migration": false,
+  "production_deployed": false,
+  "limitations": [
+    "Offline fixture validation does not establish live recall, relevance or forecast improvement",
+    "Linux execution and fresh unresolved-question agent selection remain unverified",
+    "Provider/IP limits are not globally coordinated; GDELT cooldown is task-local",
+    "Office parsing and OCR are not implemented",
+    "Complete legacy regression gates remain separately documented"
+  ]
+}

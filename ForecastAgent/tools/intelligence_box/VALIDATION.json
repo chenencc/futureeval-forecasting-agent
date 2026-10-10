@@ -1,0 +1,270 @@
+{
+  "version": "toolbox_audit_v1",
+  "audited_at_utc": "2026-10-10T05:45:47.967034+00:00",
+  "network_requests_during_audit": 0,
+  "captures": [
+    {
+      "id": "0530c365-c0e7-4405-9d99-6fb043f6a35b",
+      "source": "clinical_trials",
+      "url": "https://clinicaltrials.gov/api/v2/studies?pageSize=5&format=json&countTotal=true&query.term=NCT05413049",
+      "captured_at_utc": "2026-10-10T05:41:09.957477+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "empty",
+      "checks": {
+        "ids": [],
+        "data_update_dates": []
+      },
+      "replay_state": "empty",
+      "record_count": 0,
+      "more_available": false
+    },
+    {
+      "id": "12389759-d889-4a7a-822e-1a6384820929",
+      "source": "nasa_eonet",
+      "url": "https://eonet.gsfc.nasa.gov/api/v3/events?limit=5&status=open",
+      "captured_at_utc": "2026-10-10T05:41:11.664226+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {},
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": false
+    },
+    {
+      "id": "46597d1b-a90c-4605-97d7-7caeaae3d613",
+      "source": "federal_register",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=5&order=newest&conditions%5Bterm%5D=artificial+intelligence",
+      "captured_at_utc": "2026-10-10T05:41:05.564011+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "document_type_preserved": true,
+        "official_pdf_links": 5,
+        "precision_warning": "Full-text keyword hits include incidental mentions; title relevance is not guaranteed"
+      },
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": true
+    },
+    {
+      "id": "4849619f-64af-408e-90a8-8cb821b8d9f8",
+      "source": "clinical_trials",
+      "url": "https://clinicaltrials.gov/api/v2/studies?pageSize=5&format=json&countTotal=true&query.id=NCT04283461",
+      "captured_at_utc": "2026-10-10T05:42:35.349956+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "ids": [
+          "NCT04283461"
+        ],
+        "data_update_dates": [
+          {
+            "date": "2024-03-18",
+            "type": "ACTUAL"
+          }
+        ]
+      },
+      "replay_state": "usable",
+      "record_count": 1,
+      "more_available": false
+    },
+    {
+      "id": "5e9a5c96-3c0d-4239-ac67-ef02de81e16c",
+      "source": "document",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2026-10-08/pdf/2026-20674.pdf",
+      "captured_at_utc": "2026-10-10T05:42:47.032423+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 6831,
+          "paragraph_count": 72,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "pdf_table_extraction_unavailable": true,
+        "chars": 6817
+      },
+      "replay_state": "usable",
+      "record_count": 1,
+      "more_available": false
+    },
+    {
+      "id": "6a41fb66-d25d-439b-85f2-cd2debb11914",
+      "source": "worldbank",
+      "url": "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.KD.ZG?format=json&per_page=20&date=2020%3A2024",
+      "captured_at_utc": "2026-10-10T05:41:01.560918+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "exact_country": true,
+        "exact_indicator": true,
+        "observation_years": [
+          "2024",
+          "2023",
+          "2022",
+          "2021",
+          "2020"
+        ],
+        "explicit_unit_field_nonempty": false
+      },
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": false
+    },
+    {
+      "id": "995e37b5-fa1c-427e-894f-9a63774c3757",
+      "source": "fred_csv",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2026-09-01&coed=2026-09-07",
+      "captured_at_utc": "2026-10-10T05:41:03.636638+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "series_column_present": true,
+        "dates": [
+          "2026-09-01",
+          "2026-09-02",
+          "2026-09-03",
+          "2026-09-04",
+          "2026-09-07"
+        ],
+        "unit_metadata_available": false
+      },
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": false
+    },
+    {
+      "id": "b82c4c39-5974-402b-b776-0d340022a5ec",
+      "source": "uk_bills",
+      "url": "https://bills-api.parliament.uk/api/v1/Bills?Take=5&SearchTerm=finance",
+      "captured_at_utc": "2026-10-10T05:41:06.498897+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "stage_preserved": true,
+        "first_stage": "2nd reading"
+      },
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": true
+    },
+    {
+      "id": "d0c318ed-3676-4fce-b57a-0e1b8fc52cdf",
+      "source": "crossref",
+      "url": "https://api.crossref.org/works?rows=5&query=probabilistic+forecasting",
+      "captured_at_utc": "2026-10-10T05:41:12.964973+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "types": [
+          "dataset",
+          "posted-content",
+          "book-chapter",
+          "book-chapter",
+          "posted-content"
+        ],
+        "full_text_obtained": false
+      },
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": true
+    },
+    {
+      "id": "d16c9671-67df-41e7-9297-e058fccdc491",
+      "source": "document",
+      "url": "https://www.federalregister.gov/documents/2026/10/08/2026-20674/public-meeting-of-the-national-sea-grant-advisory-board",
+      "captured_at_utc": "2026-10-10T05:42:41.231965+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "failed",
+      "checks": {
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "access_interstitial",
+          "chars": 1123,
+          "paragraph_count": 28,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": false,
+          "truth_verified": false
+        }
+      },
+      "replay_state": "failed",
+      "error_type": "DocumentRejected"
+    },
+    {
+      "id": "f7e4219d-6f38-4598-b381-11cb45844375",
+      "source": "usgs",
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=5&orderby=time&starttime=2026-09-01&endtime=2026-09-08&minmagnitude=5",
+      "captured_at_utc": "2026-10-10T05:41:10.870116+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {},
+      "replay_state": "usable",
+      "record_count": 5,
+      "more_available": false
+    },
+    {
+      "id": "fc7e67b8-0cf6-4285-bd6d-cbc162ab4fcb",
+      "source": "document",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/other20261009a.htm",
+      "captured_at_utc": "2026-10-10T05:42:39.300722+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {
+        "body_diagnostics": {
+          "schema": "body_diagnostics_v1",
+          "state": "readable",
+          "chars": 5141,
+          "paragraph_count": 69,
+          "table_count": 0,
+          "page_reading_gaps": [],
+          "usable_text": true,
+          "truth_verified": false
+        },
+        "pdf_table_extraction_unavailable": false,
+        "chars": 5141
+      },
+      "replay_state": "usable",
+      "record_count": 1,
+      "more_available": false
+    },
+    {
+      "id": "fed29dac-9b90-4846-b15a-ac094fa6794a",
+      "source": "fed_news",
+      "url": "https://www.federalreserve.gov/feeds/press_all.xml",
+      "captured_at_utc": "2026-10-10T05:41:04.860261+00:00",
+      "http_status": 200,
+      "hash_matches": true,
+      "original_state": "usable",
+      "checks": {},
+      "replay_state": "usable",
+      "record_count": 20,
+      "more_available": null
+    }
+  ],
+  "all_raw_hashes_match": true,
+  "state_distribution": {
+    "usable": 11,
+    "empty": 1,
+    "failed": 1
+  },
+  "truth_verification_performed": false,
+  "production_integration_complete": false
+}

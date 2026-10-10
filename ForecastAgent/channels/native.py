@@ -15,6 +15,18 @@ Optional source capabilities: use intelligence_catalog to inspect exact source
 parameters and curated issuer/authority profiles. API captures share native HTTP
 slots; no extra search/model calls, pagination or retries are implicit. A known
 official host is not target relevance, and empty records never prove absence.
+Choose a path for the current obtainable gap, not every source in the catalog:
+numeric observations -> intelligence_fetch with exact series/issuer/period;
+official index or issuer report directory -> intelligence_discover, then
+intelligence_acquire_link with its task-owned capture_id and zero-based index;
+Congress -> detail/actions/text index followed by intelligence_bill_text;
+unstructured news -> bounded Tavily/Exa or GDELT leads, then read_sources.
+Discovery captures are link inventories, not article bodies. GDELT/feeds do not
+replace full text. GDELT cooldown and missing credentials are listed in the
+catalog; choose another applicable source instead of retry loops. A source
+contract is usable only for its entity, fiscal period, metric and event stage.
+Use existing need_ids; research_gap_ids identify obtainable map gaps separately.
+Preserve downloaded-but-unparsed files as captured_unparsed; no readable claim.
 For saved originals use intelligence_outline, then intelligence_search and
 intelligence_part. Supply exactly one saved url or capture_id. Select the target
 PDF page, section or HTML row window; pair numerical values with headers/units.
@@ -35,6 +47,8 @@ def execute(task, name, args):
     preflight(task, name, args, need_ids)
     box = _box(task, need_ids)
     try:
+        from ForecastAgent.channels.discovery import preflight as discovery_preflight
+        discovery_preflight(task, name, args, box)
         if name in {'intelligence_outline', 'intelligence_search', 'intelligence_part'}:
             url, capture, raw = _original(task, args, box)
             options = {k: v for k, v in args.items() if k not in {'url', 'capture_id'}}
@@ -65,6 +79,9 @@ def execute(task, name, args):
         if name in NETWORK_NAMES:
             return acquire(task, name, args, need_ids, box)
         result = box.call(name, args)
+        if name == 'intelligence_catalog':
+            from ForecastAgent.channels.selection import enrich_catalog
+            result = enrich_catalog(task, result)
         if name == 'intelligence_links':
             capture = task.bundle['channel_tools']['captures'].get(args['capture_id'])
             if not capture:

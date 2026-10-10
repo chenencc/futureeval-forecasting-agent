@@ -4,6 +4,8 @@ import copy
 import hashlib
 import json
 import os
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from ForecastAgent.tavily_research import canonical_url
 from ForecastAgent.runtime.budget import reserve
@@ -21,13 +23,31 @@ def _box(task, need_ids):
         attempt['channel_journal_id'] = row[0] if row else None
         attempt['operation_sha256'] = getattr(task, '_channel_operation', None)
         reserve(task.bundle, 'fetch_attempts', attempt, task.fetch_limit, task.save)
+        host = urlsplit(url).hostname
+        if host == 'api.gdeltproject.org':
+            task.bundle['channel_tools'].setdefault('provider_ready_at', {})['gdelt_news'] = (
+                datetime.now(timezone.utc) + timedelta(seconds=5)).isoformat()
         try:
-            host = urlsplit(url).hostname
             response = core.transport(url, byte_cap,
+                allowed_domains=box.allowed_domains,
                 user_agent=os.environ.get('SEC_USER_AGENT') if host in {'data.sec.gov', 'www.sec.gov'}
                     else 'ForecastAgent native official channels',
                 api_key=os.environ.get('CONGRESS_API_KEY') if host == 'api.congress.gov' else None)
             attempt.update(status='completed' if response['status'] == 200 else 'failed', http_status=response['status'])
+            if host == 'api.gdeltproject.org':
+                # Return control to the agent; never sleep or retry inside a tool.
+                delay = 5
+                retry_after = response.get('retry_after')
+                if response['status'] == 429 and retry_after:
+                    try:
+                        delay = max(delay, int(retry_after))
+                    except (ValueError, TypeError):
+                        try:
+                            delay = max(delay, (parsedate_to_datetime(retry_after) - datetime.now(timezone.utc)).total_seconds())
+                        except (ValueError, TypeError, OverflowError):
+                            pass
+                task.bundle['channel_tools'].setdefault('provider_ready_at', {})['gdelt_news'] = (
+                    datetime.now(timezone.utc) + timedelta(seconds=min(delay, 86400))).isoformat()
             return response
         except Exception as exc:
             attempt.update(status='failed', error=type(exc).__name__)
@@ -53,6 +73,10 @@ def _capture_page(task, result, box):
     capture, raw = box._saved(ident)
     task.bundle.setdefault('channel_raw_captures', {})[ident] = {
         'capture': capture, 'raw_response_base64': base64.b64encode(raw).decode()}
+    from ForecastAgent.channels.discovery import is_index, preserve_leads
+    if result['status'] == 'usable' and is_index(result):
+        preserve_leads(task, result)
+        return  # Search/index metadata is not a readable original body.
     url = canonical_url(result['request_url'])
     records = result['records']
     documents = [r for r in records if isinstance(r, dict) and isinstance(r.get('page_content'), str)]
@@ -66,6 +90,8 @@ def _capture_page(task, result, box):
             'response_headers': result['http'].get('response_headers', {}),
             'raw_truncated': result['http'].get('truncated', False),
             'channel_capture_id': ident, 'channel_coverage': result.get('coverage'),
+            'source_id': result['source_id'], 'source_role': result['role'],
+            'material_kind': 'readable_original' if documents else 'structured_observations',
             'source_binding': result.get('source_binding'), 'limitations': result['limitations'],
             'links': []}
     if not documents:
@@ -101,6 +127,11 @@ def preflight(task, name, args, need_ids):
             if not (re.search(r'(?i)CIK[\s:/"=]*0*' + re.escape(numeric) + r'\b', known) or
                     re.search(r'(?i)"cik"\s*:\s*"?0*' + re.escape(numeric) + r'\b', known)):
                 raise ValueError('SEC requires a CIK already observed in task materials or rules')
+        if name == 'intelligence_fetch' and not replay_available(task, name, args):
+            from ForecastAgent.channels.selection import availability
+            status = availability(task, args['source_id'])
+            if status['status'] == 'cooldown':
+                raise ValueError('Provider cooldown until ' + status['next_request_at_utc'] + '; no request reserved')
 
 def acquire(task, name, args, need_ids, box):
     signature = hashlib.sha256(json.dumps({'tool': name, 'args': args}, sort_keys=True).encode()).hexdigest()

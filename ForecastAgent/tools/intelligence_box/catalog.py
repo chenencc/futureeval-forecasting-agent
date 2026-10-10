@@ -21,6 +21,9 @@ SOURCES = {
     "uk_legislation_xml": dict(domain="politics",role="official_statute_text",format="clml",endpoint="https://www.legislation.gov.uk/{type}/{year}/{number}/data.xml",defaults={},parameters={"type":"ukpga, uksi, ukla, asp, asc, anaw, mnia, nia or nisr", "year":"Enactment year", "number":"Act or instrument number", "version":"enacted, made, a YYYY-MM-DD snapshot, or omit for latest"},path_parameters=["type","year","number"],records="clml",docs="https://legislation.github.io/data-documentation/api/overview.html",caveat="Latest revised text is not an as-enacted or historical publication snapshot. Preserve document URI, provision IDs and changes/commencement warnings."),
 }
 
+from .public_channels import CHANNELS
+SOURCES.update(CHANNELS)
+
 KEY_REQUIREMENTS = [
     dict(id="fred_api", domain="finance", secret="FRED_API_KEY", url="https://fred.stlouisfed.org/docs/api/api_key.html", purpose="Full API and ALFRED vintage observations", implemented=False),
     dict(id="congress", domain="politics", secret="CONGRESS_API_KEY", url="https://api.congress.gov/sign-up/", purpose="US bill detail, actions and original text versions", implemented=True),
@@ -31,4 +34,5 @@ KEY_REQUIREMENTS = [
 
 def catalog(domain=None):
     from .profiles import PROFILES
-    return {"version":"intelligence_catalog_v1", "sources":[dict(id=k, **{"requires_key":False, **v}) for k,v in SOURCES.items() if domain is None or v["domain"] == domain], "document_profiles":[dict(id=k,**v) for k,v in PROFILES.items() if domain is None or v["domain"]==domain], "optional_onboarding":KEY_REQUIREMENTS}
+    from .discovery import ROUTES
+    return {"version":"intelligence_catalog_v1", "sources":[dict(id=k, **{"requires_key":False, **v}) for k,v in SOURCES.items() if domain is None or v["domain"] == domain], "document_profiles":[dict(id=k,**v) for k,v in PROFILES.items() if domain is None or v["domain"]==domain], "discovery_routes":[dict(r) for r in ROUTES if domain is None or r['domain']==domain], "optional_onboarding":KEY_REQUIREMENTS}

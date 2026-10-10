@@ -1,0 +1,412 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_bill_text",
+      "description": "Read one official original text selected from a hash-verified Congress text index. Use zero-based version and format indices. Public/private law formats require detail_capture_id with matching official law number. Preserves version and parent captures; counts one request, with no automatic redirects. Draft/enrolled text is not proof of enactment.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "version_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "format_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "detail_capture_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture_id",
+          "version_index"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_catalog",
+      "description": "List available source contracts and parameter guidance. Use before fetch. Key onboarding entries are not executable.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": [
+              "finance",
+              "politics",
+              "health",
+              "environment",
+              "science",
+              "news"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_fetch",
+      "description": "Fetch one bounded source data, news lead, public file, or metadata response. Raw capture, native records, limitations and budget are returned. A usable status does not verify relevance or truth. No automatic retries or pagination.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "enum": [
+              "congress_bill",
+              "congress_actions",
+              "congress_texts",
+              "worldbank",
+              "fred_csv",
+              "fed_news",
+              "federal_register",
+              "uk_bills",
+              "clinical_trials",
+              "usgs",
+              "nasa_eonet",
+              "crossref",
+              "sec_concept",
+              "sec_submissions",
+              "uk_bill_detail",
+              "uk_bill_publications",
+              "federal_register_detail",
+              "uk_legislation_xml",
+              "gdelt_news",
+              "dbnomics_series",
+              "bls_series",
+              "govinfo_feed",
+              "govinfo_text"
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Only keys declared by this source in intelligence_catalog."
+          }
+        },
+        "required": [
+          "source_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_budget",
+      "description": "Inspect the persistent HTTP attempt budget, including failed and interrupted attempts.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_read",
+      "description": "Read a saved discovery URL on an explicitly allowed host. Reuses HTML, PDF, JSON and CSV readers; retains raw data and parse failures. Inspect document diagnostics. No browser fallback or OCR is automatic.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_profile",
+      "description": "Read a curated issuer or election-authority page. Catalog lists profile IDs and hosts. Optional detail URL must belong to that profile. Source identity does not prove event stage, target metric or outcome.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "profile_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_links",
+      "description": "Inspect links and table-row context from a saved HTML capture without any HTTP request. Select exact period, document type and authority before reading detail URLs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_tables",
+      "description": "Read HTML table cells from a hash-verified saved body without new requests. Retains row/column spans and surrounding unit context. No metric, unit, fiscal period or GAAP inference.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "max_rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_provisions",
+      "description": "Read an exact clause or schedule from saved UK legislation XML without new requests, including provisions beyond the initial excerpt limit. Omit provision_id to inspect the bounded provision index. Text truncation and not-found status are explicit.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "provision_id": {
+            "type": "string"
+          },
+          "max_chars": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_outline",
+      "description": "List saved original sections, pages and tables. Paginate using next_offset; PDF page scan bounds are explicit. Zero network calls. Requires intact saved bytes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "max_pages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_search",
+      "description": "Literal local search of saved originals. Returns unit IDs and normalized text offsets; not semantic verification. Zero network calls. Requires intact saved bytes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "max_pages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "capture_id",
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_part",
+      "description": "Read an exact saved unit and row window. Follow next_start/next_row for complete coverage; PDF page tables are heuristic. Zero network calls. Requires intact saved bytes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "max_pages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "unit_id": {
+            "type": "string"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_chars": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 50000
+          },
+          "row_start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "capture_id",
+          "unit_id"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_discover",
+      "description": "Fetch one official RSS/Atom, sitemap, or curated issuer IR index. Saves raw response and candidate URLs. No automatic recursion, original-page download, redirects or retry.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ir",
+              "rss",
+              "sitemap"
+            ]
+          },
+          "profile_id": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "url",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "intelligence_acquire_link",
+      "description": "Download one exact candidate from a hash-verified discovery capture using zero-based index. Child sitemap requires an explicit separate discover call. Preserves parent hash, source identity, timestamps and original bytes; consumes the existing shared request budget.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          }
+        },
+        "required": [
+          "capture_id",
+          "index"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+]

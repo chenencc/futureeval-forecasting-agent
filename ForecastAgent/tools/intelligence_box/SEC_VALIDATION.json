@@ -1,0 +1,80 @@
+{
+  "checked_at_utc": "2026-10-10T06:47:51.408256+00:00",
+  "configuration_name": "SEC_USER_AGENT",
+  "contact_value_recorded": false,
+  "cases": [
+    {
+      "source": "sec_submissions",
+      "status": "usable",
+      "capture_id": "81d328a9-4e89-4841-a905-782771a9308e",
+      "http_status": 200,
+      "record_count": 1000,
+      "raw_bytes": 161958,
+      "error_type": null,
+      "sample_field_names": [
+        "_source_context",
+        "acceptanceDateTime",
+        "accessionNumber",
+        "act",
+        "core_type",
+        "fileNumber",
+        "filingDate",
+        "filmNumber",
+        "form",
+        "isInlineXBRL",
+        "isXBRL",
+        "isXBRLNumeric",
+        "items",
+        "primaryDocDescription",
+        "primaryDocument",
+        "reportDate",
+        "size"
+      ],
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 1000,
+        "usable_observation_count": null
+      }
+    },
+    {
+      "source": "sec_concept",
+      "status": "usable",
+      "capture_id": "23a6a9fd-2655-4954-80bf-3ab01809217d",
+      "http_status": 200,
+      "record_count": 45,
+      "raw_bytes": 7512,
+      "error_type": null,
+      "sample_field_names": [
+        "_source_context",
+        "accn",
+        "end",
+        "filed",
+        "form",
+        "fp",
+        "frame",
+        "fy",
+        "start",
+        "val"
+      ],
+      "quality": {
+        "truth_verified": false,
+        "target_relevance_verified": false,
+        "full_article_body": false,
+        "historical_vintage_verified": false,
+        "structure_valid": true,
+        "record_count": 45,
+        "usable_observation_count": null
+      }
+    }
+  ],
+  "model_requests": 0,
+  "budget": {
+    "maximum_http_attempts": 25,
+    "reserved_attempts": 16,
+    "remaining": 9
+  }
+}

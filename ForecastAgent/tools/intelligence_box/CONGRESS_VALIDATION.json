@@ -1,0 +1,290 @@
+{
+  "schema": "congress_chain_audit_v1",
+  "audited_at_utc": "2026-10-10T07:37:02.327340+00:00",
+  "http_requests_during_audit": 0,
+  "new_physical_http_attempts": 7,
+  "budget": {
+    "maximum_http_attempts": 25,
+    "reserved_attempts": 23,
+    "remaining": 2
+  },
+  "model_requests": 0,
+  "search_requests": 0,
+  "all_hashes_match": true,
+  "credential_exclusion_checked": true,
+  "credential_absent_from_captures": true,
+  "credential_absent_from_ledger": true,
+  "native_stage_fields": {
+    "title": "An act to provide for reconciliation pursuant to title II of H. Con. Res. 14.",
+    "introducedDate": "2025-05-20",
+    "latestAction": {
+      "actionDate": "2025-07-04",
+      "text": "Became Public Law No: 119-21."
+    },
+    "laws": [
+      {
+        "number": "119-21",
+        "type": "Public Law"
+      }
+    ],
+    "updateDate": "2026-09-19T23:26:15Z",
+    "updateDateIncludingText": "2026-09-19T23:26:15Z"
+  },
+  "text_version_count": 6,
+  "action_page_rows": [
+    20,
+    20,
+    19
+  ],
+  "action_records_returned": 59,
+  "action_total_count_consistent": true,
+  "snapshot_consistency_across_pages_verified": false,
+  "captures": [
+    {
+      "id": "12f4694c-a53d-4d8b-aed2-6031d779132b",
+      "source": "congress_actions",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:33:26.660474+00:00",
+      "http_status": 200,
+      "request_url": "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=20&offset=0",
+      "raw_bytes": 10942,
+      "raw_sha256": "8ae52ac17bfe4d69948658cc1797ae264ed0923ea3ae346ff95eea66eabf0245",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "congress": 119,
+        "bill_type": "hr",
+        "bill_number": 1,
+        "basis": "Exact official bill identity",
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 20,
+      "projected_body_chars": 0,
+      "more_available": true,
+      "reported_total": 59
+    },
+    {
+      "id": "18f1638a-edc6-4d0c-91df-5e6b562393ba",
+      "source": "congress_actions",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:35:25.151318+00:00",
+      "http_status": 200,
+      "request_url": "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=20&offset=20",
+      "raw_bytes": 18280,
+      "raw_sha256": "bc749f5728ce74919ede1fe690659cd7cee4ebc2e88307d227ec11fb6c3e3d00",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "congress": 119,
+        "bill_type": "hr",
+        "bill_number": 1,
+        "basis": "Exact official bill identity",
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 20,
+      "projected_body_chars": 0,
+      "more_available": true,
+      "reported_total": 59
+    },
+    {
+      "id": "2705f85e-46de-4ca8-a9ac-533d8bbd9dcf",
+      "source": "congress_bill",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:33:24.317422+00:00",
+      "http_status": 200,
+      "request_url": "https://api.congress.gov/v3/bill/119/hr/1?format=json",
+      "raw_bytes": 6853,
+      "raw_sha256": "4a06569392b8de3157dfb54e7bf336dc3c41a8150661b3425f96fd20aaee9a10",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "congress": 119,
+        "bill_type": "hr",
+        "bill_number": 1,
+        "basis": "Exact official bill identity",
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 1,
+      "projected_body_chars": 0,
+      "more_available": false,
+      "reported_total": 1
+    },
+    {
+      "id": "370528f2-5636-4948-842f-f91df2a7c438",
+      "source": "congress_original_text",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:33:30.580655+00:00",
+      "http_status": 200,
+      "request_url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm",
+      "raw_bytes": 1022332,
+      "raw_sha256": "08a31d6031df20bf375dea6599a7e17d3f8402d5d941b5655aa00ec03a19e913",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "index_capture_id": "947d8a17-b73f-40b7-8a8e-f1a667f57d9e",
+        "index_raw_sha256": "cb65288ab85cf88435b73509348baedc580855019460dece542a9036ca52e236",
+        "bill_identity": {
+          "congress": 119,
+          "bill_type": "hr",
+          "bill_number": 1,
+          "basis": "Exact official bill identity",
+          "enactment_inferred": false,
+          "commencement_inferred": false
+        },
+        "version_index": 0,
+        "format_index": 0,
+        "version_type": "Enrolled Bill",
+        "version_date": null,
+        "formats": [
+          {
+            "type": "Formatted Text",
+            "url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm"
+          },
+          {
+            "type": "PDF",
+            "url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.pdf"
+          },
+          {
+            "type": "United States Legislative Markup",
+            "url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr_uslm.xml"
+          },
+          {
+            "type": "Formatted XML",
+            "url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.xml"
+          }
+        ],
+        "selected_format": {
+          "type": "Formatted Text",
+          "url": "https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm"
+        },
+        "publication_date": null,
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 1,
+      "projected_body_chars": 150000,
+      "more_available": true,
+      "reported_total": 1
+    },
+    {
+      "id": "635f70a2-e4b5-4d3a-8420-790cf54387ac",
+      "source": "congress_actions",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:35:27.449348+00:00",
+      "http_status": 200,
+      "request_url": "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=20&offset=40",
+      "raw_bytes": 10057,
+      "raw_sha256": "6073f4fa846c50ebc540ab89880a912267f89ac43c075992139d1d13e0b60f0a",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "congress": 119,
+        "bill_type": "hr",
+        "bill_number": 1,
+        "basis": "Exact official bill identity",
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 19,
+      "projected_body_chars": 0,
+      "more_available": true,
+      "reported_total": 59
+    },
+    {
+      "id": "947d8a17-b73f-40b7-8a8e-f1a667f57d9e",
+      "source": "congress_texts",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:33:29.411308+00:00",
+      "http_status": 200,
+      "request_url": "https://api.congress.gov/v3/bill/119/hr/1/text?format=json&limit=20&offset=0",
+      "raw_bytes": 4401,
+      "raw_sha256": "cb65288ab85cf88435b73509348baedc580855019460dece542a9036ca52e236",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "congress": 119,
+        "bill_type": "hr",
+        "bill_number": 1,
+        "basis": "Exact official bill identity",
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 6,
+      "projected_body_chars": 0,
+      "more_available": false,
+      "reported_total": 6
+    },
+    {
+      "id": "cbe65c3e-72a0-41d4-be7c-679b85cc5dc0",
+      "source": "congress_original_text",
+      "status": "usable",
+      "captured_at_utc": "2026-10-10T07:35:29.447039+00:00",
+      "http_status": 200,
+      "request_url": "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21.htm",
+      "raw_bytes": 1217741,
+      "raw_sha256": "84000b07c382db50ead04ce65b70983e2dcd699a931d80cd3d2edac584e9004d",
+      "hash_matches": true,
+      "credential_absent": true,
+      "source_binding": {
+        "index_capture_id": "947d8a17-b73f-40b7-8a8e-f1a667f57d9e",
+        "index_raw_sha256": "cb65288ab85cf88435b73509348baedc580855019460dece542a9036ca52e236",
+        "bill_identity": {
+          "congress": 119,
+          "bill_type": "hr",
+          "bill_number": 1,
+          "basis": "Exact official bill identity",
+          "enactment_inferred": false,
+          "commencement_inferred": false
+        },
+        "version_index": 5,
+        "format_index": 0,
+        "version_type": "Public Law",
+        "version_date": "2025-07-05T03:59:59Z",
+        "formats": [
+          {
+            "type": "Formatted Text",
+            "url": "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21.htm"
+          },
+          {
+            "type": "PDF",
+            "url": "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21.pdf"
+          },
+          {
+            "type": "United States Legislative Markup",
+            "url": "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21_uslm.xml"
+          }
+        ],
+        "selected_format": {
+          "type": "Formatted Text",
+          "url": "https://www.congress.gov/119/plaws/publ21/PLAW-119publ21.htm"
+        },
+        "publication_date": null,
+        "law_binding": {
+          "detail_capture_id": "2705f85e-46de-4ca8-a9ac-533d8bbd9dcf",
+          "detail_raw_sha256": "4a06569392b8de3157dfb54e7bf336dc3c41a8150661b3425f96fd20aaee9a10",
+          "official_law_record": {
+            "number": "119-21",
+            "type": "Public Law"
+          }
+        },
+        "enactment_inferred": false,
+        "commencement_inferred": false
+      },
+      "record_count": 1,
+      "projected_body_chars": 150000,
+      "more_available": true,
+      "reported_total": 1
+    }
+  ],
+  "production_integrated": false,
+  "submitted": false,
+  "limitations": [
+    "Official stage fields preserved; no enactment inference from draft/enrolled text",
+    "Action pages have separate capture times; no atomic cross-page snapshot guarantee",
+    "Full original responses retained; agent excerpts truncate at 150000 characters",
+    "Predictive quality and historical leakage not tested"
+  ]
+}

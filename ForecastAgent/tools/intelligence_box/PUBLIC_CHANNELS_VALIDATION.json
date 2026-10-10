@@ -1,0 +1,257 @@
+{
+  "version": "intelligence_public_channels_validation_v1",
+  "offline_tests_passed": 79,
+  "network_attempts": 12,
+  "status_distribution": {
+    "usable": 9,
+    "failed": 3
+  },
+  "trials": [
+    {
+      "root": ".tmp\\public-channels-pilot-20261010",
+      "budget": {
+        "maximum_http_attempts": 6,
+        "reserved_attempts": 6,
+        "remaining": 0
+      },
+      "captures": [
+        {
+          "capture_id": "83b5725e-58a6-44d8-afed-a73cff4be381",
+          "source_id": "govinfo_text",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm",
+          "captured_at_utc": "2026-10-10T10:24:14.294134+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 1,
+          "readable_characters": 150000,
+          "raw_sha256": "84000b07c382db50ead04ce65b70983e2dcd699a931d80cd3d2edac584e9004d",
+          "raw_bytes": 1217741,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "8611f6df-f081-4608-9388-d2225e1fc934",
+          "source_id": "discovery:rss",
+          "url": "https://www.govinfo.gov/rss/PLAW.xml",
+          "captured_at_utc": "2026-10-10T10:24:19.131905+00:00",
+          "status": "failed",
+          "http_status": 404,
+          "record_count": 0,
+          "readable_characters": 0,
+          "raw_sha256": "55f7d9e99b8e2d4e0e193b2f0275501e6d9c1ebd29cadbea6a0da48a8587e3e0",
+          "raw_bytes": 146,
+          "raw_hash_verified": true,
+          "error": {
+            "type": "ValueError",
+            "message": "HTTP 404"
+          },
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "8671a84d-43c5-4bb2-93ec-0b366cd46f56",
+          "source_id": "dbnomics_series",
+          "url": "https://api.db.nomics.world/v22/series/INSEE/IPC-2015/A.IPC.SO.00.00.INDICE.ENSEMBLE.FE.SO.BRUT.2015.FALSE?observations=1",
+          "captured_at_utc": "2026-10-10T10:24:00.649894+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 36,
+          "readable_characters": 0,
+          "raw_sha256": "71603292efe149a08cd025231722a0809f25917a6e39dc676b21123c50638c31",
+          "raw_bytes": 166662,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "ddef82a8-3b2f-4425-9f28-b18ee4c6c5a7",
+          "source_id": "gdelt_news",
+          "url": "https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=5&sort=datedesc&timespan=1week&query=%22Tesla%22",
+          "captured_at_utc": "2026-10-10T10:23:52.461970+00:00",
+          "status": "failed",
+          "http_status": 429,
+          "record_count": 0,
+          "readable_characters": 0,
+          "raw_sha256": "44c03f8dd984184218c90dc7e64aed9e6e2d8b17426feb5aa7933b3c44df64c6",
+          "raw_bytes": 444,
+          "raw_hash_verified": true,
+          "error": {
+            "type": "ValueError",
+            "message": "HTTP 429"
+          },
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "ef1cba75-8429-4089-acb1-2fde21883663",
+          "source_id": "bls_series",
+          "url": "https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0",
+          "captured_at_utc": "2026-10-10T10:24:07.311799+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 34,
+          "readable_characters": 0,
+          "raw_sha256": "6fa4bb43ee152081d15e470c1bbccdd7f192d7ba732b8f2a9a1af466b845f994",
+          "raw_bytes": 3199,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "fe2ef914-d488-4137-9356-fbb6de497c8b",
+          "source_id": "govinfo_feed",
+          "url": "https://www.govinfo.gov/rss/PLAW.xml",
+          "captured_at_utc": "2026-10-10T10:24:09.802029+00:00",
+          "status": "failed",
+          "http_status": 404,
+          "record_count": 0,
+          "readable_characters": 0,
+          "raw_sha256": "55f7d9e99b8e2d4e0e193b2f0275501e6d9c1ebd29cadbea6a0da48a8587e3e0",
+          "raw_bytes": 146,
+          "raw_hash_verified": true,
+          "error": {
+            "type": "ValueError",
+            "message": "HTTP 404"
+          },
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        }
+      ]
+    },
+    {
+      "root": ".tmp\\public-channels-followup-20261010",
+      "budget": {
+        "maximum_http_attempts": 4,
+        "reserved_attempts": 4,
+        "remaining": 0
+      },
+      "captures": [
+        {
+          "capture_id": "74caa07f-b1ec-4787-bcd9-1f465cd4f25b",
+          "source_id": "gdelt_news",
+          "url": "https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&maxrecords=5&sort=datedesc&timespan=1week&query=%22Tesla%22",
+          "captured_at_utc": "2026-10-10T10:24:59.656751+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 5,
+          "readable_characters": 0,
+          "raw_sha256": "771ea3d97396cc398c6e49fff322768ec199fa36fd419abf1a945b26f1b9aad3",
+          "raw_bytes": 2597,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "7dd81599-8ada-4081-be18-a0c2a31a6227",
+          "source_id": "discovery:rss",
+          "url": "https://www.govinfo.gov/rss/plaw.xml",
+          "captured_at_utc": "2026-10-10T10:25:18.260316+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 5,
+          "readable_characters": 0,
+          "raw_sha256": "31ce21ff544a10abd8db8449689a30a99a7e8575dd2fe6908c8780cae4ef186d",
+          "raw_bytes": 132125,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "dab9271e-fef7-4cb7-9d04-2395300b0171",
+          "source_id": "discovered_original",
+          "url": "https://www.govinfo.gov/app/details/PLAW-119publ15",
+          "captured_at_utc": "2026-10-10T10:25:20.063266+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 1,
+          "readable_characters": 2670,
+          "raw_sha256": "dc137387b5db2d4dad563fb45c90d1b4f8fc2c6a67a5eaf1faa9b4cde51b37a8",
+          "raw_bytes": 48661,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "e66054bc-08b9-4bb7-979e-d679bd42c588",
+          "source_id": "govinfo_feed",
+          "url": "https://www.govinfo.gov/rss/plaw.xml",
+          "captured_at_utc": "2026-10-10T10:25:16.457078+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 99,
+          "readable_characters": 0,
+          "raw_sha256": "31ce21ff544a10abd8db8449689a30a99a7e8575dd2fe6908c8780cae4ef186d",
+          "raw_bytes": 132125,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        }
+      ]
+    },
+    {
+      "root": ".tmp\\govinfo-original-pilot-20261010",
+      "budget": {
+        "maximum_http_attempts": 2,
+        "reserved_attempts": 2,
+        "remaining": 0
+      },
+      "captures": [
+        {
+          "capture_id": "3cd710dc-71e1-40fa-a1a3-312a511bf10f",
+          "source_id": "discovery:rss",
+          "url": "https://www.govinfo.gov/rss/plaw.xml",
+          "captured_at_utc": "2026-10-10T10:26:35.751933+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 10,
+          "readable_characters": 0,
+          "raw_sha256": "31ce21ff544a10abd8db8449689a30a99a7e8575dd2fe6908c8780cae4ef186d",
+          "raw_bytes": 132125,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        },
+        {
+          "capture_id": "dcd5e9c0-572e-44d1-b781-015e6f1dc004",
+          "source_id": "discovered_original",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ15/html/PLAW-119publ15.htm",
+          "captured_at_utc": "2026-10-10T10:26:37.031733+00:00",
+          "status": "usable",
+          "http_status": 200,
+          "record_count": 1,
+          "readable_characters": 1586,
+          "raw_sha256": "998eb87671298bd5de42e91926da738051ce08a434941203adb50f93e156ae15",
+          "raw_bytes": 1764,
+          "raw_hash_verified": true,
+          "error": null,
+          "full_article_body": false,
+          "historical_vintage_verified": false
+        }
+      ]
+    }
+  ],
+  "credentials_needed": [],
+  "model_calls": 0,
+  "tavily_calls": 0,
+  "exa_calls": 0,
+  "prior_ledgers_reset": false,
+  "production_integrated": false,
+  "limitations": [
+    "Windows public pilot only; Linux runner not tested.",
+    "GDELT initially rate limited (429), a later explicit spaced probe succeeded; no SLA or broad availability evidence.",
+    "Initial uppercase GovInfo RSS failed twice (404); raw responses preserved and official lowercase paths corrected.",
+    "RSS recent indexing windows are not full archives or certification of latest publication.",
+    "DBnomics and BLS observation periods are not historical publication vintages.",
+    "News leads and numeric observations are not article bodies.",
+    "Production registration and native budget binding belong to Pipeline."
+  ]
+}

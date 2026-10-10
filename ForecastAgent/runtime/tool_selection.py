@@ -24,6 +24,8 @@ def active_tools(task, tools, forced=None):
     bind_ids(tools)
     from ForecastAgent.research_loop.runtime import filter_tools as filter_research_tools
     tools = filter_research_tools(task, tools)
+    from ForecastAgent.channels.selection import filter_tools as filter_channel_tools
+    tools = filter_channel_tools(task, tools)
     for entry in tools:
         if entry['function']['name'] == 'load_research_skill':
             names = [name for name in task.bundle.get('skill_bank', {}) if name != 'evidence-review']

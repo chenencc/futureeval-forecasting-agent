@@ -8,44 +8,42 @@ from ForecastAgent.tools.original_navigation import MAX_VIEW_CHARS, MAX_VIEWS
 
 POLICY = 'native_channels_v1'
 FIELD = 'capability_policy'
-DONOR = 'dde8b02'
-NETWORK_NAMES = {'intelligence_fetch', 'intelligence_read', 'intelligence_profile', 'intelligence_bill_text'}
+DONOR = '15d9f45'
+from ForecastAgent.tools.intelligence_box.compatibility import NETWORK_NAMES as COMPAT_NETWORK_NAMES
+NETWORK_NAMES = set(COMPAT_NETWORK_NAMES) | {'intelligence_discover', 'intelligence_acquire_link'}
 
 def enabled(task):
     return task.bundle['request'].get(FIELD) == POLICY
 
 def capabilities():
+    from ForecastAgent.tools.intelligence_box.compatibility import capabilities as compatible
     from ForecastAgent.tools.capabilities import Capability
-    result = []
-    for definition in core.TOOL_DEFINITIONS:
-        name = definition['function']['name']
-        definition = copy.deepcopy(definition)
-        network = name in NETWORK_NAMES
-        material = network or name == 'intelligence_part'
-        if network:
-            definition['function']['parameters']['properties']['need_ids'] = {
-                'type': 'array', 'minItems': 1, 'maxItems': 8, 'items': {'type': 'string'}}
-            definition['function']['parameters'].setdefault('required', []).append('need_ids')
-            definition['function']['description'] += ' Shares native HTTP slots; no separate allowance. Current live captures only.'
-        if name in {'intelligence_outline', 'intelligence_search', 'intelligence_part'}:
-            props = definition['function']['parameters']['properties']
-            props['url'] = {'type': 'string', 'description': 'Exact saved native URL; use this OR capture_id.'}
-            definition['function']['parameters']['required'] = [k for k in definition['function']['parameters']['required'] if k != 'capture_id']
-            definition['function']['description'] += ' Use exactly one saved url or capture_id. Part returns native reference handles separately from normalized unit offsets.'
-        if name == 'intelligence_profile':
-            from ForecastAgent.tools.intelligence_box.profiles import PROFILES
-            definition['function']['parameters']['properties']['profile_id']['enum'] = list(PROFILES)
-        effects = ('network', 'material_write') if network else ('saved_read', 'material_write') if material else ('saved_read',)
-        result.append(Capability(name, definition, 'channel' if network else 'read', effects,
-            ('initial_http',) if network else (), 'source_material' if material else 'navigation',
-            'ForecastAgent.channels.native:execute', POLICY, POLICY))
+    result = compatible()
+    # The donor keeps these pending; this host supplies the native admission,
+    # projection and interruption-recovery adapter before exposing them.
+    for original in core.TOOL_DEFINITIONS:
+        name = original['function']['name']
+        if name not in {'intelligence_discover', 'intelligence_acquire_link'}:
+            continue
+        definition = copy.deepcopy(original)
+        schema = definition['function']['parameters']
+        schema['properties']['need_ids'] = {
+            'type':'array', 'minItems':1, 'maxItems':8, 'items':{'type':'string'}}
+        schema['required'] = list(dict.fromkeys(schema['required'] + ['need_ids']))
+        definition['function']['description'] += ' Native shared HTTP only. Use catalog routes or previously discovered exact URLs; download requires a task-owned parent index.'
+        result.append(Capability(name, definition, kind='channel',
+            effects=('network', 'material_write'), budgets=('initial_http',),
+            output_kind='source_material', handler='ForecastAgent.channels.native:execute',
+            version='native_discovery_v1', policy=POLICY))
     return result
+
 
 def code_identity():
     root = Path(__file__).parents[1]
     files = [*root.joinpath('channels').glob('*.py'), *root.joinpath('tools/intelligence_box').glob('*.py'),
              root / 'tools/capabilities.py', root / 'tools/original_navigation.py', root / 'tools/channels.py',
              root / 'runtime/retrieval.py', root / 'runtime/budget.py', root / 'runtime/contracts.py',
+             root / 'runtime/tool_selection.py',
              root / 'research_loop/fusion.py', root / 'research_loop/material_events.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',

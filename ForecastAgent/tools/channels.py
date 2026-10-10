@@ -73,9 +73,9 @@ def tool_result(name, data, budget, *, error=None):
     partial = bool(items) and any(not item.get("ok") for item in items) and not failed
     status = "failed" if failed else "partial" if partial else "completed"
     if name.startswith('intelligence_') and isinstance(data, dict):
-        if data.get('status') in {'configuration_required', 'failed', 'empty'}:
+        if data.get('status') in {'configuration_required', 'failed', 'empty', 'captured_unparsed'}:
             status = data['status']
-            failed = status != 'empty'
+            failed = status in {'configuration_required', 'failed'}
     channel_ids = [c["id"] for c in CHANNELS if name in c["tools"]]
     if name.startswith('intelligence_'):
         from ForecastAgent.tools.capabilities import get

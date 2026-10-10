@@ -1,0 +1,547 @@
+{
+  "version": "toolbox_native_compat_validation_v1",
+  "host_commit": "aa02db810bdf1366b68a15ace63727e94b8f33f8",
+  "host_branch": "codex/official-intelligence-v106",
+  "donor_baseline": "3b0ac6c",
+  "compatibility_manifest": {
+    "version": "toolbox_native_compat_v1",
+    "policy": "native_channels_v1",
+    "registration_grants_budget": false,
+    "native_tools": [
+      {
+        "id": "intelligence_bill_text",
+        "kind": "channel",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budgets": [
+          "initial_http"
+        ],
+        "output_kind": "source_material",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "version_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "format_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "detail_capture_id": {
+              "type": "string"
+            },
+            "need_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "capture_id",
+            "version_index",
+            "need_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_catalog",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "enum": [
+                "finance",
+                "politics",
+                "health",
+                "environment",
+                "science",
+                "news"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_fetch",
+        "kind": "channel",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budgets": [
+          "initial_http"
+        ],
+        "output_kind": "source_material",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "source_id": {
+              "type": "string",
+              "enum": [
+                "congress_bill",
+                "congress_actions",
+                "congress_texts",
+                "worldbank",
+                "fred_csv",
+                "fed_news",
+                "federal_register",
+                "uk_bills",
+                "clinical_trials",
+                "usgs",
+                "nasa_eonet",
+                "crossref",
+                "sec_concept",
+                "sec_submissions",
+                "uk_bill_detail",
+                "uk_bill_publications",
+                "federal_register_detail",
+                "uk_legislation_xml",
+                "gdelt_news",
+                "dbnomics_series",
+                "bls_series",
+                "govinfo_feed",
+                "govinfo_text"
+              ]
+            },
+            "parameters": {
+              "type": "object",
+              "description": "Only keys declared by this source in intelligence_catalog."
+            },
+            "need_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "source_id",
+            "need_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_budget",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_read",
+        "kind": "channel",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budgets": [
+          "initial_http"
+        ],
+        "output_kind": "source_material",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "need_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "url",
+            "need_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_profile",
+        "kind": "channel",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budgets": [
+          "initial_http"
+        ],
+        "output_kind": "source_material",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "profile_id": {
+              "type": "string",
+              "enum": [
+                "tesla_ir",
+                "microsoft_ir",
+                "california_elections",
+                "brazil_tse",
+                "fec_election_directory"
+              ]
+            },
+            "url": {
+              "type": "string"
+            },
+            "need_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "profile_id",
+            "need_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_links",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "capture_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_tables",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "max_rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          "required": [
+            "capture_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_provisions",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "provision_id": {
+              "type": "string"
+            },
+            "max_chars": {
+              "type": "integer",
+              "minimum": 500,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "capture_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_outline",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "max_pages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "url": {
+              "type": "string",
+              "description": "Exact saved native URL; choose this OR capture_id."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_search",
+        "kind": "read",
+        "effects": [
+          "saved_read"
+        ],
+        "budgets": [],
+        "output_kind": "navigation",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "max_pages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "query": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "url": {
+              "type": "string",
+              "description": "Exact saved native URL; choose this OR capture_id."
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "intelligence_part",
+        "kind": "read",
+        "effects": [
+          "saved_read",
+          "material_write"
+        ],
+        "budgets": [],
+        "output_kind": "source_material",
+        "handler": "ForecastAgent.channels.native:execute",
+        "version": "toolbox_native_compat_v1",
+        "policy": "native_channels_v1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "capture_id": {
+              "type": "string"
+            },
+            "max_pages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "unit_id": {
+              "type": "string"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max_chars": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 50000
+            },
+            "row_start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max_rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "url": {
+              "type": "string",
+              "description": "Exact saved native URL; choose this OR capture_id."
+            }
+          },
+          "required": [
+            "unit_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "pending_tools": [
+      {
+        "id": "intelligence_acquire_link",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budget_categories": [
+          "initial_http"
+        ],
+        "exposed": false,
+        "reason": "Native preflight, discovered-source admission, request reservation, projection and interruption recovery are not implemented for this extension."
+      },
+      {
+        "id": "intelligence_discover",
+        "effects": [
+          "network",
+          "material_write"
+        ],
+        "budget_categories": [
+          "initial_http"
+        ],
+        "exposed": false,
+        "reason": "Native preflight, discovered-source admission, request reservation, projection and interruption recovery are not implemented for this extension."
+      }
+    ],
+    "host_responsibilities": [
+      "native cumulative request reservation before every transport",
+      "task-owned credentials and current-mode admission",
+      "immutable frozen code/schema identity; no implicit task migration",
+      "native quote handles and parsed-view provenance",
+      "whole-directory snapshot restore including channel-tools journal/raw files"
+    ],
+    "production_ready": false
+  },
+  "standalone_tests_passed": 90,
+  "host_overlay_tests_passed": 48,
+  "new_physical_requests": 0,
+  "model_calls": 0,
+  "search_calls": 0,
+  "peer_checkout_changed": false,
+  "production_changed": false,
+  "fixture_transport": true,
+  "overlay_edits": [
+    "copy current toolbox into isolated host archive",
+    "delegate channels.contracts.capabilities to toolbox.compatibility.capabilities",
+    "label donor as channels-compatibility-candidate rather than stale dde8b02"
+  ],
+  "gates_tested": [
+    "five newly typed sources execute through native task handler",
+    "native HTTP attempts, not toolbox mirror cap, control admission",
+    "identical failed and successful operations replay without transport after restore",
+    "429 preserved with Retry-After and no hidden retry",
+    "pending discovery network tools not exposed or classified as local",
+    "required need IDs and native navigation URL/reference adapter preserved"
+  ],
+  "remaining_gates": [
+    "Pipeline owner applies reviewed registration atomically with donor update",
+    "native discovery/acquire_link preflight, source admission and interrupted projection handling",
+    "Linux runner interruption and whole-directory restore",
+    "fresh unresolved-task official-channel selection and relevance test"
+  ],
+  "notes": [
+    "Current-mode statistics and metadata are not historical vintages or full article bodies.",
+    "Frozen code/schema identity changes reject implicit old-task migration.",
+    "No final answer scoring, submission or source-quality improvement is claimed."
+  ]
+}
