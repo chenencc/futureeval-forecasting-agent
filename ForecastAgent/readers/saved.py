@@ -17,10 +17,25 @@ def documents(pages):
             yield url, page, index, doc
 
 
+class SavedSourceLookupError(ValueError):
+    """A local lookup failed; original material may still be recoverable."""
+
+
+class SavedSourceIdentityError(ValueError):
+    """An alias refers to different immutable source versions."""
+
+
 def select(pages, url, document_index=None):
-    page = pages.get(canonical_url(url))
+    # Exact saved keys are opaque identities. Canonical URLs are aliases only.
+    page = pages.get(url)
     if page is None:
-        raise ValueError("Read only URLs already saved in this task")
+        key = canonical_url(url)
+        matches = [p for u, p in pages.items() if key and canonical_url(u) == key]
+        if len({version_digest(p) for p in matches}) > 1:
+            raise SavedSourceIdentityError('Ambiguous saved URL alias; source versions differ')
+        page = matches[0] if matches else None
+    if page is None:
+        raise SavedSourceLookupError("Read only URLs already saved in this task")
     if document_index is None:
         return page, page["content"], {"coordinate_space": "saved_content"}
     docs = page.get("documents") or [{"page_content": page["content"], "metadata": {"format": "text"}}]
@@ -39,9 +54,10 @@ def integer(value, minimum, maximum, label):
 def list_documents(pages, args):
     offset = integer(args.get("offset", 0), 0, 1_000_000, "offset")
     limit = integer(args.get("limit", 20), 1, 100, "limit")
-    target = canonical_url(args["url"]) if args.get("url") else None
-    if args.get("url") and target not in pages:
-        raise ValueError("Unknown saved URL")
+    target = None
+    if args.get("url"):
+        page, _, _ = select(pages, args["url"])
+        target = next(url for url, value in pages.items() if value is page)
     rows = [{"url": url, "document_index": index, "chars": len(doc["page_content"]),
              "metadata": doc.get("metadata", {}), "source_sha256": page.get("sha256"),
              "temporal_status": page.get("temporal_status"),
@@ -74,9 +90,10 @@ def search_saved_text(pages, args):
         raise ValueError("Use a nonempty literal query of at most 300 characters")
     limit = integer(args.get("limit", 10), 1, 20, "limit")
     offset = integer(args.get("offset", 0), 0, 1_000_000, "offset")
-    target = canonical_url(args["url"]) if args.get("url") else None
-    if args.get("url") and target not in pages:
-        raise ValueError("Unknown saved URL")
+    target = None
+    if args.get("url"):
+        page, _, _ = select(pages, args["url"])
+        target = next(url for url, value in pages.items() if value is page)
     matches = []; total = 0
     # Case-sensitive literal matching preserves exact Unicode character offsets.
     for url, page, index, doc in documents(pages):

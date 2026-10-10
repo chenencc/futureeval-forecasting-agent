@@ -18,6 +18,7 @@ from ForecastAgent.releases.guard import execute
 from ForecastAgent.releases import surfaces, context_decisions
 from ForecastAgent.releases.manifest import verify
 from ForecastAgent.runtime.task_lock import task_lock
+from ForecastAgent.competition.recovery_policy import recover_legacy_lookup, health, classify
 
 VERSION='1.0.5'
 CORE_VERSION='1.0.1'
@@ -266,8 +267,35 @@ def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=
                 task.update(stage='blocked_integrity',last_error=str(exc))
     save(Path(root)/'campaign.json',state)
     client=surfaces.Client(client or live.Client(os.environ.get('METACULUS_TOKEN','')))
+    failures={}
+    def guarded(fn):
+        def invoke(*args):
+            try:return fn(*args)
+            except Exception as exc:
+                ident=str(args[0]['id']) if isinstance(args[0],dict) and 'id' in args[0] else str(args[-1])
+                failures[ident]=exc
+                raise
+        return invoke
     report=live.run(root,snapshots,enabled=enabled,client=client,
-                    collect=collector or collect_for_worker,supplement=supplement,infer=infer or analyze,deliver_fn=deliver_fn or deliver,limit=limit)
+                    collect=guarded(collector or collect_for_worker),supplement=guarded(supplement),
+                    infer=guarded(infer or analyze),deliver_fn=deliver_fn or deliver,limit=limit)
+    with task_lock(root):
+        state=load(Path(root)/'campaign.json')
+        for ident,exc in failures.items():
+            task=state['tasks'].get(ident)
+            folder=Path(root)/'tasks'/ident
+            if not task or (folder/'submission.json').exists():continue
+            stage,retry=classify(exc,task,utc())
+            task.update(stage=stage,retry_at_utc=retry)
+            save(folder/'failure.json',{'stage':stage,'error':task.get('last_error'),
+                 'preserved_state':True,'operational_patch':'v1.0.5-recovery.1'})
+            for problem in report.get('problems',[]):
+                if problem['id']==ident:problem['stage']=stage
+        save(Path(root)/'campaign.json',state)
+        report['state_distribution']={}
+        for task in state['tasks'].values():
+            k=task['stage'];report['state_distribution'][k]=report['state_distribution'].get(k,0)+1
+        report.update(health(state['tasks']))
     report.update(worker_release_version=VERSION,analysis_core_release_version=CORE_VERSION)
     save(Path(root)/'report.json',report)
     return report
@@ -292,6 +320,9 @@ def _seed(root,snapshots):
     if state.get('schema')!=live.SCHEMA or state.get('tournament')!='fall-futureeval-2026':
         raise ValueError('Wrong preserved campaign identity')
     for task in state['tasks'].values():
+        folder=root/'tasks'/task['id']
+        recover_legacy_lookup(task,has_input=(folder/'analysis-input.json').exists(),
+                              has_submission=(folder/'submission.json').exists())
         if (task['stage'] not in live.TERMINAL and task.get('release_version') != VERSION and
                 (task.get('collection_executions',0) or (root/'tasks'/task['id']).exists())):
             task.update(stage='blocked_integrity',last_error='Previous release has in-flight state; preserve budgets and require explicit migration')
@@ -376,6 +407,7 @@ def supervise(root,snapshots, *, submit=False, limit=5, task_seconds=1500, batch
             'pending_due_ids':[t['id'] for t in due(state)],
             'attention_ids':[t['id'] for t in state['tasks'].values() if t['stage'] in {'blocked_integrity','provider_blocked','platform_rejected','submission_unknown'}],
             'no_budget_reset':True,'submission_enabled':submit}
+        report.update(health(state['tasks']))
         save(root/'supervisor-report.json',report)
         return report
 

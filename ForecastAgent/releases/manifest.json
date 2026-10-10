@@ -181,7 +181,7 @@
     "ForecastAgent/readers/passages.py": "9263ce6fa83bf4ca83aada30c5df4ff71f9d1667af50fcaa274f1f06b979f7f5",
     "ForecastAgent/readers/pdf.py": "0f66e52570fb29b4c80aae9f7353c03f945cad5a749eee1d2620dbadad8c5dcb",
     "ForecastAgent/readers/quality.py": "936777ae9a019947bf4e1793d0f9e63ae2b0ad90b2a17c06f98f0e4b37853cb4",
-    "ForecastAgent/readers/saved.py": "ea4defe6cc716c768ec9d65a684477471fa35a1ead7e7ba5ac9b2c6d77384d5a",
+    "ForecastAgent/readers/saved.py": "c51e9a3233171cf65caaafa95cada0cec101fd9f1553d7fb8b32857f6b5f49dd",
     "ForecastAgent/readers/structured.py": "aee0d3ae986e80cc62c737a1cad7cc4d037cc8e18801c1c56b8ac4dc74934601",
     "ForecastAgent/README.md": "67f95faddbb383b385efca4062cdc8fbfd1ba7ff8fa4b330ec66c130c3441498",
     "ForecastAgent/recall_pilot.py": "bfa0026c8ce419010e235204a4de5c80c3f7c8a30135fbe40c5e3a18358ba00b",
@@ -202,7 +202,7 @@
     "ForecastAgent/releases/v1_0_2.py": "75c7c384c849918082bb7fc0448d04579671a4a7318d860e29f3049ad8e4d2db",
     "ForecastAgent/releases/v1_0_3.py": "74a5b55c2d5c63b63543ed007abefe5cae125eee2c55041722736f0e772c73d8",
     "ForecastAgent/releases/v1_0_4.py": "9dcb64674632555d4a692d1fb573414e47374f5d7170a7e54f2e209e9c6514d8",
-    "ForecastAgent/releases/v1_0_5.py": "160bf1e50d4ac662f01f6be7b004a72880e0e42998de73d5542f8cc7707f70e8",
+    "ForecastAgent/releases/v1_0_5.py": "86b04ca6ef5b3fae9fce3f4d5ce8a5f2463724d6d4f9f7ff2aeea4f52354cd8f",
     "ForecastAgent/requirements-crawl4ai.txt": "7f41b2caa244ee2fd50a3584ef9cb4674b7cea9b224ed6d8b8c0123446513692",
     "ForecastAgent/requirements-retrieval.txt": "0ab834aa405d082d590315d7527b3ee425e98ed37b09742278eb1303a8f52a7e",
     "ForecastAgent/requirements-supplement.txt": "57798a4e4b8e24764a2ee14286c0b1369d81273b3005ca91d144fd17b6c3e687",
@@ -265,9 +265,12 @@
     "ForecastAgent/verify_functions.py": "5e77f7351ba8f871b4a495f14bd86722539d8fd14ed50d760526bc8631181722",
     "ForecastAgent/verify_polymarket.py": "90366ad6e869eea7db3260e517d1243decde5cd60b114740bb0fb61fdc22c642",
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
-    "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027"
+    "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
+    "ForecastAgent/competition/recovery_store.py": "fcd7528efd04c9bdf2d4a923dcd835210652df32e02306015a2e985d745eebc1",
+    "ForecastAgent/competition/recovery_policy.py": "05e8d2d7c2a9005591f6e60022a7023815b753f4de5e5dff16aee735dfb188d5"
   },
   "source_reading_policy": "crawl4ai_v1",
   "base_release_tag": "v1.0.5",
-  "release_variant": "crawl4ai.1"
+  "release_variant": "crawl4ai.1",
+  "operational_patch": "v1.0.5-recovery.1"
 }
