@@ -20,6 +20,15 @@ target and its entity, period, metric, unit, stage and limitations.
 Direct requires an observation with applicability=target. A background fact or
 expectation cannot be upgraded to a realized target observation. Context and
 procedure use effect=context; unknown uses unresolved. Drivers remain hypotheses.
+The node applicability enum is target/background/expectation/unknown, NEVER
+context, indicator or procedure: those are target-link roles. A missing target
+observation uses node kind=unknown, link role=unknown, effect=unresolved, NOT direct.
+A quote about guidance is an observation of the guidance (expectation/indicator),
+not a driver hypothesis. Keep the hypothesized mechanism in a separate driver.
+Only exact supplied R text can establish an observation: a claim in the question,
+rules or background is not source evidence. Never insert dates, stitch sentences
+with ellipses or paraphrase a headline. If a short exact quote cannot be bound,
+record an explicit unknown; no accepted factual map is better than invented text.
 Use supports/opposes only with an explicit explanation; missing evidence is not
 opposition. For numeric/multiple-choice targets explain which value/range/option
 the effect concerns; supports does not mean a binary YES. Do not assign numbers.
@@ -96,8 +105,23 @@ def isolate_node(bundle, original):
         lines = [x.strip() for x in claim.splitlines() if x.strip()]
         if lines and all(re.fullmatch(r'[|:\-+\s]+', x) or re.fullmatch(r'#{1,6}\s+.+', x) for x in lines):
             raise ValueError('Navigation-only heading or table separator is not an observation')
+    label_errors = []
+    # Unrecognized annotations cannot erase a separately valid literal quote.
+    # Unknown is conservative isolation, never a semantic synonym conversion.
+    fields = {'applicability': {'target','background','expectation','unknown'},
+              'event_stage': {'planned','ongoing','completed','not_applicable','unknown'},
+              'time_status': {'source_stated','hypothesized','unknown'}}
+    for field, allowed in fields.items():
+        value = chosen.get(field)
+        if field in chosen and (not isinstance(value,str) or value not in allowed):
+            chosen[field] = 'unknown'
+            if field == 'event_stage': chosen['stage_basis'] = ''
+            if field == 'time_status': chosen['event_time'] = ''
+            label_errors.append({'section':'node_labels','node_id':chosen.get('id'),
+                'field':field,'proposed':value,'accepted':'unknown',
+                'error':'Unsupported annotation isolated; quote and target effect still require independent validation.'})
     links = chosen.get('target_links')
-    errors = []
+    errors = label_errors
     if not isinstance(links, list) or len(links) > 4:
         errors.append({'section': 'target_links', 'node_id': chosen.get('id'),
                        'error': 'Missing or malformed target links; observation retained unassessed'})

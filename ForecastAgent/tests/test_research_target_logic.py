@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch as mock_patch
 
 from ForecastAgent.research_loop import target_logic as logic, state, simple_map, delta, runtime, fusion, decision, delivery
-from ForecastAgent.research_loop.acceptance import accept
+from ForecastAgent.research_loop.acceptance import accept, MapAcceptanceError
 from ForecastAgent.tests.test_research_loop import source_bundle
 from ForecastAgent.tests.test_research_simple_map import literal_proposal
 from ForecastAgent.tests.test_research_gap_feedback import task, initial, patch, receipt
@@ -65,6 +65,31 @@ class TargetLogicTests(unittest.TestCase):
         apply(b,p); report=logic.audit(b)
         self.assertEqual(report['targets'][0]['status'],'direct_evidence_declared')
         self.assertFalse(report['targets'][0]['adequacy_verified'])
+
+    def test_invalid_scope_annotation_is_unknown_without_erasing_quote(self):
+        b,p=fixture();p['nodes'][0]['applicability']='context'
+        p['nodes'][0]['target_links']=[link(b,'procedure','context')]
+        result=apply(b,p);node=b['research_loop']['current']['nodes'][0]
+        self.assertEqual(node['applicability'],'unknown')
+        self.assertEqual(node['claim'],'Revenue was 24 billion dollars.')
+        self.assertEqual(node['target_links'][0]['role'],'procedure')
+        self.assertTrue(any(r.get('field')=='applicability' for r in result['acceptance']['rejected']))
+        self.assertEqual(logic.audit(b)['targets'][0]['status'],'background_only')
+
+    def test_scope_isolation_does_not_repair_bad_quote_or_upgrade_direct(self):
+        for mode in ('direct','paraphrase'):
+            b,p=fixture();p['nodes'][0]['applicability']='context'
+            p['nodes'][0]['target_links']=[link(b,'direct','supports')]
+            if mode=='paraphrase':p['nodes'][0]['claim']='Revenue will be 24 billion dollars.'
+            if mode=='paraphrase':
+                with self.assertRaises(MapAcceptanceError) as caught:apply(b,p)
+                accepted=caught.exception.report
+            else:
+                accepted=apply(b,p)['acceptance']
+            coverage=accepted['target_coverage']
+            self.assertEqual(coverage['target_link_count'],0)
+            self.assertEqual(coverage['targets'][0]['status'],'unassessed')
+            if mode=='paraphrase':self.assertNotIn('observed_report',accepted['accepted_node_ids'])
 
     def test_missing_links_and_no_requests_are_not_coverage(self):
         b,p=fixture(); p['nodes']=p['nodes'][:1]; p['nodes'][0].pop('target_links')

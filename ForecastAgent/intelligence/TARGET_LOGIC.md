@@ -49,6 +49,9 @@ background-as-direct annotations are isolated without changing a valid quote.
 Pure Markdown headings and table separators cannot become observation nodes;
 their original source text remains saved and readable. This narrow check does
 not classify every title, short measurement or table header semantically.
+Invalid stage/time/applicability annotations become explicit unknowns with an
+audit receipt; code never interprets `context` as `background` or repairs a quote.
+Source-role labels and the node applicability enum have separate instructions.
 
 Coverage reports all frozen targets as unassessed, unresolved, hypotheses only,
 background only, indicators declared, or direct evidence declared. All states
