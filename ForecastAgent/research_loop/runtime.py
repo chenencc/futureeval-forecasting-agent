@@ -190,7 +190,7 @@ def filter_tools(task, tools):
                 ids=need_ids if name=='need_ids' else node_ids if name==fusion.LINK_FIELD else gap_ids if name==gap_feedback.LINK else []
                 if ids and prop.get('type')=='array':
                     prop['items']['enum']=ids
-                    prop['description']='Array of current '+('material need IDs' if name=='need_ids' else 'research target/map node IDs')+'. Copy IDs from this enum; these namespaces are distinct.'
+                    prop['description']='Array of current '+('material need IDs' if name=='need_ids' else 'research gap IDs' if name==gap_feedback.LINK else 'research target/map node IDs')+'. Copy IDs from this enum; these namespaces are distinct.'
                 bind(prop)
             if isinstance(schema.get('items'),dict):bind(schema['items'])
         for entry in tools:
@@ -205,7 +205,7 @@ def filter_tools(task, tools):
                 if not task.bundle['research_loop'].get('current'):
                     props['nodes']['minItems'] = 1
                 props['revision_reason'].update(minLength=1,
-                    description='Nonempty explanation of the actual change or unchanged graph. Do not fabricate a fact.')
+                    description='Nonempty explanation, at most 300 characters. Summarize the actual change; put source-specific explanations in material_reviews. Do not fabricate a fact.')
                 props['expected_revision']['enum']=[report['revision']]
                 props['material_sha256']['enum']=[report['material_sha256']]
                 from ForecastAgent.research_loop import delta
@@ -225,4 +225,11 @@ def filter_tools(task, tools):
                                 for i in n['evidence_ids'])
                     if refs:
                         props['nodes']['items']['properties']['evidence_ids']['items']['enum']=list(dict.fromkeys(refs))
+                if gap_feedback.enabled(task.bundle):
+                    links=props['material_reviews']['items']['properties']['gap_ids']
+                    if gap_ids:
+                        links['items']['enum']=gap_ids
+                    else:
+                        links['maxItems']=0
+                    props['nodes']['items']['properties']['stage_basis']['description']='At most 180 characters. Copy a SHORT literal stage-supporting phrase from a bound reference; otherwise use empty string and event_stage=unknown.'
     return tools

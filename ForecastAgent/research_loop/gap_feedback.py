@@ -16,7 +16,9 @@ REVIEW = obj({'material_id': text(32),
         ['incorporated', 'conflict', 'duplicate', 'irrelevant', 'deferred']},
     # Match the native retained reading-handle limit; receipts can span a table.
     'evidence_ids': array(text(32), 16), 'node_ids': array(text(40), 4),
-    'gap_ids': array(text(32), 4), 'related_material_ids': array(text(32), 3),
+    'gap_ids': {**array(text(32), 4), 'description':
+        'Copy only listed gap_id values (G...). Never use node IDs here. Use [] when no listed gap applies; new material_requests get program IDs after acceptance.'},
+    'related_material_ids': array(text(32), 3),
     'effect': {'type': 'string', 'enum': ['supports', 'opposes', 'narrows', 'no_change', 'unknown']},
     'reason': {**text(800), 'description':'Prefer a concise reason under 240 characters. Full audit storage permits at most 800; context projects counts rather than the full receipt prose.'}})
 GUIDE = '''
@@ -42,6 +44,9 @@ even when an official landing page is available today.
 Material metadata lists inspected_reference_ids and bound_observation_node_ids
 for THAT URL/body/scope. A retained node from another source is not an incorporation
 of the newly read source. Add a short source-bound observation or explicitly defer.
+Past observations can inform a future forecast as background. Being earlier than
+the target date does not alone make a source irrelevant. A future result is not
+obtainable now: seek an available baseline or leading indicator, not its realization.
 Whitespace and ordinary HTTP Markdown link display may be mapped back to exact
 original coordinates. Facts, numbers, dates, polarity and units cannot be repaired.
 '''
@@ -118,6 +123,24 @@ def gaps(task, current=None):
     return sorted(result, key=lambda g: (
         {'available':0,'uncertain':1,'future_event':2}.get(g.get('availability'),1),
         {'high':0,'medium':1,'low':2}.get(g.get('importance'),1), g['attempts'], g['gap_id']))
+
+
+def identifiers(task, inventory=None):
+    """Expose distinct namespaces; no generated alias can repair a wrong link."""
+    inventory = inventory if inventory is not None else materials(task)
+    current = task.bundle['research_loop'].get('current') or {}
+    listed = gaps(task)
+    return {'current_node_ids': [n['id'] for n in current.get('nodes', [])],
+        'current_gap_ids': [g['gap_id'] for g in listed], 'current_gaps': listed,
+        'materials': [{'material_id': m['material_id'], 'url': m['url'],
+            'inspected_reference_ids': m['inspected_reference_ids'],
+            'bound_observation_node_ids': m['bound_observation_node_ids']}
+            for m in inventory.values()],
+        'instruction': 'node_ids name retained map nodes; gap_ids copy current_gap_ids '
+            'only, or []. material_id names one exact saved source version; evidence_ids '
+            'must be inspected references of THAT material. New proposed node IDs are '
+            'usable only if their observations survive validation. A rejected node cannot '
+            'support incorporation. New material requests receive G IDs after acceptance.'}
 
 
 def pending(task, inventory=None):

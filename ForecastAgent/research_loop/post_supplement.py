@@ -39,6 +39,13 @@ or an explicit unknown node; never an empty graph. Preserve rejected/unread mate
 Relations are hypotheses; do not invent conditional probabilities or multiply them.
 Use at most 8 nodes, 4 relations and 2 material requests; keep quotes under 180 chars.
 Use unknown event_stage/time unless literal evidence supports a stronger label.
+All string limits are CHARACTERS, not tokens. revision_reason <=300;
+stage_basis <=180; interpretation <=240; limitation <=180. Prefer shorter values.
+Use identifier_registry: node IDs, gap IDs, material IDs and reference IDs are
+different namespaces. Receipt gap_ids must copy current_gap_ids or be [].
+Earlier same-entity observations may be useful background; time mismatch alone
+does not make them irrelevant. Do not request an unknowable future realization
+as if it were an obtainable missing page. Name its current baseline instead.
 '''
 
 
@@ -112,28 +119,39 @@ def reading_packet(task):
     pending.sort(key=lambda m: (m['url'] in old_bound, m['url']))
     terms = set(re.findall(r'\b[a-z0-9]{4,}\b', ' '.join(
         str(task.bundle['request'].get(k, '')) for k in state.RULE_FIELDS).lower()))
-    evidence, deferred = [], []
+    evidence, deferred, ranked_sources = [], [], []
     for source in pending:
         spans = [s for s in material['spans'].values() if s['url'] == source['url']]
         ranked = sorted(spans, key=lambda s: (-len(terms & set(re.findall(
             r'\b[a-z0-9]{4,}\b', s['text'].lower()))), s['start']))
-        selected = []
-        # One status/header span plus one relevant body/table span when possible.
-        for span in ([spans[0]] if spans else []) + ranked:
-            if span['evidence_id'] in {s['evidence_id'] for s in selected}:
+        from ForecastAgent.research_loop.reading_views import substantive
+        body = substantive(ranked)
+        # Body first, then its literal header or another useful span. No new
+        # coordinates or text are manufactured by this navigation heuristic.
+        ordered = body[:1] + ([spans[0]] if spans else []) + ranked
+        unique, seen = [], set()
+        for span in ordered:
+            if span['evidence_id'] not in seen:
+                unique.append(span)
+                seen.add(span['evidence_id'])
+        ranked_sources.append((source, unique))
+    # Give every pending source one opportunity before any gets a second span.
+    # An omitted source remains pending; a delivered excerpt is not full reading.
+    for round_index in range(2):
+        for source, candidates in ranked_sources:
+            delivered = {s['evidence_id'] for s in evidence}
+            if sum(s['url'] == source['url'] for s in evidence) != round_index:
                 continue
-            if len(evidence) + len(selected) >= 16 or sum(
-                    len(s['text']) for s in evidence + selected) + len(span['text']) > 24000:
-                continue
-            selected.append(copy.deepcopy(span))
-            if len(selected) == 2:
+            for span in candidates:
+                if (span['evidence_id'] in delivered or len(evidence) >= 16 or
+                        sum(len(s['text']) for s in evidence) + len(span['text']) > 24000):
+                    continue
+                evidence.append({**copy.deepcopy(span), 'material_id': source['material_id']})
                 break
-        if not selected:
+    for source, _ in ranked_sources:
+        if not any(s['url'] == source['url'] for s in evidence):
             deferred.append({'material_id': source['material_id'], 'url': source['url'],
                              'reason': 'Local reading packet cap; no excerpt was delivered.'})
-        for span in selected:
-            span['material_id'] = source['material_id']
-            evidence.append(span)
     # These exact coordinates are delivered below, not inferred reading credit.
     task.bundle['research_acquisition']['inspected_references'] = [
         {k: s[k] for k in ('evidence_id', 'url', 'body_sha256', 'start', 'end')}
@@ -141,6 +159,8 @@ def reading_packet(task):
     task.bundle['research_acquisition']['inspected_context_references'] = []
     task.save()
     return {'material_sha256': material['material_sha256'], 'evidence': evidence,
+            'selection_policy': 'source_round_robin_body_before_header_v1',
+            'identifier_registry': gap_feedback.identifiers(task, gap_feedback.materials(task, material)),
             'delivered_materials': [m for m in gap_feedback.materials(task, material).values()
                                     if any(s['url'] == m['url'] for s in evidence)],
             'undelivered_materials': deferred,

@@ -128,11 +128,47 @@ class PostSupplementTests(unittest.TestCase):
             self.assertLessEqual(len(packet['evidence']),16)
             self.assertLessEqual(sum(len(s['text']) for s in packet['evidence']),24000)
             self.assertTrue(packet['undelivered_materials'])
+            self.assertEqual(len({s['url'] for s in packet['evidence']}),16)
             self.assertEqual(t.bundle['pages'],before)
             catalog=state.catalog(t.bundle)
             for s in packet['evidence']:
                 self.assertEqual(s['text'],catalog['spans'][s['evidence_id']]['text'])
                 self.assertEqual(s['body_sha256'],catalog['sources'][s['url']]['body_sha256'])
+
+    def test_body_precedes_heading_and_identifier_registry_is_typed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp)
+            initial(t)
+            url='https://example.org/current'
+            t.bundle['pages'][url]={'content':'# Target revenue report\n\nRevenue was 30 billion dollars. '+('Detailed baseline for the next period. '*15)}
+            before=copy.deepcopy(t.bundle['pages'])
+            packet=post.reading_packet(t)
+            own=[s for s in packet['evidence'] if s['url']==url]
+            self.assertIn('Revenue was 30',own[0]['text'])
+            self.assertEqual(len(own),2)
+            registry=packet['identifier_registry']
+            self.assertIn('observed_report',registry['current_node_ids'])
+            self.assertEqual(registry['current_gap_ids'],[g['gap_id'] for g in gap_feedback.gaps(t)])
+            self.assertNotIn('observed_report',registry['current_gap_ids'])
+            material=next(m for m in registry['materials'] if m['url']==url)
+            self.assertEqual(set(material['inspected_reference_ids']),{s['evidence_id'] for s in own})
+            self.assertEqual(t.bundle['pages'],before)
+
+    def test_tool_exposes_gap_namespace_and_short_literal_constraints(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp)
+            def properties():
+                tool=next(x for x in runtime.filter_tools(t,runtime.configure(t,[]))
+                          if x['function']['name']=='update_research_state')
+                return tool['function']['parameters']['properties']
+            props=properties()
+            self.assertEqual(props['material_reviews']['items']['properties']['gap_ids']['maxItems'],0)
+            initial(t)
+            props=properties()
+            ids=props['material_reviews']['items']['properties']['gap_ids']['items']['enum']
+            self.assertEqual(ids,[g['gap_id'] for g in gap_feedback.gaps(t)])
+            self.assertIn('300 characters',props['revision_reason']['description'])
+            self.assertIn('180 characters',props['nodes']['items']['properties']['stage_basis']['description'])
 
     def test_complete_pipeline_includes_reserved_review_and_caches_without_recollection(self):
         with tempfile.TemporaryDirectory() as tmp:
