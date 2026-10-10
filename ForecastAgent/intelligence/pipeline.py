@@ -64,7 +64,11 @@ def collect(request, directory, *, clock_utc, recover_data=True, research_map=Fa
 
 def _collect(request, directory, *, clock_utc, recover_data=True):
     from ForecastAgent.releases import v1_0_5
+    from ForecastAgent.research_loop import post_supplement
+    import time
     original = copy.deepcopy(request)
+    if post_supplement.enabled(original):
+        original[post_supplement.STAGE_FIELD] = 'intelligence_after_data_recovery'
     original["predictive_information_contract"] = contract(request, clock_utc=clock_utc)
     root = Path(directory)
     adapter = v1_0_5.collect(original, root / "retrieval")
@@ -84,8 +88,22 @@ def _collect(request, directory, *, clock_utc, recover_data=True):
         package, recovery = recover(package, root / "data-recovery",
             prior_manifest=prior / "manifest.json",
             prior_ledger=prior / "tasks" / str(original["id"]) / "supplement.json", network=True)
+    post_report = None
+    if post_supplement.enabled(original):
+        reservation = load(root / 'retrieval/release-1.0.5/map-reservation.json')
+        pipeline_state = load(root / 'retrieval/release-1.0.5/state.json')
+        if pipeline_state.get('post_reservation_sha256') != digest(reservation):
+            raise ValueError('Final map reservation integrity mismatch')
+        limits = reservation['limits']
+        deadline = time.monotonic() + max(0, reservation['started_at_epoch']
+            + limits['seconds_remaining'] - time.time())
+        package, post_report = post_supplement.run(package, root / 'final-map-review',
+            http_cap=post_supplement.remaining_http(package, limits),
+            failure_cap=post_supplement.remaining_failures(package, limits), deadline=deadline)
+        save(root / 'final-map-package.json', package)
     view, report = prepare_package(package, root / "intelligence", clock_utc)
     report["data_recovery"] = recovery
+    report['post_supplement_map'] = post_report
     save(root / "intelligence/report.json", report)
     return {"view": view, "report": report, "analysis_started": False, "submitted": False}
 

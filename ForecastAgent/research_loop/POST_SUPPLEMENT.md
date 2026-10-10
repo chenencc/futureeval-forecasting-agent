@@ -1,0 +1,40 @@
+# Reserved post-supplement map review
+
+The `reserved_local_map_review_v1` policy is optional and development only.
+Intelligence map-enabled inputs select it explicitly. Existing sealed inputs and
+production workers keep their pinned policies and code identity.
+
+## Flow
+
+1. Freeze the input, code, model routing and cumulative budget.
+2. Reserve two existing model decisions and HTTP slots, 180 seconds of wall time,
+   and the final one of three map revisions before acquisition.
+3. Run the original acquisition Agent with the remaining allowance.
+4. Preserve its original bundle and independent supplement archive.
+5. Build a local reading packet from pending saved sources. New sources get priority;
+   each receives up to two exact spans, within 16 handles and 24,000 characters.
+   A long document cannot occupy the whole packet. Unexposed sources remain recorded.
+6. Ask the configured acquisition model for one map update with per-source receipts.
+   One rejected proposal may consume the remaining reserved request. Provider retries
+   also consume the physical HTTP cap. Never repair facts to manufacture acceptance.
+7. Export a derivative graph and its delta, accepted/rejected receipts, usage and
+   remaining gaps. Keep original task result, captures, searches and quotas intact.
+
+The model must separate target observations from background, different entities,
+currencies, geographic basins, participants, periods and future events. Exact quotes
+and source receipts are mechanically checked; applicability and causal meaning are
+still unverified judgments. Two excerpts do not establish complete page reading.
+
+## Failure and restart
+
+No reserved allowance, expired wall time, exhausted map revisions, malformed proposals,
+or provider failures produce an explicit status and preserved originals. A completed
+review is checksum-checked and cached. A crash with an existing HTTP receipt requires
+review instead of silently issuing another request. `model-http` reservations persist
+before transport; failed attempts and unknown usage remain in the report.
+
+Saved-material experiments use a separate frozen derivative directory and explicitly
+declared verification allowance. They do not reopen prior collection tasks or reset
+their native budgets. They test the reading/update interface, not fresh acquisition,
+causal truth or forecast quality. Paired scoring inputs must retain identical original
+coverage; forecasts and submissions require separate execution gates.

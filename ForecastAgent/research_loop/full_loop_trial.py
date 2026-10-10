@@ -22,16 +22,17 @@ def input_for(parent, when, *, gap_feedback=False):
     request['recover_sources_before_stall'] = True
     request['collection_purpose'] = 'Native acquisition-map feedback trial; no scoring or submission'
     if gap_feedback:
-        from ForecastAgent.research_loop import delta, delivery, reading_views
+        from ForecastAgent.research_loop import delta, delivery, reading_views, post_supplement
         from ForecastAgent.research_loop import gap_feedback as receipts
         request.update({delta.FIELD: delta.POLICY, delivery.FIELD: delivery.POLICY,
-                        reading_views.FIELD: reading_views.POLICY, receipts.FIELD: receipts.POLICY})
+                        reading_views.FIELD: reading_views.POLICY, receipts.FIELD: receipts.POLICY,
+                        post_supplement.FIELD: post_supplement.POLICY})
     return request
 
 
 def feedback_audit(bundle, package=None):
     """Count only chronologically later, exact-body observation bindings."""
-    revisions = bundle.get('research_loop', {}).get('events', [])
+    revisions = (package if package is not None else bundle).get('research_loop', {}).get('events', [])
     actions = bundle.get('research_acquisition', {}).get('events', [])
     rows = []
     for action in actions:
@@ -68,7 +69,8 @@ def feedback_audit(bundle, package=None):
             'post_map_body_events_bound_later': sum(r['action_map_revision'] > 0 and r['closed_body_binding_loop'] for r in rows),
             'initial_body_events_bound_later': sum(r['action_map_revision'] == 0 and r['closed_body_binding_loop'] for r in rows),
             'supplement_added_or_changed_readable_bodies': added,
-            'supplement_is_outside_agent_feedback_loop': True,
+            'supplement_is_outside_agent_feedback_loop': not bool((package or {}).get('post_supplement_review')),
+            'supplement_review_status': (package or {}).get('post_supplement_review',{}).get('status','not_run'),
             'body_binding_does_not_verify_relevance': True}
 
 
@@ -202,7 +204,7 @@ def run(parents, root, *, execute=False, limit_cases=None, continue_from=None, g
                     verify_caps(summary)
                     row.update(status='exported' if package is not None else 'preserved_incomplete',
                                summary=summary, pipeline_state=report['state'], resources=report['resources'])
-                    save(folder/'graph.json', raw.get('research_loop', {}).get('current'))
+                    save(folder/'graph.json', (package or raw).get('research_loop', {}).get('current'))
                 except Exception as exc:
                     row.update(status='failed', error_type=type(exc).__name__)
                     if path.exists():
@@ -220,7 +222,7 @@ def run(parents, root, *, execute=False, limit_cases=None, continue_from=None, g
                 raise ValueError('Original snapshot changed')
             if halt:
                 break
-        receipts = sorted(root.rglob('model_calls/*.json'))
+        receipts = sorted(set(root.rglob('model_calls/*.json')) | set(root.rglob('post-supplement-map/model-http/*.json')))
         report = {'schema': PROTOCOL, 'requested': len(inputs), 'processed': len(rows), 'rows': rows,
                   'halt': halt, 'usage': live_trial.usage(receipts), 'budget': BUDGET,
                   'scoring_enabled': False, 'submitted': False, 'old_snapshots_preserved': True,

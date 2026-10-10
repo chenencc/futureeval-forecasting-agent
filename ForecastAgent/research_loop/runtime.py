@@ -63,6 +63,10 @@ def execute(task, name, args):
         raise ValueError('Research state policy is disabled')
     validate_args(task, name, args)
     if name == 'update_research_state':
+        from ForecastAgent.research_loop import post_supplement
+        if (post_supplement.enabled(task.bundle['request']) and not task.bundle.get(post_supplement.PHASE)
+                and task.bundle['research_loop']['revision'] >= task.bundle['research_loop']['update_cap'] - 1):
+            raise ValueError('Final map revision is reserved for post-supplement local reading')
         from ForecastAgent.research_loop import fusion, simple_map, grounding
         from ForecastAgent.research_loop import delta
         from ForecastAgent.research_loop import gap_feedback
@@ -166,6 +170,10 @@ def filter_tools(task, tools):
     omit = set()
     if not report['remaining_updates']:
         omit.add('update_research_state')
+    from ForecastAgent.research_loop import post_supplement
+    if (post_supplement.enabled(task.bundle['request']) and not task.bundle.get(post_supplement.PHASE)
+            and report['remaining_updates'] <= 1):
+        omit.add('update_research_state')
     if task.bundle.get('result') or task.bundle.get('control', {}).get('forced_close'):
         omit.update(NAMES)
     tools = [entry for entry in tools if entry['function']['name'] not in omit]
@@ -193,6 +201,11 @@ def filter_tools(task, tools):
                     'description':'Paginates pending source receipts only. Use url/query to read that source.'}
             if entry['function']['name']=='update_research_state':
                 props=entry['function']['parameters']['properties']
+                # Review-only patches are valid only when an existing graph survives.
+                if not task.bundle['research_loop'].get('current'):
+                    props['nodes']['minItems'] = 1
+                props['revision_reason'].update(minLength=1,
+                    description='Nonempty explanation of the actual change or unchanged graph. Do not fabricate a fact.')
                 props['expected_revision']['enum']=[report['revision']]
                 props['material_sha256']['enum']=[report['material_sha256']]
                 from ForecastAgent.research_loop import delta

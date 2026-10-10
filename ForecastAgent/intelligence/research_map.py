@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ForecastAgent.analysis.pilot import digest, load, save
 from ForecastAgent.acquisition.pipeline import reject_outcomes
-from ForecastAgent.research_loop import POLICY, delta, delivery, gap_feedback, grounding, reading_views
+from ForecastAgent.research_loop import POLICY, delta, delivery, gap_feedback, grounding, reading_views, post_supplement
 from ForecastAgent.research_loop.fusion import POLICY_FIELD, POLICY_NAME
 from ForecastAgent.research_loop.prospective_trial import prepared_pair
 
@@ -18,7 +18,7 @@ def enable(request):
     policies = {'research_state_policy': POLICY, POLICY_FIELD: POLICY_NAME,
                 grounding.FIELD: grounding.POLICY, delta.FIELD: delta.POLICY,
                 delivery.FIELD: delivery.POLICY, reading_views.FIELD: reading_views.POLICY,
-                gap_feedback.FIELD: gap_feedback.POLICY}
+                gap_feedback.FIELD: gap_feedback.POLICY, post_supplement.FIELD: post_supplement.POLICY}
     for field, value in policies.items():
         if field in result and result[field] != value:
             raise ValueError('Incompatible frozen research policy: ' + field)

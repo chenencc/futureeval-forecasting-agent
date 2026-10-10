@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import time
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
@@ -38,6 +39,8 @@ def prepare(request):
     reject_outcomes(request)
     if not isinstance(request, dict) or not all(isinstance(request.get(k), str) and request[k].strip() for k in ('question', 'resolution_criteria')):
         raise ValueError('Full question and resolution criteria are required')
+    from ForecastAgent.research_loop.post_supplement import validate
+    validate(request)
     ident = str(request.get('id', ''))
     if not re.fullmatch(r'[0-9]{1,20}', ident):
         raise ValueError('A numeric Metaculus question id is required')
@@ -178,6 +181,7 @@ def run(request, directory, *, supplement_network=False):
     from ForecastAgent.runtime.retrieval import RetrievalTask
     from ForecastAgent.supplement.stage import run as supplement, analysis_overlay
     from ForecastAgent.evidence.acceptance import collection_acceptance
+    from ForecastAgent.research_loop import post_supplement
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     frozen = identity(request, supplement_network)
@@ -200,12 +204,28 @@ def run(request, directory, *, supplement_network=False):
                 raise ValueError('Completed report hash mismatch')
             return json.loads((directory/'report.json').read_text(encoding='utf-8'))
         task_dir = directory/'collection'
+        post_limits = None
+        post_deadline = None
+        if post_supplement.enabled(frozen['request']):
+            limit_path = directory/'map-reservation.json'
+            if not limit_path.exists():
+                existing = task_dir/'bundle.json'
+                limits = post_supplement.budget(json.loads(existing.read_text(encoding='utf-8')) if existing.exists() else None)
+                save(limit_path, {'limits': limits, 'started_at_epoch': time.time()})
+            reservation = json.loads(limit_path.read_text(encoding='utf-8'))
+            if state.get('post_reservation_sha256') not in {None, digest(reservation)}:
+                raise ValueError('Frozen map reservation or clock changed')
+            state['post_reservation_sha256'] = digest(reservation)
+            save(state_path, state)
+            post_limits = reservation['limits']
+            post_deadline = time.monotonic() + max(0, reservation['started_at_epoch']
+                + post_limits['seconds_remaining'] - time.time())
         if state['stage'] == 'collection':
             from ForecastAgent.acquisition.recovery import supplement_ready, execution_state
             existing = task_dir/'bundle.json'
             bundle = json.loads(existing.read_text(encoding='utf-8')) if existing.exists() else None
             if not bundle or not supplement_ready(bundle):
-                with route_environment():
+                with route_environment(), post_supplement.reserve_collection(frozen['request']):
                     from ForecastAgent.providers.model import reset_route
                     reset_route()
                     bundle = run_research(frozen['request'], task_dir)
@@ -238,6 +258,18 @@ def run(request, directory, *, supplement_network=False):
                 raise ValueError('Supplement archive differs from the frozen collection parent')
         supplement(directory/'parent.zip', directory/'supplement', [frozen['request']['id']], network=supplement_network)
         overlay = analysis_overlay(bundle, directory/'supplement', frozen['request']['id'])
+        post_report = None
+        if post_limits is not None and frozen['request'].get(post_supplement.STAGE_FIELD, 'pipeline') == 'pipeline':
+            overlay, post_report = post_supplement.run(overlay, directory/'post-supplement-map',
+                http_cap=post_supplement.remaining_http(bundle, post_limits),
+                failure_cap=post_supplement.remaining_failures(bundle, post_limits), deadline=post_deadline)
+            totals = post_report['usage']['totals']
+            overlay['post_supplement_review'] = {'status': post_report['status'],
+                'model_http_attempts': totals['http_attempts'],
+                'known_total_tokens': totals['known_total_tokens'],
+                'unknown_usage_attempts': totals['unknown_total_tokens_attempts'],
+                'report_path': 'post-supplement-map/result.json',
+                'original_ledgers_preserved': True}
         task = RetrievalTask(task_dir, frozen['request'])
         task.bundle = overlay  # Inspection only; do not save the overlay into the parent ledger.
         materials = terminal_report(task)
@@ -251,6 +283,11 @@ def run(request, directory, *, supplement_network=False):
                   'resources': resource_report(bundle, task_dir, directory/'supplement'),
                   'scope': 'Raw material capture and unverified adequacy declarations; no relevance certification or forecast score.',
                   'analysis_run': False, 'submitted': False}
+        if post_report is not None:
+            report['post_supplement_map'] = post_report
+            report['resources']['post_supplement_map_usage'] = post_report['usage']
+            report['resources']['model_http_attempts_including_post_map'] = (
+                report['resources']['model_http_attempts'] + post_report['usage']['totals']['http_attempts'])
         save(directory/'package.json', overlay)
         save(directory/'report.json', report)
         state.update(stage='complete', package_sha256=hashlib.sha256((directory/'package.json').read_bytes()).hexdigest(),

@@ -58,10 +58,13 @@ def acquisition_summary(bundle):
     graph = (bundle.get('research_loop') or {}).get('current') or {}
     events = bundle.get('research_acquisition', {}).get('events', [])
     tokens = [a.get('usage',{}).get('total_tokens') for a in attempts if isinstance(a.get('usage'),dict)]
+    post = bundle.get('post_supplement_review', {})
     return {'readable_pages':len(readable), 'readable_characters':sum(len(p['content']) for p in readable.values()),
             'saved_pages':len(bundle['pages']), 'excerpts':len(bundle.get('excerpts',[])),
-            'super_http':len(attempts), 'known_total_tokens':sum(t for t in tokens if type(t) is int),
-            'unknown_total_usage_attempts':len(attempts)-sum(type(t) is int for t in tokens),
+            'super_http':len(attempts)+post.get('model_http_attempts',0),
+            'post_supplement_http':post.get('model_http_attempts',0),
+            'known_total_tokens':sum(t for t in tokens if type(t) is int)+post.get('known_total_tokens',0),
+            'unknown_total_usage_attempts':len(attempts)-sum(type(t) is int for t in tokens)+post.get('unknown_usage_attempts',0),
             'tavily_basic':len(bundle.get('searches',[])), 'exa':len(bundle.get('exa_searches',[])),
             'initial_fetch_reservations':len(bundle.get('fetch_attempts',[])),
             'extract_batches':len(bundle.get('extract_attempts',[])),
@@ -106,7 +109,7 @@ def score(bundle, folder):
 
 def provider_attention(folder):
     attention=[]
-    paths=set(folder.rglob('model_calls/*.json')) | set(folder.rglob('decision/http/*.json'))
+    paths=set(folder.rglob('model_calls/*.json')) | set(folder.rglob('decision/http/*.json')) | set(folder.rglob('post-supplement-map/model-http/*.json'))
     for p in sorted(paths):
         r=load(p)
         if r.get('http_status') in {401,402,403,429}:
