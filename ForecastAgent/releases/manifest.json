@@ -202,7 +202,7 @@
     "ForecastAgent/releases/v1_0_2.py": "75c7c384c849918082bb7fc0448d04579671a4a7318d860e29f3049ad8e4d2db",
     "ForecastAgent/releases/v1_0_3.py": "74a5b55c2d5c63b63543ed007abefe5cae125eee2c55041722736f0e772c73d8",
     "ForecastAgent/releases/v1_0_4.py": "9dcb64674632555d4a692d1fb573414e47374f5d7170a7e54f2e209e9c6514d8",
-    "ForecastAgent/releases/v1_0_5.py": "86b04ca6ef5b3fae9fce3f4d5ce8a5f2463724d6d4f9f7ff2aeea4f52354cd8f",
+    "ForecastAgent/releases/v1_0_5.py": "d6fa044ca24ccc46aecffa45459a2956364988e440fa69c701ff44365a96cad9",
     "ForecastAgent/requirements-crawl4ai.txt": "7f41b2caa244ee2fd50a3584ef9cb4674b7cea9b224ed6d8b8c0123446513692",
     "ForecastAgent/requirements-retrieval.txt": "0ab834aa405d082d590315d7527b3ee425e98ed37b09742278eb1303a8f52a7e",
     "ForecastAgent/requirements-supplement.txt": "57798a4e4b8e24764a2ee14286c0b1369d81273b3005ca91d144fd17b6c3e687",
@@ -267,10 +267,11 @@
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
     "ForecastAgent/competition/recovery_store.py": "fcd7528efd04c9bdf2d4a923dcd835210652df32e02306015a2e985d745eebc1",
-    "ForecastAgent/competition/recovery_policy.py": "05e8d2d7c2a9005591f6e60022a7023815b753f4de5e5dff16aee735dfb188d5"
+    "ForecastAgent/competition/recovery_policy.py": "de7deb1b92a893b1bb27a12ca4d44362236fbfbd2c7bcfb418539b5860e00a35",
+    "ForecastAgent/competition/decision_deadline.py": "93a6a498beb73784d58cf45a60638060603dbd7fff41192fa42e413ab46cb504"
   },
   "source_reading_policy": "crawl4ai_v1",
   "base_release_tag": "v1.0.5",
   "release_variant": "crawl4ai.1",
-  "operational_patch": "v1.0.5-recovery.1"
+  "operational_patch": "v1.0.5-recovery.2"
 }

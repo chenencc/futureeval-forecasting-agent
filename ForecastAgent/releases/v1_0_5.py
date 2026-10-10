@@ -18,7 +18,10 @@ from ForecastAgent.releases.guard import execute
 from ForecastAgent.releases import surfaces, context_decisions
 from ForecastAgent.releases.manifest import verify
 from ForecastAgent.runtime.task_lock import task_lock
-from ForecastAgent.competition.recovery_policy import recover_legacy_lookup, health, classify
+from ForecastAgent.competition.recovery_policy import recover_legacy_lookup, health, classify, TERMINAL, task_timeout
+
+# Runtime lifecycle adapter leaves the frozen acquisition baseline bytes intact.
+live.TERMINAL=TERMINAL
 
 VERSION='1.0.5'
 CORE_VERSION='1.0.1'
@@ -176,7 +179,11 @@ def analyze(source, folder, ident):
     if candidate_path.exists() and marker.exists():
         verify_candidate(folder);return load(candidate_path)
     core=folder/'analysis-core-1.0.1'
-    try:candidate=context_decisions.analyze(source,core,ident)
+    from ForecastAgent.competition.decision_deadline import guard
+    def decision():
+        with guard(context_decisions.chain,load(source)['request']):
+            return context_decisions.analyze(source,core,ident)
+    try:candidate=decision()
     except Exception as exc:
         if not failed_provider_receipt(source,core):raise
         # A completed invalid/transport receipt already owns the only attempt.
@@ -184,7 +191,7 @@ def analyze(source, folder, ident):
         # or use the unchanged reasoning fallback, without another Mercury HTTP.
         save(folder/'provider-recovery.json',{'error_type':type(exc).__name__,
              'replay_existing_journals':True,'new_mercury_attempts':0,'budget_reset':False})
-        candidate=context_decisions.analyze(source,core,ident)
+        candidate=decision()
     candidate.update(release_version=VERSION,analysis_core_release_version=CORE_VERSION,
                      acquisition_release_version=VERSION,evidence_delivery_version='1.0.4')
     candidate['comment']=candidate['comment'].replace('# ForecastAgent 1.0.4', '# ForecastAgent 1.0.5')
@@ -288,7 +295,7 @@ def once(root, snapshots, *, enabled=False, client=None, infer=None, deliver_fn=
             stage,retry=classify(exc,task,utc())
             task.update(stage=stage,retry_at_utc=retry)
             save(folder/'failure.json',{'stage':stage,'error':task.get('last_error'),
-                 'preserved_state':True,'operational_patch':'v1.0.5-recovery.1'})
+                 'preserved_state':True,'operational_patch':'v1.0.5-recovery.2'})
             for problem in report.get('problems',[]):
                 if problem['id']==ident:problem['stage']=stage
         save(Path(root)/'campaign.json',state)
@@ -388,7 +395,7 @@ def supervise(root,snapshots, *, submit=False, limit=5, task_seconds=1500, batch
                 command=[sys.executable,'-u','-m','ForecastAgent.releases.v1_0_5','--once',
                          '--root',str(root),'--snapshots',str(snapshots),'--submit']
                 result=process_runner(command,root/'worker-logs'/f'{ident}-{len(attempts)}.log',
-                                      min(task_seconds,remaining),cwd=str(pipeline.ROOT))
+                                      task_timeout(task,min(task_seconds,remaining),utc()),cwd=str(pipeline.ROOT))
                 result['question_id']=ident;attempts.append(result)
                 if result['status']!='completed':
                     state=load(root/'campaign.json');task=state['tasks'][ident]
