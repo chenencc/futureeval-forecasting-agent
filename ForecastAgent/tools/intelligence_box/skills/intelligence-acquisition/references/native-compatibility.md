@@ -64,3 +64,13 @@ without additional transport after task restore. Quota exhaustion blocked transp
 See package-level NATIVE_COMPATIBILITY_VALIDATION.json. These are mechanics tests,
 not live source selection, Linux stress, historical availability or forecasting
 quality evidence.
+
+## New typed-source transport handoff
+
+Eurostat, ECB, six NWS routes and SEC companyfacts still use intelligence_fetch.
+They require no extra tool ID or allowance. Register frozen updated source/schema
+identity atomically; never relabel code as an earlier donor or silently migrate
+old tasks. NWS native injected transport must forward NWS_USER_AGENT (or approved
+SEC contact fallback) rather than a contact-free generic agent. Standalone live
+validation does not prove this host behavior. SEC large payloads use the already
+persisted document byte cap. Keep missing configuration before reservation.

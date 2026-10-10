@@ -82,6 +82,10 @@ def build_url(source_id, params):
         raise ValueError("Parameters must be bounded scalar values")
     from .public_channels import validate
     validate(source_id, params)
+    from .official_data import CHANNELS as official, validate as validate_official, build as build_official
+    if source_id in official:
+        validate_official(source_id,params)
+        return build_official(source_id,params)
     paths = source.get("path_parameters", [])
     if source_id.startswith('congress_'):
         from .congress import validate_parameters
@@ -120,6 +124,9 @@ def parse(source, raw):
     if source.get("records") in {"gdelt", "dbnomics", "bls"}:
         from .public_channels import parse_channel
         return parse_channel(source,raw)
+    if source.get("records") in {"eurostat","ecb","nws_point","nws_forecast","nws_observation","nws_alerts","nws_stations"}:
+        from .official_data import parse_official
+        return parse_official(source,raw)
     total, more = None, None
     if fmt == "json":
         body = json.loads(raw)
@@ -127,6 +134,15 @@ def parse(source, raw):
         if kind.startswith('congress_'):
             from .congress import parse_envelope
             records,total,more,metadata=parse_envelope(kind,body)
+        elif kind == "sec_companyfacts":
+            records=[]
+            if not isinstance(body.get("cik"),int) or not isinstance(body.get("facts"),dict): raise ValueError("Invalid company facts envelope")
+            for taxonomy,concepts in body["facts"].items():
+                for tag,concept in concepts.items():
+                    for unit,facts in concept["units"].items():
+                        if not isinstance(facts,list) or any(not isinstance(f,dict) for f in facts): raise ValueError("Invalid SEC facts")
+                        records.extend(dict(f,_source_context={"unit":unit,"cik":body["cik"],"taxonomy":taxonomy,"tag":tag,"label":concept.get("label"),"description":concept.get("description"),"entity_name":body.get("entityName")}) for f in facts)
+            total,more=len(records),False
         elif kind == "sec_concept":
             units=body["units"]
             if not isinstance(units,dict) or not isinstance(body.get("cik"),int): raise ValueError("Invalid SEC concept envelope")
@@ -161,7 +177,7 @@ def parse(source, raw):
         if not isinstance(records,list) or any(not isinstance(x,dict) for x in records):
             raise ValueError("Expected an array of record objects")
         if not kind.startswith('congress_'):
-            metadata = body[0] if isinstance(body,list) else {k:v for k,v in body.items() if k not in {source["records"],"message","units"}}
+            metadata = body[0] if isinstance(body,list) else {k:v for k,v in body.items() if k not in {source["records"],"message","units","facts"}}
         if kind=="sec_submissions": metadata["filings"]={"files":body["filings"].get("files",[])}
     elif fmt == "csv":
         text = raw.decode("utf-8-sig")
@@ -266,8 +282,14 @@ class Toolbox:
         if not isinstance(value,str) or len(value)>200 or any(c in value for c in "\r\n") or not re.search(r"[^\s@]+@[^\s@]+\.[^\s@]+",value): return None
         return value
 
+    def _nws_agent(self):
+        value=self.configuration.get("NWS_USER_AGENT") or os.environ.get("NWS_USER_AGENT","")
+        if not value: value=self._sec_agent()
+        return value if isinstance(value,str) and len(value)<=200 and not any(c in value for c in "\r\n") and re.search(r"[^\s@]+@[^\s@]+\.[^\s@]+",value) else None
+
     def _transport(self,url,limit):
         agent=self._sec_agent() if urlsplit(url).hostname in {"data.sec.gov","www.sec.gov"} else None
+        if urlsplit(url).hostname=="api.weather.gov": agent=self._nws_agent()
         if urlsplit(url).hostname=='api.congress.gov':
             return transport(url,limit,self.allowed_domains,user_agent='ForecastAgent public API validation',api_key=self._congress_key())
         return transport(url,limit,self.allowed_domains,user_agent=agent)
@@ -284,7 +306,7 @@ class Toolbox:
         params=params or {}
         source=SOURCES[source_id]
         url=build_url(source_id,params)
-        ready=self._congress_key() if source_id.startswith('congress_') else self._sec_agent()
+        ready=self._congress_key() if source_id.startswith('congress_') else self._nws_agent() if source_id.startswith("nws_") else self._sec_agent()
         if source.get("requires_configuration") and not ready:
             return {"version":"intelligence_capture_v1","source_id":source_id,"status":"configuration_required","configuration_names":source["requires_configuration"],"http_attempted":False,"records":[],"budget":self.budget()}
         return self._acquire(source_id,params,source,url,cache_max_age_seconds)
@@ -403,6 +425,7 @@ class Toolbox:
         self._check_read_url(url)
         if urlsplit(url).hostname in {"data.sec.gov","www.sec.gov"} and not self._sec_agent():
             return {"version":"intelligence_capture_v1","source_id":"document","status":"configuration_required","configuration_names":["SEC_USER_AGENT"],"http_attempted":False,"records":[],"budget":self.budget()}
+        if urlsplit(url).hostname=="api.weather.gov": agent=self._nws_agent()
         if urlsplit(url).hostname=='api.congress.gov': raise ValueError('Use the typed Congress sources for authenticated API calls')
         source={"domain":"document","role":"unclassified_document","format":"document","caveat":"A readable document does not establish target relevance or truth. Scanned PDFs may need OCR; browser fallback is not automatic."}
         return self._acquire("document",{},source,url,cache_max_age_seconds)
@@ -451,7 +474,7 @@ class Toolbox:
         if cache_warning: result["limitations"].append(cache_warning)
         if source.get('discovery_binding'): result['source_binding']=source['discovery_binding']
         try:
-            byte_cap=self.max_document_bytes if source["format"] in {"document","clml"} else 2_000_000
+            byte_cap=self.max_document_bytes if (source["format"] in {"document","clml"} or source.get("large_payload")) else 2_000_000
             result["byte_cap"]=byte_cap
             response=self.fetcher(url,byte_cap)
             raw=response.pop("raw")

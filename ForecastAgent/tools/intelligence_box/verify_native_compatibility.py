@@ -39,6 +39,24 @@ class NativeCompatibilityTests(unittest.TestCase):
             self.assertEqual(len(restored.bundle['fetch_attempts']),5)
             self.assertTrue(all(c['id'] in restored.bundle['channel_tools']['captures'] for c in results))
 
+    def test_european_statistics_share_native_requests(self):
+        from ForecastAgent.tests.test_native_capabilities import task
+        from ForecastAgent.tools.intelligence_box import core
+        cases=[('eurostat_data',{'dataset':'test','filters':'{"geo":"DE","time":"2025"}'}),('ecb_series',{'flow':'EXR','series':'M.USD.EUR.SP00.A','lastNObservations':2})]
+        def wire(url,cap,**kwargs):
+            if 'ecb.europa.eu' in url:
+                raw=b'KEY,TIME_PERIOD,OBS_VALUE,UNIT\nEXR.M.USD.EUR.SP00.A,2025-01,1.1,USD\n';kind='text/csv'
+            else:
+                raw=json.dumps({'class':'dataset','id':['geo','time'],'size':[1,1],'dimension':{'geo':{'category':{'index':{'DE':0}}},'time':{'category':{'index':{'2025':0}}}},'value':{'0':1}}).encode();kind='application/json'
+            return dict(raw=raw,status=200,content_type=kind,final_url=url)
+        with tempfile.TemporaryDirectory() as root, patch.object(core,'transport',side_effect=wire) as http:
+            t=task(root)
+            for name,params in cases:
+                c=t.execute('intelligence_fetch',{'source_id':name,'parameters':params,'need_ids':['revenue']},'')
+                self.assertEqual(c['status'],'usable',c.get('error'))
+                self.assertEqual(c['budget_authority'],'native_fetch_attempts')
+            self.assertEqual(http.call_count,2);self.assertEqual(len(t.bundle['fetch_attempts']),2)
+
     def test_unknown_extensions_are_not_offered_as_free_local_tools(self):
         from ForecastAgent.tools import capabilities
         offered=capabilities.registry()

@@ -1,0 +1,216 @@
+{
+  "version": "official_data_validation_v1",
+  "standalone_tests": 104,
+  "isolated_host_tests": 49,
+  "pilots": [
+    {
+      "version": "official_data_pilot_v1",
+      "cases": [
+        {
+          "id": "7ca7f737-a54f-422a-9973-32cdcb07c72c",
+          "source_id": "eurostat_data",
+          "status": "usable",
+          "raw_bytes": 2971,
+          "raw_sha256": "b235c4ae4e02d5d09017b0b18fdb2d347eb23b2b1e6a84fcf76b6df10df04735",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 1,
+            "remaining": 6
+          },
+          "http_status": 200,
+          "records": 1,
+          "hash_verified": true
+        },
+        {
+          "id": "c932bd8c-8e07-4335-8bc7-0db3b24ffa61",
+          "source_id": "ecb_series",
+          "status": "usable",
+          "raw_bytes": 760,
+          "raw_sha256": "3c037513be385dcf2ae5c8c07ab63c47732146b03378e3b333502abec5f33ec9",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 2,
+            "remaining": 5
+          },
+          "http_status": 200,
+          "records": 2,
+          "hash_verified": true
+        },
+        {
+          "id": "94f6eba0-2638-4fe5-acfe-0dc4a9713715",
+          "source_id": "nws_point",
+          "status": "usable",
+          "raw_bytes": 3921,
+          "raw_sha256": "0cba8fd617e67fbe7a30208f6f2a7f4355fc055c32b24fdd956e9d0ca43c7927",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 3,
+            "remaining": 4
+          },
+          "http_status": 200,
+          "records": 1,
+          "hash_verified": true
+        },
+        {
+          "id": "e0378c1f-f22f-4e57-bf5a-f6993e52af36",
+          "source_id": "nws_forecast",
+          "status": "usable",
+          "raw_bytes": 13718,
+          "raw_sha256": "c13ce7d5e1e12b1393a17b22c96e5f493d007b85f3f2d0a7c568bb8ae70da5d3",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 4,
+            "remaining": 3
+          },
+          "http_status": 200,
+          "records": 14,
+          "hash_verified": true
+        },
+        {
+          "id": "af402bed-b887-420a-9d57-3a91c6916de0",
+          "source_id": "nws_observation",
+          "status": "usable",
+          "raw_bytes": 4066,
+          "raw_sha256": "2920f50d1709e23bf7c480d7387c225bfa6b99c7d615a9b4d05ccf40c8eb876b",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 5,
+            "remaining": 2
+          },
+          "http_status": 200,
+          "records": 1,
+          "hash_verified": true
+        },
+        {
+          "id": "0c026325-aa7b-4bb8-85e0-62e587fb3afb",
+          "source_id": "nws_alerts",
+          "status": "usable",
+          "raw_bytes": 240763,
+          "raw_sha256": "b5cf37752cb86cf815144df08d239dc5ae7efe2c66317e16e5743fbb614af638",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 6,
+            "remaining": 1
+          },
+          "http_status": 200,
+          "records": 35,
+          "hash_verified": true
+        },
+        {
+          "id": "d0b72059-2396-481d-8aae-96abacd994aa",
+          "source_id": "sec_companyfacts",
+          "status": "failed",
+          "raw_bytes": 2000000,
+          "raw_sha256": "0c6870dca87765889229b60aa97964478044399381e8e4cb5f9855b02248cea4",
+          "error": {
+            "type": "ValueError",
+            "message": "Response exceeded byte cap; raw prefix preserved"
+          },
+          "budget": {
+            "maximum_http_attempts": 7,
+            "reserved_attempts": 7,
+            "remaining": 0
+          },
+          "http_status": 200,
+          "records": 0,
+          "hash_verified": true
+        }
+      ],
+      "budget": {
+        "maximum_http_attempts": 7,
+        "reserved_attempts": 7,
+        "remaining": 0
+      },
+      "model_calls": 0,
+      "paid_search_calls": 0,
+      "production_integrated": false
+    },
+    {
+      "version": "official_data_pilot_v1",
+      "cases": [
+        {
+          "id": "c363c551-c9aa-4bbb-8da6-7068f506c15c",
+          "source_id": "sec_companyfacts",
+          "status": "usable",
+          "raw_bytes": 3641344,
+          "raw_sha256": "d0c2b9288d027a6d735039a6fe874a348b65a7fdbc6c133130666c777c885204",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 3,
+            "reserved_attempts": 1,
+            "remaining": 2
+          },
+          "http_status": 200,
+          "records": 24131,
+          "hash_verified": true
+        },
+        {
+          "id": "6a7ed3b2-fed0-4c98-9035-408f90eea3c8",
+          "source_id": "nws_stations",
+          "status": "usable",
+          "raw_bytes": 76174,
+          "raw_sha256": "1b9efe9374099c73d0d505a21ab64d5bb82403c07587c854d945505b688ca68d",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 3,
+            "reserved_attempts": 2,
+            "remaining": 1
+          },
+          "http_status": 200,
+          "records": 54,
+          "hash_verified": true
+        },
+        {
+          "id": "945c0e74-9078-4e56-81ab-d9b6c9fd728d",
+          "source_id": "nws_hourly",
+          "status": "usable",
+          "raw_bytes": 163693,
+          "raw_sha256": "0d6865f9b8986d96d402111b99763a9f5ede5b6795ed911fb04727949be99f8e",
+          "error": null,
+          "budget": {
+            "maximum_http_attempts": 3,
+            "reserved_attempts": 3,
+            "remaining": 0
+          },
+          "http_status": 200,
+          "records": 156,
+          "hash_verified": true
+        }
+      ],
+      "budget": {
+        "maximum_http_attempts": 3,
+        "reserved_attempts": 3,
+        "remaining": 0
+      },
+      "model_calls": 0,
+      "paid_search_calls": 0,
+      "production_integrated": false
+    }
+  ],
+  "http_attempts": 10,
+  "usable_captures": 9,
+  "failed_captures": 1,
+  "raw_hashes_verified": 10,
+  "model_calls": 0,
+  "paid_search_calls": 0,
+  "new_api_keys_required": [],
+  "nws_contact_configuration": "NWS_USER_AGENT or existing valid SEC_USER_AGENT contact fallback; value never logged",
+  "new_source_count": 9,
+  "total_source_count": 32,
+  "production_integrated": false,
+  "host_overlay_commit": "aa02db810bdf1366b68a15ace63727e94b8f33f8",
+  "limitations": [
+    "ECB/Eurostat current revised observations are not publication vintages",
+    "NWS is regional US weather coverage, not global climate data",
+    "The truncated first SEC body is preserved; follow-up uses the existing persistent document byte policy, no retry/reset of first pilot",
+    "Host-owned injected transport must forward NWS contact User-Agent; standalone transport verified live, production host contact forwarding remains pending",
+    "Native forecast need applicability and source selection require a bounded live trial",
+    "Complete SEC companyfacts uses up to the task immutable document byte cap; units/periods/accessions remain distinct"
+  ]
+}

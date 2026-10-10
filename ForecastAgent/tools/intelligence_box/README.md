@@ -412,3 +412,53 @@ was mocked; peer/production checkouts were untouched. The tests check native sha
 caps, five source adapters, persistence/replay, 429 and pending-tool exclusion.
 See NATIVE_COMPATIBILITY_VALIDATION.json and the skill native-compatibility
 reference for atomic registration handoff and remaining gates.
+
+# Official European statistics, weather and issuer expansion
+
+Nine additional typed sources bring the catalog to 32 sources. They use the
+existing `intelligence_fetch` interface; no new agent tool or hidden requests.
+
+| Source | Acquisition | Important retained fields |
+| --- | --- | --- |
+| eurostat_data | Exact bounded JSON-stat dataset slice | Dimension codes/labels, unit, frequency, time, missing cells, status flags, update metadata |
+| ecb_series | Exact SDMX series, CSV with attributes | KEY, TIME_PERIOD, OBS_VALUE, units and observation status |
+| nws_point | Exact latitude/longitude | Grid office/X/Y and explicit forecast/station links |
+| nws_forecast / nws_hourly | Exact grid forecast | Issue/update time, start/end validity, units and precipitation probabilities |
+| nws_stations | Grid station directory | Station identity, coordinates and names; not observations |
+| nws_observation | Latest observation for exact station | Observation timestamp, measurement units and native nulls |
+| nws_alerts | Active alerts for one area or point | Severity, certainty, onset/effective/expiry, geometry and instructions |
+| sec_companyfacts | All SEC XBRL facts for exact observed issuer CIK | Taxonomy, tag, unit, start/end, filed, form and accession |
+
+NWS requires a real contact User-Agent. Configure `NWS_USER_AGENT`, or the
+standalone toolbox can reuse the existing valid `SEC_USER_AGENT` contact.
+Neither is an API key. Missing/invalid contact returns configuration_required
+before request reservation. Contacts are never emitted in reports. A host that
+injects its own transport must forward this contact itself: standalone fallback
+cannot rewrite an injected transport header. This remains a Pipeline handoff.
+
+Each call is one reserved HTTP attempt. Location, station index and observation
+are three explicit calls; none follows links automatically. Saved raw response,
+SHA-256 and capture time are retained. Forecasts are never treated as observations.
+Current revised economic series do not establish historical information cutoff.
+Do not treat an empty active-alert response as no past alert or future event.
+
+Eurostat requires geographic and bounded temporal selection. JSON-stat slices
+are capped at 10000 cells after bounded downloading. Async/warning envelopes,
+wrong requested dimensions, invalid sparse coordinates and oversized responses
+are retained failures. ECB rejects wildcard/OR series and requires an exact
+bounded period window or last 1..100 observations. Missing values and attributes
+remain native; no interpolated observations are created.
+
+SEC companyfacts uses the task's immutable document byte cap (default 8 MB),
+rather than the ordinary 2 MB API limit. Large responses remain bounded failures;
+there is no automatic fallback request or raised cap on restoration. For a single
+metric prefer sec_concept. Full issuer facts can include overlapping quarterly,
+year-to-date, annual and revised facts; acquisition does not select the answer.
+
+Validation: 104 standalone tests and 49 isolated native-host overlay tests passed.
+A ten-request public pilot produced nine usable captures and one retained
+truncated SEC response. A separately budgeted three-request follow-up obtained
+complete SEC bytes, station directory and hourly forecast. All ten original-body
+hashes verified. No model, Tavily or Exa calls. See OFFICIAL_DATA_VALIDATION.json.
+The isolated host tests verify shared reservations for Eurostat/ECB and all prior
+native tests; they do not establish production NWS header forwarding or deployment.

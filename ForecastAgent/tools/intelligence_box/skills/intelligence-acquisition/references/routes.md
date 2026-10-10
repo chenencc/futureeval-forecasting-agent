@@ -59,3 +59,25 @@ a global provider rate limiter, Office parsing, OCR, automatic Playwright fallba
 and automatic article-host expansion are not implemented here. Existing native
 ForecastAgent browser/search tools are separate capabilities; using this skill
 must not grant extra Tavily/Exa or campaign allowances.
+
+## European statistics and weather acquisition
+
+Use `intelligence_fetch` with the following source IDs. No new tool registration.
+- eurostat_data: parameters dataset, filters (JSON string), optional lang.
+  Example: {"dataset":"nama_10_gdp","filters":"{\"geo\":\"DE\",\"time\":\"2025\",\"unit\":\"CP_MEUR\",\"na_item\":\"B1GQ\",\"freq\":\"A\"}"}.
+- ecb_series: {"flow":"EXR","series":"M.USD.EUR.SP00.A","lastNObservations":2}.
+  Copy precise series from official metadata. No wildcard or OR syntax.
+- nws_point: {"latitude":38.8894,"longitude":-77.0352}. Read the returned grid
+  identity first; do not invent another location's grid.
+- nws_forecast, nws_hourly, nws_stations: {"office":"LWX","x":97,"y":71}.
+  Each separate request consumes the same shared HTTP budget.
+- nws_observation: {"station":"KDCA"}, copied from the station directory.
+- nws_alerts: {"area":"CA"} OR {"point":"38.8894,-77.0352"}.
+- sec_companyfacts: {"cik":"0001318605"}; only use issuer CIK observed in
+  task materials. Prefer sec_concept when one known tag is sufficient.
+
+NWS contact setup: NWS_USER_AGENT, with standalone fallback to valid SEC_USER_AGENT.
+Injected native host transports must implement the contact forwarding themselves.
+Do not call repeated failed sources automatically. Keep failed raw bytes and
+source timestamps. Forecast probabilities, observed measurements and revised
+statistics are different evidence roles, never interchangeable.

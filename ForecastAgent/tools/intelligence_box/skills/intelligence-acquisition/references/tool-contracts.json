@@ -78,6 +78,7 @@
               "nasa_eonet",
               "crossref",
               "sec_concept",
+              "sec_companyfacts",
               "sec_submissions",
               "uk_bill_detail",
               "uk_bill_publications",
@@ -87,7 +88,15 @@
               "dbnomics_series",
               "bls_series",
               "govinfo_feed",
-              "govinfo_text"
+              "govinfo_text",
+              "eurostat_data",
+              "ecb_series",
+              "nws_point",
+              "nws_forecast",
+              "nws_observation",
+              "nws_alerts",
+              "nws_stations",
+              "nws_hourly"
             ]
           },
           "parameters": {
