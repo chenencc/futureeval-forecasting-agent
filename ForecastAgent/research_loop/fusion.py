@@ -83,11 +83,8 @@ def initialize(task):
 
 def targets(task):
     """Stable unverified target conditions inherit the frozen material plan."""
-    return [{'id': 'T'+digest(n['id'])[:12], 'material_need_id': n['id'],
-             'kind': 'research_target', 'condition': n['condition'], 'priority': n['priority'],
-             'expected_source': n['expected_source'], 'question_refs': n.get('question_refs', []),
-             'meaning_verified': False}
-            for n in task.bundle.get('plan') or []]
+    from ForecastAgent.research_loop.target_logic import targets as target_registry
+    return target_registry(task.bundle)
 
 
 def inspected_references(task, material):
@@ -178,6 +175,9 @@ def frontier(task):
     from ForecastAgent.research_loop import gap_feedback
     if gap_feedback.enabled(task.bundle):
         result['gap_feedback'] = gap_feedback.view(task)
+    from ForecastAgent.research_loop import target_logic
+    if target_logic.enabled(task.bundle):
+        result['target_coverage'] = target_logic.brief(task.bundle)
     return result
 
 
@@ -208,6 +208,9 @@ def configure(task, tools):
             from ForecastAgent.research_loop import gap_feedback
             if gap_feedback.enabled(task.bundle):
                 tool['function']['parameters']=gap_feedback.schema(tool['function']['parameters'])
+            from ForecastAgent.research_loop import target_logic
+            if target_logic.enabled(task.bundle):
+                tool['function']['parameters']=target_logic.schema(tool['function']['parameters'])
             node = tool['function']['parameters']['properties']['nodes']['items']['properties']
             node['claim']['description'] = 'For observation, COPY a short CONTIGUOUS literal quote from one supplied R span. No paraphrase, added entity or URL. Put your explanation in interpretation. Other kinds are explicit hypotheses or gaps.'
             if gap_feedback.enabled(task.bundle):

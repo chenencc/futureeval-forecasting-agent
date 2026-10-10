@@ -84,6 +84,10 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
             if isinstance(original, dict) and isinstance(original.get('id'), str) and counts[original['id']] > 1:
                 raise ValueError('Duplicate node ID; every occurrence is quarantined')
             chosen = copy.deepcopy(original)
+            from ForecastAgent.research_loop import target_logic
+            if target_logic.enabled(candidate):
+                chosen, fields = target_logic.isolate_node(candidate, chosen)
+                rejected.extend(fields)
             scope = set(allowed) if allowed is not None else None
             if stage_grounding and isinstance(chosen, dict):
                 from ForecastAgent.research_loop.grounding import isolate_labels
@@ -143,6 +147,9 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
         report['map_protocol'] = map_protocol
         report['empty_narratives_defaulted'] = [k for k in ('supporting_path', 'alternative_path', 'revision_reason')
             if not proposal[k].strip()]
+    from ForecastAgent.research_loop import target_logic
+    if target_logic.enabled(candidate):
+        report['target_coverage'] = target_logic.audit(candidate, nodes, needs)
     gap_only = intentional_gaps and bool(nodes)
     if not report['factual_grounding_present'] and not gap_only:
         report['status'] = 'no_grounded_map'

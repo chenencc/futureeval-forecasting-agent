@@ -8,7 +8,7 @@ from ForecastAgent.research_loop.schema import NODE, PROPOSAL, RELATION, TOOLS
 PROTOCOL = 'literal-map-v2'
 PROTOCOLS = {PROTOCOL, 'forecast-map-v3', 'forecast-score-map-v4'}
 NODE_SCHEMA = copy.deepcopy(NODE)
-NODE_SCHEMA['required'] = [k for k in NODE_SCHEMA['properties'] if k != 'stage_basis']
+NODE_SCHEMA['required'] = [k for k in NODE_SCHEMA['properties'] if k not in {'stage_basis','target_links'}]
 RELATION_SCHEMA = copy.deepcopy(RELATION)
 RELATION_SCHEMA['required'] = list(RELATION_SCHEMA['properties'])
 MAP_SCHEMA = copy.deepcopy(PROPOSAL)

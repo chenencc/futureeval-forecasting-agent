@@ -299,6 +299,8 @@ def audit(bundle, cutoff=None):
 def view(bundle, cutoff=None):
     report = audit(bundle, cutoff)
     current = (bundle.get('research_loop') or {}).get('current') or {}
-    return {**report, 'nodes': [{k: n[k] for k in ('id', 'kind', 'claim', 'evidence_ids', 'gap_reason')}
+    from ForecastAgent.research_loop import target_logic
+    coverage = {'target_coverage': target_logic.brief(bundle)} if target_logic.enabled(bundle) else {}
+    return {**report, **coverage, 'nodes': [{k: n[k] for k in ('id', 'kind', 'claim', 'evidence_ids', 'gap_reason')}
         for n in current.get('nodes', [])], 'material_requests': current.get('material_requests', []),
         'instruction': 'Fallible research notes; acquire counterevidence and gaps within the frozen budget. Use inspect_research_state for exact spans and revisions.'}

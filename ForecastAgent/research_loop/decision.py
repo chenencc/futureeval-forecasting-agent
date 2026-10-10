@@ -63,6 +63,9 @@ def scoring_map(bundle, baseline):
         if simple:
             result.update(map_protocol=bundle['research_loop']['events'][-1]['acceptance']['map_protocol'],
                 evidence_groups=simple_map.grouping(selected))
+        from ForecastAgent.research_loop import target_logic
+        if target_logic.enabled(bundle):
+            result['target_coverage'] = target_logic.audit(bundle, selected, result['material_requests'])
         return result
     result = assemble(nodes, hidden)
     if len(json.dumps(result).encode()) > MAP_BYTE_CAP:

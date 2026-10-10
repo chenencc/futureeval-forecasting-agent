@@ -300,7 +300,12 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 if not tools:
                     status = 'map_tool_unavailable'
                     break
-                messages = [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({
+                from ForecastAgent.research_loop import target_logic
+                target_payload = ({'targets':target_logic.targets(task.bundle),
+                    'target_coverage':target_logic.brief(task.bundle)}
+                    if target_logic.enabled(task.bundle) else {})
+                messages = [{'role': 'system', 'content': SYSTEM + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')}, {'role': 'user', 'content': json.dumps({
+                    **target_payload,
                     'question': {k: task.bundle['request'].get(k, '') for k in state.RULE_FIELDS},
                     'expected_revision': task.bundle['research_loop']['revision'],
                     'current_map': prompt_map(task), 'reading': packet,

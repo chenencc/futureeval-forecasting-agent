@@ -43,6 +43,10 @@ def prepared_pair(bundle, *, original_view=None):
                 hidden.append(node['id'])
         mapped['nodes'] = [n for n in mapped['nodes'] if n['id'] not in hidden]
         kept = {n['id'] for n in mapped['nodes']}
+        from ForecastAgent.research_loop import target_logic
+        if target_logic.enabled(bundle):
+            mapped['target_coverage'] = target_logic.audit(bundle, mapped['nodes'],
+                [n for n in mapped['material_requests'] if set(n['node_ids']) <= kept])
         mapped['relations'] = [r for r in mapped['relations'] if {r['from_id'], r['to_id']} <= kept]
         mapped['material_requests'] = [r for r in mapped['material_requests'] if set(r['node_ids']) <= kept]
         mapped['hidden_node_ids'] = sorted(set(mapped.get('hidden_node_ids', [])) | set(hidden))

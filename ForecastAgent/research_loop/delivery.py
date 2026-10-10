@@ -94,6 +94,10 @@ def context(task, *, forced=None, maximum=28000):
     from ForecastAgent.research_loop import gap_feedback
     if gap_feedback.enabled(b):
         system += gap_feedback.GUIDE
+    from ForecastAgent.research_loop import target_logic
+    if target_logic.enabled(b):
+        system += target_logic.GUIDE
+        payload['target_coverage'] = target_logic.brief(b)
     from ForecastAgent.channels.native import enabled as channels_enabled, guide as channels_guide
     if channels_enabled(task):
         system += channels_guide()

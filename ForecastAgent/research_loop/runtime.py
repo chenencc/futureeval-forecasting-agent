@@ -65,7 +65,8 @@ def guide(task, system):
             'processing or one obtainable-gap acquisition. Follow its exact source and ID '
             'registry. Do not spend the phase loading skills or browsing unrelated navigation. '
             'The map is a research aid; missing future outcomes remain unknown.\n')
-    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '')
+    from ForecastAgent.research_loop import target_logic
+    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '') + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')
 
 
 def execute(task, name, args):

@@ -35,6 +35,12 @@ NODE['properties'].update(NODE_EXTENSIONS)
 # Optional in archived protocols; the coverage-aware acquisition interface
 # requires it explicitly. Literal support does not certify stage semantics.
 NODE['properties']['stage_basis'] = text(180)
+TARGET_LINK = obj({'target_id': text(40),
+    'role': {'type':'string', 'enum':['direct','indicator','baseline','procedure','context','unknown','driver']},
+    'effect': {'type':'string', 'enum':['supports','opposes','context','unresolved']},
+    'reason': text(240)})
+# Optional for archived maps; the opt-in target logic tool requires the field.
+NODE['properties']['target_links'] = array(TARGET_LINK, 4)
 RELATION['properties'].update(mechanism=text(240), rule_quote=text(240))
 NEED = obj({'target': text(260), 'reason': text(260), 'node_ids': array(text(40), 4),
     'role': {'type': 'string', 'enum': ['primary', 'counterevidence', 'gap']},
