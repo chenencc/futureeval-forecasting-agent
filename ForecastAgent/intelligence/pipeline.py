@@ -34,15 +34,18 @@ def prepare_package(bundle, directory, clock_utc):
     save(directory / "admission.json", admission)
     save(directory / "source-recovery-plan.json", plan)
     save(directory / "analysis-view.json", view)
+    from ForecastAgent.intelligence.research_map import project
+    map_projection = project(bundle, view, directory / "research-map")
     report = {"protocol": VERSION, "status": admission["status"],
               "admission": admission, "source_recovery_candidates": len(plan["candidates"]),
               "original_bundle_sha256": digest(bundle), "analysis_view_sha256": digest(view),
-              "new_provider_calls": 0, "submitted": False, "budget_reset": False}
+              "new_provider_calls": 0, "submitted": False, "budget_reset": False,
+              "research_map": map_projection}
     save(directory / "report.json", report)
     return view, report
 
 
-def collect(request, directory, *, clock_utc, recover_data=True):
+def collect(request, directory, *, clock_utc, recover_data=True, research_map=False):
     """Run the existing complete collector/supplement chain with explicit inputs.
 
     This is an acquisition-only entry point. The contract is trusted operator
@@ -53,6 +56,9 @@ def collect(request, directory, *, clock_utc, recover_data=True):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     with task_lock(directory):
+        if research_map:
+            from ForecastAgent.intelligence.research_map import enable
+            request = enable(request)
         return _collect(request, directory, clock_utc=clock_utc, recover_data=recover_data)
 
 

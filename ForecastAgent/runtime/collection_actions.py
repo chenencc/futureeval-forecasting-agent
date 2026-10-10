@@ -47,6 +47,9 @@ def raw_stop_reason(task):
     budget=task.budget()
     if primary_rescue(task):
         return None
+    from ForecastAgent.research_loop import fusion
+    if fusion.local_cycle(task):
+        return None  # Drain fresh originals into the map; hard dispatch caps remain.
     if task.bundle['control'].get('no_progress_turns',0)>=2:
         return 'raw_no_progress_limit'
     if budget['page_fetch_remaining']<=0:

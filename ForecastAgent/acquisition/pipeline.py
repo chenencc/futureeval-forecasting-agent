@@ -48,8 +48,13 @@ def prepare(request):
     strategy = request.get('acquisition_strategy', CURRENT_STRATEGY)
     if strategy not in {CURRENT_STRATEGY, V3_STRATEGY}:
         raise ValueError('Use an explicitly supported intelligent acquisition strategy')
+    focus = request.get('acquisition_focus', 'material_recall')
+    if focus not in {'material_recall', 'raw_recall'}:
+        raise ValueError('Unknown acquisition focus')
+    if focus == 'raw_recall' and request.get('mode', 'live') != 'live':
+        raise ValueError('Raw recall requires live capture')
     result.update(id=ident, pipeline='collection', acquisition_profile='collection_v3',
-                  acquisition_focus='material_recall', acquisition_strategy=strategy)
+                  acquisition_focus=focus, acquisition_strategy=strategy)
     result.setdefault('mode', 'live')
     result.setdefault('question_type', 'binary')
     if result['question_type'] not in {'binary', 'multiple_choice', 'numeric', 'date', 'discrete'}:
@@ -80,6 +85,10 @@ def verify_baseline():
 
 def identity(request, supplement_network):
     prepared, warnings = prepare(request)
+    research_policy = prepared.get('research_state_policy', 'disabled')
+    from ForecastAgent.research_loop import POLICY
+    if research_policy not in {'disabled', POLICY}:
+        raise ValueError('Unknown research state policy')
     base = verify_baseline()
     paths = ['ForecastAgent/runtime/'+name+'.py' for name in (
         'retrieval', 'context', 'guidance', 'collection_actions', 'acquisition', 'needs', 'intelligent_acquisition', 'material_protocol', 'delivery', 'delivery_control', 'progress')]
@@ -92,6 +101,10 @@ def identity(request, supplement_network):
         paths.extend(str(p.relative_to(ROOT)).replace('\\', '/') for p in (ROOT/prefix).rglob('*')
                      if p.is_file() and '__pycache__' not in p.parts and p.suffix in {'.py', '.md'})
     paths = sorted(set(paths))
+    if research_policy == POLICY:
+        paths.extend(str(p.relative_to(ROOT)).replace('\\', '/') for p in (ROOT/'ForecastAgent/research_loop').rglob('*')
+                     if p.is_file() and '__pycache__' not in p.parts and p.suffix in {'.py', '.md'})
+        paths = sorted(set(paths))
     return {'schema': 'intelligent-acquisition-pipeline-v1', 'baseline_commit': base['baseline_commit'],
             'input_sha256': digest(request), 'request': prepared, 'request_sha256': digest(prepared),
             'input_warnings': warnings, 'supplement_network': bool(supplement_network),

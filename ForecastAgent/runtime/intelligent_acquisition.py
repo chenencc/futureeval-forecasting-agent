@@ -81,7 +81,8 @@ def validate_strategy(task):
     name = task.bundle['request'].get('acquisition_strategy')
     if name is None:
         return
-    if not enabled(task) or task.bundle['pipeline'] != 'collection' or not task.optimized or task.raw_recall:
+    from ForecastAgent.runtime.material_protocol import STRATEGY as V3
+    if not enabled(task) or task.bundle['pipeline'] != 'collection' or not task.optimized or (task.raw_recall and name != V3):
         raise ValueError('Intelligent materials require collection_v3 with local reading enabled')
 
 
@@ -89,6 +90,8 @@ def configure_tools(task, tools):
     if not enabled(task):
         return tools
     tools = copy.deepcopy(tools) + copy.deepcopy(TOOLS)
+    if task.raw_recall:
+        tools = [t for t in tools if t['function']['name'] not in {'review_passages','assess_materials'}]
     from ForecastAgent.runtime.material_protocol import enabled as v3, TIME_FIELDS, assessment_schema
     for entry in tools:
         if v3(task) and entry['function']['name'] == 'assess_materials':
@@ -102,6 +105,8 @@ def configure_tools(task, tools):
             spec.update(minItems=1, maxItems=8)
             item = spec['items']
             if v3(task):
+                item['properties']['condition']['description'] = 'Immutable target requirement or a symbolic research need. Any explicit calendar date here must occur in the original question or provided platform metadata. Put baseline observation windows and the operating-clock date in query, not condition. Example: condition="Recent dated observations before the target session", query="Historical daily closes through the operating date".'
+                item['properties']['query']['description'] = 'Discovery query, not a resolution rule. Research-window and observation dates may appear here; never infer missing platform boundaries.'
                 item['properties']['rule_time_fields'] = {'type':'array', 'maxItems':len(TIME_FIELDS),
                     'items':{'type':'string', 'enum':list(TIME_FIELDS)},
                     'description':'Required platform timing dependencies; [] if none. Values come from immutable_rule_metadata, including unknowns. Observation/event dates belong in query, never inferred target boundaries.'}

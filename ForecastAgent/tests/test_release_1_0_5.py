@@ -40,7 +40,11 @@ class ReleaseIdentityTests(TestCase):
     def test_release_manifest_and_unchanged_analysis_identity(self):
         manifest=release.verify_release()
         self.assertEqual(manifest['version'],'1.0.5')
-        self.assertFalse(manifest.get('development_only',False))
+        if manifest.get('development_only', False):
+            self.assertEqual(manifest['base_release_tag'], 'v1.0.5-crawl4ai.1')
+            self.assertEqual(manifest['experimental_policy'], 'predictive-intelligence-map-integration-v1')
+        else:
+            self.assertFalse(manifest.get('development_only', False))
         self.assertEqual(manifest['analysis_core_tag'],'v1.0.1')
         release.pipeline.verify_baseline()
         self.assertEqual(release.context_decisions.VERSION,'1.0.4')

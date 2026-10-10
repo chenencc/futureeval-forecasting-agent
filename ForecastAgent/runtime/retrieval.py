@@ -178,6 +178,8 @@ class RetrievalTask:
             self.end_date = None
         if self.bundle["pipeline"] not in {"collection", "legacy"}:
             raise ValueError("Invalid acquisition pipeline")
+        from ForecastAgent.research_loop.state import initialize as initialize_research
+        initialize_research(self.bundle)
         self.bundle.setdefault("channel_catalog", channel_catalog())
         self.bundle.setdefault('acquisition_limits', {'tavily_basic': 3 if existing else
             5 if request.get('acquisition_profile') == 'collection_v2' else 3})
@@ -513,11 +515,20 @@ class RetrievalTask:
                 for n in self.bundle["plan"] or []]
 
     def execute(self, name, args, key):
+        from ForecastAgent.research_loop import fusion
+        if fusion.enabled(self):
+            return fusion.execute(self, name, args, key, self._execute)
+        return self._execute(name, args, key)
+
+    def _execute(self, name, args, key):
         if name not in {'fetch_pages', 'read_sources', 'record_excerpts', 'record_evidence_batch'}:
             # Batch tools preserve independent per-item failures; each child validates before HTTP.
             validate(self, name, args)
         if not isinstance(args, dict):
             raise ValueError('Tool arguments must be an object')
+        from ForecastAgent.research_loop.runtime import NAMES as research_names, execute as research_execute
+        if name in research_names:
+            return research_execute(self, name, args)
         from ForecastAgent.runtime.source_reading import NAMES, execute as source_execute
         if name in NAMES:
             return source_execute(self,name,args,key)
@@ -1265,6 +1276,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         available_tools = configure_tools(task, available_tools)
         from ForecastAgent.runtime.source_reading import configure as configure_source_tools
         available_tools = configure_source_tools(task,available_tools)
+        from ForecastAgent.research_loop.runtime import configure as configure_research_tools
+        available_tools = configure_research_tools(task, available_tools)
         if collection:
             task.bundle['control']['operating_clock_utc'] = utc_now()
             current_session['http_attempt_limit'] = COLLECTION_HTTP_PER_DISPATCH
@@ -1274,6 +1287,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             system = collection_system(task, catalog)
             from ForecastAgent.runtime.source_reading import enabled as source_enabled, guide as source_guide
             if source_enabled(task): system += source_guide()
+            from ForecastAgent.research_loop.runtime import guide as research_guide
+            system = research_guide(task, system)
             for entry in available_tools:
                 if entry['function']['name'] == 'search_tavily':
                     entry['function']['description'] = f'Primary basic discovery, at most {task.search_limit} lifetime attempts. Use concrete task entities/events, not internal IDs. Failures count.'
@@ -1306,6 +1321,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         for turn in range(turn_limit):
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
+            from ForecastAgent.research_loop import fusion
+            before_planning = fusion.planning_snapshot(task)
             turn_failed = False
             if collection:
                 from ForecastAgent.runtime.material_protocol import enabled as v3, closure_ready
@@ -1338,12 +1355,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
                 control['forced_close'] = True
                 break
-            stall = collection and control.get('no_progress_turns',0)>=3
+            stall = collection and control.get('no_progress_turns',0)>=3 and not fusion.local_cycle(task)
             recovery_delivery = control.pop('source_recovery_delivery_pending', False)
             if recovery_delivery:
                 stall = False  # Deliver the capture once; do not invent progress credit.
-            hard_close = (turn >= turn_limit-2 or control["consecutive_errors"] >= 3 and not recovery_delivery or
-                          collection and len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-2)
+            closing_reserve = 0 if collection and task.raw_recall and fusion.enabled(task) else 2
+            hard_close = (turn >= turn_limit-closing_reserve or control["consecutive_errors"] >= 3 and not recovery_delivery or
+                          collection and len(task.bundle.get('model_attempts',[]))-dispatch_start >= COLLECTION_HTTP_PER_DISPATCH-closing_reserve)
             if collection and (stall or control['consecutive_errors'] >= 3) and not recovery_delivery and turn < turn_limit-2 and len(task.bundle.get('model_attempts',[]))-dispatch_start < COLLECTION_HTTP_PER_DISPATCH-2:
                 from ForecastAgent.runtime.source_frontier import recover_before_stall
                 recovery = recover_before_stall(task, tavily_key)
@@ -1395,6 +1413,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 action=next_action(task)
                 if action:
                     forced=action['tool']
+            forced = fusion.advisory_forcing(task, forced)
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),
@@ -1406,7 +1425,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             try:
                 from ForecastAgent.runtime.context import collection_context
                 from ForecastAgent.runtime.tool_selection import active_tools
-                model_messages = collection_context(task) if collection else messages
+                model_messages = collection_context(task,forced_tool=forced) if collection else messages
                 if collection and repaired(task) and forced is None:
                     # Projection stages the newest exact read. Bind its review
                     # gate in this same request, before exposing navigation.
@@ -1418,8 +1437,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if forced=='search_exa':
                     from ForecastAgent.runtime.task_protocol import supplemental_messages
                     model_messages = supplemental_messages(task)
+                    if fusion.enabled(task):
+                        model_messages.append({'role':'user','content':json.dumps({'research_frontier':fusion.frontier(task)})})
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
-                                    observer=observer, deadline=deadline)
+                                    observer=observer, deadline=deadline, **fusion.model_options(task, forced))
                 if collection:
                     from ForecastAgent.runtime.delivery import acknowledge
                     acknowledge(task, model_messages)
@@ -1454,7 +1475,11 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if time.monotonic() >= deadline:
                         raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
-                    validate(task, name, args, turn_tools)
+                    from ForecastAgent.research_loop.runtime import NAMES as research_names, validate_args as validate_research
+                    if name in research_names:
+                        validate_research(task, name, args, turn_tools)
+                    else:
+                        validate(task, name, args, turn_tools)
                     if collection and repaired(task) and control['forced_close'] and name != 'finish_collection':
                         raise ContractError('program_closing', 'tool', 'The material repair/closure limit is reached. Preserve the ledger and finish with gaps; no further plan or acquisition call is allowed.')
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:
@@ -1517,8 +1542,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             control['consecutive_errors'] = control['consecutive_errors']+1 if turn_failed else 0
             if collection:
                 turn_progress = progress.delta(before_turn, progress.snapshot(task))
-                current_session['turns'].append({'turn':turn+1, 'failed':turn_failed, **turn_progress})
-                stalled = not turn_progress['advanced']
+                planner_advanced = fusion.planning_advanced(task, before_planning)
+                current_session['turns'].append({'turn':turn+1, 'failed':turn_failed, **turn_progress,
+                    'map_planning_advanced':planner_advanced,'map_is_raw_material_progress':False})
+                stalled = not turn_progress['advanced'] and not planner_advanced
                 control['no_progress_turns'] = control.get('no_progress_turns',0)+1 if stalled else 0
             task.save()
             if task.bundle["result"]:

@@ -135,3 +135,13 @@ See [Tool delivery protocol](docs/TOOL_DELIVERY.md) for confirmed model-visible
 reading receipts, exact continuation ranges, legacy restore migration, and the
 audited lifecycle of acquisition requirements. The protocol is independent of
 the model and the source channel.
+
+## Predictive intelligence and research maps (development)
+
+The isolated development integration retains native map-guided acquisition,
+critical-gap feedback, immutable material receipts, and paired Mercury inputs.
+See [research validation](intelligence/RESEARCH_VALIDATION.md) for the architecture,
+historical-contamination limits, sealed prospective protocol, and separate
+engineering/evidence/forecasting gates. Map-enabled acquisition is opt-in and
+the development source manifest prevents treating this tree as a production
+release. Local validation prepares projections without provider calls.

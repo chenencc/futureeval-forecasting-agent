@@ -22,6 +22,8 @@ def active_tools(task, tools, forced=None):
             for child in value:
                 bind_ids(child)
     bind_ids(tools)
+    from ForecastAgent.research_loop.runtime import filter_tools as filter_research_tools
+    tools = filter_research_tools(task, tools)
     for entry in tools:
         if entry['function']['name'] == 'load_research_skill':
             names = [name for name in task.bundle.get('skill_bank', {}) if name != 'evidence-review']
@@ -37,7 +39,7 @@ def active_tools(task, tools, forced=None):
             # Permit a single response to dispose, assess and close in order.
             # Navigation remains unavailable while exact material is pending.
             return [entry for entry in tools if entry['function']['name'] in
-                    {'review_passages', 'assess_materials', 'finish_collection'}]
+                    {'review_passages', 'assess_materials', 'finish_collection', 'inspect_research_state', 'update_research_state'}]
         if forced == 'read_sources':
             for entry in tools:
                 if entry['function']['name'] == 'read_sources':

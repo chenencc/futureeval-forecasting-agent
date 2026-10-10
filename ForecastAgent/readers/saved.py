@@ -18,7 +18,12 @@ def documents(pages):
 
 
 def select(pages, url, document_index=None):
-    page = pages.get(canonical_url(url))
+    page = pages.get(url)
+    if page is None:
+        matches=[p for key,p in pages.items() if canonical_url(key)==canonical_url(url)]
+        if len(matches)>1:
+            raise ValueError('Ambiguous saved URL aliases; use an exact saved source URL')
+        page=matches[0] if matches else None
     if page is None:
         raise ValueError("Read only URLs already saved in this task")
     if document_index is None:
