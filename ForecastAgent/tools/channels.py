@@ -71,8 +71,18 @@ def tool_result(name, data, budget, *, error=None):
     items = data.get("items", []) if isinstance(data, dict) else []
     failed = error is not None or bool(items) and not any(item.get("ok") for item in items)
     partial = bool(items) and any(not item.get("ok") for item in items) and not failed
+    status = "failed" if failed else "partial" if partial else "completed"
+    if name.startswith('intelligence_') and isinstance(data, dict):
+        if data.get('status') in {'configuration_required', 'failed', 'empty'}:
+            status = data['status']
+            failed = status != 'empty'
+    channel_ids = [c["id"] for c in CHANNELS if name in c["tools"]]
+    if name.startswith('intelligence_'):
+        from ForecastAgent.tools.capabilities import get
+        capability = get(name)
+        channel_ids = ['native_official_channels' if capability.kind == 'channel' else 'original_navigation']
     return {"version": "tool_result_v1", "tool": name, "ok": not failed,
-            "status": "failed" if failed else "partial" if partial else "completed",
+            "status": status,
             "data": data, "error": error, "budget_remaining": budget,
-            "provenance": {"channel_ids": [c["id"] for c in CHANNELS if name in c["tools"]],
+            "provenance": {"channel_ids": channel_ids,
                            "truth_verified": False}}

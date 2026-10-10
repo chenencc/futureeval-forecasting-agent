@@ -5,5 +5,11 @@ from pathlib import Path
 
 def code_identity():
     root = Path(__file__).parent
-    return {p.name: hashlib.sha256(p.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
-            for p in sorted(root.glob('*.py'))}
+    files = list(root.glob('*.py'))
+    for folder in ('channels', 'tools/intelligence_box'):
+        files.extend(root.parent.joinpath(folder).glob('*.py'))
+    files.append(root.parent / 'tools/capabilities.py')
+    files.append(root.parent / 'tools/original_navigation.py')
+    return {str(p.relative_to(root.parent)).replace('\\', '/'):
+            hashlib.sha256(p.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
+            for p in sorted(files)}

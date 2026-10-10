@@ -23,3 +23,22 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
       - run: python -m unittest discover -s ForecastAgent/tests
+      - run: python -m unittest ForecastAgent.test_intelligence_box ForecastAgent.test_intelligence_congress ForecastAgent.test_intelligence_navigation
+
+  native-channels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-retrieval.txt
+      - name: Verify native integration without provider credentials
+        run: >-
+          python -m unittest
+          ForecastAgent.tests.test_native_capabilities
+          ForecastAgent.tests.test_retrieval_agent
+          ForecastAgent.tests.test_research_fusion
+          ForecastAgent.test_intelligence_box
+          ForecastAgent.test_intelligence_congress
+          ForecastAgent.test_intelligence_navigation

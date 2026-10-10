@@ -1,0 +1,62 @@
+{
+  "schema": "native_capability_integration_validation_v1",
+  "date": "2026-10-10",
+  "development_branch": "codex/official-intelligence-v106",
+  "base_commit": "d29268441c103121d56a5f5f9ce79cdc80dd1f90",
+  "channel_donor_commit": "dde8b02",
+  "later_channel_discovery_excluded": true,
+  "implemented": [
+    "single capability registry and dispatch",
+    "saved-original precise reading",
+    "native official channel adapters",
+    "unified material-arrival and research feedback"
+  ],
+  "registered_capabilities": 58,
+  "official_contracts": 18,
+  "curated_profiles": 5,
+  "donor_python_files_hash_verified": 8,
+  "final_targeted_tests": {
+    "tests": 118,
+    "passed": 118,
+    "new_integration_tests": 30
+  },
+  "full_regression_comparison": {
+    "baseline": {
+      "tests": 996,
+      "failures": 25,
+      "errors": 31
+    },
+    "candidate_before_final_localized_fixes": {
+      "tests": 1022,
+      "failures": 25,
+      "errors": 31
+    },
+    "same_failed_test_ids": true,
+    "new_failed_test_ids": [],
+    "unique_failed_test_ids": 52,
+    "state": "not_green",
+    "failure_categories": [
+      "historical release and experiment hash gates",
+      "Windows owned-child timeout/cleanup constraints",
+      "existing snapshot-validator expectation"
+    ],
+    "caveat": "Identical failing test IDs do not prove all behavior behind blocked historical gates. Candidate edits also change the first reported frozen dependency. Final localized fixes are covered by the final 118-test targeted run, not another complete suite."
+  },
+  "actual_provider_requests": 0,
+  "actual_model_calls": 0,
+  "search_calls": 0,
+  "submissions": 0,
+  "native_budget_resets": 0,
+  "production_changed": false,
+  "release_manifests_rewritten": false,
+  "gates_pending": [
+    "Ubuntu CI execution",
+    "fresh unresolved-question full agent trial",
+    "Linux interruption and whole-directory restore",
+    "matched forecast quality after outcomes"
+  ],
+  "saved_original_replay": {
+    "passed": true,
+    "raw_and_donor_journal_unchanged": true
+  }
+}

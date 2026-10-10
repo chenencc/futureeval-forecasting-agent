@@ -11,9 +11,14 @@ from ForecastAgent.runtime.contracts import ContractError
 POLICY_FIELD = 'research_acquisition_policy'
 POLICY_NAME = 'map_guided_acquisition_v1'
 LINK_FIELD = 'research_node_ids'
-NETWORK = {'search_tavily', 'search_exa', 'fetch_page', 'fetch_pages', 'read_sources',
-           'extract_failed_pages', 'collect_official', 'collect_dataset', 'collect_archive',
-           'collect_polymarket', 'render_source', 'follow_source_resource'}
+from ForecastAgent.tools.capabilities import NETWORK_METADATA
+# Compatibility export only. Runtime behavior is selected from the registry.
+NETWORK = set(NETWORK_METADATA)
+
+
+def material_action(name):
+    from ForecastAgent.tools.capabilities import produces_material
+    return produces_material(name)
 
 GUIDE = '''
 Map-guided acquisition: one agent chooses sources AND maintains provisional notes;
@@ -217,7 +222,7 @@ def configure(task, tools):
             from ForecastAgent.research_loop.runtime import inspection_schema
             tool['function']['parameters']=inspection_schema(tool['function']['parameters'])
             tool['function']['description']='Inspect saved coverage, exact reference handles and source context. Local only. Paginate omitted spans; use URL/query or paired ISO start_date/end_date. source_offset paginates the source catalog. A lexical date match never proves target relevance or event completion.'
-        elif name in NETWORK:
+        elif material_action(name):
             tool['function']['parameters']['properties'][LINK_FIELD] = {'type':'array', 'minItems':1,
                 'maxItems':4, 'items': {'type':'string', 'maxLength':40},
                 'description':'Existing research target/map node IDs whose gap this action addresses.'}
@@ -268,11 +273,15 @@ def before(task, name, args):
         normalizations.append({'field':LINK_FIELD,'from':ids,'to':unique,'kind':'duplicate_id_set'})
         ids=unique
     signature = digest({'tool': name, 'args': args})
-    if any(e['operation_sha256'] == signature for e in ledger['events']):
+    from ForecastAgent.tools.capabilities import get
+    physical = 'network' in get(name).effects
+    from ForecastAgent.channels.official import replay_available
+    if physical and not replay_available(task,name,args) and any(e['operation_sha256'] == signature and e['status'] != 'configuration_required' for e in ledger['events']):
         raise ContractError('duplicate_research_action', 'arguments', 'This exact acquisition action was already reserved. Inspect saved material, change action or close with gaps.')
     bodies = {u:hashlib.sha256(p['content'].encode()).hexdigest() for u,p in task.bundle['pages'].items() if p.get('content')}
     leads = set(task.catalog())
     record = {'index': len(ledger['events'])+1, 'tool':name, 'arguments':copy.deepcopy(args),
+        'effects':list(get(name).effects),
         **gap_links,
         'research_node_ids':ids, 'map_revision':task.bundle['research_loop']['revision'],
         'argument_normalizations':normalizations,
@@ -299,6 +308,8 @@ def after(task, reserved, result=None, error=None):
         new_source_leads=sorted(set(task.catalog())-leads), budget_after=task.budget(),
         error_type=type(error).__name__ if error else None,
         completed_at_utc=datetime.now(timezone.utc).isoformat())
+    if isinstance(result, dict) and result.get('status') == 'configuration_required':
+        record['status'] = 'configuration_required'
     record.pop('event_sha256', None); record['event_sha256'] = digest(record)
     ledger['events'][-1] = record
     if any(p['usable_text'] for p in record['new_bodies']):
@@ -415,7 +426,7 @@ def execute(task, name, args, key, dispatch):
     initialize(task)
     if getattr(task, '_research_action_active', False):
         return dispatch(name,args,key)
-    if name not in NETWORK:
+    if not material_action(name):
         cycle = local_cycle(task) if name in {'inspect_research_state', 'update_research_state'} else None
         if cycle:
             counts = task.bundle['research_acquisition'].setdefault('local_cycle_steps', {})
@@ -476,6 +487,14 @@ def execute(task, name, args, key, dispatch):
         raise
     else:
         after(task,reserved,result=result)
+        if name == 'intelligence_part' and isinstance(result,dict) and result.get('evidence'):
+            material = state.catalog(task.bundle, task.cutoff)
+            prior = inspected_references(task,material)
+            delivered = [{k:r[k] for k in ('evidence_id','url','body_sha256','start','end')}
+                         for r in result['evidence']]
+            ids = {r['evidence_id'] for r in delivered}
+            task.bundle['research_acquisition']['inspected_references'] = (delivered + [r for r in prior if r['evidence_id'] not in ids])[:16]
+            task.save()
         if isinstance(result,dict): result['research_frontier'] = frontier(task)
         return result
     finally:

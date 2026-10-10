@@ -1,11 +1,16 @@
 # Tools and acquisition channels
 
-`registry.py` owns model-facing JSON schemas. `channels.py` owns the implemented capability catalog and shared `tool_result_v1` response envelope. Entries describe cost, credentials, formats, limits and temporal support; they are not source reliability ratings.
+`capabilities.py` provides the common capability registry and dispatch boundary.
+`registry.py` retains compatible native JSON schemas. `channels.py` retains the
+native channel catalog and shared `tool_result_v1` envelope. Source-specific
+adapters live in `ForecastAgent/channels`; provisional reasoning lives in
+`research_loop`. Metadata describes cost, credentials, formats, limits and temporal
+support; it is not a source reliability rating.
 
 | Layer | Responsibility |
 |---|---|
 | tools | Tool contracts and channel metadata |
-| providers | Tavily, free HTTP, Yahoo/ALFRED and Ultra transport |
+| providers | Search, HTTP, financial data and configurable model transport |
 | readers | Local parsing and saved-text navigation |
 | evidence | Document metadata, snapshots and intelligence export |
 | runtime | Task locks, persisted reservations, source admission and recovery |
@@ -16,8 +21,18 @@ Parsed documents retain `page_content` and metadata, including PDF pages or CSV 
 
 Collection exposes source acquisition, exact excerpt recording and raw export. Legacy review remains isolated for compatibility. A collected package is not a verified answer.
 
-The interface draws on structured tools and document loaders without adding LangChain or LangGraph. RSS/Atom entry reading is available through free fetching. Generic XML, OCR, spreadsheets, table reconstruction and browser rendering are not implemented channels.
+The interface uses structured tools and document loaders without requiring
+LangChain or LangGraph. RSS/Atom reading is available through free fetching.
+Optional Crawl4AI rendering and official XML/PDF navigation have explicit
+policies. OCR, arbitrary spreadsheet interpretation and semantic table
+reconstruction are not provided by this integration.
 
 `record_quote` computes offsets for an exact copied passage; repeated text requires an explicit one-based occurrence. `search_saved_text` and lexical `find_passages` return reusable `excerpt_args`. These operations preserve source versions and never infer factual support.
 
 `collection_checkpoint` provides bounded next-tool suggestions each turn. The acquisition agent selects which channels to use or records a concrete deferral with `record_channel_decision`. No suggestions invoke providers automatically or renew budgets. `select_sources` associates accepted links with acquisition needs. Question URLs, search hits and selected links count as unread reading leads; unselected outbound links remain in the raw inventory separately.
+
+## Native channel integration
+
+See [the channel integration contract](../channels/README.md). The development
+entry point is `intelligence.pipeline.collect(..., channel_tools=True)`. Existing
+requests retain their original policy; enabling new tools is not a ledger reset.

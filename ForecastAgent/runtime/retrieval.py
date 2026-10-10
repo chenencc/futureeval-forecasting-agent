@@ -234,6 +234,8 @@ class RetrievalTask:
             for url in source_urls(request.get(field, "")):
                 if allowed_source(url):
                     self.bundle["source_leads"].setdefault(canonical_url(url), {"url": url, "origin": "question_"+field, "published_date": None})
+        from ForecastAgent.channels.native import initialize as initialize_channels
+        initialize_channels(self)
 
     def catalog(self):
         leads = {u:r for u,r in self.bundle['source_leads'].items()
@@ -335,6 +337,8 @@ class RetrievalTask:
                   'new_sha256': page.get('sha256'), 'raw_changed': raw_changed,
                   'old_content_sha256': previous_digest, 'new_content_sha256': digest, 'checked_at_utc': utc_now()}
         self.bundle['updates'].append(update)
+        from ForecastAgent.research_loop.material_events import observe
+        observe(self, 'native_store_page')
         return update
 
     def collect_official(self, args):
@@ -516,9 +520,11 @@ class RetrievalTask:
 
     def execute(self, name, args, key):
         from ForecastAgent.research_loop import fusion
+        from ForecastAgent.tools.capabilities import dispatch
+        registered = lambda n, a, k: dispatch(self, n, a, k, self._execute)
         if fusion.enabled(self):
-            return fusion.execute(self, name, args, key, self._execute)
-        return self._execute(name, args, key)
+            return fusion.execute(self, name, args, key, registered)
+        return registered(name, args, key)
 
     def _execute(self, name, args, key):
         if name not in {'fetch_pages', 'read_sources', 'record_excerpts', 'record_evidence_batch'}:
@@ -569,6 +575,10 @@ class RetrievalTask:
         if b["pipeline"] == "collection" and name in {"record_evidence", "record_evidence_batch", "audit_evidence", "finish_retrieval"}:
             raise ValueError("Analysis tools are unavailable in collection mode")
         if name == "list_channels":
+            from ForecastAgent.channels.native import enabled as channels_enabled
+            if channels_enabled(self):
+                from ForecastAgent.tools.capabilities import catalog
+                return {**b["channel_catalog"], 'capability_catalog': catalog(self)}
             return b["channel_catalog"]
         if name == 'list_official_datasets':
             return dataset_catalog()
@@ -1276,6 +1286,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
         available_tools = configure_tools(task, available_tools)
         from ForecastAgent.runtime.source_reading import configure as configure_source_tools
         available_tools = configure_source_tools(task,available_tools)
+        from ForecastAgent.tools.capabilities import configure as configure_capabilities
+        available_tools = configure_capabilities(task, available_tools)
         from ForecastAgent.research_loop.runtime import configure as configure_research_tools
         available_tools = configure_research_tools(task, available_tools)
         if collection:
@@ -1289,6 +1301,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if source_enabled(task): system += source_guide()
             from ForecastAgent.research_loop.runtime import guide as research_guide
             system = research_guide(task, system)
+            from ForecastAgent.channels.native import enabled as channels_enabled, guide as channels_guide
+            if channels_enabled(task):
+                system += channels_guide()
             for entry in available_tools:
                 if entry['function']['name'] == 'search_tavily':
                     entry['function']['description'] = f'Primary basic discovery, at most {task.search_limit} lifetime attempts. Use concrete task entities/events, not internal IDs. Failures count.'

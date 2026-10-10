@@ -5,6 +5,7 @@ import hashlib
 import json
 import zipfile
 from collections import Counter
+from contextlib import nullcontext
 from pathlib import Path
 
 from ForecastAgent.analysis.pilot import digest, load, save
@@ -45,7 +46,7 @@ def prepare_package(bundle, directory, clock_utc):
     return view, report
 
 
-def collect(request, directory, *, clock_utc, recover_data=True, research_map=False):
+def collect(request, directory, *, clock_utc, recover_data=True, research_map=False, channel_tools=False):
     """Run the existing complete collector/supplement chain with explicit inputs.
 
     This is an acquisition-only entry point. The contract is trusted operator
@@ -56,6 +57,10 @@ def collect(request, directory, *, clock_utc, recover_data=True, research_map=Fa
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     with task_lock(directory):
+        if channel_tools:
+            from ForecastAgent.channels.native import FIELD, POLICY
+            request = copy.deepcopy(request)
+            request[FIELD] = POLICY
         if research_map:
             from ForecastAgent.intelligence.research_map import enable
             request = enable(request)
@@ -71,35 +76,52 @@ def _collect(request, directory, *, clock_utc, recover_data=True):
         original[post_supplement.STAGE_FIELD] = 'intelligence_after_data_recovery'
     original["predictive_information_contract"] = contract(request, clock_utc=clock_utc)
     root = Path(directory)
-    adapter = v1_0_5.collect(original, root / "retrieval")
-    if not adapter.get("release_acquisition"):
-        save(root / "collection-status.json", {"status": "collection_incomplete",
-             "collector_result": adapter.get("result"), "analysis_started": False,
-             "budget_reset": False, "submitted": False})
-        return adapter
-    package = v1_0_5.supplement(adapter, root, original["id"])
+    from ForecastAgent.channels.contracts import FIELD as channels_field, POLICY as channels_policy
+    candidate = original.get(channels_field) == channels_policy
+    if candidate:
+        from ForecastAgent.intelligence.development_collection import collect as collect_candidate
+        source_root = root / 'retrieval/development-channels'
+        result = collect_candidate(original, source_root)
+        if result['status'] != 'complete':
+            save(root / 'collection-status.json', result)
+            return result
+        package = result['package']
+    else:
+        source_root = root / 'retrieval/release-1.0.5'
+        adapter = v1_0_5.collect(original, root / "retrieval")
+        if not adapter.get("release_acquisition"):
+            save(root / "collection-status.json", {"status": "collection_incomplete",
+                 "collector_result": adapter.get("result"), "analysis_started": False,
+                 "budget_reset": False, "submitted": False})
+            return adapter
+        package = v1_0_5.supplement(adapter, root, original["id"])
     # Accept a path adapter as well as the current dictionary adapter.
     if isinstance(package, (str, Path)):
         package = load(package)
     recovery = None
     if recover_data:
         from ForecastAgent.intelligence.repair import recover
-        prior = root / "retrieval/release-1.0.5/supplement"
+        prior = source_root / 'supplement'
         package, recovery = recover(package, root / "data-recovery",
             prior_manifest=prior / "manifest.json",
             prior_ledger=prior / "tasks" / str(original["id"]) / "supplement.json", network=True)
     post_report = None
     if post_supplement.enabled(original):
-        reservation = load(root / 'retrieval/release-1.0.5/map-reservation.json')
-        pipeline_state = load(root / 'retrieval/release-1.0.5/state.json')
+        reservation = load(source_root / 'map-reservation.json')
+        pipeline_state = load(source_root / 'state.json')
         if pipeline_state.get('post_reservation_sha256') != digest(reservation):
             raise ValueError('Final map reservation integrity mismatch')
         limits = reservation['limits']
         deadline = time.monotonic() + max(0, reservation['started_at_epoch']
             + limits['seconds_remaining'] - time.time())
-        package, post_report = post_supplement.run(package, root / 'final-map-review',
-            http_cap=post_supplement.remaining_http(package, limits),
-            failure_cap=post_supplement.remaining_failures(package, limits), deadline=deadline)
+        route = nullcontext()
+        if candidate:
+            from ForecastAgent.intelligence.development_collection import model_route, DEFAULT_MODEL
+            route = model_route(original.get('collection_model', DEFAULT_MODEL))
+        with route:
+            package, post_report = post_supplement.run(package, root / 'final-map-review',
+                http_cap=post_supplement.remaining_http(package, limits),
+                failure_cap=post_supplement.remaining_failures(package, limits), deadline=deadline)
         save(root / 'final-map-package.json', package)
     view, report = prepare_package(package, root / "intelligence", clock_utc)
     report["data_recovery"] = recovery
