@@ -1,7 +1,7 @@
 # Native tools, source channels and research integration
 
 Status: isolated development integration, `native_channels_v1`. No production
-release is claimed. Donor parsing code is pinned to Channels commit `15d9f45`.
+release is claimed. Donor parsing code is pinned to Channels commit `cc2fe12`.
 The host exposes 14 capabilities, including admitted index discovery and exact
 linked-original download. The standalone compatibility export intentionally
 retains 12; this host supplies the two additional network adapters.
@@ -64,7 +64,7 @@ budgets and remain resumable; they are not certified complete by the adapter.
 
 ## Official channel behavior
 
-- Twenty-three API/feed contracts and five curated issuer/authority profiles.
+- Thirty-two API/feed contracts and five curated issuer/authority profiles.
 - GDELT offers article leads, DBnomics offers exact statistical series, BLS
   preserves series/period/footnote identity, and GovInfo offers recent feeds and
   exact package HTML. Availability is not target applicability or truth.
@@ -74,6 +74,17 @@ budgets and remain resumable; they are not certified complete by the adapter.
   exposed as production allowance; returned budgets come from the native task.
 - SEC needs an observed CIK and configured contact User-Agent. Congress needs
   its configured key. Missing required configuration spends no physical request.
+- NWS needs a valid contact User-Agent; a valid SEC contact may supply the same
+  fallback used by the standalone toolbox. An explicitly invalid NWS contact is
+  rejected. Menu availability and injected transport use one host configuration
+  check; values are never exposed in the agent catalog.
+- Eurostat preserves exact dataset/dimension/time, sparse missing cells and flags.
+  ECB preserves complete series keys, bounded periods, units and status columns.
+  NWS keeps forecast issue/valid times separate from station observation time and
+  active alerts. Grid/station follow-ups are separate explicit requests.
+- SEC companyfacts retains issuer, taxonomy, concept, unit, period, filed date and
+  accession. Complete originals share the persisted 8MB document byte ceiling;
+  truncation is retained as a failed capture, not readable observations.
 - Typed endpoint construction validates source parameters. Detail reads require
   a saved discovered URL; curated profile indexes are explicit source contracts.
 - No automatic pagination, retries or redirect following. Credentials remain
@@ -146,6 +157,17 @@ bundle, page history and research journals. A bundle-only copy is insufficient
 for UUID capture replay.
 
 ## Verification boundaries
+
+Latest expansion: 337 targeted offline tests pass, including nine new-source host
+subcases and complete-directory restored replay. All 52 committed toolbox assets
+match Channels donor `cc2fe12` after newline normalization. Source catalog,
+tool schema enum, native code identity, parameter guidance, NWS/SEC configuration
+and injected transport were checked together. No live network/model/search calls,
+budget changes or production deployment occurred. See `LATEST_VALIDATION.json`
+and [complete channel flow](../intelligence/CHANNEL_FLOW.md). Fresh agent source
+selection and Linux browser behavior remain separate gates.
+
+The records below describe earlier validation cohorts and their limitations.
 
 The 2026-10-10 absorption run passed 222 targeted offline tests, including 15
 new host integration gates and the existing research scheduling, material

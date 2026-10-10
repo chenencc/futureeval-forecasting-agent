@@ -1,13 +1,13 @@
 {
-  "schema": "native_channel_absorption_validation_v1",
+  "schema": "native_channel_absorption_validation_v2",
   "date": "2026-10-10",
   "branch": "codex/official-intelligence-v106",
-  "base_commit": "106fcff26523359c67da300939467cbbf13daeec",
-  "donor_commit": "15d9f457aaad92167901560308834635830d3767",
-  "source_contract_count": 23,
+  "base_commit": "15b58f5",
+  "donor_commit": "cc2fe1210b7a90c69c6f733349b41d022f3a7977",
+  "source_contract_count": 32,
   "native_capability_count": 14,
   "tests": {
-    "passed": 222,
+    "passed": 337,
     "failures": 0,
     "errors": 0,
     "suites": [
@@ -18,61 +18,29 @@
       "ForecastAgent.test_intelligence_public_channels",
       "ForecastAgent.test_intelligence_agent_interface",
       "ForecastAgent.test_intelligence_compatibility",
+      "ForecastAgent.test_intelligence_official_data",
       "ForecastAgent.tests.test_channel_absorption",
       "ForecastAgent.tests.test_native_capabilities",
+      "ForecastAgent.tests.test_native_official_data",
       "ForecastAgent.tests.test_decision_budget",
       "ForecastAgent.tests.test_research_dispatch",
       "ForecastAgent.tests.test_research_gap_feedback",
       "ForecastAgent.tests.test_research_fusion",
       "ForecastAgent.tests.test_post_supplement_map",
-      "ForecastAgent.tests.test_tool_selection"
+      "ForecastAgent.tests.test_tool_selection",
+      "ForecastAgent.tests.test_research_grounding",
+      "ForecastAgent.tests.test_research_delivery_budget",
+      "ForecastAgent.tests.test_research_review_consistency",
+      "ForecastAgent.tests.test_research_full_loop_trial",
+      "ForecastAgent.tests.test_acquisition_channels",
+      "ForecastAgent.tests.test_research_loop",
+      "ForecastAgent.tests.test_intelligence_validation"
     ],
-    "new_host_gate_tests": 15,
     "live_socket_attempts": 0,
     "live_provider_calls": 0,
     "live_model_calls": 0
   },
-  "verified": [
-    "shared native physical request reservations",
-    "immutable index to original provenance",
-    "index leads never projected as readable bodies",
-    "structured observations retain native identity and missing values",
-    "unparsed Office original retained without body",
-    "failed captures replay without extra HTTP",
-    "interrupted original projection recovers without duplicate HTTP",
-    "persistent task-local GDELT cooldown and Retry-After",
-    "state-bound source credentials and URL/capture menus",
-    "existing research dispatch, receipts and decision count regressions"
-  ],
-  "donor_assets": [
-    {
-      "path": "ForecastAgent/test_intelligence_agent_interface.py",
-      "sha256": "8477c0918292c06fbe95ea62bb665c8a5ec87b0ed6ef5176282abd23d46fd04c"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_box.py",
-      "sha256": "fe42871cd6d51933ea4ea906b92266d1d4e4fc8761031b4668db17db17fb5762"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_compatibility.py",
-      "sha256": "ae35618e08782b9e3b8c674777aef3ec018e104bae76a8f1e864703acb0a4278"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_congress.py",
-      "sha256": "1c8a772faad38e5239919644729de34c80fafa4dcbdab0db3b2ac6706160f6ec"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_discovery.py",
-      "sha256": "842b43af1dc9e6cec475d9cf34e0826a41439f84ca7b0a2b022c4f2782ac4057"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_navigation.py",
-      "sha256": "27370a7607e32e623f0ad9daa8025a1420591aa541b2a95a6efcc43dadbf934f"
-    },
-    {
-      "path": "ForecastAgent/test_intelligence_public_channels.py",
-      "sha256": "ad1ac4361549a87feea415add1543a36354683550ecfb2c3b64317dedd1b2956"
-    },
+  "donor_assets_verified": [
     {
       "path": "ForecastAgent/tools/intelligence_box/AGENT_ACCEPTANCE.json",
       "sha256": "253f17afc1bd0294ef3e2078fc96de0e09f7c3e38cd3e3ad8c14ed63f2ee7061"
@@ -94,6 +62,10 @@
       "sha256": "cee01c81f5c82611d0f18b9b874698130c3c98bfeb40709aaf8deb9a7bd5a162"
     },
     {
+      "path": "ForecastAgent/tools/intelligence_box/OFFICIAL_DATA_VALIDATION.json",
+      "sha256": "f62481950ada78d9645775a3740fdbd113acdd807aff4b22d1efe599e0d04be2"
+    },
+    {
       "path": "ForecastAgent/tools/intelligence_box/PRIORITY_VALIDATION.json",
       "sha256": "9ebe92c038832bc29cd598c64d05e72ac2ef570e57a8a9113aaeea5874584a58"
     },
@@ -103,7 +75,7 @@
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/README.md",
-      "sha256": "8fbc5a87c848ab5fed031ef1a13c3bb28dd584bda7a8cf63151df768d9fe8232"
+      "sha256": "57b0289e2ab8e0c24a5eb4aba33a1e001289a3b1b4374628107b04b16c0dc111"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/SEC_VALIDATION.json",
@@ -143,7 +115,7 @@
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/catalog.py",
-      "sha256": "b5b7ad9a26cbcdcbe9618d269a657b4fcbdf532f984211454da01bfece40f8b0"
+      "sha256": "ee41fbc0895769141fc047a1717c1e7d56c04bc45adeb0425f9a3fa2ee54667b"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/compatibility.py",
@@ -167,7 +139,7 @@
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/core.py",
-      "sha256": "29a2f3f4424c4e8fc54fd0a236e6d404a68ce9c4460255671f7c8445a23a7b48"
+      "sha256": "473d386e014026d421b1252123d62d3a245e4333881f9780acd3453132f30bc4"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/discovery.py",
@@ -188,6 +160,10 @@
     {
       "path": "ForecastAgent/tools/intelligence_box/navigation.py",
       "sha256": "461d95a0416b8cbefbf9348251fcd9f91d9c12d5b5858da3327ff98285210758"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/official_data.py",
+      "sha256": "e1483684e56d4edb7d65f023540659a1c616b44afd5ec424e5c959df50329b0f"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/profiles.py",
@@ -215,15 +191,15 @@
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/native-compatibility.md",
-      "sha256": "aa3f749c934c4ff4a49641106b0d343b42876162a5270b1b2402ff1d18991923"
+      "sha256": "0b686fc897f911e8ee6d98dd058fc339006410c2208766683c08ac4881d971f2"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/routes.md",
-      "sha256": "2fe55d426ec4316c30fe2dad63e8575f759e29e9a64c92dd9bb20218fe5b20ce"
+      "sha256": "2426045d294e40438038fb5b653bd69a5ec366dcdb23cbc555c65c0abc7fb941"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/tool-contracts.json",
-      "sha256": "c62523abcc09a7b3816045fbcb0ad4dcf3d2b2e189bc794fbce5ee91ddd9a818"
+      "sha256": "7dbd30aba644ca292a1908d6641e5c680fef44a7030de8539edf3f1ceb3ca84c"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/skills/intelligence-acquisition/references/validation.md",
@@ -251,11 +227,15 @@
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/verify_native_compatibility.py",
-      "sha256": "3ff111008d6f5ad7e3aa324ec77da7ad1c6ec618957e3c7216b6d78a2f322d13"
+      "sha256": "1af1a8cc15f087c7f4edd788fe0d3b2b34eaa68690a878ec7e02bdd7077a92b9"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/verify_navigation.py",
       "sha256": "6bdab34445544462d91505766ebd98dc069305e6ce9874ae524cd8eeab057416"
+    },
+    {
+      "path": "ForecastAgent/tools/intelligence_box/verify_official_data.py",
+      "sha256": "1115d6ad91aea3ff266c1bc1c91d3403ff7191c972114e54df5f0948d3e85d56"
     },
     {
       "path": "ForecastAgent/tools/intelligence_box/verify_priority.py",
@@ -270,14 +250,44 @@
       "sha256": "bcecb46d18237412d521cb4d9d19d1abc40f64ea2246ea72e027aa30dfc41018"
     }
   ],
-  "code_identity": {
+  "new_sources": [
+    "eurostat_data",
+    "ecb_series",
+    "nws_point",
+    "nws_forecast",
+    "nws_hourly",
+    "nws_stations",
+    "nws_observation",
+    "nws_alerts",
+    "sec_companyfacts"
+  ],
+  "verified": [
+    "State-bound catalog/schema exposes 32 sources",
+    "Menu and transport share validated NWS/SEC contact configuration",
+    "All nine new sources reserve existing native HTTP before mocked transport",
+    "Structured rows, raw hashes, metadata and graph-readable spans retained",
+    "Empty and truncated captures do not enter readable pages",
+    "Missing and invalid configuration spend no HTTP",
+    "Whole-directory restored capture replays with unchanged budget and one original HTTP",
+    "Eight MB SEC companyfacts ceiling retained",
+    "Existing map receipt, context delivery, request counting and supplement tests pass"
+  ],
+  "not_verified": [
+    "Fresh unresolved-question agent source selection or recall improvement",
+    "Linux browser containment and workflow restore",
+    "Production deployment or forecast-quality improvement"
+  ],
+  "no_budget_change": true,
+  "no_production_change": true,
+  "native_code_identity": {
     "channels/__init__.py": "1be0a47d9d40ce651806158ceac66a4b3ea211358a675b0b065f540fd9f76637",
-    "channels/contracts.py": "771a77ffc2f0ccae094f68cab2220cfff136e56653c1a758a58ee3658a005585",
+    "channels/configuration.py": "4779ce432447174e8aa2fe1a0bb131ac77b1f13fc4a0043a7649e5abec9c7454",
+    "channels/contracts.py": "15e2a4b077e68462ec5294d403d7b9c35a0185ddcaabb81e5b1ad20b7d0ce86f",
     "channels/discovery.py": "d7df4d42ab56580397ac3f6d8e92361be505152543ec4ae8feb4868200fd9d87",
-    "channels/native.py": "6d1f1e9c6c26559993024ff888c96410ad8fc9a89ede5d5101fb9e8cb7b769fc",
-    "channels/official.py": "c12c5212aa535d392c521b6734e406fd5bc7885969a5dee208bc42d69775e158",
+    "channels/native.py": "91def92fef913a69b7fd80660cd5f0e55ad36f5d3d983067f0f1e1e2acf2b634",
+    "channels/official.py": "42bc45295bd735fbb8b9fd48a340a6d1d1d1009d2d5df98979ce54f71df121e2",
     "channels/replay.py": "60503e0f49ef4d3c11a1ef7db36f5e82583760790a5144d8a12ec7896956f4a7",
-    "channels/selection.py": "fe5c431bfb9d549fc753f22065862d89ae3d2d346b30579d046390f8f250e67e",
+    "channels/selection.py": "60b1dd501379fcd829b340225cae30711f142de2971e478700e9c7498e9e061e",
     "intelligence/development_collection.py": "deb9570c2fd9d3da0a07a1f31e3fe1694b061366dd927988d24fb26160ffe76f",
     "intelligence/pipeline.py": "e8efc3e79eecebc88355687172753a295b0c701b859f3a5eecb9731863956e65",
     "readers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -296,11 +306,17 @@
     "readers/quality.py": "936777ae9a019947bf4e1793d0f9e63ae2b0ad90b2a17c06f98f0e4b37853cb4",
     "readers/saved.py": "5000fbf62f619628de64d4050852e861302dad00a157512b7af2321479661dfa",
     "readers/structured.py": "aee0d3ae986e80cc62c737a1cad7cc4d037cc8e18801c1c56b8ac4dc74934601",
-    "research_loop/fusion.py": "3f242c95f8c6db7c4ad00462ed48a1dd42a81c95750063687dce4789f23f21a1",
+    "research_loop/delivery.py": "b6bd39554c671c4958fca3493e41f0dcc101ad7967f3b70c248b9fa49174d701",
+    "research_loop/dispatch.py": "ad4bc5a3d453746d3c4d6f9ac25ad0d5a2aa760d8c7fc21ee0a2b08d8bbe19f9",
+    "research_loop/fusion.py": "75550712032e0842e8e07d9c161d4b964162c7c04b0d38fd9b0e29e9e20cd95a",
+    "research_loop/gap_feedback.py": "764ff0e720f490f5de007c524a438b0b2319906be29ea91a3f851d79bd7d3de6",
     "research_loop/material_events.py": "cb2a530512913c53e6d30b4823d5edac16eb2094e2788f80851cbc33dc437824",
+    "research_loop/post_supplement.py": "46955512fd5fc843f7bbf14abbed7b0aff38775b7fbff706d32669eb2401f310",
+    "research_loop/state.py": "ff7e5715f60efae2327580d7f5ec415ced683861cff03410eaebfd4a53f3b2da",
     "runtime/budget.py": "5db37f78c03e05a522af3757c833ac82df3a754975732b6e76a0cff6546fd979",
+    "runtime/context.py": "34ebca484ea8b8e28b104d20dd5180f125f777d6ca71dc0518bf0cbb2d00a66f",
     "runtime/contracts.py": "7ce5d4bbe6e52312d9661ad63eb15feb6d2dedb862bae6c017129bc03f74c8ad",
-    "runtime/retrieval.py": "a744a6da8ab2267776d5cc92bb124cd7b3fa18882a31b069455d68b33fac103e",
+    "runtime/retrieval.py": "325523d77dda222942fa2e1e50ef76925da9f66b9f0475dd9a861a847d468ef1",
     "runtime/tool_selection.py": "d95007d90762d4ae945bb8c982460f597189cd69f28a77279b1aea42cdd8c1a5",
     "tools/capabilities.py": "f91d2c7f1bb0d19fdc49c938b4a54371e92ba1acfbbd9d7b3c4b2dd8b90fe9a8",
     "tools/channels.py": "9a3b31ec15bcd9c0a31716c301c94eb467438d133318cb49e9fe47bb94f8f651",
@@ -311,16 +327,17 @@
     "tools/intelligence_box/audit_discovery.py": "d222ccb05e8d5acac2ad1efc551cdbbf94e905941f6b352e44078d909e3b11bb",
     "tools/intelligence_box/audit_priority.py": "88fb98ee690c84d600db2852c1d25489c7afb45f5b7ebaa6c647d5bfc499f075",
     "tools/intelligence_box/audit_saved_pilots.py": "78b8adf188cc9705390ad4b39dab31c6786881059b1453ba625182d7a0e7d35b",
-    "tools/intelligence_box/catalog.py": "b5b7ad9a26cbcdcbe9618d269a657b4fcbdf532f984211454da01bfece40f8b0",
+    "tools/intelligence_box/catalog.py": "ee41fbc0895769141fc047a1717c1e7d56c04bc45adeb0425f9a3fa2ee54667b",
     "tools/intelligence_box/compatibility.py": "200acfcda3f2580a954a6cdb79e683c700d891d46689d66c3304d59fb14767d1",
     "tools/intelligence_box/congress.py": "bea1246e8f78ffd9a75eb443f19fdea6d0c93e538de44630830dbee141d8b540",
     "tools/intelligence_box/contracts.py": "e8bd9acaf743242b2afc820b3caa3d6febe2222a1c80413e9a0c6f478d876d33",
-    "tools/intelligence_box/core.py": "29a2f3f4424c4e8fc54fd0a236e6d404a68ce9c4460255671f7c8445a23a7b48",
+    "tools/intelligence_box/core.py": "473d386e014026d421b1252123d62d3a245e4333881f9780acd3453132f30bc4",
     "tools/intelligence_box/discovery.py": "cc864094a082e701e30217b1885bb7feb48b4223129ebd128cfa35cfd9772311",
     "tools/intelligence_box/documents.py": "198434a120f848068934178ba15ba0fcc4534e8e4543f240d7f0b2c11c311417",
     "tools/intelligence_box/follow_priority.py": "811c9ece1c60e82e5eeb11715a170f6f7ba54c5d1922c763b6ffde5c80753b0f",
     "tools/intelligence_box/followup.py": "190a3c4d96885ad1f981d18f9db9cf14282a117b7a096727cd9e27f70ba7ed90",
     "tools/intelligence_box/navigation.py": "461d95a0416b8cbefbf9348251fcd9f91d9c12d5b5858da3327ff98285210758",
+    "tools/intelligence_box/official_data.py": "e1483684e56d4edb7d65f023540659a1c616b44afd5ec424e5c959df50329b0f",
     "tools/intelligence_box/profiles.py": "a956a4398a8223fd66fd50c5747669b0a5f5eabacbf078950a46c08997bfbcef",
     "tools/intelligence_box/public_channels.py": "14b771f617bc757a06ba4c9538e2adecc689b6731e85ce06120c9bc4014a4c21",
     "tools/intelligence_box/replay_priority.py": "cacc7991b4387a52a7920fcdb57f1fc72263648cbb7b2ec3d2c5e9140f35e1fc",
@@ -329,21 +346,12 @@
     "tools/intelligence_box/verify_congress_chain.py": "3ed5fd13e6a785a5be43dd64c25a04761d6f3ee5ad46a4159d6ab798aaceac0b",
     "tools/intelligence_box/verify_congress_followup.py": "27902b54948df8f97278d4b9546b5f494e1a4c56b0dd81bc10d8e0f544bec0c6",
     "tools/intelligence_box/verify_discovery.py": "288a45823fea1a75574ac44e4c3f10565a9786dd743320fedc38b06ef43d173c",
-    "tools/intelligence_box/verify_native_compatibility.py": "3ff111008d6f5ad7e3aa324ec77da7ad1c6ec618957e3c7216b6d78a2f322d13",
+    "tools/intelligence_box/verify_native_compatibility.py": "1af1a8cc15f087c7f4edd788fe0d3b2b34eaa68690a878ec7e02bdd7077a92b9",
     "tools/intelligence_box/verify_navigation.py": "6bdab34445544462d91505766ebd98dc069305e6ce9874ae524cd8eeab057416",
+    "tools/intelligence_box/verify_official_data.py": "1115d6ad91aea3ff266c1bc1c91d3403ff7191c972114e54df5f0948d3e85d56",
     "tools/intelligence_box/verify_priority.py": "4b074083ccbacafa096540b5f090db2db91633418f0da359513d9af0b302b4db",
     "tools/intelligence_box/verify_public_channels.py": "64ea32e2e60faee4873f5f7c6f2fd76f46e6838adc4e94ba8714de6e8a8eafa6",
     "tools/intelligence_box/verify_sec.py": "bcecb46d18237412d521cb4d9d19d1abc40f64ea2246ea72e027aa30dfc41018",
     "tools/original_navigation.py": "4afa4678cc9eda08bc5433e38f0a8b127ade1267cfe7a30510086dacdd3eb5b9"
-  },
-  "budget_changes": false,
-  "frozen_task_migration": false,
-  "production_deployed": false,
-  "limitations": [
-    "Offline fixture validation does not establish live recall, relevance or forecast improvement",
-    "Linux execution and fresh unresolved-question agent selection remain unverified",
-    "Provider/IP limits are not globally coordinated; GDELT cooldown is task-local",
-    "Office parsing and OCR are not implemented",
-    "Complete legacy regression gates remain separately documented"
-  ]
+  }
 }

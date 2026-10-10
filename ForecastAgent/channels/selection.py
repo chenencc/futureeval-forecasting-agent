@@ -1,6 +1,5 @@
 """State-bound tool menus and source availability, without model or HTTP calls."""
 import copy
-import os
 from datetime import datetime, timezone
 
 from ForecastAgent.channels.contracts import NETWORK_NAMES, enabled
@@ -8,11 +7,12 @@ from ForecastAgent.channels.discovery import is_index
 from ForecastAgent.tools.intelligence_box.catalog import SOURCES
 from ForecastAgent.tools.intelligence_box.discovery import ROUTES
 from ForecastAgent.tools.intelligence_box.profiles import PROFILES
+from ForecastAgent.channels.configuration import missing_configuration
 
 
 def availability(task, source_id):
     source = SOURCES[source_id]
-    missing = [k for k in source.get('requires_configuration', []) if not os.environ.get(k)]
+    missing = missing_configuration(source_id, source)
     ready_at = task.bundle.get('channel_tools', {}).get('provider_ready_at', {}).get(source_id)
     cooling = ready_at and datetime.fromisoformat(ready_at) > datetime.now(timezone.utc)
     status = ('current_mode_unavailable' if task.bundle['mode'] != 'live' or task.cutoff
@@ -29,6 +29,7 @@ def enrich_catalog(task, result):
         row['availability'] = availability(task, row['id'])
         row['required_parameters'] = row.get('path_parameters', []) + (
             ['query'] if row['id'] == 'gdelt_news' else [])
+        row['parameter_guidance'] = parameter_guidance(row['id'])
     result['native_usage'] = {
         'budget':task.budget(), 'discovery_requires_original_download':True,
         'selection_order':['reuse_saved_original', 'exact_official_adapter_or_index',
@@ -37,6 +38,25 @@ def enrich_catalog(task, result):
             'unit and event stage before acquisition. Index leads and revised observations '
             'are not final event outcomes or historical publication vintages.'}
     return result
+
+
+def parameter_guidance(source_id):
+    """Expose source-specific selection without granting IDs or interpreting data."""
+    if source_id == 'eurostat_data':
+        return 'Exact dataset and JSON-encoded filters: include geo, metric/unit dimensions and bounded time selection. Missing cells are unknown, not zero.'
+    if source_id == 'ecb_series':
+        return 'Exact flow and complete series; supply startPeriod/endPeriod OR lastNObservations (1..100). Wildcards are rejected. Keep units/status columns.'
+    if source_id == 'nws_point':
+        return 'Use observed numeric latitude/longitude. Save returned office/grid and forecast/hourly/station URLs for subsequent explicit requests.'
+    if source_id in {'nws_forecast', 'nws_hourly', 'nws_stations'}:
+        return 'Copy office, x and y from the saved point response; do not guess a grid. Directory, forecast and hourly requests each consume one native HTTP slot.'
+    if source_id == 'nws_observation':
+        return 'Copy an exact station ID from an observed station directory or question rules. Latest observation is not a forecast or historical archive.'
+    if source_id == 'nws_alerts':
+        return 'Supply exactly one area OR point. Empty active alerts do not establish absence of a past or future event.'
+    if source_id.startswith('sec_'):
+        return 'Use a ten-digit CIK already observed in saved material or rules. Keep issuer, taxonomy, concept, unit, fiscal period, filed date and accession. GAAP does not replace non-GAAP.'
+    return None
 
 
 def filter_tools(task, tools):

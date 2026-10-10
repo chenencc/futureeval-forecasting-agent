@@ -8,7 +8,7 @@ from ForecastAgent.tools.original_navigation import MAX_VIEW_CHARS, MAX_VIEWS
 
 POLICY = 'native_channels_v1'
 FIELD = 'capability_policy'
-DONOR = '15d9f45'
+DONOR = 'cc2fe12'
 from ForecastAgent.tools.intelligence_box.compatibility import NETWORK_NAMES as COMPAT_NETWORK_NAMES
 NETWORK_NAMES = set(COMPAT_NETWORK_NAMES) | {'intelligence_discover', 'intelligence_acquire_link'}
 
@@ -83,7 +83,8 @@ def initialize(task):
     if not any(c['id'] == 'native_official_channels' for c in channels):
         channels.append({'id': 'native_official_channels', 'kind': 'source_adapter',
             'tools': sorted(NETWORK_NAMES), 'formats': ['native_records', 'official_document'],
-            'credentials': ['SEC_USER_AGENT for SEC', 'CONGRESS_API_KEY for Congress'],
+            'credentials': ['SEC_USER_AGENT for SEC', 'NWS_USER_AGENT or valid SEC contact for NWS',
+                            'CONGRESS_API_KEY for Congress'],
             'cost': 'Native shared HTTP attempts; no additional search or model calls',
             'limits': 'Frozen native request caps; explicit pagination; no automatic retries or redirects',
             'temporal_support': 'Current captures, not verified historical vintages', 'availability': 'implemented_opt_in'})

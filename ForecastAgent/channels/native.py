@@ -17,6 +17,11 @@ slots; no extra search/model calls, pagination or retries are implicit. A known
 official host is not target relevance, and empty records never prove absence.
 Choose a path for the current obtainable gap, not every source in the catalog:
 numeric observations -> intelligence_fetch with exact series/issuer/period;
+European statistics -> Eurostat exact dimensions/time or ECB exact series/window;
+weather -> NWS point lookup, then explicit grid forecast/hourly/station selection;
+issuer facts -> SEC observed ten-digit CIK, concept/unit/period/filed identity;
+NWS and SEC need a valid contact User-Agent; catalog availability is checked
+against actual transport configuration. Forecasts are not station observations.
 official index or issuer report directory -> intelligence_discover, then
 intelligence_acquire_link with its task-owned capture_id and zero-based index;
 Congress -> detail/actions/text index followed by intelligence_bill_text;

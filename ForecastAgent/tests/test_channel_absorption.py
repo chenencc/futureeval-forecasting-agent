@@ -190,7 +190,7 @@ class ChannelAbsorptionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {}, clear=True):
             t = task(root)
             c = t.execute('intelligence_catalog', {}, '')
-            self.assertEqual(len(c['sources']), 23)
+            self.assertEqual(len(c['sources']), 32)
             self.assertTrue(c['native_usage']['discovery_requires_original_download'])
             configured = capabilities.configure(t, COLLECTION_TOOLS)
             tools = selection.filter_tools(t, configured)

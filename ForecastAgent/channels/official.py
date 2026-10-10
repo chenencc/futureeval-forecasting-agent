@@ -11,6 +11,7 @@ from ForecastAgent.tavily_research import canonical_url
 from ForecastAgent.runtime.budget import reserve
 from ForecastAgent.tools.intelligence_box import core
 from ForecastAgent.channels.contracts import NETWORK_NAMES
+from ForecastAgent.channels.configuration import contact_user_agent
 
 def _box(task, need_ids):
     """The toolbox journal is a mirror, never an independent production quota."""
@@ -30,7 +31,8 @@ def _box(task, need_ids):
         try:
             response = core.transport(url, byte_cap,
                 allowed_domains=box.allowed_domains,
-                user_agent=os.environ.get('SEC_USER_AGENT') if host in {'data.sec.gov', 'www.sec.gov'}
+                user_agent=contact_user_agent('sec') if host in {'data.sec.gov', 'www.sec.gov'}
+                    else contact_user_agent('nws') if host == 'api.weather.gov'
                     else 'ForecastAgent native official channels',
                 api_key=os.environ.get('CONGRESS_API_KEY') if host == 'api.congress.gov' else None)
             attempt.update(status='completed' if response['status'] == 200 else 'failed', http_status=response['status'])

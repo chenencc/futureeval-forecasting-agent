@@ -1,7 +1,7 @@
 # Gap-driven acquisition with a shared evidence ledger
 
 Status: development on `codex/official-intelligence-v106`. Channels donor:
-`15d9f45`. Production is a separate release gate.
+`cc2fe12`. Production is a separate release gate.
 
 ## One acquisition agent, many deterministic capabilities
 
@@ -79,7 +79,7 @@ interrupted projection can recover; an unknown transport outcome requires review
 
 ## Boundaries that remain
 
-- Twenty-three contracts cover specific public APIs; they do not provide universal
+- Thirty-two contracts cover specific public APIs; they do not provide universal
   government, finance or news coverage. BLS no-key access has a provider/IP limit;
   a per-task ledger is not that global quota.
 - GDELT cooldown is task-local. Concurrent workers still need provider-wide rate
