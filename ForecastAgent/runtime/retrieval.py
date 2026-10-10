@@ -185,6 +185,11 @@ class RetrievalTask:
             5 if request.get('acquisition_profile') == 'collection_v2' else 3})
         self.search_limit = self.bundle['acquisition_limits']['tavily_basic']
         self.bundle['acquisition_limits'].setdefault('exa_search', 0 if existing else int(bool(os.environ.get('EXA_API_KEY'))))
+        from ForecastAgent.research_loop.dispatch import enabled as dispatch_enabled, limits as dispatch_limits
+        fetch_cap = dispatch_limits(request)['initial_http'] if dispatch_enabled(self.bundle) else MAX_FETCHES
+        self.fetch_limit = self.bundle['acquisition_limits'].setdefault('initial_http', fetch_cap)
+        if self.fetch_limit != fetch_cap:
+            raise ValueError('Frozen initial HTTP allowance changed')
         self.exa_limit = self.bundle['acquisition_limits']['exa_search']
         if type(self.exa_limit) is not int or self.exa_limit not in {0,1}:
             raise ValueError('Exa budget must be frozen at zero or one')
@@ -305,7 +310,7 @@ class RetrievalTask:
     def budget(self):
         result = {"tavily_basic_remaining": self.search_limit - len(self.bundle["searches"]),
                 'exa_search_remaining': self.exa_limit - len(self.bundle['exa_searches']),
-                "page_fetch_remaining": MAX_FETCHES - len(self.bundle["fetch_attempts"]),
+                "page_fetch_remaining": self.fetch_limit - len(self.bundle["fetch_attempts"]),
                 'update_http_remaining': MAX_UPDATE_HTTP_TOTAL - len(self.bundle['update_attempts']),
                 'update_http_today_remaining': MAX_UPDATE_HTTP_DAILY - sum(a.get('budget_day') == update_day() for a in self.bundle['update_attempts']),
                 "basic_extract_batches_remaining": MAX_EXTRACT_BATCHES - len(self.bundle["extract_attempts"])}
@@ -352,7 +357,7 @@ class RetrievalTask:
         if canonical in self.bundle['pages']:
             return {**self.page_view(self.bundle['pages'][canonical]), 'cached': True}
         attempt = {'url': url, 'channel': 'official', 'need_ids': args['need_ids'], 'status': 'reserved', 'at': utc_now()}
-        reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+        reserve(self.bundle, 'fetch_attempts', attempt, self.fetch_limit, self.save)
         try:
             page = fetch_official(dataset, query, page_number, fetch_public_page,**date_args)
             page['temporal_status'] = 'live_capture'
@@ -374,7 +379,7 @@ class RetrievalTask:
             if '@' not in agent or '\n' in agent or '\r' in agent:
                 raise ValueError('Configure SEC_USER_AGENT with a real contact email; no request sent')
         attempt={'url':url,'channel':'dated_data_or_archive','status':'reserved','at':utc_now()}
-        reserve(self.bundle,'fetch_attempts',attempt,MAX_FETCHES,self.save)
+        reserve(self.bundle,'fetch_attempts',attempt,self.fetch_limit,self.save)
         try:
             page=fetch_public_page(url,**({'user_agent':agent} if agent else {}))
             self.bundle.setdefault('data_raw_responses',[]).append(page)
@@ -448,7 +453,7 @@ class RetrievalTask:
                     'pagination': snapshot['snapshot'].get('pagination')}
         attempt = {'channel': 'polymarket', 'query': query, 'page': page_number, 'need_ids': args['need_ids'],
                    'status': 'reserved', 'at': utc_now()}
-        reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+        reserve(self.bundle, 'fetch_attempts', attempt, self.fetch_limit, self.save)
         try:
             snapshot = search_markets(self.bundle['request']['question'], query=query, page=page_number)
             ident = 'M' + str(len(self.bundle['market_snapshots']) + 1)
@@ -482,7 +487,7 @@ class RetrievalTask:
                 if self.bundle.get('result') and not self.bundle['result'].get('incomplete'):
                     reserve_update(self.bundle, attempt, self.save)
                 else:
-                    reserve(self.bundle, 'fetch_attempts', attempt, MAX_FETCHES, self.save)
+                    reserve(self.bundle, 'fetch_attempts', attempt, self.fetch_limit, self.save)
                 official = old.get('official_request')
                 retained=old.get('response_headers',{})
                 validators={header:retained[key] for header,key in [('If-None-Match','ETag'),('If-Modified-Since','Last-Modified')]
@@ -1028,10 +1033,10 @@ class RetrievalTask:
                     return {**self.page_view(shared,args.get('start_char',0)),'cached':True,'cross_task_cache':True}
                 if b["mode"] == "historical_strict":
                     raise ValueError("No verified pre-cutoff snapshot available; current web fetch forbidden")
-                if len(b["fetch_attempts"]) >= MAX_FETCHES:
+                if len(b["fetch_attempts"]) >= self.fetch_limit:
                     raise ValueError("Page fetch budget exhausted")
                 attempt = {"url": url, "status": "reserved", "at": utc_now()}
-                reserve(b, "fetch_attempts", attempt, MAX_FETCHES, self.save)
+                reserve(b, "fetch_attempts", attempt, self.fetch_limit, self.save)
                 try:
                     fetcher = (lambda source: fetch_public_page(source,preserve_raw_on_failure=True)) if self.raw_recall else fetch_public_page
                     page = fetch_structured(url, self.cutoff, fetcher) or fetcher(url)
@@ -1337,11 +1342,13 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             control = task.bundle["control"]
             before_turn = progress.snapshot(task)
             from ForecastAgent.research_loop import fusion
+            from ForecastAgent.research_loop import dispatch as research_dispatch
+            dispatch_choice = research_dispatch.choose(task)
             before_planning = fusion.planning_snapshot(task)
             turn_failed = False
             if collection:
                 from ForecastAgent.runtime.material_protocol import enabled as v3, closure_ready
-                if closure_ready(task):
+                if closure_ready(task) and not dispatch_choice:
                     termination_reason = 'agent_declared_targets_complete'
                     control['material_stop_reason'] = termination_reason
                     task.execute('finish_collection', {'gaps':[]}, tavily_key)
@@ -1350,6 +1357,9 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             if collection and task.raw_recall and not control.get('source_recovery_delivery_pending'):
                 from ForecastAgent.runtime.collection_actions import raw_stop_reason
                 reason=raw_stop_reason(task)
+                if dispatch_choice and reason in {'raw_no_progress_limit', 'raw_source_budget_exhausted',
+                                                 'raw_discovery_frontier_exhausted'}:
+                    reason = None  # Bounded local processing/gap work remains, not recall credit.
                 if reason:
                     if reason == 'raw_no_progress_limit' and turn < turn_limit-2:
                         from ForecastAgent.runtime.source_frontier import recover_before_stall
@@ -1370,7 +1380,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 termination_reason = 'lifetime_model_budget' if len(task.bundle.get('model_attempts', [])) >= 72 else 'model_dispatch_budget'
                 control['forced_close'] = True
                 break
-            stall = collection and control.get('no_progress_turns',0)>=3 and not fusion.local_cycle(task)
+            stall = collection and control.get('no_progress_turns',0)>=3 and not fusion.local_cycle(task) and not dispatch_choice
             recovery_delivery = control.pop('source_recovery_delivery_pending', False)
             if recovery_delivery:
                 stall = False  # Deliver the capture once; do not invent progress credit.
@@ -1429,6 +1439,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 if action:
                     forced=action['tool']
             forced = fusion.advisory_forcing(task, forced)
+            if dispatch_choice and forced not in {'plan_evidence', 'search_exa', 'finish_collection'}:
+                forced = dispatch_choice['tool']
+            else:
+                dispatch_choice = None
             if forced in {"audit_evidence", "finish_retrieval", "finish_collection"}:
                 messages.append({"role": "user", "content": json.dumps({"must_call": forced, "saved_evidence": task.bundle["evidence"],
                     "coverage": task.coverage(), "extract_eligible_unread": task.rescue_candidates(),
@@ -1441,7 +1455,10 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                 from ForecastAgent.runtime.context import collection_context
                 from ForecastAgent.runtime.tool_selection import active_tools
                 model_messages = collection_context(task,forced_tool=forced) if collection else messages
-                if collection and repaired(task) and forced is None:
+                if dispatch_choice:
+                    model_messages.append({'role': 'user', 'content': json.dumps(
+                        {'research_dispatch': dispatch_choice}, ensure_ascii=False)})
+                if collection and repaired(task) and forced is None and not dispatch_choice:
                     # Projection stages the newest exact read. Bind its review
                     # gate in this same request, before exposing navigation.
                     from ForecastAgent.runtime.collection_actions import next_action
@@ -1449,6 +1466,12 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if action and action['tool'] == 'review_passages':
                         forced = 'review_passages'
                 turn_tools = active_tools(task,available_tools,forced) if collection else available_tools
+                if dispatch_choice:
+                    turn_tools = research_dispatch.tools_for(task, turn_tools, dispatch_choice)
+                    if not turn_tools:
+                        termination_reason = 'research_dispatch_no_eligible_tool'
+                        break
+                    research_dispatch.record_selection(task, dispatch_choice)
                 if forced=='search_exa':
                     from ForecastAgent.runtime.task_protocol import supplemental_messages
                     model_messages = supplemental_messages(task)

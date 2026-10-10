@@ -210,7 +210,8 @@ def run(request, directory, *, supplement_network=False):
             limit_path = directory/'map-reservation.json'
             if not limit_path.exists():
                 existing = task_dir/'bundle.json'
-                limits = post_supplement.budget(json.loads(existing.read_text(encoding='utf-8')) if existing.exists() else None)
+                limits = post_supplement.budget(json.loads(existing.read_text(encoding='utf-8')) if existing.exists() else None,
+                    request=frozen['request'])
                 save(limit_path, {'limits': limits, 'started_at_epoch': time.time()})
             reservation = json.loads(limit_path.read_text(encoding='utf-8'))
             if state.get('post_reservation_sha256') not in {None, digest(reservation)}:

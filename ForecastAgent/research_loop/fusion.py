@@ -169,7 +169,7 @@ def frontier(task):
         'nodes': [{k:n[k] for k in ('id','kind','claim','gap_reason')} for n in current.get('nodes', [])],
         'material_requests': copy.deepcopy(current.get('material_requests', [])),
         'revision': task.bundle['research_loop']['revision'],
-        'remaining_map_updates': state.MAX_UPDATES-task.bundle['research_loop']['revision'],
+        'remaining_map_updates': task.bundle['research_loop']['update_cap']-task.bundle['research_loop']['revision'],
         'pending_map_update': ledger['pending_map_update'], 'no_progress_by_node': streaks,
         'next_map_step': 'Inspect relevant saved R handles and update the initial map before further optional discovery.'
             if ledger['pending_map_update'] and not current else 'Use material requests to choose the next gap action; update only after useful new evidence.',
@@ -348,7 +348,7 @@ def local_cycle(task):
         return None
     ledger = initialize(task)
     revision = task.bundle['research_loop']['revision']
-    if not ledger['pending_map_update'] or revision >= state.MAX_UPDATES:
+    if not ledger['pending_map_update'] or revision >= task.bundle['research_loop']['update_cap']:
         return None
     material = state.catalog(task.bundle, task.cutoff)
     if not material['sources']:

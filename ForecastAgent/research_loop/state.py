@@ -108,10 +108,15 @@ def initialize(bundle):
     if ledger is not None:
         if ledger.get('schema') != VERSION or ledger.get('rules_sha256') != digest(rules):
             raise ValueError('Research state rules or schema changed')
+        from ForecastAgent.research_loop.dispatch import limits
+        if ledger.get('update_cap') != limits(bundle['request'])['map_updates']:
+            raise ValueError('Frozen map allowance changed')
         verify_journal(ledger)
         return ledger
+    from ForecastAgent.research_loop.dispatch import limits
     ledger = {'schema': VERSION, 'policy': POLICY, 'rules': rules,
-        'rules_sha256': digest(rules), 'revision': 0, 'update_cap': MAX_UPDATES,
+        'rules_sha256': digest(rules), 'revision': 0,
+        'update_cap': limits(bundle['request'])['map_updates'],
         'events': [], 'current': None, 'truth_verified': False,
         'source_independence_verified': False, 'probability_head': False}
     bundle['research_loop'] = ledger
@@ -126,8 +131,9 @@ def verify_journal(ledger):
                 digest(data) != event.get('event_sha256')):
             raise ValueError('Research event chain checksum mismatch')
         previous = event['event_sha256']
-    if (ledger.get('update_cap') != MAX_UPDATES or ledger.get('revision') != len(ledger['events']) or
-            ledger['revision'] > MAX_UPDATES or
+    if (type(ledger.get('update_cap')) is not int or not 3 <= ledger['update_cap'] <= 12 or
+            ledger.get('revision') != len(ledger['events']) or
+            ledger['revision'] > ledger['update_cap'] or
             ledger.get('current') != (ledger['events'][-1]['state'] if ledger['events'] else None)):
         raise ValueError('Research revision, cap or current state mismatch')
 
@@ -192,7 +198,7 @@ def update(bundle, proposal, cutoff=None):
         return {'revision': ledger['revision'], 'cached': True, 'no_progress': True}
     if proposal['expected_revision'] != ledger['revision']:
         raise ValueError('Stale research revision; inspect the current state')
-    if ledger['revision'] >= MAX_UPDATES:
+    if ledger['revision'] >= ledger['update_cap']:
         raise ValueError('Research lifetime update cap exhausted')
     material = catalog(bundle, cutoff)
     if proposal['material_sha256'] != material['material_sha256']:
@@ -273,7 +279,7 @@ def audit(bundle, cutoff=None):
             'factual_grounding_present': grounded, 'gap_only': gap_only,
             'pending_saved_material_review':review_pending,
             'unreviewed_material_change': stale,
-            'revision': ledger['revision'], 'remaining_updates': MAX_UPDATES - ledger['revision'],
+            'revision': ledger['revision'], 'remaining_updates': ledger['update_cap'] - ledger['revision'],
             'material_sha256': material['material_sha256'], 'truth_verified': False}
 
 

@@ -56,7 +56,19 @@ def enabled(request):
     return request.get(FIELD) == POLICY
 
 
+def reserve_http(request):
+    from ForecastAgent.research_loop.dispatch import limits
+    return limits(request)['post_review_http']
+
+
+def reserved_revisions(request):
+    from ForecastAgent.research_loop.dispatch import limits
+    return limits(request)['post_review_revisions']
+
+
 def validate(request):
+    from ForecastAgent.research_loop.dispatch import limits
+    limits(request)
     if request.get(FIELD, 'disabled') not in {'disabled', POLICY}:
         raise ValueError('Unknown post-supplement map policy')
     if enabled(request) and (not state.enabled({'request': request}) or
@@ -73,9 +85,10 @@ def reserve_collection(request):
     names = ('COLLECTION_MAX_TURNS', 'COLLECTION_HTTP_PER_DISPATCH', 'MAX_RUN_SECONDS')
     old = {k: getattr(retrieval, k) for k in names}
     if enabled(request):
-        retrieval.COLLECTION_MAX_TURNS = max(0, old[names[0]] - RESERVE)
-        retrieval.COLLECTION_HTTP_PER_DISPATCH = max(0, old[names[1]] - RESERVE)
-        retrieval.MAX_RUN_SECONDS = max(0, old[names[2]] - 180)
+        reserve = reserve_http(request)
+        retrieval.COLLECTION_MAX_TURNS = max(0, old[names[0]] - reserve)
+        retrieval.COLLECTION_HTTP_PER_DISPATCH = max(0, old[names[1]] - reserve)
+        retrieval.MAX_RUN_SECONDS = max(0, old[names[2]] - 90 * reserve)
     try:
         yield
     finally:
@@ -83,7 +96,7 @@ def reserve_collection(request):
             setattr(retrieval, key, value)
 
 
-def budget(existing=None):
+def budget(existing=None, request=None):
     from ForecastAgent.runtime import retrieval
     from ForecastAgent.runtime.telemetry import MAX_MODEL_ATTEMPTS
     attempts = (existing or {}).get('model_attempts', [])
@@ -92,7 +105,8 @@ def budget(existing=None):
             + retrieval.COLLECTION_MAX_TURNS,
             'lifetime_failure_cap': sum(a.get('status') != 'received' for a in attempts)
             + retrieval.MODEL_FAILURES_PER_DISPATCH,
-            'post_http_cap': RESERVE, 'reserved_map_revisions': 1,
+            'post_http_cap': reserve_http(request or (existing or {}).get('request', {})),
+            'reserved_map_revisions': reserved_revisions(request or (existing or {}).get('request', {})),
             'seconds_remaining': retrieval.MAX_RUN_SECONDS}
 
 
@@ -215,8 +229,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
     validate(bundle['request'])
     if not state.enabled(bundle) or not gap_feedback.enabled(bundle):
         raise ValueError('Saved-material review requires an enabled native map')
-    if type(http_cap) is not int or not 0 <= http_cap <= RESERVE:
-        raise ValueError('Post-supplement cap must be zero to two')
+    if type(http_cap) is not int or not 0 <= http_cap <= reserve_http(bundle['request']):
+        raise ValueError('Post-supplement cap exceeds the frozen reservation')
     if type(failure_cap) is not int or failure_cap < 0:
         raise ValueError('Remaining failure allowance must be nonnegative')
     root = Path(directory)
@@ -271,11 +285,12 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     raise RuntimeError('Shared model failure allowance exhausted')
                 return journal(phase, record, token)
             status = 'no_readable_pending_material'
+            no_progress = 0
             while packet['evidence'] and len(list((root/'model-http').glob('*.json'))) < http_cap:
                 if deadline is not None and time.monotonic() >= deadline:
                     status = 'wall_time_exhausted'
                     break
-                if task.bundle['research_loop']['revision'] >= state.MAX_UPDATES:
+                if task.bundle['research_loop']['revision'] >= task.bundle['research_loop']['update_cap']:
                     status = 'map_revision_cap_exhausted'
                     break
                 tools = runtime.filter_tools(task, runtime.configure(task, []))
@@ -298,11 +313,20 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     if len(calls) != 1 or calls[0]['function']['name'] != 'update_research_state':
                         raise ValueError('Exactly one declared map update is required')
                     args = json.loads(calls[0]['function']['arguments'])
+                    before_pending = {m['material_id'] for m in gap_feedback.pending(task)}
                     outcome = runtime.execute(task, 'update_research_state', args)
                     steps.append({'accepted': True, 'outcome': outcome})
                     status = 'reviewed' if not gap_feedback.pending(task) else 'partial_review'
-                    # One accepted update is enough. Keep partial dispositions explicit.
-                    break
+                    from ForecastAgent.research_loop import dispatch
+                    if not dispatch.enabled(task.bundle) or not gap_feedback.pending(task):
+                        break
+                    after_pending = {m['material_id'] for m in gap_feedback.pending(task)}
+                    no_progress = no_progress + 1 if before_pending <= after_pending else 0
+                    if no_progress >= 2:
+                        status = 'processing_no_progress'
+                        break
+                    packet = reading_packet(task)
+                    save(root/('reading-packet-'+str(len(steps)+1)+'.json'), packet)
                 except (ValueError, KeyError, TypeError) as exc:
                     steps.append({'accepted': False, 'error': str(exc)[:1000],
                                   'acceptance': getattr(exc, 'report', None)})
@@ -334,6 +358,9 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'parent_bundle_sha256': source_hash, 'review_bundle_sha256': digest(task.bundle),
             'historical_ledgers_preserved': True, 'original_pages_preserved': True,
             'new_search_calls': 0, 'new_fetch_calls': 0, 'scores_generated': False, 'submitted': False}
+        from ForecastAgent.research_loop import dispatch
+        if dispatch.enabled(task.bundle):
+            report['material_processing'] = dispatch.status(task)
         if (root/'reading-packet.json').exists():
             packet = load(root/'reading-packet.json')
             report['reading_coverage'] = packet['reading_coverage']

@@ -11,6 +11,10 @@ FIELD = 'research_gap_policy'
 POLICY = 'critical_gap_feedback_v1'
 LINK = 'research_gap_ids'
 MAX_EVENTS = state.MAX_UPDATES * 4
+
+
+def event_cap(task):
+    return task.bundle['research_loop']['update_cap'] * 4
 REVIEW = obj({'material_id': text(32),
     'disposition': {'type': 'string', 'enum':
         ['incorporated', 'conflict', 'duplicate', 'irrelevant', 'deferred']},
@@ -68,7 +72,7 @@ def initialize(task):
     rules = digest({k: task.bundle['request'].get(k, '') for k in state.RULE_FIELDS})
     ledger = task.bundle.setdefault('research_gap_feedback',
         {'schema': POLICY, 'rules_sha256': rules, 'events': [], 'meaning_verified': False})
-    if ledger['schema'] != POLICY or ledger['rules_sha256'] != rules or len(ledger['events']) > MAX_EVENTS:
+    if ledger['schema'] != POLICY or ledger['rules_sha256'] != rules or len(ledger['events']) > event_cap(task):
         raise ValueError('Gap feedback identity or lifetime cap changed')
     previous = None
     for event in ledger['events']:
@@ -288,7 +292,7 @@ def review(task, proposals, before, explanation, result):
         'rejected_reviews','actual_graph_delta','model_explanation','program_explanation')})
     repeated = any(e.get('review_signature') == signature for e in ledger['events'])
     if not repeated and (accepted or rejected or result.get('committed') or result['acceptance'].get('rejected')):
-        if len(ledger['events']) >= MAX_EVENTS:
+        if len(ledger['events']) >= event_cap(task):
             raise ValueError('Gap feedback lifetime receipt cap exhausted')
         event['review_signature'] = signature
         event['event_sha256'] = digest(event)

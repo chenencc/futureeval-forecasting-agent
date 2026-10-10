@@ -126,6 +126,11 @@ def _collect(request, directory, *, clock_utc, recover_data=True):
     view, report = prepare_package(package, root / "intelligence", clock_utc)
     report["data_recovery"] = recovery
     report['post_supplement_map'] = post_report
+    from ForecastAgent.research_loop import dispatch
+    if dispatch.enabled(package):
+        from types import SimpleNamespace
+        report['material_processing'] = dispatch.status(SimpleNamespace(bundle=package, cutoff=None))
+        report['package_exported'] = True
     save(root / "intelligence/report.json", report)
     return {"view": view, "report": report, "analysis_started": False, "submitted": False}
 

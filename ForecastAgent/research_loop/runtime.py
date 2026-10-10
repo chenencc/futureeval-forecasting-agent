@@ -55,7 +55,17 @@ def guide(task, system):
         'Do not assign probabilities, certify facts, submit forecasts or trade.\nMaintain provisional research notes under the experimental policy below.')
     from ForecastAgent.research_loop import fusion, grounding
     from ForecastAgent.research_loop import gap_feedback
-    return system + (fusion.GUIDE if fusion.enabled(task) else GUIDE) + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '')
+    guide_text = fusion.GUIDE if fusion.enabled(task) else GUIDE
+    from ForecastAgent.research_loop import dispatch
+    if dispatch.enabled(task.bundle):
+        values = dispatch.limits(task.bundle['request'])
+        guide_text = guide_text.replace('At most three updates',
+            'At most ' + str(values['map_updates']) + ' updates')
+        guide_text += ('\nA program research_dispatch phase narrows this turn to saved-source '
+            'processing or one obtainable-gap acquisition. Follow its exact source and ID '
+            'registry. Do not spend the phase loading skills or browsing unrelated navigation. '
+            'The map is a research aid; missing future outcomes remain unknown.\n')
+    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '')
 
 
 def execute(task, name, args):
@@ -65,7 +75,8 @@ def execute(task, name, args):
     if name == 'update_research_state':
         from ForecastAgent.research_loop import post_supplement
         if (post_supplement.enabled(task.bundle['request']) and not task.bundle.get(post_supplement.PHASE)
-                and task.bundle['research_loop']['revision'] >= task.bundle['research_loop']['update_cap'] - 1):
+                and task.bundle['research_loop']['revision'] >= task.bundle['research_loop']['update_cap'] -
+                post_supplement.reserved_revisions(task.bundle['request'])):
             raise ValueError('Final map revision is reserved for post-supplement local reading')
         from ForecastAgent.research_loop import fusion, simple_map, grounding
         from ForecastAgent.research_loop import delta
@@ -79,7 +90,7 @@ def execute(task, name, args):
             from ForecastAgent.research_loop import quote_bindings
             submitted_hash = digest(args)
             ledger = gap_feedback.initialize(task)
-            if len(ledger['events']) >= gap_feedback.MAX_EVENTS:
+            if len(ledger['events']) >= gap_feedback.event_cap(task):
                 raise ValueError('Gap feedback lifetime receipt cap exhausted')
             args = copy.deepcopy(args)
             reviews = args.pop('material_reviews')
@@ -172,7 +183,7 @@ def filter_tools(task, tools):
         omit.add('update_research_state')
     from ForecastAgent.research_loop import post_supplement
     if (post_supplement.enabled(task.bundle['request']) and not task.bundle.get(post_supplement.PHASE)
-            and report['remaining_updates'] <= 1):
+            and report['remaining_updates'] <= post_supplement.reserved_revisions(task.bundle['request'])):
         omit.add('update_research_state')
     if task.bundle.get('result') or task.bundle.get('control', {}).get('forced_close'):
         omit.update(NAMES)

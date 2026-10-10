@@ -20,7 +20,7 @@ def _box(task, need_ids):
         row = box.db.execute("SELECT id FROM attempts WHERE url=? AND status='reserved' ORDER BY created DESC LIMIT 1", (url,)).fetchone()
         attempt['channel_journal_id'] = row[0] if row else None
         attempt['operation_sha256'] = getattr(task, '_channel_operation', None)
-        reserve(task.bundle, 'fetch_attempts', attempt, retrieval.MAX_FETCHES, task.save)
+        reserve(task.bundle, 'fetch_attempts', attempt, task.fetch_limit, task.save)
         try:
             host = urlsplit(url).hostname
             response = core.transport(url, byte_cap,
