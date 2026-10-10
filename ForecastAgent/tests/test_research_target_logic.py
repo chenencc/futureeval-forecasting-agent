@@ -158,6 +158,18 @@ class TargetLogicTests(unittest.TestCase):
             self.assertTrue(report['cases'][0]['parent_preserved'])
             self.assertFalse(report['forecasts_generated'])
 
+    def test_trial_counts_actual_escaped_context_in_both_arms(self):
+        import json
+        from ForecastAgent.research_loop import target_logic_trial as trial
+        b=source_bundle();b['plan']=fixture()[0]['plan']
+        b['pages']['https://example.org/report']['content'] *= 20
+        common,selection=trial.common_input(b)
+        self.assertTrue(selection['omitted_reference_ids'])
+        for extra in ('',logic.GUIDE):
+            messages=[{'role':'system','content':simple_map.SYSTEM+extra},
+                      {'role':'user','content':json.dumps(common,ensure_ascii=False)}]
+            self.assertLessEqual(len(json.dumps(messages,ensure_ascii=False)),trial.MAX_CHARS)
+
 
 if __name__=='__main__':
     unittest.main()

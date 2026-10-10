@@ -52,8 +52,11 @@ def common_input(bundle):
     for span in candidates:
         row = {k:span[k] for k in ('evidence_id','url','body_sha256','start','end','text','coordinate_space') if k in span}
         trial = {**payload, 'evidence':payload['evidence']+[row]}
-        # Leave space for the fixed system and the projection omission notice.
-        if len(json.dumps(trial, ensure_ascii=False)) > MAX_CHARS - 5500:
+        # Check the larger actual paired request, including JSON string escaping.
+        # A guessed system allowance can overflow on Markdown/URL-heavy bodies.
+        rendered = [{'role':'system','content':simple_map.SYSTEM + target_logic.GUIDE},
+                    {'role':'user','content':json.dumps(trial,ensure_ascii=False)}]
+        if len(json.dumps(rendered, ensure_ascii=False)) > MAX_CHARS:
             omitted.append(span['evidence_id'])
         else:
             payload = trial
