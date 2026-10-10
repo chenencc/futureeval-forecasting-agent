@@ -99,6 +99,9 @@ class DispatchTests(unittest.TestCase):
             tools = dispatch.tools_for(t, tools, choice)
             self.assertEqual([x['function']['name'] for x in tools], ['read_sources'])
             self.assertIn('research_gap_ids', tools[0]['function']['parameters']['required'])
+            urls = tools[0]['function']['parameters']['properties']['urls']['items']['enum']
+            self.assertIn('https://example.org/report', urls)
+            self.assertNotIn('https://example.org/invented', urls)
 
     def test_initial_discovery_captures_before_empty_map_or_skill_navigation(self):
         with tempfile.TemporaryDirectory() as root:

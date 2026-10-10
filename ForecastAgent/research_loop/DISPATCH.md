@@ -24,6 +24,9 @@ reserved within these totals for final local review.
    Map action categories such as `page_fetch` to real offered functions. Require
    the declared gap link. A proposal rejected before a native reservation does
    not count as completed acquisition; allow one bounded correction.
+   A bound capture menu offers at most 24 observed URLs and excludes failed or
+   in-flight plain-fetch reservations. Lexical ordering is a navigation hint,
+   not target relevance or a factual authority score.
 4. Review each source scope at most twice. Failed or deferred interpretations
    remain pending and cannot starve other saved sources.
 5. Final review rebuilds the pending-source packet after partial acceptance.

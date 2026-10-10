@@ -4,6 +4,7 @@ This module routes work, not truth. It never creates receipts, probabilities,
 source URLs, provider calls or renewed allowances.
 """
 import copy
+import re
 
 FIELD = 'research_dispatch_policy'
 POLICY = 'material_gap_dispatch_v1'
@@ -138,6 +139,23 @@ def tools_for(task, tools, choice):
     if not choice:
         return tools
     tools = copy.deepcopy(tools)
+    # A domain hint does not permit invented URLs. Lexical ordering is only
+    # navigation; it cannot certify target relevance or source authority.
+    if choice['tool'] == 'read_sources':
+        known = {**task.catalog(), **task.bundle['pages']}
+        failed = {r.get('url') for r in task.bundle.get('fetch_attempts', [])
+                  if r.get('status') in {'failed', 'reserved'}}
+        target = ' '.join(g.get('target', '') for g in choice.get('gaps', []))
+        terms = set(re.findall(r'[a-z0-9]{4,}', (target or task.bundle['request']['question']).lower()))
+        ordered = sorted((u for u in known if u not in failed), key=lambda u: (
+            u in task.bundle['pages'],
+            -len(terms & set(re.findall(r'[a-z0-9]{4,}',
+                (u + ' ' + str(known[u].get('title', ''))).lower()))), u))[:24]
+        if not ordered:
+            return []  # Preserve an explicit routing gap; do not grant arbitrary URLs.
+        for entry in tools:
+            if entry['function']['name'] == 'read_sources' and ordered:
+                entry['function']['parameters']['properties']['urls']['items']['enum'] = ordered
     if choice['phase'] == 'acquire_gap':
         from ForecastAgent.tools.capabilities import get
         selected = [t for t in tools if 'network' in get(t['function']['name']).effects]
