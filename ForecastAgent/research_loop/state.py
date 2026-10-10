@@ -268,7 +268,18 @@ def audit(bundle, cutoff=None):
     from ForecastAgent.research_loop import delta
     review_pending=bool(delta.enabled(bundle) and current and
         bundle.get('research_acquisition',{}).get('pending_map_update'))
-    stale = bool(current and current['material_sha256'] != material['material_sha256']) or review_pending
+    material_changed = bool(current and current['material_sha256'] != material['material_sha256'])
+    processing = None
+    from ForecastAgent.research_loop import gap_feedback
+    if gap_feedback.enabled(bundle):
+        from types import SimpleNamespace
+        processing = gap_feedback.coverage(SimpleNamespace(bundle=bundle, cutoff=cutoff))
+        review_pending = bool(processing['pending_material_count'])
+        # Current receipts acknowledge all current saved source versions without
+        # overwriting the historical graph state or manufacturing a revision.
+        stale = review_pending
+    else:
+        stale = material_changed or review_pending
     acceptance = ledger['events'][-1].get('acceptance', {}) if ledger['events'] else {}
     gap_only = bool(current and current['nodes'] and not errors and not stale and
         acceptance.get('status') == 'gap_only' and
@@ -279,6 +290,8 @@ def audit(bundle, cutoff=None):
             'factual_grounding_present': grounded, 'gap_only': gap_only,
             'pending_saved_material_review':review_pending,
             'unreviewed_material_change': stale,
+            'graph_material_changed': material_changed,
+            'material_processing': processing,
             'revision': ledger['revision'], 'remaining_updates': ledger['update_cap'] - ledger['revision'],
             'material_sha256': material['material_sha256'], 'truth_verified': False}
 

@@ -175,3 +175,30 @@ WNV still lacks the future target publication. OpenAI's paired input covers one
 forum source; two upstream held pages remain outside that comparison. ALCS still
 lacks the future Game 4 outcome. Mercury, production and conditional-probability
 experiments were unchanged.
+
+## Current-scope processing agreement
+
+`coverage()` is the shared authority for audit freshness, dispatch status and
+the pending-material list. It validates receipt journal checksums, exact current
+URL/body/reading-scope identity, receipt references and retained incorporation.
+Changed body or scope, deferred work, retired incorporation and a changed duplicate
+parent remain pending. Corrupt journals raise an integrity error instead of
+producing a successful empty inventory.
+
+A valid irrelevant or duplicate receipt can acknowledge material without a graph
+edit. The historical graph material hash remains intact; `graph_material_changed`
+exposes that difference. `pending_saved_material_review` describes current
+unprocessed scopes. `reconcile()` updates only the scheduling latch from this
+coverage, never graph revisions, receipt journals or provider budgets.
+
+Receipt-only acceptance does not force another local reading cycle. Rejected
+nodes, rejected receipts and deferred material still require attention. These
+checks establish processing agreement only: relevance, full-document reading,
+target adequacy and causal truth remain unverified. An empty declared gap list
+is not an evidence-completeness certificate.
+
+Offline validation on three saved packages corrected two stale latches without
+changing graph revisions 2/2/5 or any original source file. The 164 related tests
+include unread source, changed body/scope, retired node, changed duplicate parent,
+deferred receipt, corrupt journal and zero-pending post-review controls. No new
+provider calls, scoring, submissions or production promotion were involved.

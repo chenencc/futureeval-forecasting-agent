@@ -261,7 +261,6 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         child['result'] = None
         child['control'] = {**child.get('control', {}), 'forced_close': False}
         child[PHASE] = True
-        child['research_acquisition']['pending_map_update'] = True
         save(root/'frozen-input.json', bundle)
         if not (root/'review/bundle.json').exists():
             save(root/'review/bundle.json', child)
@@ -269,12 +268,15 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         task.bundle['result'] = None
         task.bundle['control']['forced_close'] = False
         task.bundle[PHASE] = True
+        gap_feedback.reconcile(task)
         records = sorted((root/'model-http').glob('*.json'))
         status = 'prepared'
         steps = []
         # A crash after reservation/response requires review, never another dispatch.
         if records:
             status = 'interrupted_receipt_requires_review'
+        elif execute and not gap_feedback.pending(task):
+            status = 'already_processed'
         elif execute and http_cap and failure_cap:
             packet = reading_packet(task)
             save(root/'reading-packet.json', packet)
@@ -345,6 +347,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             else:
                 task.bundle.pop(key, None)
         task.bundle.pop(PHASE, None)
+        gap_feedback.reconcile(task)
         task.save()
         if digest(bundle) != source_hash or any(task.bundle.get(k) != bundle.get(k) for k in PRESERVED):
             raise ValueError('Capture input or historical ledger changed')

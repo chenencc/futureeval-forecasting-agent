@@ -177,8 +177,8 @@ def tools_for(task, tools, choice):
 
 def status(task):
     from ForecastAgent.research_loop import gap_feedback
-    pending = gap_feedback.pending(task)
-    return {'status': 'processing_complete' if not pending else 'processing_with_gaps',
-            'pending_material_count': len(pending),
-            'pending_material_ids': [m['material_id'] for m in pending],
+    processing = gap_feedback.coverage(task)
+    return {'status': processing['status'],
+            'pending_material_count': processing['pending_material_count'],
+            'pending_material_ids': [m['material_id'] for m in processing['pending']],
             'target_evidence_complete': None, 'truth_verified': False}

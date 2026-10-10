@@ -46,6 +46,8 @@ def code_identity():
              root / 'runtime/tool_selection.py',
              root / 'research_loop/fusion.py', root / 'research_loop/material_events.py',
              root / 'research_loop/delivery.py', root / 'runtime/context.py',
+             root / 'research_loop/state.py', root / 'research_loop/gap_feedback.py',
+             root / 'research_loop/post_supplement.py', root / 'research_loop/dispatch.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',
              *root.joinpath('readers').glob('*.py')]

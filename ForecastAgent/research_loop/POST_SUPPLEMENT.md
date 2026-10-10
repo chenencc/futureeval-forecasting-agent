@@ -56,6 +56,13 @@ delivery only; complete prior bindings and graph journals remain in the snapshot
 
 ## Failure and restart
 
+The review derives its pending latch from validated current-scope receipts before
+reading and before saving. A zero-pending input performs no model call. Historical
+graph hashes may differ after valid irrelevant/duplicate acknowledgments; the
+graph and receipt journals stay unchanged. Current processing status is distinct
+from target evidence adequacy and truth. Saved outputs remain frozen: replay a
+changed implementation in an explicit derivative directory, not over its parent.
+
 No reserved allowance, expired wall time, exhausted map revisions, malformed proposals,
 or provider failures produce an explicit status and preserved originals. A completed
 review is checksum-checked and cached. A crash with an existing HTTP receipt requires

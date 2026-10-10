@@ -397,7 +397,8 @@ def map_feedback(task, result=None, error=None):
     ledger=initialize(task)
     report=(result or {}).get('acceptance') or getattr(error,'report',{})
     rejected=report.get('rejected',[])
-    retry_read=bool(error or (result or {}).get('committed') is False
+    receipt_only_accepted = bool((result or {}).get('gap_feedback', {}).get('accepted_reviews'))
+    retry_read=bool(error or (result or {}).get('committed') is False and not receipt_only_accepted
         or (result or {}).get('material_acknowledged') is False
         or any(r['section'] in {'nodes','material_reviews'} for r in rejected))
     feedback={'revision':task.bundle['research_loop']['revision'],

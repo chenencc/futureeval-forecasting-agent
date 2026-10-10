@@ -147,12 +147,73 @@ def identifiers(task, inventory=None):
             'support incorporation. New material requests receive G IDs after acceptance.'}
 
 
-def pending(task, inventory=None):
+def coverage(task, inventory=None):
+    """Derive current excerpt processing from intact receipts and retained bindings.
+
+    The graph's original material hash is historical. A later irrelevant or
+    duplicate source does not require a fictitious graph edit to acknowledge it.
+    Changed bodies/scopes, deferred work and lost incorporation stay pending.
+    """
     inventory = inventory if inventory is not None else materials(task)
     ledger = initialize(task)
-    latest = {r['material_id']:r for e in ledger['events'] for r in e['accepted_reviews']}
-    return [m for ident,m in inventory.items()
-            if ident not in latest or latest[ident]['disposition'] == 'deferred']
+    latest = {r['material_id']: (r, e['event_sha256']) for e in ledger['events']
+              for r in e['accepted_reviews']}
+    nodes = {n['id']: n for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])}
+    material = state.catalog(task.bundle, task.cutoff)
+    reviewed, remaining = [], []
+    for ident, source in inventory.items():
+        item = latest.get(ident)
+        reason = 'no_current_receipt'
+        if item:
+            receipt, event_hash = item
+            refs = set(receipt['evidence_ids'])
+            disposition = receipt['disposition']
+            stored = receipt.get('source', {})
+            valid_source = all(stored.get(k) == source[k] for k in
+                               ('material_id', 'url', 'body_sha256', 'scope_sha256'))
+            bound = [nodes[i] for i in receipt['node_ids'] if i in nodes
+                     and nodes[i]['kind'] == 'observation' and any(
+                         r['evidence_id'] in refs and r['evidence_id'] in material['spans']
+                         and all(r.get(k) == material['spans'][r['evidence_id']].get(k)
+                                 for k in ('url', 'body_sha256', 'start', 'end', 'text'))
+                         for r in nodes[i].get('bindings', []))]
+            related = set(receipt['related_material_ids'])
+            reason = ('deferred' if disposition == 'deferred' else
+                      'stale_receipt_source' if not valid_source else
+                      'stale_receipt_references' if not refs or not refs <= set(source['reference_ids']) else
+                      'retired_or_changed_incorporation' if disposition in {'incorporated', 'conflict'} and not bound else
+                      'stale_duplicate_parent' if disposition == 'duplicate' and
+                          (not related or ident in related or not related <= set(inventory)) else None)
+            if reason is None and disposition == 'conflict':
+                observations = [nodes[i] for i in receipt['node_ids'] if i in nodes and nodes[i]['kind'] == 'observation']
+                if len(observations) < 2 or len({r['body_sha256'] for n in observations for r in n['bindings']}) < 2:
+                    reason = 'retired_or_changed_conflict'
+            if reason is None:
+                reviewed.append({'material_id': ident, 'disposition': disposition,
+                                 'receipt_event_sha256': event_hash})
+                continue
+        remaining.append({'material_id': ident, 'reason': reason})
+    current = task.bundle['research_loop'].get('current') or {}
+    return {'status': 'processing_with_gaps' if remaining else 'processing_complete',
+        'pending_material_count': len(remaining), 'pending': remaining,
+        'reviewed': reviewed, 'material_sha256': material['material_sha256'],
+        'map_revision': task.bundle['research_loop']['revision'],
+        'graph_material_sha256': current.get('material_sha256'),
+        'full_document_reading_verified': False, 'truth_verified': False,
+        'scope': 'Validated excerpt-disposition receipts only; not target evidence adequacy.'}
+
+
+def pending(task, inventory=None):
+    inventory = inventory if inventory is not None else materials(task)
+    ids = {r['material_id'] for r in coverage(task, inventory)['pending']}
+    return [m for ident, m in inventory.items() if ident in ids]
+
+
+def reconcile(task):
+    """Repair a scheduling latch from receipts without editing any graph event."""
+    result = coverage(task)
+    task.bundle['research_acquisition']['pending_map_update'] = bool(result['pending_material_count'])
+    return result
 
 
 def view(task, offset=0):
