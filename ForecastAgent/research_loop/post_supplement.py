@@ -75,8 +75,9 @@ def reserve_collection(request):
 
 def budget(existing=None):
     from ForecastAgent.runtime import retrieval
+    from ForecastAgent.runtime.telemetry import MAX_MODEL_ATTEMPTS
     attempts = (existing or {}).get('model_attempts', [])
-    return {'lifetime_http_cap': len(attempts) + retrieval.COLLECTION_HTTP_PER_DISPATCH,
+    return {'lifetime_http_cap': min(MAX_MODEL_ATTEMPTS, len(attempts) + retrieval.COLLECTION_HTTP_PER_DISPATCH),
             'lifetime_decision_cap': sum(a.get('status') == 'received' for a in attempts)
             + retrieval.COLLECTION_MAX_TURNS,
             'lifetime_failure_cap': sum(a.get('status') != 'received' for a in attempts)

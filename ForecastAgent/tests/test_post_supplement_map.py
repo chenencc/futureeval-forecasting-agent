@@ -88,6 +88,9 @@ class PostSupplementTests(unittest.TestCase):
             self.assertEqual(post.remaining_http(b,{**limits,'lifetime_failure_cap':4}),0)
             b['model_attempts'].extend([{'status':'received'}]*2)
             self.assertEqual(post.remaining_http(b,limits),0)
+            lifetime=post.budget({'model_attempts':[{'status':'received'}]*72})
+            self.assertEqual(lifetime['lifetime_http_cap'],72)
+            self.assertEqual(post.remaining_http({'model_attempts':[{'status':'received'}]*72},lifetime),0)
 
     def test_no_allowance_keeps_map_and_gap_instead_of_calling(self):
         with tempfile.TemporaryDirectory() as tmp:

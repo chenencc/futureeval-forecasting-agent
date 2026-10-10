@@ -328,7 +328,7 @@
     "ForecastAgent/verify_polymarket.py": "90366ad6e869eea7db3260e517d1243decde5cd60b114740bb0fb61fdc22c642",
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
-    "ForecastAgent/research_loop/post_supplement.py": "62b67dc6cbe669e1859251dafc279041484445632eb74db6b05630755736d935",
+    "ForecastAgent/research_loop/post_supplement.py": "d2c0ccf3a52c62a0ab64881aab702d545923b09f7bd86fd73beab513d2edcdc5",
     "ForecastAgent/research_loop/POST_SUPPLEMENT.md": "91228c3018580d2eff06d2f524efa39461f3313edf78d98798c4266d9685df33"
   },
   "source_reading_policy": "crawl4ai_v1",
