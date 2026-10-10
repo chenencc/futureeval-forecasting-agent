@@ -74,13 +74,15 @@ def freeze_case(question, pair, directory, *, cutoff_utc, mode, configuration,
     if mode == 'prospective_shadow':
         if not isinstance(receipt, dict) or str(receipt.get('question_id')) != str(question['id']):
             raise ValueError('Independent status receipt for this question is required')
-        if receipt.get('status') != 'open' or receipt.get('outcome_known') is not False:
-            raise ValueError('Open status and explicitly unknown outcome are required')
+        if receipt.get('status') not in {'open', 'closed'} or receipt.get('outcome_known') is not False:
+            raise ValueError('Unresolved open/closed status and explicitly unknown outcome are required')
         if not receipt.get('source_url') or not receipt.get('source_sha256'):
             raise ValueError('Status receipt provenance required')
         if timestamp(receipt.get('observed_at_utc')) > cutoff:
             raise ValueError('Status receipt is later than the evidence cutoff')
     issues = []
+    if not question.get('resolution_criteria') or question.get('official_rules_available') is False:
+        issues.append({'reason': 'official_resolution_rules_unavailable'})
     for source in original.get('sources', []):
         try:
             native_time = source.get('capture_metadata', {}).get('retrieved_at_utc')

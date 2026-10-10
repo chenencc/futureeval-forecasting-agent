@@ -74,8 +74,10 @@ remains diagnostic even on identical pre-event source text.
 
 ## Prospective development protocol
 
-1. Select a fixed chronological batch of currently open questions with outcomes
-   not already public. Prefer several short-horizon questions plus broader tasks;
+1. Select a fixed chronological batch of unresolved questions with outcomes
+   not already public. A closed platform question can still describe an unknown
+   future outcome; closed research cases never acquire submission eligibility.
+   Prefer several short-horizon questions plus broader tasks;
    short-horizon results are a fast development lane, not a representative test
    of all domains. Archive status and rules separately from model inputs.
 2. Predeclare model/settings, code identities, budgets, question IDs, target-field
@@ -122,6 +124,9 @@ inputs with a fixed configuration. `seal_result` records success or failure
 once. `evaluate_case` or `evaluate` reads separately bound outcomes afterward.
 Changed inputs, modes, configurations or sealed results refuse silent reuse.
 Missing capture times and post-cutoff captures remain explicit exclusions.
+Missing official resolution criteria also exclude primary forecast metrics;
+title-only material may support acquisition diagnostics but not a complete
+platform-resolution comparison.
 Primary forecast metrics require prospective registration, a delivered map,
 both valid sealed arms, a bound outcome, and first-public-outcome timing after
 both forecasts. Unknown timing stays diagnostic. Receipt assertions and local

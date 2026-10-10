@@ -114,6 +114,28 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             v.validate_payload(q, {'probability_yes_per_category': {'A': 0.3, 'B': 0.6}})
 
+    def test_closed_unresolved_research_does_not_enable_submission(self):
+        receipt = {'question_id': '1', 'status': 'closed', 'outcome_known': False,
+                   'observed_at_utc': NOW, 'source_url': 'https://example.org/status', 'source_sha256': 'a' * 64}
+        with patch.object(v, 'utc_now', return_value=NOW):
+            manifest = v.freeze_case(question(), pair(), self.folder, cutoff_utc=NOW,
+                mode='prospective_shadow', configuration=self.configuration, status_receipt=receipt)
+        self.assertFalse(manifest['submission_enabled'])
+        receipt['status'] = 'resolved'
+        with self.assertRaises(ValueError):
+            v.freeze_case(question(), pair(), self.root / 'other', cutoff_utc=NOW,
+                mode='prospective_shadow', configuration=self.configuration, status_receipt=receipt)
+
+    def test_missing_rules_are_explicit_primary_metric_exclusion(self):
+        q = question(); q['resolution_criteria'] = ''; q['official_rules_available'] = False
+        p = pair()
+        for arm in v.ARMS:
+            p[arm]['state']['question'] = copy.deepcopy(q)
+        with patch.object(v, 'utc_now', return_value=NOW):
+            manifest = v.freeze_case(q, p, self.folder, cutoff_utc=NOW,
+                mode='retrospective_diagnostic', configuration=self.configuration)
+        self.assertIn('official_resolution_rules_unavailable', [i['reason'] for i in manifest['temporal_issues']])
+
     def test_continuous_payload_requires_frozen_scale_and_monotonicity(self):
         q = {'question_type': 'numeric', 'scaling': {'range_min': 0, 'range_max': 10},
              'inbound_outcome_count': 20, 'open_lower_bound': True, 'open_upper_bound': True}
