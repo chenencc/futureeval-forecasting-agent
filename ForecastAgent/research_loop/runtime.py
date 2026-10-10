@@ -66,7 +66,8 @@ def guide(task, system):
             'registry. Do not spend the phase loading skills or browsing unrelated navigation. '
             'The map is a research aid; missing future outcomes remain unknown.\n')
     from ForecastAgent.research_loop import target_logic
-    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '') + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')
+    from ForecastAgent.research_loop import reference_map
+    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '') + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '') + (reference_map.GUIDE if reference_map.enabled(task.bundle) else '')
 
 
 def execute(task, name, args):
@@ -83,6 +84,13 @@ def execute(task, name, args):
         from ForecastAgent.research_loop import delta
         from ForecastAgent.research_loop import gap_feedback
         before = copy.deepcopy(task.bundle['research_loop'].get('current'))
+        from ForecastAgent.research_loop import reference_map
+        from ForecastAgent.analysis.pilot import digest
+        reference_records = []
+        reference_submitted = digest(args)
+        if reference_map.enabled(task.bundle):
+            args, reference_records = reference_map.prepare(task.bundle, args,
+                reference_map.delivered(task, catalog(task.bundle, task.cutoff)), task.cutoff)
         reviews = None
         format_bindings = []
         submitted_hash = None
@@ -105,7 +113,7 @@ def execute(task, name, args):
         if delta.enabled(task.bundle):
             args,delta_report=delta.expand(task.bundle,args)
         result = accept(task.bundle, args, task.cutoff,
-            map_protocol=simple_map.PROTOCOL if fusion.enabled(task) else 'legacy',
+            map_protocol=reference_map.PROTOCOL if reference_map.enabled(task.bundle) else simple_map.PROTOCOL if fusion.enabled(task) else 'legacy',
             stage_grounding=grounding.enabled(task.bundle),
             preserve_rejected=bool(delta_report and delta_report['update_mode']=='merge'))
         if reviews is not None:
@@ -125,6 +133,16 @@ def execute(task, name, args):
                 event['acceptance']['quote_format_bindings']=copy.deepcopy(format_bindings)
             event['event_sha256']=digest({k:v for k,v in event.items() if k!='event_sha256'})
             result['event_sha256']=event['event_sha256']
+        if reference_map.enabled(task.bundle):
+            reference_records = reference_map.finalize(reference_records, task.bundle['research_loop'].get('current'))
+            result['acceptance']['reference_binding_receipts'] = reference_records
+            result['acceptance']['reference_submitted_proposal_sha256'] = reference_submitted
+            if result.get('committed', False):
+                event = task.bundle['research_loop']['events'][-1]
+                event['acceptance'].update(reference_binding_receipts=copy.deepcopy(reference_records),
+                    reference_submitted_proposal_sha256=reference_submitted)
+                event['event_sha256'] = digest({k:v for k,v in event.items() if k!='event_sha256'})
+                result['event_sha256'] = event['event_sha256']
         acknowledge=result.get('committed',True)
         if reviews is not None:
             result = gap_feedback.review(task,reviews,before,args['revision_reason'],result)
@@ -243,5 +261,6 @@ def filter_tools(task, tools):
                         links['items']['enum']=gap_ids
                     else:
                         links['maxItems']=0
-                    props['nodes']['items']['properties']['stage_basis']['description']='At most 180 characters. Copy a SHORT literal stage-supporting phrase from a bound reference; otherwise use empty string and event_stage=unknown.'
+                    if 'stage_basis' in props['nodes']['items']['properties']:
+                        props['nodes']['items']['properties']['stage_basis']['description']='At most 180 characters. Copy a SHORT literal stage-supporting phrase from a bound reference; otherwise use empty string and event_stage=unknown.'
     return tools

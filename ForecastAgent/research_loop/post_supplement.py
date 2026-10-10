@@ -215,7 +215,9 @@ def prompt_map(task):
     current=task.bundle['research_loop'].get('current')
     if not current:return None
     from ForecastAgent.research_loop.delta import node_input
-    return {'nodes':[node_input(n) for n in current.get('nodes',[])],
+    from ForecastAgent.research_loop import reference_map
+    convert = reference_map.input_node if reference_map.enabled(task.bundle) else node_input
+    return {'nodes':[convert(n) for n in current.get('nodes',[])],
         'relations':[{k:copy.deepcopy(v) for k,v in r.items() if k!='verified'}
                      for r in current.get('relations',[])],
         'material_requests':copy.deepcopy(current.get('material_requests',[])),
@@ -304,7 +306,11 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 target_payload = ({'targets':target_logic.targets(task.bundle),
                     'target_coverage':target_logic.brief(task.bundle)}
                     if target_logic.enabled(task.bundle) else {})
-                messages = [{'role': 'system', 'content': SYSTEM + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')}, {'role': 'user', 'content': json.dumps({
+                from ForecastAgent.research_loop import reference_map
+                review_system = SYSTEM + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')
+                if reference_map.enabled(task.bundle):
+                    review_system = reference_map.prompt(review_system)
+                messages = [{'role': 'system', 'content': review_system}, {'role': 'user', 'content': json.dumps({
                     **target_payload,
                     'question': {k: task.bundle['request'].get(k, '') for k in state.RULE_FIELDS},
                     'expected_revision': task.bundle['research_loop']['revision'],

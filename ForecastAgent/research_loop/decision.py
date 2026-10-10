@@ -39,7 +39,9 @@ def scoring_map(bundle, baseline):
         visible = all(not uncovered(ref['start'], ref['end'],
             [(span['start'], span['end']) for span in baseline['evidence']
              if sources.get(span['source_id'], {}).get('url') == ref['url'] and
-                sources.get(span['source_id'], {}).get('body_sha256') == ref['body_sha256']]) for ref in bindings)
+                sources.get(span['source_id'], {}).get('body_sha256') == ref['body_sha256'] and
+                (not ref.get('view_sha256') or ref['view_sha256'] == ref['body_sha256'] or
+                 span.get('view_sha256') == ref['view_sha256'])]) for ref in bindings)
         if not visible or node['id'] in invalid:
             hidden.append(node['id'])
             continue
@@ -47,7 +49,7 @@ def scoring_map(bundle, baseline):
         if simple:
             fields += tuple(k for k in simple_map.NODE_SCHEMA['properties'] if k not in fields and k != 'evidence_ids')
         nodes.append({**{k: node[k] for k in fields if k in node},
-            'bindings': [{k: ref[k] for k in ('url', 'body_sha256', 'start', 'end')} for ref in bindings]})
+            'bindings': [{k: ref[k] for k in ('url', 'body_sha256', 'start', 'end', 'coordinate_space', 'view_sha256') if k in ref} for ref in bindings]})
     def assemble(selected, omitted):
         kept = {node['id'] for node in selected}
         result = {'schema': VERSION,

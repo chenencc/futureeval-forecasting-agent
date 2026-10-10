@@ -6,13 +6,14 @@ from ForecastAgent.analysis.pilot import digest
 from ForecastAgent.research_loop.schema import NODE, PROPOSAL, RELATION, TOOLS
 
 PROTOCOL = 'literal-map-v2'
-PROTOCOLS = {PROTOCOL, 'forecast-map-v3', 'forecast-score-map-v4'}
+PROTOCOLS = {PROTOCOL, 'forecast-map-v3', 'forecast-score-map-v4', 'reference-map-v1'}
 NODE_SCHEMA = copy.deepcopy(NODE)
 NODE_SCHEMA['required'] = [k for k in NODE_SCHEMA['properties'] if k not in {'stage_basis','target_links'}]
 RELATION_SCHEMA = copy.deepcopy(RELATION)
 RELATION_SCHEMA['required'] = list(RELATION_SCHEMA['properties'])
 MAP_SCHEMA = copy.deepcopy(PROPOSAL)
 MAP_SCHEMA['properties']['nodes']['items'] = copy.deepcopy(NODE_SCHEMA)
+MAP_SCHEMA['properties']['nodes']['items']['properties']['claim_origin']['enum'] = ['source_quote', 'hypothesis', 'gap']
 MAP_SCHEMA['properties']['nodes']['items']['properties'].pop('stage_basis')
 MAP_SCHEMA['properties']['relations']['items'] = RELATION_SCHEMA
 TOOL = copy.deepcopy(TOOLS[1])

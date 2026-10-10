@@ -35,8 +35,11 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
     candidate = copy.deepcopy(bundle)
     ledger = initialize(candidate)
     from ForecastAgent.research_loop import simple_map
+    from ForecastAgent.research_loop import reference_map
     if map_protocol not in {'legacy'} | simple_map.PROTOCOLS:
         raise ValueError('Unknown map protocol')
+    if map_protocol == reference_map.PROTOCOL and not reference_map.enabled(candidate):
+        raise ValueError('Reference protocol requires its explicit policy')
     simple = map_protocol in simple_map.PROTOCOLS
     raw_hash = digest(proposal)
     context_hash = digest(sorted(allowed) if allowed is not None else None)
@@ -100,7 +103,8 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
                 bound, chosen, fields = bind_observation(chosen, material, scope)
                 rejected.extend(fields)
             else:
-                bound = bind_node(chosen, material, scope, validate_stage=stage_grounding)
+                bound = bind_node(chosen, material, scope, validate_stage=stage_grounding,
+                                  reference_enabled=reference_map.enabled(candidate))
             nodes.append(chosen); accepted.append(bound['id'])
         except (ValueError, TypeError, KeyError) as exc:
             reject('nodes', index, original, exc)
@@ -109,7 +113,8 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
                 from ForecastAgent.research_loop.delta import node_input
                 prior=node_input(previous_nodes[ident])
                 try:
-                    bind_node(prior,material,allowed,validate_stage=stage_grounding)
+                    bind_node(prior,material,allowed,validate_stage=stage_grounding,
+                              reference_enabled=reference_map.enabled(candidate))
                 except (ValueError,TypeError,KeyError):
                     pass  # Stale old evidence cannot be rescued as a valid node.
                 else:

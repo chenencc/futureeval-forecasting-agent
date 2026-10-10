@@ -235,6 +235,13 @@ def configure(task, tools):
                 tool['function']['parameters']['properties'][gap_feedback.LINK] = {
                     'type':'array', 'maxItems':4, 'items':{'type':'string','maxLength':32},
                     'description':'Copy gap_id values from gap_feedback.gaps to record the intended decision impact. Before the first map use research_node_ids for frozen targets.'}
+    from ForecastAgent.research_loop import reference_map
+    if reference_map.enabled(task.bundle):
+        for tool in tools:
+            if tool['function']['name'] == 'update_research_state':
+                tool['function']['parameters'] = reference_map.schema(tool['function']['parameters'])
+                tool['function']['description'] = ('Select delivered original R IDs and explain target relations. '
+                    'Program binds complete originals. No quotations, dates or offsets to copy. No network inside this tool.')
     return tools
 
 

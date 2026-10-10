@@ -35,7 +35,9 @@ def prepared_pair(bundle, *, original_view=None):
             # raw-body slices unless their complete literal quote is also visible.
             different_view = any(ref.get('view_sha256') and ref['view_sha256'] != ref['body_sha256']
                                  for ref in node.get('bindings', []))
-            if different_view or (node['kind'] == 'observation' and not any(
+            from ForecastAgent.research_loop import reference_map
+            referenced = node.get('claim_origin') == reference_map.ORIGIN
+            if different_view or (node['kind'] == 'observation' and not referenced and not any(
                     node['claim'] in e['text'] and any(
                         sources[e['source_id']]['url'] == ref['url'] and
                         sources[e['source_id']]['body_sha256'] == ref['body_sha256']

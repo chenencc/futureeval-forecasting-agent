@@ -98,6 +98,11 @@ def context(task, *, forced=None, maximum=28000):
     if target_logic.enabled(b):
         system += target_logic.GUIDE
         payload['target_coverage'] = target_logic.brief(b)
+    from ForecastAgent.research_loop import reference_map
+    if reference_map.enabled(b):
+        system = reference_map.prompt(system)
+        payload['current_nodes'] = [reference_map.input_node(n) for n in current.get('nodes', [])]
+        payload['instruction'] = 'Select supplied original IDs; program binds complete originals. Explain scope separately. Unread material is not missing evidence. No new quota.'
     from ForecastAgent.channels.native import enabled as channels_enabled, guide as channels_guide
     if channels_enabled(task):
         system += channels_guide()

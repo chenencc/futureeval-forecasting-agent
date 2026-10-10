@@ -75,3 +75,6 @@ attempts and successful replies are durable; re-entry cannot replenish allowance
 The initial cases are repair regressions, not unseen generalization or forecast
 accuracy tests. Review target period, entity and rule applicability in the actual
 output. More links or a mechanically valid map alone do not prove improvement.
+
+An alternative [reference-bound interface](REFERENCE_MAP.md) removes quote-copy
+fields from the model tool. The program binds complete selected originals.

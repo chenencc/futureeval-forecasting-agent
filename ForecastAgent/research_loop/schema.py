@@ -26,7 +26,7 @@ RELATION = obj({'from_id': text(40), 'to_id': text(40), 'kind': {'type': 'string
 # Optional extensions keep archived v1 proposals readable. The v2 tool requires
 # every extension explicitly; absence does not silently become a v2 observation.
 NODE_EXTENSIONS = {
-    'claim_origin': {'type': 'string', 'enum': ['source_quote', 'hypothesis', 'gap']},
+    'claim_origin': {'type': 'string', 'enum': ['source_quote', 'hypothesis', 'gap', 'source_reference']},
     'interpretation': text(240),
     'event_stage': {'type': 'string', 'enum': ['planned', 'ongoing', 'completed', 'not_applicable', 'unknown']},
     'applicability': {'type': 'string', 'enum': ['target', 'background', 'expectation', 'unknown']},

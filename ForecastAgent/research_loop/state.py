@@ -138,7 +138,7 @@ def verify_journal(ledger):
         raise ValueError('Research revision, cap or current state mismatch')
 
 
-def bind_node(original, material, allowed=None, *, validate_stage=False):
+def bind_node(original, material, allowed=None, *, validate_stage=False, reference_enabled=False):
     """Validate one complete node; a bad reference never leaves its claim behind."""
     check_schema(original, NODE)
     node = copy.deepcopy(original)
@@ -170,6 +170,13 @@ def bind_node(original, material, allowed=None, *, validate_stage=False):
         raise ValueError('Source-stated event_time must copy literal source text; its event role remains unverified')
     if 'claim_origin' in node:
         expected = 'source_quote' if node['kind'] == 'observation' else 'gap' if node['kind'] == 'unknown' else 'hypothesis'
+        from ForecastAgent.research_loop import reference_map
+        if node['claim_origin'] == reference_map.ORIGIN:
+            if not reference_enabled:
+                raise ValueError('Reference-origin observations require the explicit reference map policy')
+            reference_map.verify_node(node, material, allowed)
+            expected = reference_map.ORIGIN
+            node['original_reference_verified'] = True
         if node['claim_origin'] != expected:
             raise ValueError('Claim origin must agree with the node kind')
         if expected == 'source_quote' and not any(node['claim'] in ref['text'] for ref in bindings):
@@ -218,7 +225,9 @@ def update(bundle, proposal, cutoff=None):
     if len(set(retired)) != len(retired) or set(retired) != set(old) - known:
         raise ValueError('Every removed node must be explicitly retired')
     from ForecastAgent.research_loop import grounding
-    nodes = [bind_node(original, material, validate_stage=grounding.enabled(bundle)) for original in proposal['nodes']]
+    from ForecastAgent.research_loop import reference_map
+    nodes = [bind_node(original, material, validate_stage=grounding.enabled(bundle),
+                      reference_enabled=reference_map.enabled(bundle)) for original in proposal['nodes']]
     for relation in proposal['relations']:
         if relation['from_id'] not in known or relation['to_id'] not in known or not relation['rationale'].strip():
             raise ValueError('Relations require current nodes and a rationale')
