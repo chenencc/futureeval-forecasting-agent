@@ -652,3 +652,18 @@ sports and technology questions. Same-state offline replay reproduces all three
 old failures and fits all three fixed contexts below the existing 28,000-character
 ceiling, with no new network call. This verifies context delivery only: it does
 not prove source relevance, resumed acquisition, graph coverage or forecast gain.
+
+## Phase boundaries
+
+A forced source-capture dispatch can defer a whole stale reading when context is
+full. The archive, reference IDs and material identity remain intact; the delivery
+receipt says that no deferred text was delivered or processed. Map updates and
+unspecified phases still require exact original readings and never slice the last
+span to force a fit.
+
+The research-only `scoring_input.project` adapter separates known acquisition
+execution fields from the forecast question before invoking the frozen analysis
+core. It retains all platform rules, dates, options, scales, bounds and unknown
+fields literally. It preserves original bodies and cumulative provider ledgers,
+records omitted execution-field hashes, and grants no new request allowance.
+Neither mechanism is wired into production by this development module.

@@ -73,6 +73,15 @@ def fit_messages(messages, payload, maximum):
     frame = payload.get('research_binding_frame') or {}
     evidence = frame.get('inspected_evidence', [])
     contexts = frame.get('source_context', [])
+    if len(encode(render())) > maximum and payload.get('reading_scope') == 'deferred_during_source_capture':
+        # A source-capture dispatch cannot update the map. Stale inspected text
+        # remains saved and available in its later reading/update dispatch.
+        notice['deferred_reading_ids'] = list(dict.fromkeys(
+            s['evidence_id'] for s in evidence + contexts))
+        evidence.clear()
+        contexts.clear()
+        notice['reading_deferred'] = True
+        notice['reading_deferred_reason'] = 'Source capture only; no original text delivered or processing acceptance implied.'
     pinned = {s['evidence_id'] for s in evidence}
     duplicates = [s for s in contexts if s['evidence_id'] in pinned]
     if duplicates:
@@ -122,6 +131,8 @@ def context(task, *, forced=None, maximum=28000):
         'omitted_source_count':max(0,len(b['pages'])-8),
         'last_map_feedback':b['research_acquisition'].get('last_map_feedback'),
         'instruction':'Read locally using URL/query and pagination. source_offset changes metadata only. Every reading view names its coordinate space and original body hash. Copy a short contiguous quotation EXACTLY; put paraphrases in interpretation. Unread saved material is not missing evidence. No new quota is granted.'}
+    if forced == 'read_sources':
+        payload['reading_scope'] = 'deferred_during_source_capture'
     operational=('Collect public source material and maintain a provisional research map in ONE loop. '
         'Only declared tools are executable. Network actions must use observed source URLs, current need IDs and existing quotas. '
         'Do not assign probabilities, submit forecasts, trade or certify truth. Source bytes and immutable rules remain authoritative. '
