@@ -26,6 +26,48 @@ def fresh(root):
 
 
 class DispatchTests(unittest.TestCase):
+    def test_context_projection_preserves_registry_and_objective_without_new_calls(self):
+        from ForecastAgent.runtime.context import ContextProjectionError
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            choice = {'phase': 'capture_discovery', 'candidates': {'urls': ['https://example.org/a'],
+                'sources': [{'source_id': 'L1', 'url': 'https://example.org/a', 'title': 'Exact metric',
+                    'published_date': '2026-10-10', 'discovery_excerpt': 'x' * 600}]}}
+            original = copy.deepcopy(choice)
+            budget = copy.deepcopy(t.budget())
+            calls = []
+            def project(task, *, forced_tool, max_chars):
+                calls.append(max_chars)
+                if len(calls) == 1:
+                    raise ContextProjectionError('Saved objective needs more room')
+                return [{'role': 'user', 'content': task.bundle['request']['question']}]
+            with patch('ForecastAgent.runtime.context.collection_context', side_effect=project):
+                messages = dispatch.model_context(t, choice)
+            menu = json.loads(messages[-1]['content'])['research_dispatch']['candidates']
+            self.assertNotIn('urls', menu)
+            self.assertEqual(menu['sources'][0]['source_id'], 'L1')
+            self.assertEqual(menu['sources'][0]['url'], 'https://example.org/a')
+            self.assertEqual(menu['sources'][0]['title'], 'Exact metric')
+            self.assertEqual(len(menu['sources'][0]['discovery_excerpt']), 300)
+            self.assertEqual(menu['sources'][0]['excerpt_omitted_chars'], 300)
+            self.assertGreater(calls[1], calls[0])
+            self.assertEqual(messages[0]['content'], t.bundle['request']['question'])
+            self.assertEqual(choice, original)
+            self.assertEqual(t.budget(), budget)
+            self.assertEqual(t.bundle['dispatch_context_projections'][-1]['provider_calls'], 0)
+
+    def test_context_projection_retains_explicit_failure_when_headers_do_not_fit(self):
+        from ForecastAgent.runtime.context import ContextProjectionError
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            choice = {'phase': 'capture_frontier', 'candidates': {'urls': [], 'sources': []}}
+            with patch('ForecastAgent.runtime.context.collection_context',
+                       side_effect=ContextProjectionError('Immutable objective cannot fit')) as mocked:
+                with self.assertRaises(ContextProjectionError):
+                    dispatch.model_context(t, choice)
+            self.assertEqual(mocked.call_count, 3)
+            self.assertNotIn('dispatch_context_projections', t.bundle)
+
     def test_discovery_pool_is_not_truncated_to_capture_batch_size(self):
         with tempfile.TemporaryDirectory() as root:
             t = fresh(root)

@@ -1470,12 +1470,7 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
             try:
                 from ForecastAgent.runtime.context import collection_context, encode, MAX_CONTEXT_CHARS, ContextProjectionError
                 from ForecastAgent.runtime.tool_selection import active_tools
-                dispatch_message = ({'role': 'user', 'content': json.dumps(
-                    {'research_dispatch': dispatch_choice}, ensure_ascii=False)} if dispatch_choice else None)
-                context_limit = MAX_CONTEXT_CHARS - (len(encode(dispatch_message)) + 1 if dispatch_message else 0)
-                model_messages = collection_context(task,forced_tool=forced, max_chars=context_limit) if collection else messages
-                if dispatch_choice:
-                    model_messages.append(dispatch_message)
+                model_messages = research_dispatch.model_context(task, dispatch_choice, forced_tool=forced) if collection else messages
                 if collection and repaired(task) and forced is None and not dispatch_choice:
                     # Projection stages the newest exact read. Bind its review
                     # gate in this same request, before exposing navigation.

@@ -5,6 +5,7 @@ source URLs, provider calls or renewed allowances.
 """
 import copy
 import hashlib
+import json
 import re
 
 FIELD = 'research_dispatch_policy'
@@ -84,6 +85,49 @@ def discovered_candidates(task, *, include_rule_leads=False):
         'published_date': known[u].get('published_date'),
         'discovery_excerpt': str(known[u].get('content') or known[u].get('text') or '')[:600],
         'evidence_status': 'unread_discovery_lead'} for u in urls]}
+
+
+def model_context(task, choice, *, forced_tool=None):
+    """Fit optional discovery previews without dropping identities or rules.
+
+    Local projection attempts consume no provider allowance. The full choice
+    remains authoritative for native argument binding and dispatch receipts.
+    """
+    from ForecastAgent.runtime.context import collection_context, encode, MAX_CONTEXT_CHARS, ContextProjectionError
+    discovery = choice and choice.get('phase') in {'capture_discovery', 'capture_frontier'}
+    tiers = (600, 300, 0) if discovery else (None,)
+    failures = []
+    for preview_chars in tiers:
+        projected = copy.deepcopy(choice)
+        if discovery:
+            candidates = projected['candidates']
+            candidates.pop('urls', None)  # Every exact URL remains in sources.
+            for source in candidates['sources']:
+                excerpt = source.get('discovery_excerpt', '')
+                source['discovery_excerpt'] = excerpt[:preview_chars]
+                source['excerpt_omitted_chars'] = max(0, len(excerpt) - preview_chars)
+        packet = ({'role': 'user', 'content': json.dumps(
+            {'research_dispatch': projected}, ensure_ascii=False)} if projected else None)
+        remaining = MAX_CONTEXT_CHARS - (len(encode(packet)) + 1 if packet else 0)
+        try:
+            messages = collection_context(task, forced_tool=forced_tool, max_chars=remaining)
+            if packet:
+                messages.append(packet)
+            size = len(encode(messages))
+            if size > MAX_CONTEXT_CHARS:
+                raise ContextProjectionError('Context ceiling exceeded after dispatch projection; no model HTTP issued')
+        except ContextProjectionError as exc:
+            failures.append(str(exc))
+            if preview_chars == tiers[-1]:
+                raise
+            continue
+        if choice:
+            task.bundle.setdefault('dispatch_context_projections', []).append({
+                'phase': choice['phase'], 'preview_chars': preview_chars,
+                'source_ids': [s['source_id'] for s in projected.get('candidates', {}).get('sources', [])],
+                'message_chars': size, 'ceiling_chars': MAX_CONTEXT_CHARS,
+                'local_projection_failures': failures, 'provider_calls': 0})
+        return messages
 
 
 def choose(task):
