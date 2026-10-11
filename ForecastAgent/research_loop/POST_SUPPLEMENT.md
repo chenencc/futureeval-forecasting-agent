@@ -144,3 +144,28 @@ The full delivered-subset target audit is retained in the scoring audit file.
 Node packing and the full request byte limit still apply. Omitted nodes remain
 explicit; a map with no delivered observation falls back to original evidence.
 This projection improves delivery space, not factual validity or probabilities.
+
+## Saved-material consistency review
+
+`post_supplement.run(..., consistency_review=True)` can revisit processed saved
+materials in a separately registered derivative review. It does not reopen native
+collection tasks, reset historical budgets, capture more pages, or certify source
+meaning. Explicit HTTP and failure caps still apply; code/input/model drift is
+rejected on re-entry. Default review behavior remains pending-material processing.
+
+The bounded reading packet offers recent literal dated JSON rows and existing
+node references, then other excerpts. Exact body coordinates remain authoritative.
+`existing_node_reading_scope` exposes omitted references. A source processing receipt
+is distinct from complete reading, correct interpretation and target adequacy.
+
+Advisory link-review cards show each node's own reference IDs alongside the exact
+frozen target kind/condition and its proposed role/effect/reason. Cards do not add
+cross-node factual support. Their limits are32cards and6000characters; complete
+conditions are kept or omitted explicitly, never silently truncated. These cards
+currently enter the saved-material review request, not every acquisition request.
+
+Review the interpretation and every link reason together: do not promote publication
+time to event time, broaden issuer/geographic scope, or label a historical baseline
+as direct evidence of an unknown future realization. When combining observations,
+retain the inference as an explicit hypothesis. Programs bind originals and report
+scope; they do not infer semantic truth or automatically retire valid observations.

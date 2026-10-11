@@ -15,6 +15,19 @@ to all available material unless coverage establishes it. Use dated row context
 when supplied. A date in a header or navigation is not the observation date.
 Review signals are prompts to inspect originals, not proof of contradiction.
 Neither a source receipt nor a clean signal certifies interpretation correctness.
+Check EACH target-link reason against the node's own R IDs, not merely its summary.
+Do not introduce facts from another node in a link reason. If an inference combines
+observations, retain it as a separate explicit hypothesis with its dependencies.
+Keep publication/capture dates separate from event dates. A weekday or relative
+date needs its own source context; publication time alone cannot date an event.
+Distinguish named issuer, city, province, district and affected population. A list
+of municipalities is not an order issued by one city. Do not broaden source scope.
+For each supplied link-review card, compare the observation period/metric/stage
+against THAT target condition: research needs can ask for history, while the
+forecast target asks for its eventual result. A historical baseline is not direct
+evidence of a future target or an exception whose prerequisites are unknown.
+Reconcile reason, role, effect and limitation together. If unsupported, weaken or
+remove the link while retaining a valid original observation; no forced linkage.
 '''
 
 
@@ -38,7 +51,33 @@ def brief(bundle):
         if flags:
             signals.append({'node_id': node['id'], 'signals': flags,
                 'reference_ids': list(node.get('evidence_ids', [])), 'meaning_verified': False})
-    return {'policy': 'source_scope_and_supersession_review_v1', 'signals': signals,
+    from ForecastAgent.research_loop import target_logic
+    registry = {t['id']:t for t in target_logic.targets(bundle)} if target_logic.enabled(bundle) else {}
+    cards, omitted, card_chars = [], [], 0
+    for node in nodes:
+        for index, link in enumerate(node.get('target_links', [])):
+            target = registry.get(link.get('target_id'), {})
+            if len(cards) >= 32:
+                omitted.append({'node_id':node['id'],'link_index':index})
+                continue
+            card = {'node_id':node['id'],'link_index':index,
+                'own_reference_ids':list(node.get('evidence_ids', [])),
+                'target_id':link.get('target_id'), 'target_kind':target.get('kind','unknown'),
+                'target_condition':target.get('condition',''),
+                'proposed_role':link.get('role'), 'proposed_effect':link.get('effect'),
+                'proposed_reason':link.get('reason',''),
+                'source_meaning_verified':False}
+            size = len(json.dumps(card,ensure_ascii=False))
+            if card_chars + size > 6000:
+                omitted.append({'node_id':node['id'],'link_index':index,
+                    'reason':'Exact link/target condition exceeds review-card character allowance.'})
+                continue
+            cards.append(card)
+            card_chars += size
+    return {'policy': 'source_scope_and_supersession_review_v2', 'signals': signals,
+        'link_review_cards':cards,'omitted_link_review_cards':omitted,
+        'link_card_chars':card_chars,'link_card_char_cap':6000,
+        'scope':'Own source IDs and exact frozen target, not cross-node factual support or semantic proof.',
         'signals_are_advisory': True, 'automatic_retirement': False, 'meaning_verified': False}
 
 
