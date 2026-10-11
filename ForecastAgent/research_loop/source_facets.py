@@ -61,11 +61,23 @@ def tool(sources):
             'required': ['sources'], 'additionalProperties': False}}}
 
 
-def messages(question, as_of, sources):
-    return [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({
+def messages(question, as_of, sources, *, original_only=False):
+    if type(original_only) is not bool:
+        raise ValueError('Original-only source reading must be boolean')
+    payload = {
         'question': question, 'as_of_utc': as_of, 'originals': sources,
-        'scope': 'Only delivered text. No previous annotations, graph or resolved labels.'},
-        ensure_ascii=False)}]
+        'scope': 'Only delivered text. No previous annotations, graph or resolved labels.'}
+    system = SYSTEM
+    if original_only:
+        payload.pop('question'); payload.pop('as_of_utc')
+        system += ('\nIndependent source phase: question, rules, clocks and old graph are '
+            'hidden. Retain distinct substantive actors, attributes, observations, '
+            'measurements and their literal qualifiers when available. Publication '
+            'metadata alone is not a substitute for substantive text. No minimum '
+            'field quota; unknown associations remain unknown. The next phase will '
+            'assess these immutable fields against the target.\n')
+    return [{'role': 'system', 'content': system},
+            {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}]
 
 
 def _binding(source, quote):
@@ -140,3 +152,48 @@ def bind(sources, answer):
         'scope': 'Source-local literal fields only; role and coverage labels remain provisional.',
         'original_text_sha256': {i: hashlib.sha256(s['text'].encode()).hexdigest() for i, s in known.items()},
         'meaning_verified': False, 'target_effects_generated': False, 'material_receipts_granted': False}
+
+
+def registry(sources, answer):
+    """Freeze every accepted literal field; aliases and role hints stay explicit."""
+    from ForecastAgent.analysis.pilot import digest
+    reading = bind(sources, answer)
+    facts = {}
+    for source in reading['sources']:
+        for fact in source['facts']:
+            proof = fact['binding']
+            identity = {k: copy.deepcopy(proof.get(k)) for k in
+                ('url', 'body_sha256', 'coordinate_space', 'view_sha256', 'quote_locations')}
+            identity.update(quote=fact['quote'], value=fact['value'])
+            if not proof['quote_locations']:
+                identity['unlocated_reference_id'] = proof['reference_id']
+            ident = 'L' + digest(identity)[:24]
+            if ident not in facts:
+                facts[ident] = {'fact_id': ident, 'quote': fact['quote'], 'value': fact['value'],
+                    'role_hypotheses': [], 'bindings': [], 'submitted_field_indices': [],
+                    'canonical_reference_id': proof['reference_id'], 'meaning_verified': False,
+                    'role_verified': False}
+            row = facts[ident]
+            if fact['kind'] not in row['role_hypotheses']:
+                row['role_hypotheses'].append(fact['kind'])
+            if proof not in row['bindings']:
+                row['bindings'].append(copy.deepcopy(proof))
+            row['submitted_field_indices'].append({'reference_id': source['reference_id'],
+                                                   'fact_index': fact['fact_index']})
+    result = {'schema': 'immutable_source_field_registry_v1',
+        'originals': copy.deepcopy(sources), 'received_proposal': copy.deepcopy(answer),
+        'reading': reading, 'facts': list(facts.values()),
+        'source_field_coverage_complete': False, 'meaning_verified': False,
+        'unknowns_are_model_hypotheses': True}
+    result['registry_sha256'] = digest(result)
+    return result
+
+
+def verify_registry(packet):
+    """Rebind saved literals and compare the complete frozen registry."""
+    if not isinstance(packet, dict):
+        raise ValueError('Expected an immutable source field registry')
+    expected = registry(packet['originals'], packet['received_proposal'])
+    if packet != expected:
+        raise ValueError('Immutable source field registry changed')
+    return expected

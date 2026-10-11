@@ -924,3 +924,34 @@ reading credit is introduced. Only the new packet's delivered handles are offere
 Unavailable or oversized own originals remain explicit omissions. Each request
 packet and its delivery summary are retained alongside the native review audit.
 
+### Multiple immutable fields before target interpretation
+
+`source_facets.messages(..., original_only=True)` hides question/rule/clock and
+old-map anchors during independent source reading. `source_facets.registry`
+retains every valid extracted quote/value, not only one primary observation.
+Exact coincident literal fields within one captured URL/body/view may share a
+stable L identifier, while all reference aliases, submitted indices and conflicting
+role hypotheses remain visible. Matching text from different URLs is not declared
+independent evidence or silently rebound. The complete registry has a checksum and
+is rebound from its saved originals/proposal before every use. Coverage, field
+roles and associations remain unverified.
+
+`field_targets` is the following local research adapter. It exposes exact target
+conditions and the immutable fields/originals, without old graph interpretations.
+The model selects primary/context L IDs and proposes scope-limited target links or
+explicit unknown predicates. It cannot generate a source quote/value. The program
+copies each selected primary quote unchanged to the native observation and binds
+context only within the same captured URL/body/view. Invalid siblings and
+unselected fields remain in the audit; excessive/overlong entries are not clipped.
+Missing predicates compile to separate unknown nodes with unresolved effects.
+No conditional probability, source-reading receipt or new retrieval is inferred.
+
+The adapter compiles through the existing native map handler and lifetime update
+cap. Default mode merges. Explicit `replace_previous_notes=True` creates a new
+literal-field snapshot and retires previous provisional note IDs in the existing
+journal; it does not assert that those old notes were false or erase their history.
+All original acquisitions remain unchanged. Field registry hashes, chosen aliases
+and target interpretations are archived separately from the compact graph. Native
+acceptance is structural provenance, not semantic closure or forecast improvement.
+The adapter is development-only and does not alter scheduled production.
+
