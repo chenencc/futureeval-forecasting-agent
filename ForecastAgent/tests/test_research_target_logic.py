@@ -33,6 +33,27 @@ def apply(b, p):
 
 
 class TargetLogicTests(unittest.TestCase):
+    def test_scoring_projection_preserves_conditions_links_and_unknown_targets(self):
+        b,p=fixture()
+        b['request']['forecast_target_registry_policy']='question_and_research_targets_v1'
+        p['nodes'][0]['target_links']=[link(b)]
+        apply(b,p)
+        before=copy.deepcopy(b)
+        full=logic.audit(b)
+        projection=logic.scoring_projection(b)
+        for target in full['targets']:
+            row=next(r for r in projection['targets'] if r['id']==target['id'])
+            condition=b['request']['question'] if row.get('condition_ref')=='immutable_question' else row['condition']
+            self.assertEqual(condition,target['condition'])
+            self.assertEqual(row['status'],target['status'])
+            self.assertEqual(row['expected_source'],target['expected_source'])
+            self.assertEqual(row['linked_node_ids'],[l['node_id'] for l in target['links']])
+        self.assertEqual(projection['unassessed_target_ids'],full['unassessed_target_ids'])
+        self.assertEqual(projection['no_direct_evidence_target_ids'],full['no_direct_evidence_target_ids'])
+        self.assertFalse(projection['truth_verified'])
+        self.assertEqual(b,before)
+        self.assertEqual(b['research_loop']['current']['nodes'][0]['target_links'][0]['reason'],link(b)['reason'])
+
     def test_root_registry_prompt_and_tool_schema_agree_in_all_native_phases(self):
         from ForecastAgent.research_loop import reference_map
         b, _ = fixture()

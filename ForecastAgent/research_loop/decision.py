@@ -67,7 +67,7 @@ def scoring_map(bundle, baseline):
                 evidence_groups=simple_map.grouping(selected))
         from ForecastAgent.research_loop import target_logic
         if target_logic.enabled(bundle):
-            result['target_coverage'] = target_logic.audit(bundle, selected, result['material_requests'])
+            result['target_coverage'] = target_logic.scoring_projection(bundle, selected, result['material_requests'])
         from ForecastAgent.research_loop import predictive_focus
         if predictive_focus.enabled(bundle):
             # Audit exactly the delivered subset; hidden observations cannot support it.
@@ -94,6 +94,12 @@ def scoring_map(bundle, baseline):
         result = {'schema': VERSION, 'status': 'map_omitted_size_or_coverage_limit',
             'instruction': 'No complete grounded observation delivered. Score original evidence directly.'}
         report = {**report, 'scoring_map_omitted': True}
+    if result.get('nodes'):
+        from ForecastAgent.research_loop import target_logic
+        if target_logic.enabled(bundle):
+            kept = {node['id'] for node in result['nodes']}
+            report['delivered_target_coverage_full'] = target_logic.audit(bundle,
+                [node for node in current['nodes'] if node['id'] in kept], result['material_requests'])
     return result, report
 
 

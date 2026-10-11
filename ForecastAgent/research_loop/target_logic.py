@@ -217,3 +217,23 @@ def brief(bundle):
             'targets': [{k:r[k] for k in ('id','status','material_request_count',
                 'has_obtainable_request','adequacy_verified')} for r in report['targets']],
             'condition_location': 'The frozen target registry; this summary adds no source text.'}
+
+
+def scoring_projection(bundle, nodes=None, requests=None):
+    """Keep target semantics once; delivered nodes retain exact link reasons."""
+    full = audit(bundle, nodes, requests)
+    result = {k: copy.deepcopy(v) for k, v in full.items() if k != 'targets'}
+    result['targets'] = []
+    for target in full['targets']:
+        row = {k: copy.deepcopy(target[k]) for k in
+            ('id', 'kind', 'condition', 'expected_source', 'status',
+             'material_request_count', 'has_obtainable_request', 'adequacy_verified')
+            if k in target}
+        if row.get('condition') == bundle['request']['question']:
+            row.pop('condition')
+            row['condition_ref'] = 'immutable_question'
+        row['linked_node_ids'] = [link['node_id'] for link in target['links']]
+        result['targets'].append(row)
+    result['link_location'] = ('Exact target roles, effects and reasons remain on delivered nodes; '
+                               'full audit stays saved. No target condition is shortened.')
+    return result

@@ -131,3 +131,16 @@ inspected reference IDs, source-bound observation nodes, and identical-body
 material IDs. Cross-source incorporation remains rejected. A missing suitable
 node requires a justified source-bound observation or an explicit unfinished
 disposition. Successful processing does not prove the target fact or forecast.
+
+## Scoring target metadata
+
+Bounded scoring keeps each target ID, kind, condition, expected source, status,
+linked-node IDs, obtainable-request status and adequacy warning. A condition that
+exactly equals the immutable question uses an explicit `immutable_question`
+reference; other conditions remain complete. Link roles, effects and reasons stay
+on the delivered nodes instead of appearing a second time in target summaries.
+The full delivered-subset target audit is retained in the scoring audit file.
+
+Node packing and the full request byte limit still apply. Omitted nodes remain
+explicit; a map with no delivered observation falls back to original evidence.
+This projection improves delivery space, not factual validity or probabilities.
