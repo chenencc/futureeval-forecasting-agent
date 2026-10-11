@@ -142,9 +142,14 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
                    key=lambda s: (s['start'], s['end']))
     ids = {s['evidence_id'] for s in reading.get('evidence', [])}
     anchor = min((i for i, s in enumerate(spans) if s['evidence_id'] in ids), default=0)
+    excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
+    metadata = [{k:copy.deepcopy(v) for k,v in s.items() if k not in excluded} for s in spans]
+    shared = {k:copy.deepcopy(v) for k,v in (metadata[0] if metadata else {}).items()
+              if all(k in item and item[k]==v for item in metadata)}
     view = {'policy':'literal_saved_source_window_v1', 'url':choice['url'],
         'body_sha256':scope['body_sha256'], 'scope_sha256':scope['scope_sha256'],
         'columns':['evidence_id','start','end','text','representation_metadata'],
+        'shared_representation_metadata':shared,
         'rows':[], 'start_span_offset':anchor, 'total_catalog_spans':len(spans),
         'next_span_offset':anchor, 'complete_saved_scope':False,
         'source_truncated':catalog['sources'][choice['url']]['truncated'],
@@ -153,9 +158,8 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
     # Try complete delivery first, even if the last small excerpt was mid-source.
     # If it does not fit, page forward from the current native reading anchor.
     def row(span):
-        excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
         return [span['evidence_id'],span['start'],span['end'],span['text'],
-                {k:copy.deepcopy(v) for k,v in span.items() if k not in excluded}]
+                {k:copy.deepcopy(v) for k,v in span.items() if k not in excluded and k not in shared}]
     complete = {**view, 'rows':[row(s) for s in spans], 'start_span_offset':0,
         'next_span_offset':None, 'complete_saved_scope':True, 'omitted_catalog_spans':0}
     from ForecastAgent.runtime.context import ContextProjectionError
@@ -218,7 +222,10 @@ def bind_source_window(task, choice, args, tools, source_view):
         span = catalog['spans'][ident]
         if ident in rows:
             current = [span['evidence_id'],span['start'],span['end'],span['text']]
-            if current != rows[ident][:4]:
+            excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
+            metadata = {k:v for k,v in span.items() if k not in excluded}
+            delivered_metadata = {**source_view['shared_representation_metadata'],**rows[ident][4]}
+            if current != rows[ident][:4] or metadata != delivered_metadata:
                 raise ValueError('Delivered original row changed before binding')
         delivered.append({k:span[k] for k in ('evidence_id','url','body_sha256','start','end')})
     # Register the selected delivery only. The table is a real literal reading,

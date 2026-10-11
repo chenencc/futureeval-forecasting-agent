@@ -37,6 +37,9 @@ class SourceWindowTests(unittest.TestCase):
             for row in view['rows']:
                 span=material['spans'][row[0]]
                 self.assertEqual(row[:4],[span[k] for k in ('evidence_id','start','end','text')])
+                excluded={'evidence_id','start','end','text','url','source_id','body_sha256'}
+                self.assertEqual({**view['shared_representation_metadata'],**row[4]},
+                    {k:v for k,v in span.items() if k not in excluded})
             self.assertEqual(task.bundle,before)
 
     def test_selection_binds_later_delivered_reference_without_search_or_fetch(self):
