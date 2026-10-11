@@ -85,8 +85,18 @@ class LiteralContextTests(unittest.TestCase):
                 {'created_at':'2026-10-01', 'cooked':'<p>Office A</p><p>Minister A</p><p>'+'Public source details. '*15+'</p>'},
                 {'created_at':'2026-10-02', 'cooked':'<p>Office B</p><p>Minister B</p><p>'+'Independent details. '*15+'</p>'}]}})
             task.bundle['pages'][url]['content'] = body
-            view = reading_views.reading(body, url)
-            spans = [s for s in state.catalog(task.bundle)['spans'].values() if s['url']==url and s.get('reference_kind')]
+            # This tests decoded coordinates and context boundaries, not the
+            # optional extractor's paragraph formatting. Pin that reader seam
+            # so Linux trafilatura and Windows fallback are equally exercised.
+            def decoded(html, source):
+                from ForecastAgent.readers.html import ReadableHTML
+                parser = ReadableHTML()
+                parser.feed(html)
+                return ''.join(parser.parts), {}, []
+            with patch('ForecastAgent.readers.html.parse_html', side_effect=decoded):
+                view = reading_views.reading(body, url)
+                spans = [s for s in state.catalog(task.bundle)['spans'].values()
+                         if s['url']==url and s.get('reference_kind')]
             self.assertTrue(spans)
             for span in spans:
                 self.assertEqual(span['coordinate_space'], 'decoded_post_view')
