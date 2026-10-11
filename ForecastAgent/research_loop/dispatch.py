@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 import re
+from urllib.parse import urlsplit, parse_qsl
 
 FIELD = 'research_dispatch_policy'
 POLICY = 'material_gap_dispatch_v1'
@@ -60,6 +61,57 @@ def ledger(task):
     return record
 
 
+def linked_sources(task):
+    """Bind a lead to a literal link in its saved parent, without certifying it.
+
+    A source_leads row alone is not proof of discovery. Catalog eligibility still
+    owns temporal and destination guards; no URL is synthesized or rewritten.
+    """
+    from ForecastAgent.tavily_research import canonical_url
+    from ForecastAgent.runtime.collection_actions import named_primary
+    from ForecastAgent.readers.material_structure import observable_url
+    parents = []
+    for parent_url, page in task.bundle['pages'].items():
+        if not page.get('content'):
+            continue
+        rule_parent = bool(named_primary(task, parent_url)) or any(
+            canonical_url(u) == canonical_url(parent_url) and row.get('origin', '').startswith('question_')
+            for u, row in task.bundle.get('source_leads', {}).items())
+        parents.append((parent_url, page, rule_parent))
+    result = {}
+    for url, lead in task.bundle.get('source_leads', {}).items():
+        if lead.get('origin') != 'page_link':
+            continue
+        matches = []
+        # The first discovery row can point to a tracking alias. Prefer a real
+        # captured primary parent that also contains this exact link, without
+        # changing the saved row or treating equal body hashes as equal URLs.
+        for parent_url, page, rule_parent in parents:
+            if observable_url(url, parent_url) is None:
+                continue
+            links = page.get('links') or []
+            index = next((i for i, link in enumerate(links) if isinstance(link, str)
+                          and canonical_url(link) == canonical_url(url)), None)
+            if index is not None:
+                matches.append((not rule_parent, parent_url, index, page, rule_parent))
+        if not matches:
+            continue
+        _, parent_url, index, page, rule_parent = sorted(matches, key=lambda row: row[:3])[0]
+        links = page['links']
+        parts = urlsplit(url)
+        formats = {v.lower() for k, v in parse_qsl(parts.query)
+                   if k.lower() in {'output', 'format', 'export'}}
+        data_link = parts.path.lower().endswith(('.csv', '.json', '.xlsx', '.xls', '.pdf')) or bool(
+            formats & {'csv', 'json', 'xlsx', 'xls', 'pdf'})
+        result[canonical_url(url)] = {
+            'parent_url': parent_url,
+            'parent_body_sha256': hashlib.sha256(str(page.get('content') or '').encode()).hexdigest(),
+            'link_index': index, 'literal_link_sha256': hashlib.sha256(links[index].encode()).hexdigest(),
+            'source_role': 'linked_from_rule_source' if rule_parent else 'observed_page_link',
+            'data_link': data_link, 'relevance_verified': False}
+    return result
+
+
 def discovered_candidates(task, *, include_rule_leads=False):
     """Offer observed leads for agent selection, never a required fetch batch.
 
@@ -72,6 +124,7 @@ def discovered_candidates(task, *, include_rule_leads=False):
     from ForecastAgent.tavily_research import canonical_url
     from ForecastAgent.evidence.acquisition_quality import discovery_score
     from ForecastAgent.runtime.collection_actions import named_primary
+    from ForecastAgent.readers.material_structure import observable_url
     attempted = {canonical_url(a['url']) for a in task.bundle.get('fetch_attempts', []) if a.get('url')}
     attempted.update(canonical_url(u) for u in task.bundle['pages'])
     observed = {canonical_url(hit['url']) for result in
@@ -80,15 +133,35 @@ def discovered_candidates(task, *, include_rule_leads=False):
     if include_rule_leads:
         observed.update(canonical_url(u) for u, row in task.bundle.get('source_leads', {}).items()
                         if row.get('origin', '').startswith('question_'))
+    linked = linked_sources(task)
+    observed.update(linked)
     known = task.catalog()
-    urls = sorted((u for u in known if canonical_url(u) in observed and canonical_url(u) not in attempted),
-        key=lambda u: (-discovery_score(task.bundle['request'], u, known[u].get('title') or '',
+    urls = sorted((u for u in known if canonical_url(u) in observed and canonical_url(u) not in attempted
+                   and observable_url(u, u) is not None),
+        key=lambda u: (not (linked.get(canonical_url(u), {}).get('data_link') and
+                            linked.get(canonical_url(u), {}).get('source_role') == 'linked_from_rule_source'),
+            -discovery_score(task.bundle['request'], u, known[u].get('title') or '',
             named_primary(task, u), known[u].get('published_date')), u))[:24]
     return {'urls': urls, 'sources': [{'source_id': 'L' + hashlib.sha256(u.encode()).hexdigest()[:12],
         'url': u, 'title': known[u].get('title') or '',
         'published_date': known[u].get('published_date'),
         'discovery_excerpt': str(known[u].get('content') or known[u].get('text') or '')[:600],
-        'evidence_status': 'unread_discovery_lead'} for u in urls]}
+        'evidence_status': 'unread_discovery_lead',
+        **({'link_provenance': linked[canonical_url(u)]} if canonical_url(u) in linked else {})} for u in urls]}
+
+
+def review_scope(task, choice):
+    """Resolve the scheduled material and its actually inspected references."""
+    from ForecastAgent.research_loop import gap_feedback, state
+    material = state.catalog(task.bundle, task.cutoff)
+    source = gap_feedback.materials(task, material).get(choice['material_id'])
+    if (source is None or source['url'] != choice['url'] or
+            choice['revision'] != task.bundle['research_loop']['revision'] or
+            choice['material_sha256'] != material['material_sha256']):
+        raise ValueError('Scheduled review no longer matches the current material scope')
+    return {k: copy.deepcopy(source[k]) for k in (
+        'material_id', 'url', 'body_sha256', 'scope_sha256', 'inspected_reference_ids',
+        'bound_observation_node_ids', 'same_body_material_ids')}
 
 
 def model_context(task, choice, *, forced_tool=None):
@@ -110,6 +183,12 @@ def model_context(task, choice, *, forced_tool=None):
     trials = [(ceiling, tier) for ceiling in budgets for tier in tiers]
     for tier_index, (ceiling, (registry_format, preview_chars, title_chars)) in enumerate(trials):
         projected = copy.deepcopy(choice)
+        if projected and projected['phase'] == 'process_update':
+            projected['review_scope'] = review_scope(task, choice)
+            projected['instruction'] += (' Return exactly one material_review for this material_id. '
+                'Use only its inspected_reference_ids; unrelated retained nodes do not incorporate it. '
+                'Merge only changed nodes, preserving previous source bindings. Deferred is valid '
+                'when interpretation is unfinished; do not force a fact or an irrelevant verdict.')
         if discovery:
             candidates = projected['candidates']
             candidates.pop('urls', None)  # Every exact URL remains in sources.
@@ -119,14 +198,15 @@ def model_context(task, choice, *, forced_tool=None):
                 source['excerpt_omitted_chars'] = max(0, len(excerpt) - preview_chars)
             if registry_format == 'rows':
                 columns = ['source_id', 'url', 'title', 'published_date',
-                           'discovery_excerpt', 'title_omitted_chars', 'excerpt_omitted_chars']
+                           'discovery_excerpt', 'title_omitted_chars', 'excerpt_omitted_chars', 'link_provenance']
                 rows = []
                 for source in candidates['sources']:
                     title = source.get('title') or ''
                     visible_title = title if title_chars is None else title[:title_chars]
                     rows.append([source['source_id'], source['url'], visible_title,
                                  source.get('published_date'), source['discovery_excerpt'],
-                                 len(title)-len(visible_title), source['excerpt_omitted_chars']])
+                                 len(title)-len(visible_title), source['excerpt_omitted_chars'],
+                                 source.get('link_provenance')])
                 projected['candidates'] = {'source_columns': columns, 'source_rows': rows,
                     'total_source_count': len(rows),
                     'instruction': 'Navigation table only; titles and previews may be shortened with explicit omitted-character counts. All exact source IDs, URLs and known publication dates are retained. Full search results remain saved; omitted text is not absent evidence.'}
@@ -353,6 +433,20 @@ def tools_for(task, tools, choice):
                 schema = tool['function']['parameters']
                 schema['properties']['url']['enum'] = [choice['url']]
                 schema['required'] = list(dict.fromkeys(schema.get('required', []) + ['url']))
+    if choice['phase'] == 'process_update':
+        scope = review_scope(task, choice)
+        for tool in tools:
+            if tool['function']['name'] == 'update_research_state':
+                schema = tool['function']['parameters']
+                reviews = schema['properties']['material_reviews']
+                reviews.update(minItems=1, maxItems=1)
+                props = reviews['items']['properties']
+                props['material_id']['enum'] = [scope['material_id']]
+                props['evidence_ids']['items']['enum'] = scope['inspected_reference_ids']
+                reviews['description'] = ('Exactly one receipt for the scheduled source. '
+                    'Only its inspected references are allowed. Deferred may cite no references. '
+                    'A receipt does not establish factual truth or force a graph edit.')
+                schema['required'] = list(dict.fromkeys(schema.get('required', []) + ['material_reviews']))
     return tools
 
 
@@ -363,6 +457,16 @@ def bind_arguments(task, name, args, tools, choice):
     an unknown ID or mixed URL/ID request fails before a network reservation.
     The native handler retains its existing effects, validation and quotas.
     """
+    if choice and choice['phase'] == 'process_update' and name == 'update_research_state':
+        from ForecastAgent.runtime.contracts import check_schema
+        scope = review_scope(task, choice)
+        # Rebuild the dynamic restrictions at execution, even if a caller supplied
+        # the unfiltered native schema. Do not repair the emitted receipt.
+        restricted = tools_for(task, tools, choice)
+        entry = next(t for t in restricted if t['function']['name'] == name)
+        check_schema(args, entry['function']['parameters'])
+        return args, restricted, {'policy': 'exact_scheduled_material_review_v1',
+            **scope, 'arguments_rewritten': False, 'meaning_verified': False}
     if not choice or choice['phase'] not in {'capture_discovery', 'capture_frontier'} or name != 'read_sources':
         return args, tools, None
     from ForecastAgent.runtime.contracts import check_schema

@@ -15,14 +15,17 @@ class ContextCeilingTests(unittest.TestCase):
     def test_registered_hard_ceiling_is_used_before_another_http_call(self):
         task = SimpleNamespace(bundle={'request': {context_budget.FIELD:
             {'preferred_chars': 28000, 'maximum_chars': 40000}}})
-        choice = {'phase': 'process_update', 'tool': 'update_research_state'}
+        choice = {'phase': 'process_update', 'tool': 'update_research_state',
+                  'instruction': 'Review the fixture source.'}
         attempts = []
         def project(task, *, forced_tool, max_chars):
             attempts.append(max_chars)
             if max_chars < 32000:
                 raise ContextProjectionError('Whole reading plus rules requires 32000')
             return [{'role': 'user', 'content': 'exact ' * 5300}]
-        with patch('ForecastAgent.runtime.context.collection_context', project):
+        with patch('ForecastAgent.runtime.context.collection_context', project), \
+                patch.object(dispatch, 'review_scope', return_value={'material_id': 'Mfixture',
+                    'inspected_reference_ids': ['Rfixture']}):
             messages = dispatch.model_context(task, choice, forced_tool=choice['tool'])
         self.assertEqual(len(attempts), 2)
         self.assertLessEqual(len(encode(messages)), 40000)
@@ -34,9 +37,10 @@ class ContextCeilingTests(unittest.TestCase):
     def test_old_task_budget_and_true_overflow_remain_strict(self):
         for request in ({}, {context_budget.FIELD: {'preferred_chars': 28000, 'maximum_chars': 40000}}):
             task = SimpleNamespace(bundle={'request': request})
-            with patch('ForecastAgent.runtime.context.collection_context', side_effect=ContextProjectionError('immutable overflow')):
+            with patch('ForecastAgent.runtime.context.collection_context', side_effect=ContextProjectionError('immutable overflow')), \
+                    patch.object(dispatch, 'review_scope', return_value={'material_id': 'Mfixture'}):
                 with self.assertRaises(ContextProjectionError):
-                    dispatch.model_context(task, {'phase': 'process_update'})
+                    dispatch.model_context(task, {'phase': 'process_update', 'instruction': 'Review fixture.'})
             self.assertNotIn('dispatch_context_projections', task.bundle)
 
     def test_malformed_context_allowances_rejected(self):

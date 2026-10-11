@@ -692,3 +692,21 @@ Unsupported representations and groups that do not fit remain explicit gaps.
 The exact JSON request size is checked; optional extra padding is registered by
 the caller. This common selection differs from the frozen release's selector,
 so its paired results must be reported separately from release control results.
+
+## Observed links and scheduled review scope
+
+Research dispatch admits a saved page link only when its exact canonical identity
+occurs in the saved parent's link list. The menu retains the parent URL, saved
+body hash, link index and literal link hash, including compact navigation tables.
+Observed CSV/JSON/spreadsheet/PDF exports from a declared primary source receive
+navigation priority even when their opaque URLs have no target keywords. This
+is a discovery route, not a relevance or authority certificate. Historical routing,
+destination safety, attempted-source exclusion and cumulative capture caps remain.
+
+A scheduled `process_update` has exactly one receipt for the current URL/body/
+reading scope. Its evidence IDs must be actually inspected handles of that source.
+The same restrictions apply at execution, before native mutation; stale scopes and
+wrong-source receipts are not rebound. The native fact and graph validators still
+own acceptance. Deferred reviews remain pending, and a valid irrelevant/duplicate
+receipt can acknowledge a source without inventing a graph edit. General and
+post-supplement batch updates retain their existing sibling isolation semantics.
