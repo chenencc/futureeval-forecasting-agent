@@ -52,6 +52,28 @@ class NodeReconcileTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'own supplied scope'):
             nr.proposal(b, packet, card, answer, mt)
 
+    def test_record_context_requires_delivered_overlap_and_same_representation(self):
+        b, packet, card, mt, answer = self.sample()
+        own = packet['evidence'][0]
+        record = copy.deepcopy(own)
+        record.update(evidence_id='R_record', record_delimiter='multiline_markdown_link_end',
+                      start=max(0, own['start']-1), end=own['end']+1)
+        packet['context_evidence'] = [record]
+        card = nr.cards(b, packet)[0]
+        self.assertIn('R_record', card['selectable_reference_ids'])
+        self.assertFalse(card['interpretation_verified'])
+        for field, value in [('url', 'https://other.example/record'),
+                             ('body_sha256', 'f'*64), ('view_sha256', 'e'*64),
+                             ('coordinate_space', 'different_view')]:
+            changed = copy.deepcopy(packet)
+            changed['context_evidence'][0][field] = value
+            self.assertNotIn('R_record', nr.cards(b, changed)[0]['selectable_reference_ids'])
+        changed = copy.deepcopy(packet)
+        changed['context_evidence'][0].update(start=own['end'], end=own['end']+10)
+        self.assertNotIn('R_record', nr.cards(b, changed)[0]['selectable_reference_ids'])
+        packet['context_evidence'] = []
+        self.assertNotIn('R_record', nr.cards(b, packet)[0]['selectable_reference_ids'])
+
     def test_retained_verdict_edit_is_measured_without_dropping_valid_annotation(self):
         b, packet, card, mt, answer = self.sample()
         answer['interpretation'] = 'Changed without declaring correction.'

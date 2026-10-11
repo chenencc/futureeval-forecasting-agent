@@ -41,6 +41,26 @@ class OriginalScopeTests(unittest.TestCase):
         self.assertNotIn('text',projected['facts'][0]['bindings'][0])
         self.assertIn('text',reading['facts'][0]['bindings'][0])
 
+    def test_representation_and_record_metadata_survive_without_meaning_credit(self):
+        supplied = packet()
+        metadata = {'coordinate_space':'decoded_post', 'view_sha256':'c'*64,
+                    'parser':'saved_decoder', 'json_provenance':{'post_id':123},
+                    'reference_kind':'literal_context_window',
+                    'constituent_reference_ids':['Rprimitive'],
+                    'context_policy':'record_delimited_original_windows_v2',
+                    'record_delimiter':'multiline_markdown_link_end',
+                    'leading_record_context_bounded':True, 'record_relation_verified':False}
+        supplied['evidence'][0].update(metadata)
+        before = copy.deepcopy(supplied)
+        reading = scope.bind({'facts':[fact()]}, supplied)
+        binding = reading['facts'][0]['bindings'][0]
+        for key, value in metadata.items():
+            self.assertEqual(binding[key], value)
+        self.assertFalse(reading['facts'][0]['date_role_verified'])
+        self.assertFalse(reading['facts'][0]['entity_role_verified'])
+        self.assertFalse(binding['record_relation_verified'])
+        self.assertEqual(supplied, before)
+
     def test_invalid_siblings_isolated_without_combining_sources_or_guessing_refs(self):
         cross=fact();cross['reference_ids']=['Ra','Rb']
         duplicate=fact();duplicate['reference_ids']=['Ra','Ra']

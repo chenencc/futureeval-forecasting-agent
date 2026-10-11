@@ -848,3 +848,19 @@ first forecasts rather than the release's conditional reread schedule. If no
 supported map fits, report an original-only input; never count a copied forecast
 as a second independent result. Freeze prepared inputs before either call, retain
 pending source reviews and collect actual provider receipts separately.
+
+`research_literal_context_policy=record_delimited_original_windows_v2` keeps
+the v1 aliases and adds exact windows ending at standalone multiline Markdown
+link closures. This is a general syntax delimiter, with no domain, person, role
+or truth inference. A long introduction is retained separately so that bounded
+trailing context remains with the closing record. Missing/invalid delimiters use
+the existing ordinary partition. Text limits, hidden gaps and post provenance
+remain authoritative; a record may still be incomplete or ambiguous.
+
+The delivered partition uses preferred windows once while preserving old alias
+bindings. Source review records only delimiters actually delivered in its window.
+Isolated observation reconciliation can select overlapping record context only
+when that exact original is supplied, with identical captured body/view identity.
+Independent-reading bindings retain decoded coordinates and structural metadata.
+Neither operation certifies a field relationship. Correct unsupported old nodes
+explicitly instead of merely adding another current observation.

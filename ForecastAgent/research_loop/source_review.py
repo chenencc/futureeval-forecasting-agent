@@ -156,11 +156,20 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
     context_projection = literal_context.enabled(task.bundle)
     if context_projection:
         windows = [s for s in spans if s.get('reference_kind') == 'literal_context_window']
+        preferred = catalog['sources'][choice['url']].get('context_delivery_references')
+        if preferred is not None:
+            ids = {s['evidence_id'] for s in preferred}
+            windows = [s for s in windows if s['evidence_id'] in ids]
         covered = {ident for window in windows for ident in window['constituent_reference_ids']}
+        omitted_primitives = sum(s['evidence_id'] in covered for s in spans
+                                 if s.get('reference_kind') != 'literal_context_window')
+        omitted_contexts = sum(s.get('reference_kind') == 'literal_context_window' and s not in windows
+                               for s in spans)
         # Deliver each literal character once. Primitive IDs remain in the
         # native catalog and old bindings, but redundant aliases need not repeat
         # the same text/metadata in this model packet. No summary substitutes it.
-        spans = [s for s in spans if s['evidence_id'] not in covered]
+        spans = [s for s in spans if (s.get('reference_kind') != 'literal_context_window' and
+                                     s['evidence_id'] not in covered) or s in windows]
     ids = {s['evidence_id'] for s in reading.get('evidence', [])}
     anchor = min((i for i, s in enumerate(spans) if s['evidence_id'] in ids), default=0)
     excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
@@ -178,10 +187,14 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
         'instruction':'Only rows delivered here are selectable. Unread text is not absent evidence.'}
     if context_projection:
         view.update(total_native_catalog_spans=native_span_count,
-                    redundant_primitive_references_omitted=native_span_count-len(spans),
+                    redundant_primitive_references_omitted=omitted_primitives,
+                    redundant_context_references_omitted=omitted_contexts,
                     scope_partition='context_windows_plus_ungrouped_primitives',
                     primitive_bindings_preserved=True,
                     projected_source_character_coverage_unchanged=True)
+        if preferred is not None:
+            view['record_delimiter_index'] = []
+            view['record_delimiter_meaning_verified'] = False
     # Try complete delivery first, even if the last small excerpt was mid-source.
     # If it does not fit, page forward from the current native reading anchor.
     def row(span):
@@ -190,7 +203,14 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
     complete = {**view, 'rows':[row(s) for s in spans], 'start_span_offset':0,
         'next_span_offset':None, 'complete_saved_scope':True, 'omitted_catalog_spans':0}
     from ForecastAgent.runtime.context import ContextProjectionError
+    def annotate(candidate):
+        if context_projection and preferred is not None:
+            ids = {row[0] for row in candidate['rows']}
+            candidate['record_delimiter_index'] = [copy.deepcopy(s) for s in preferred
+                                                   if s['evidence_id'] in ids]
+        return candidate
     def fits(candidate):
+        annotate(candidate)
         try:
             messages(task,reading,choice,prior_readings=prior_readings,
                      navigation=navigation,source_view=candidate)
@@ -212,7 +232,7 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
             high = count-1
     view.update(rows=available[:low],next_span_offset=anchor+low if anchor+low<len(spans) else None,
                 omitted_catalog_spans=len(spans)-low)
-    return view
+    return annotate(view)
 
 
 def bind_source_window(task, choice, args, tools, source_view):

@@ -106,12 +106,24 @@ def catalog(bundle, cutoff=None):
             for context in literal_context.additions(source_spans, context_text):
                 if context['evidence_id'] not in spans:
                     spans[context['evidence_id']] = context
+            selected_policy = bundle['request'][literal_context.FIELD]
+            if selected_policy == literal_context.RECORD_POLICY:
+                preferred = literal_context.additions(source_spans, context_text, policy=selected_policy)
+                # Preserve every historical v1 alias. An identical literal range
+                # reuses its original handle; structural metadata stays separate.
+                sources[url]['context_delivery_references'] = [
+                    {'evidence_id':s['evidence_id'], **{k:s[k] for k in
+                     ('record_delimiter','leading_record_context_bounded','record_relation_verified') if k in s}}
+                    for s in preferred]
+                for context in preferred:
+                    if context['evidence_id'] not in spans:
+                        spans[context['evidence_id']] = context
     if windows is not None and any(w['url'] not in sources for w in windows):
         raise ValueError('Visible map reference points to an unavailable source')
     material_identity = sources if windows is None else {'sources': sources, 'visible_references': windows}
     if context_enabled:
         material_identity = {'original_scope': material_identity,
-                             'literal_context_policy': literal_context.POLICY}
+                             'literal_context_policy': bundle['request'][literal_context.FIELD]}
     return {'material_sha256': digest(material_identity), 'sources': sources, 'spans': spans,
             'excluded_sources': excluded, 'visible_windows': copy.deepcopy(windows)}
 

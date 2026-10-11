@@ -28,6 +28,9 @@ annotations are provisional model interpretations, not verified truth.
 '''
 SYSTEM = '''Review ONE existing observation against ONLY its supplied originals.
 The old interpretation and link reasons are fallible candidates, not evidence.
+Literal record boundaries are reading context, not certified relationships.
+Check field associations inside the selected record; do not borrow the next
+record's title/value. If the saved formatting is ambiguous, preserve uncertainty.
 Return one reconcile_observation call. Do not search, forecast or resolve the event.
 Keep a valid historical observation even when a future target is unknown.
 Check every factual premise in interpretation AND each link reason. Repair all
@@ -58,13 +61,25 @@ def cards(bundle, packet):
         versions = {(originals[i]['url'], originals[i]['body_sha256']) for i in own if i in originals}
         context = {i for ident in own for i in packet.get('context_reference_ids', {}).get(ident, [])
                    if i in originals and (originals[i]['url'], originals[i]['body_sha256']) in versions}
+        # Only actually delivered, same-version record windows may expand a
+        # short or older alias. Overlap identifies local reading context, never
+        # a fact relationship or an independently verified record association.
+        for ident, span in originals.items():
+            if span.get('record_delimiter') != 'multiline_markdown_link_end':
+                continue
+            for own_id in own & originals.keys():
+                selected = originals[own_id]
+                if (all(span.get(k) == selected.get(k) for k in
+                        ('url','body_sha256','coordinate_space','view_sha256')) and
+                        span['start'] < selected['end'] and selected['start'] < span['end']):
+                    context.add(ident)
         ids = [i for i in originals if i in own | context]
         result.append({'node_id': node['id'], 'candidate': reference_map.input_node(node),
             'own_reference_ids': list(node.get('evidence_ids', [])),
             'selectable_reference_ids': ids,
             'missing_own_reference_ids': sorted(own - originals.keys()),
             'originals': [copy.deepcopy(originals[i]) for i in ids],
-            'scope': 'Only this node own originals and supplied same-version context; no other node evidence.',
+            'scope': 'Only this node own originals and delivered same-version context; record syntax does not certify meaning. No other node evidence.',
             'interpretation_verified': False})
     return result
 

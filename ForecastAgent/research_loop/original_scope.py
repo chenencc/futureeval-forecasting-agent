@@ -38,7 +38,10 @@ agreement, missing information across the packet and future-outcome gaps belong 
 gaps, never in a fact attached to one page. Distinguish event
 date from publication/effective/reporting period; an article date is not its event
 date. Name issuer versus affected area/population cautiously. Metric rows need
-their original context. Choose unknown when a role is ambiguous; keep supported
+their original context. A record_delimiter marks a literal formatting boundary,
+not a verified relationship. Read fields inside that record in their actual order;
+do not borrow a title or value from the next record. If the saved formatting does
+not establish a field association, leave it unknown. Choose unknown when a role is ambiguous; keep supported
 facts instead of replacing them with a global absence claim. Text captions alone
 do not show image contents. Navigation alone does not show an event's status.
 Keep each note short, preferably under 160 CHARACTERS, always at most 240.
@@ -94,6 +97,9 @@ def bind(proposal, packet):
                 raise ValueError('Source-local fact cannot mix captured source versions')
             facts.append({**copy.deepcopy(proposed), 'bindings':[
                 {k:copy.deepcopy(s[k]) for k in ('evidence_id','url','body_sha256','start','end','text')}
+                | {k:copy.deepcopy(s[k]) for k in ('coordinate_space','view_sha256','parser',
+                    'json_provenance','reference_kind','constituent_reference_ids','context_policy',
+                    'record_delimiter','leading_record_context_bounded','record_relation_verified') if k in s}
                 | {'text_sha256':hashlib.sha256(s['text'].encode()).hexdigest()} for s in refs],
                 'original_reference_verified':True,'date_role_verified':False,
                 'entity_role_verified':False,'interpretation_verified':False})
