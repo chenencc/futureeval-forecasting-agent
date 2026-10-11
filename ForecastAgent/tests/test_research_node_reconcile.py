@@ -52,11 +52,45 @@ class NodeReconcileTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'own supplied scope'):
             nr.proposal(b, packet, card, answer, mt)
 
-    def test_retained_verdict_cannot_hide_an_edit(self):
+    def test_retained_verdict_edit_is_measured_without_dropping_valid_annotation(self):
         b, packet, card, mt, answer = self.sample()
         answer['interpretation'] = 'Changed without declaring correction.'
-        with self.assertRaisesRegex(ValueError, 'Retained verdict'):
-            nr.proposal(b, packet, card, answer, mt)
+        p, audit = nr.proposal(b, packet, card, answer, mt)
+        self.assertEqual(audit['model_verdict'], 'retained')
+        self.assertEqual(audit['verdict'], 'corrected')
+        self.assertTrue(audit['verdict_field_mismatch'])
+        self.assertIn('interpretation', audit['changed_fields'])
+        self.assertFalse(audit['meaning_verified'])
+        self.assertEqual(p['nodes'][0]['interpretation'], answer['interpretation'])
+
+    def test_blind_request_hides_candidate_annotations_and_verdict(self):
+        b, packet, card, mt, answer = self.sample()
+        card['candidate']['interpretation'] = 'OLD_UNSUPPORTED_PHOTO_CLAIM'
+        card['candidate']['limitation'] = 'OLD_COVERAGE_CLAIM'
+        card['candidate']['target_links'][0]['reason'] = 'OLD_LINK_CLAIM'
+        data = json.loads(nr.messages(b, card, blind=True)[1]['content'])
+        self.assertNotIn('candidate', data['observation_to_review'])
+        self.assertNotIn('OLD_', json.dumps(data))
+        self.assertEqual(data['observation_to_review']['originals'], card['originals'])
+        schema = nr.tool(card, mt, blind=True)['function']['parameters']
+        self.assertNotIn('verdict', schema['properties'])
+
+    def test_blind_translation_measures_edits_and_preserves_reference_binding(self):
+        b, packet, card, mt, answer = self.sample()
+        answer.pop('verdict')
+        answer['interpretation'] = 'Caption describes a start; image content is not supplied.'
+        p, audit = nr.proposal(b, packet, card, answer, mt, blind=True)
+        self.assertTrue(audit['blind_original_reading'])
+        self.assertIsNone(audit['model_verdict'])
+        self.assertEqual(audit['verdict'], 'corrected')
+        self.assertEqual(p['material_reviews'], [])
+        self.assertFalse(audit['meaning_verified'])
+
+    def test_blind_still_rejects_overlong_annotations(self):
+        b, packet, card, mt, answer = self.sample()
+        answer.pop('verdict'); answer['interpretation'] = 'x'*241
+        with self.assertRaises(ValueError):
+            nr.proposal(b, packet, card, answer, mt, blind=True)
 
     def test_deferred_is_not_an_accepted_review_or_map_edit(self):
         b, packet, card, mt, answer = self.sample()
@@ -111,6 +145,40 @@ class NodeReconcileTests(unittest.TestCase):
             for key in post.PRESERVED:
                 self.assertEqual(child.get(key), original.get(key))
             self.assertEqual(report['usage']['totals']['http_attempts'], 1)
+
+    def test_blind_post_wiring_and_frozen_mode_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = task(Path(tmp)/'original'); apply(t.bundle, proposal(t.bundle))
+            t.bundle['request_hash'] = hashlib.sha256(json.dumps(t.bundle['request'], sort_keys=True).encode()).hexdigest()
+            t.save(); original = copy.deepcopy(t.bundle)
+            def model(messages, key, **kwargs):
+                data = json.loads(messages[1]['content'])
+                self.assertNotIn('candidate', data['observation_to_review'])
+                self.assertNotIn('verdict', kwargs['tools'][0]['function']['parameters']['properties'])
+                packet = post.reading_packet(t, consistency_review=True)
+                card = nr.cards(t.bundle, packet)[0]
+                answer = {k:copy.deepcopy(card['candidate'][k]) for k in
+                    ('evidence_ids','interpretation','limitation','applicability','target_links')}
+                answer.update(node_id=card['node_id'], review_reason='Source-local observation reconstructed.')
+                record = {'status':'reserved','request':{'model':'test'}}
+                token = kwargs['observer']('reserve', record)
+                record.update(status='received',response={'usage':{'total_tokens':10}})
+                kwargs['observer']('complete', record, token)
+                return {'tool_calls':[{'function':{'name':nr.NAME,'arguments':json.dumps(answer)}}]}
+            with patch.dict('os.environ', {'OPENROUTER_API_KEY':'test'}), patch.object(post,'ask_model',side_effect=model) as calls:
+                child, report = post.run(original, Path(tmp)/'review',node_by_node=True,
+                    consistency_review=True,blind_node_read=True)
+                again, cached = post.run(original, Path(tmp)/'review',node_by_node=True,
+                    consistency_review=True,blind_node_read=True)
+                with self.assertRaisesRegex(ValueError,'changed'):
+                    post.run(original, Path(tmp)/'review',node_by_node=True,consistency_review=True)
+            self.assertEqual(calls.call_count,1)
+            self.assertEqual(report['status'],'nodes_reviewed')
+            self.assertTrue(report['blind_node_read_requested'])
+            self.assertTrue(report['steps'][0]['node_review']['blind_original_reading'])
+            self.assertEqual(child,again); self.assertEqual(report,cached)
+            for key in post.PRESERVED:
+                self.assertEqual(child.get(key), original.get(key))
 
 
 if __name__ == '__main__':

@@ -6,6 +6,23 @@ from ForecastAgent.runtime.contracts import check_schema
 from ForecastAgent.research_loop import reference_map, state, target_logic
 
 NAME = 'reconcile_observation'
+BLIND_SYSTEM = '''Read the supplied originals and reconstruct ONE source-local observation.
+Return one reconcile_observation call. No prior interpretation is supplied.
+Do not search, forecast, resolve the event, or infer from unseen image pixels.
+State what the text actually establishes. A photo caption establishes its caption,
+not normal operation or absence of problems. Navigation is not operational status.
+Separate publication date from event date, issuer from reporting authority, and
+affected municipalities from the municipality that issued an order. When text
+does not establish an event date or issuer, leave that premise uncertain.
+Limit absence and coverage claims to supplied excerpts and as_of_utc, not the
+entire website or future reporting. Preserve literal numeric baselines and units.
+A historical measurement can directly answer a historical research need while
+remaining baseline/indicator evidence for an unknown future forecast target.
+Select only supplied reference IDs. No other node evidence is available.
+Keep interpretation<=240, limitation<=180, link reasons<=240, review_reason<=240
+CHARACTERS. Write short annotations, with uncertainty in limitation. Returned
+annotations are provisional model interpretations, not verified truth.
+'''
 SYSTEM = '''Review ONE existing observation against ONLY its supplied originals.
 The old interpretation and link reasons are fallible candidates, not evidence.
 Return one reconcile_observation call. Do not search, forecast or resolve the event.
@@ -49,36 +66,41 @@ def cards(bundle, packet):
     return result
 
 
-def tool(card, map_tool):
+def tool(card, map_tool, *, blind=False):
     node_schema = map_tool['function']['parameters']['properties']['nodes']['items']
     fields = ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links')
     properties = {k: copy.deepcopy(node_schema['properties'][k]) for k in fields}
     properties.update(node_id={'type': 'string', 'enum': [card['node_id']]},
         verdict={'type': 'string', 'enum': ['retained', 'corrected', 'insufficient', 'deferred']},
         review_reason={'type': 'string', 'maxLength': 240})
+    if blind:
+        properties.pop('verdict')
     return {'type': 'function', 'function': {'name': NAME,
         'description': 'Review one source-bound observation; retain originals and repair fallible annotations.',
         'parameters': {'type': 'object', 'properties': properties,
             'required': list(properties), 'additionalProperties': False}}}
 
 
-def messages(bundle, card):
+def messages(bundle, card, *, blind=False):
     targets = target_logic.targets(bundle) if target_logic.enabled(bundle) else []
-    return [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({
+    supplied = ({k: copy.deepcopy(card[k]) for k in ('node_id', 'own_reference_ids',
+        'selectable_reference_ids', 'missing_own_reference_ids', 'originals', 'scope')}
+        if blind else card)
+    return [{'role': 'system', 'content': BLIND_SYSTEM if blind else SYSTEM}, {'role': 'user', 'content': json.dumps({
         'question': {k: bundle['request'].get(k, '') for k in state.RULE_FIELDS},
         'as_of_utc': bundle['request'].get('as_of_utc'),
-        'target_conditions': targets, 'observation_to_review': card}, ensure_ascii=False)}]
+        'target_conditions': targets, 'observation_to_review': supplied}, ensure_ascii=False)}]
 
 
-def proposal(bundle, packet, card, answer, map_tool):
+def proposal(bundle, packet, card, answer, map_tool, *, blind=False):
     """Translate one bounded review to an ordinary merge, without truth certification."""
-    check_schema(answer, tool(card, map_tool)['function']['parameters'])
+    check_schema(answer, tool(card, map_tool, blind=blind)['function']['parameters'])
     selected = answer['evidence_ids']
     if not answer['review_reason'].strip():
         raise ValueError('A node review needs a nonempty review reason')
     if len(selected) != len(set(selected)) or any(i not in card['selectable_reference_ids'] for i in selected):
         raise ValueError('Observation review selected a reference outside its own supplied scope')
-    if answer['verdict'] == 'deferred':
+    if not blind and answer['verdict'] == 'deferred':
         return None, {'node_id': card['node_id'], 'status': 'deferred',
             'meaning_verified': False, 'reason': answer['review_reason']}
     if not selected:
@@ -87,9 +109,11 @@ def proposal(bundle, packet, card, answer, map_tool):
     for field in ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links'):
         node[field] = copy.deepcopy(answer[field])
     annotations = ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links')
-    changed = any(node[k] != card['candidate'].get(k) for k in annotations)
-    if answer['verdict'] == 'retained' and changed:
-        raise ValueError('Retained verdict cannot conceal a changed observation')
+    changed_fields = [k for k in annotations if node[k] != card['candidate'].get(k)]
+    changed = bool(changed_fields)
+    claimed_verdict = answer.get('verdict')
+    mismatch = claimed_verdict == 'retained' and changed
+    verdict = ('corrected' if changed else 'retained') if blind or mismatch else claimed_verdict
     current = bundle['research_loop']['current']
     args = {'expected_revision': bundle['research_loop']['revision'],
         'revision_kind': 'interpretation_correction', 'material_sha256': packet['material_sha256'],
@@ -102,6 +126,7 @@ def proposal(bundle, packet, card, answer, map_tool):
     args = {k: v for k, v in args.items() if k in allowed}
     check_schema(args, map_tool['function']['parameters'])
     return args, {'node_id': card['node_id'], 'status': 'model_reviewed',
-        'verdict': answer['verdict'], 'changed': changed,
+        'verdict': verdict, 'model_verdict': claimed_verdict, 'verdict_field_mismatch': mismatch,
+        'blind_original_reading': blind, 'changed': changed, 'changed_fields': changed_fields,
         'selected_reference_ids': selected, 'missing_own_reference_ids': card['missing_own_reference_ids'],
         'meaning_verified': False, 'reason': answer['review_reason']}

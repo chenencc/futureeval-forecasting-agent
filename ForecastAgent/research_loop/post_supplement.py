@@ -336,7 +336,7 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
@@ -345,6 +345,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         raise ValueError('source_first must be boolean')
     if type(node_by_node) is not bool:
         raise ValueError('node_by_node must be boolean')
+    if type(blind_node_read) is not bool or (blind_node_read and not node_by_node):
+        raise ValueError('Blind node reading requires isolated node review')
     if node_by_node and (not consistency_review or source_first):
         raise ValueError('Isolated node review requires consistency review without a shared first reading')
     if node_by_node:
@@ -364,6 +366,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 'consistency_review': consistency_review,
                 'source_first': source_first,
                 'node_by_node': node_by_node,
+                'blind_node_read': blind_node_read,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -494,8 +497,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         save(root/'steps.json', steps)
                         status = 'partial_node_review'
                         continue
-                    messages = node_reconcile.messages(task.bundle, card)
-                    tools = [node_reconcile.tool(card, map_tool)]
+                    messages = node_reconcile.messages(task.bundle, card, blind=blind_node_read)
+                    tools = [node_reconcile.tool(card, map_tool, blind=blind_node_read)]
                     forced_tool = node_reconcile.NAME
                 try:
                     message = ask_model(messages, os.environ['OPENROUTER_API_KEY'], tools=tools,
@@ -509,7 +512,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     args = json.loads(calls[0]['function']['arguments'])
                     node_audit = None
                     if node_by_node:
-                        args, node_audit = node_reconcile.proposal(task.bundle, packet, card, args, map_tool)
+                        args, node_audit = node_reconcile.proposal(task.bundle, packet, card, args, map_tool, blind=blind_node_read)
                         if args is None:
                             steps.append({'accepted': False, 'node_review': node_audit})
                             save(root/'steps.json', steps)
@@ -566,6 +569,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'consistency_review_requested': consistency_review,
             'source_first_requested': source_first,
             'node_by_node_requested': node_by_node,
+            'blind_node_read_requested': blind_node_read,
             'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,

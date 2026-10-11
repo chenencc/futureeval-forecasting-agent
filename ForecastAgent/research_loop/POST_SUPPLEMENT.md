@@ -220,3 +220,14 @@ Both HTTP and map revisions consume existing allowances. Re-entry uses frozen
 receipts and never refreshes a budget. The feature is off by default and is not
 wired into the production worker. Development cap extensions must retain the old
 counts and event chains, and be recorded separately from native acquisition limits.
+
+`blind_node_read=True` reconstructs each isolated observation from its own supplied
+originals, rules and targets without showing the old interpretation, limitation or
+link reasons. It uses the same one-request-per-observation allowance. Program code
+compares the returned fields with the saved candidate and records the actual field
+delta. An anchored model's `retained` label with edited fields is recorded as a
+verdict mismatch and an effective correction; the label alone no longer discards
+otherwise valid annotations. Neither a field delta nor a correction label proves
+semantic improvement. Invalid references and oversized annotations remain rejected
+and preserved; originals are not clipped or silently repaired. Both experimental
+modes retain the same source scope and native budgets, and remain off by default.
