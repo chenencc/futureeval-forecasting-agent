@@ -309,7 +309,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 from ForecastAgent.research_loop import reference_map
                 review_system = SYSTEM + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')
                 if reference_map.enabled(task.bundle):
-                    review_system = reference_map.prompt(bundle=task.bundle, local_only=True)
+                    review_system = reference_map.prompt(bundle=task.bundle, local_only=True, phase='review')
                 from ForecastAgent.research_loop import predictive_focus
                 if predictive_focus.enabled(task.bundle):
                     target_payload['interpretation_scope_audit'] = predictive_focus.brief(task.bundle)

@@ -37,6 +37,11 @@ class PredictiveFocusTests(unittest.TestCase):
             self.assertIn('Network budget', prompts[0])
             self.assertIn('Network actions', prompts[1])
             self.assertIn('No search, fetch or scoring', prompts[2])
+            for content in prompts[:2]:
+                self.assertNotIn('Return exactly one update_research_state', content)
+                self.assertIn('not the required tool for every acquisition turn', content)
+                self.assertIn('not tasks to rediscover the question', content)
+            self.assertIn('Return exactly one update_research_state', prompts[2])
             props = next(x for x in runtime.configure(t, []) if x['function']['name']=='update_research_state')['function']['parameters']['properties']
             self.assertNotIn('claim', props['nodes']['items']['properties'])
             self.assertIn('information_state', props['material_requests']['items']['required'])

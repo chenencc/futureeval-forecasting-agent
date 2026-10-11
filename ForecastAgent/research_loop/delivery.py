@@ -100,7 +100,7 @@ def context(task, *, forced=None, maximum=28000):
         payload['target_coverage'] = target_logic.brief(b)
     from ForecastAgent.research_loop import reference_map
     if reference_map.enabled(b):
-        system = reference_map.prompt(operational, bundle=b)
+        system = reference_map.prompt(operational, bundle=b, phase='acquisition')
         payload['current_nodes'] = [reference_map.input_node(n) for n in current.get('nodes', [])]
         payload['instruction'] = 'Select supplied original IDs; program binds complete originals. Explain scope separately. Unread material is not missing evidence. No new quota.'
         from ForecastAgent.research_loop import predictive_focus

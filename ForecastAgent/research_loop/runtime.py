@@ -57,7 +57,7 @@ def guide(task, system):
     from ForecastAgent.research_loop import gap_feedback
     from ForecastAgent.research_loop import reference_map
     if reference_map.enabled(task.bundle):
-        return system + reference_map.prompt(bundle=task.bundle)
+        return system + reference_map.prompt(bundle=task.bundle, phase='acquisition')
     guide_text = fusion.GUIDE if fusion.enabled(task) else GUIDE
     from ForecastAgent.research_loop import dispatch
     if dispatch.enabled(task.bundle):
