@@ -161,6 +161,108 @@ class NodeReconcileTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             nr.proposal(b, packet, card, answer, mt, blind=True)
 
+    def literal_sample(self):
+        b, packet, card, mt, answer = self.sample()
+        original = card['originals'][0]
+        original.update(text='Prime Minister\nAndy Burnham\nPublished 12 October.',
+                        start=40, end=91, coordinate_space='decoded_post',
+                        view_sha256='d'*64, json_provenance={'post_id': 123})
+        answer.pop('verdict'); answer.pop('interpretation')
+        answer['target_links'] = []
+        answer['source_fields'] = {'sources': [{'reference_id': original['evidence_id'],
+            'coverage': 'content_excerpt', 'coverage_quote': 'Prime Minister\nAndy Burnham',
+            'facts': [{'kind': 'subject_entity', 'quote': 'Prime Minister\nAndy Burnham',
+                       'value': 'Andy Burnham'},
+                      {'kind': 'publication_time', 'quote': 'Published 12 October.', 'value': '12 October'}],
+            'unknowns': ['Event date is not established.']}]}
+        answer['primary_field'] = {'reference_id': original['evidence_id'], 'fact_index': 0}
+        return b, packet, card, mt, answer
+
+    def test_literal_field_mode_copies_primary_quote_with_provenance_not_a_summary(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        before = copy.deepcopy((b, packet, card, answer))
+        args, audit = nr.proposal(b, packet, card, answer, mt, blind=True,
+                                 original_only=True, literal_fields=True)
+        self.assertEqual(args['nodes'][0]['interpretation'], 'Prime Minister\nAndy Burnham')
+        binding = audit['literal_field_binding']['sources'][0]['facts'][0]['binding']
+        self.assertEqual(binding['quote_locations'], [{'start': 40, 'end': 67}])
+        self.assertEqual(binding['coordinate_space'], 'decoded_post')
+        self.assertEqual(binding['view_sha256'], 'd'*64)
+        self.assertEqual(binding['json_provenance'], {'post_id': 123})
+        self.assertFalse(audit['all_factual_premises_verified'])
+        self.assertFalse(audit['meaning_verified'])
+        self.assertEqual((b, packet, card, answer), before)
+
+    def test_literal_field_mode_rejects_borrowed_name_from_an_unselected_original(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        original = card['originals'][0]
+        other = copy.deepcopy(original)
+        other.update(evidence_id='R_named_context', text='Prime Minister\nAndy Burnham')
+        card['originals'].append(other); card['selectable_reference_ids'].append(other['evidence_id'])
+        original['text'] = 'Prime Minister\nCabinet Office'
+        # The name exists in delivered context, but the chosen heading does not
+        # contain it. Never redirect to the nearby correct reference silently.
+        with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
+            nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
+        answer['source_fields']['sources'][0]['reference_id'] = other['evidence_id']
+        answer['primary_field']['reference_id'] = other['evidence_id']
+        with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
+            nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
+
+    def test_invalid_sibling_field_cannot_shift_the_primary_index(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        fields = answer['source_fields']['sources'][0]['facts']
+        fields[0]['value'] = 'Someone absent'
+        # Index 0 fails; accepted index 1 must not masquerade as primary 0.
+        with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
+            nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
+        answer['primary_field']['fact_index'] = 1
+        args, audit = nr.proposal(b, packet, card, answer, mt, blind=True,
+                                 original_only=True, literal_fields=True)
+        self.assertEqual(args['nodes'][0]['interpretation'], 'Published 12 October.')
+        self.assertEqual(len(audit['literal_field_binding']['sources'][0]['rejected_facts']), 1)
+        self.assertFalse(audit['meaning_verified'])
+
+    def test_literal_field_mode_retains_ambiguous_quote_locations_and_roles_as_unknown(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        original = card['originals'][0]
+        original['text'] += '\nPrime Minister\nAndy Burnham'
+        answer['source_fields']['sources'][0]['facts'][0]['kind'] = 'event_time'
+        _, audit = nr.proposal(b, packet, card, answer, mt, blind=True,
+                              original_only=True, literal_fields=True)
+        bound = audit['literal_field_binding']['sources'][0]['facts'][0]
+        self.assertTrue(bound['binding']['location_ambiguous'])
+        self.assertEqual(len(bound['binding']['quote_locations']), 2)
+        self.assertFalse(bound['binding']['meaning_verified'])
+        self.assertFalse(audit['all_factual_premises_verified'])
+
+    def test_literal_field_mode_rejects_overlong_primary_without_clipping_or_mutation(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        original = card['originals'][0]; original['text'] = 'x'*241
+        source = answer['source_fields']['sources'][0]
+        source['coverage_quote'] = original['text']
+        source['facts'] = [{'kind': 'measurement', 'quote': original['text'], 'value': 'x'}]
+        before = copy.deepcopy(answer)
+        with self.assertRaises(ValueError):
+            nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
+        self.assertEqual(answer, before)
+
+    def test_literal_field_contract_hides_anchors_and_disallows_generated_interpretation(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        messages = nr.messages(b, card, blind=True, original_only=True, literal_fields=True)
+        data = json.loads(messages[1]['content'])
+        for key in ('question', 'as_of_utc', 'target_conditions'):
+            self.assertNotIn(key, data)
+        schema = nr.tool(card, mt, blind=True, original_only=True, literal_fields=True)['function']['parameters']
+        self.assertNotIn('interpretation', schema['properties'])
+        self.assertIn('source_fields', schema['required'])
+        self.assertIn('primary_field', schema['required'])
+        self.assertIn('program copies that quote unchanged', messages[0]['content'])
+        with self.assertRaisesRegex(ValueError, 'original-only'):
+            nr.messages(b, card, blind=True, literal_fields=True)
+        with self.assertRaisesRegex(ValueError, 'original-only'):
+            nr.tool(card, mt, blind=True, literal_fields=True)
+
     def test_deferred_is_not_an_accepted_review_or_map_edit(self):
         b, packet, card, mt, answer = self.sample()
         answer.update(verdict='deferred', evidence_ids=[])
@@ -208,12 +310,59 @@ class NodeReconcileTests(unittest.TestCase):
                 child, report = post.run(original, Path(tmp)/'review', node_by_node=True, consistency_review=True)
                 again, cached = post.run(original, Path(tmp)/'review', node_by_node=True, consistency_review=True)
             self.assertEqual(calls.call_count, 1)
-            self.assertEqual(report['status'], 'nodes_reviewed')
+            self.assertEqual(report['status'], 'nodes_reviewed', report)
             self.assertEqual(child, again); self.assertEqual(report, cached)
             self.assertFalse(report['steps'][0]['node_review']['meaning_verified'])
             for key in post.PRESERVED:
                 self.assertEqual(child.get(key), original.get(key))
             self.assertEqual(report['usage']['totals']['http_attempts'], 1)
+
+    def test_literal_fields_post_review_preserves_ledgers_and_freezes_mode_on_reentry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = task(Path(tmp)/'original'); apply(t.bundle, proposal(t.bundle))
+            t.bundle['request_hash'] = hashlib.sha256(json.dumps(t.bundle['request'], sort_keys=True).encode()).hexdigest()
+            t.save(); original = copy.deepcopy(t.bundle)
+            def model(messages, key, **kwargs):
+                data = json.loads(messages[1]['content'])
+                self.assertNotIn('question', data); self.assertNotIn('target_conditions', data)
+                self.assertNotIn('interpretation', kwargs['tools'][0]['function']['parameters']['properties'])
+                card = data['observation_to_review']; source = card['originals'][0]
+                quote = 'Revenue was 24 billion dollars.'
+                self.assertIn(quote, source['text'])
+                answer = {'node_id': card['node_id'], 'evidence_ids': [source['evidence_id']],
+                    'limitation': 'Source-local excerpt; roles are provisional.',
+                    'applicability': 'background', 'target_links': [], 'review_reason': 'Bound literal fields.',
+                    'source_fields': {'sources': [{'reference_id': source['evidence_id'],
+                        'coverage': 'content_excerpt', 'coverage_quote': quote,
+                        'facts': [{'kind': 'subject_entity', 'quote': quote, 'value': quote}], 'unknowns': []}]},
+                    'primary_field': {'reference_id': source['evidence_id'], 'fact_index': 0}}
+                record = {'status': 'reserved', 'request': {'model': 'test'}}
+                token = kwargs['observer']('reserve', record)
+                record.update(status='received', response={'usage': {'total_tokens': 10}})
+                kwargs['observer']('complete', record, token)
+                return {'tool_calls': [{'function': {'name': nr.NAME, 'arguments': json.dumps(answer)}}]}
+            options = dict(node_by_node=True, consistency_review=True, blind_node_read=True,
+                           original_only_nodes=True, literal_node_fields=True)
+            with patch.dict('os.environ', {'OPENROUTER_API_KEY': 'test'}), patch.object(post, 'ask_model', side_effect=model) as calls:
+                child, report = post.run(original, Path(tmp)/'review', **options)
+                again, cached = post.run(original, Path(tmp)/'review', **options)
+                with self.assertRaisesRegex(ValueError, 'changed'):
+                    post.run(original, Path(tmp)/'review', node_by_node=True,
+                             consistency_review=True, blind_node_read=True)
+            self.assertEqual(calls.call_count, 1)
+            self.assertEqual(report['status'], 'nodes_reviewed', report)
+            self.assertTrue(report['literal_node_fields_requested'])
+            self.assertTrue(report['original_only_nodes_requested'])
+            audit = report['steps'][0]['node_review']
+            self.assertFalse(audit['all_factual_premises_verified'])
+            self.assertEqual(child, again); self.assertEqual(report, cached)
+            for key in post.PRESERVED:
+                self.assertEqual(child.get(key), original.get(key))
+            state.verify_journal(child['research_loop'])
+            for extra in ({'literal_node_fields': True}, {'original_only_nodes': True},
+                          {**options, 'node_format_retries': 1}):
+                with self.assertRaises(ValueError):
+                    post.run(original, Path(tmp)/'invalid', **extra)
 
     def test_blind_post_wiring_and_frozen_mode_identity(self):
         with tempfile.TemporaryDirectory() as tmp:

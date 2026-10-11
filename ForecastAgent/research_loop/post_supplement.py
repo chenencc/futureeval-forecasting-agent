@@ -336,7 +336,7 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None, comparative_review=False, comparative_source_facets=None, fragment_selection=False):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None, comparative_review=False, comparative_source_facets=None, fragment_selection=False, original_only_nodes=False, literal_node_fields=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
@@ -347,6 +347,12 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         raise ValueError('node_by_node must be boolean')
     if type(blind_node_read) is not bool or (blind_node_read and not node_by_node):
         raise ValueError('Blind node reading requires isolated node review')
+    if type(original_only_nodes) is not bool or original_only_nodes and not blind_node_read:
+        raise ValueError('Original-only nodes require blind isolated review')
+    if type(literal_node_fields) is not bool or literal_node_fields and not original_only_nodes:
+        raise ValueError('Literal node fields require original-only nodes')
+    if original_only_nodes and (node_format_retries or annotation_repair_seeds is not None):
+        raise ValueError('Original-only nodes cannot receive old annotation drafts')
     if type(node_format_retries) is not int or node_format_retries not in (0,1) or (node_format_retries and not node_by_node):
         raise ValueError('One optional annotation-format retry requires isolated node review')
     if annotation_repair_seeds is not None and (not node_by_node or not isinstance(annotation_repair_seeds,dict) or not annotation_repair_seeds):
@@ -377,6 +383,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 'source_first': source_first,
                 'node_by_node': node_by_node,
                 'blind_node_read': blind_node_read,
+                'original_only_nodes': original_only_nodes,
+                'literal_node_fields': literal_node_fields,
                 'node_format_retries': node_format_retries,
                 'annotation_repair_seeds': copy.deepcopy(annotation_repair_seeds),
                 'comparative_review': comparative_review,
@@ -545,8 +553,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         steps.append({'accepted':False,'node_review':{'node_id':card['node_id'],
                             'status':'rejected','meaning_verified':False},'error':'Seed is not an identified annotation-format failure.'})
                         save(root/'steps.json',steps); status='proposal_rejected'; continue
-                    messages = node_reconcile.messages(task.bundle, card, blind=blind_node_read,format_feedback=feedback)
-                    tools = [node_reconcile.tool(card, map_tool, blind=blind_node_read)]
+                    messages = node_reconcile.messages(task.bundle, card, blind=blind_node_read,format_feedback=feedback,
+                        original_only=original_only_nodes, literal_fields=literal_node_fields)
+                    tools = [node_reconcile.tool(card, map_tool, blind=blind_node_read,
+                        original_only=original_only_nodes, literal_fields=literal_node_fields)]
                     forced_tool = node_reconcile.NAME
                 try:
                     message = ask_model(messages, os.environ['OPENROUTER_API_KEY'], tools=tools,
@@ -575,9 +585,11 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                             node_reconcile.verify_repair_core(seed,answer)
                         repaired = seed is not None
                         try:
-                            args, node_audit = node_reconcile.proposal(task.bundle, packet, card, answer, map_tool, blind=blind_node_read)
+                            args, node_audit = node_reconcile.proposal(task.bundle, packet, card, answer, map_tool, blind=blind_node_read,
+                                original_only=original_only_nodes, literal_fields=literal_node_fields)
                         except ValueError:
-                            feedback = node_reconcile.format_feedback(task.bundle,card,answer,map_tool,blind=blind_node_read)
+                            feedback = (None if original_only_nodes else
+                                node_reconcile.format_feedback(task.bundle,card,answer,map_tool,blind=blind_node_read))
                             if (not node_format_retries or repaired or feedback is None
                                     or len(list((root/'model-http').glob('*.json'))) >= http_cap
                                     or deadline is not None and time.monotonic() >= deadline):
@@ -660,6 +672,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'source_first_requested': source_first,
             'node_by_node_requested': node_by_node,
             'blind_node_read_requested': blind_node_read,
+            'original_only_nodes_requested': original_only_nodes,
+            'literal_node_fields_requested': literal_node_fields,
             'node_format_retries_requested': node_format_retries,
             'annotation_repair_only_requested': annotation_repair_seeds is not None,
             'comparative_review_requested': comparative_review,

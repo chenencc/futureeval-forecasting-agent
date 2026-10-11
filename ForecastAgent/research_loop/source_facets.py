@@ -8,7 +8,8 @@ from ForecastAgent.runtime.contracts import check_schema
 
 NAME = 'record_source_facets'
 KINDS = ('publication_time', 'event_time', 'issuer', 'reporting_authority',
-         'affected_entity', 'measurement', 'measurement_type', 'event_status')
+         'affected_entity', 'measurement', 'measurement_type', 'event_status',
+         'subject_entity', 'attribute', 'measurement_unit', 'reporting_period')
 COVERAGE = ('navigation_only', 'caption_text', 'content_excerpt', 'table_rows', 'unknown')
 SYSTEM = '''Read the delivered original text and return one record_source_facets call.
 Extract source-local fields before reasoning about the forecast. Every field needs
@@ -82,7 +83,13 @@ def _binding(source, quote):
     return {'reference_id': source['evidence_id'], 'url': source.get('url'),
         'body_sha256': source.get('body_sha256'), 'reference_start': source.get('start'),
         'reference_end': source.get('end'), 'quote_sha256': hashlib.sha256(quote.encode()).hexdigest(),
+        'reference_text_sha256': hashlib.sha256(text.encode()).hexdigest(),
+        'coordinate_space': source.get('coordinate_space', 'saved_body'),
+        'view_sha256': source.get('view_sha256'), 'parser': source.get('parser'),
+        'json_provenance': copy.deepcopy(source.get('json_provenance')),
         'local_positions': positions, 'location_ambiguous': len(positions) != 1,
+        'quote_locations': [{'start': source['start'] + p, 'end': source['start'] + p + len(quote)}
+                            for p in positions] if type(source.get('start')) is int else [],
         'literal_binding_verified': True, 'meaning_verified': False}
 
 
@@ -118,7 +125,7 @@ def bind(sources, answer):
                         raise ValueError('Navigation coverage cannot carry extracted event or measurement fields')
                     if candidate['coverage'] == 'caption_text' and fact['kind'] == 'event_status':
                         raise ValueError('Caption-only coverage cannot certify operational status')
-                    fields.append({**copy.deepcopy(fact), 'binding': binding})
+                    fields.append({**copy.deepcopy(fact), 'fact_index': index, 'binding': binding})
                 except (ValueError, KeyError, TypeError) as exc:
                     errors.append({'fact_index': index, 'error': str(exc), 'meaning_verified': False})
             bound.append({'reference_id': ident, 'coverage': candidate['coverage'],

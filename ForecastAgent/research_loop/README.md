@@ -885,3 +885,29 @@ rewrite does not certify factual truth or complete a forecast comparison.
 Each source-only node requests one atomic entity/measurement observation so a
 multi-record list does not compete with the unchanged annotation length limits.
 
+The optional `literal_fields=True` mode reuses `source_facets` instead of adding
+another reader. The model selects exact quotes and values inside its selected
+original references, plus a primary submitted fact index. The program binds those
+fields and copies the primary quote unchanged into the observation. A name in
+nearby delivered but unselected text cannot validate that field. Invalid siblings
+stay in the audit and never shift the primary index. Missing/invalid primary fields
+reject before native edits; an overlong literal is never clipped. Default review
+contracts remain unchanged. This mode requires the original-only phase.
+
+Field proofs retain captured body/text hashes, decoded view and provenance,
+coordinate space, and all literal quote locations. Repeated text is explicitly
+ambiguous. Role labels, field associations, coverage, limitations and target
+applicability remain provisional. A quoted publication date is still not a
+verified event date. Other valid atomic fields remain in the derivative audit,
+even though the compact node holds one primary quote. The later target-relation
+phase must consume these preserved fields and originals, not treat a successful
+binding as factual or forecast correctness. Source fields grant no reading receipt,
+new search budget, probability or official submission.
+Derivative post-supplement runs expose this mode through
+`node_by_node=True, consistency_review=True, blind_node_read=True,
+original_only_nodes=True, literal_node_fields=True`. The sealed execution identity
+includes both phase flags. Cached re-entry makes no new calls and rejects changed
+flags. Original-only runs cannot receive old annotation seeds or format-repair
+drafts. They still use the existing model/revision reservation and preserve all
+original collection ledgers. Scheduled production remains unchanged.
+

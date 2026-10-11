@@ -55,6 +55,7 @@ def code_identity():
              root / 'research_loop/reference_map.py', root / 'research_loop/predictive_focus.py',
              root / 'research_loop/literal_context.py',
              root / 'research_loop/original_scope.py', root / 'research_loop/node_reconcile.py',
+             root / 'research_loop/source_facets.py',
              root / 'research_loop/context_budget.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',

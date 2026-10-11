@@ -84,9 +84,11 @@ def cards(bundle, packet):
     return result
 
 
-def tool(card, map_tool, *, blind=False, original_only=False):
+def tool(card, map_tool, *, blind=False, original_only=False, literal_fields=False):
     if type(original_only) is not bool or original_only and not blind:
         raise ValueError('Original-only tool requires blind mode')
+    if type(literal_fields) is not bool or literal_fields and not original_only:
+        raise ValueError('Literal fields require the original-only phase')
     node_schema = map_tool['function']['parameters']['properties']['nodes']['items']
     fields = ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links')
     properties = {k: copy.deepcopy(node_schema['properties'][k]) for k in fields}
@@ -97,15 +99,26 @@ def tool(card, map_tool, *, blind=False, original_only=False):
         properties.pop('verdict')
     if original_only:
         properties['target_links']['maxItems'] = 0
+    if literal_fields:
+        from ForecastAgent.research_loop import source_facets
+        properties.pop('interpretation')
+        properties['source_fields'] = copy.deepcopy(source_facets.tool(card['originals'])['function']['parameters'])
+        properties['source_fields']['properties']['sources']['maxItems'] = 3
+        properties['primary_field'] = {'type': 'object', 'additionalProperties': False,
+            'properties': {'reference_id': {'type': 'string', 'enum': card['selectable_reference_ids']},
+                           'fact_index': {'type': 'integer', 'minimum': 0, 'maximum': 11}},
+            'required': ['reference_id', 'fact_index']}
     return {'type': 'function', 'function': {'name': NAME,
         'description': 'Review one source-bound observation; retain originals and repair fallible annotations.',
         'parameters': {'type': 'object', 'properties': properties,
             'required': list(properties), 'additionalProperties': False}}}
 
 
-def messages(bundle, card, *, blind=False, format_feedback=None, original_only=False):
+def messages(bundle, card, *, blind=False, format_feedback=None, original_only=False, literal_fields=False):
     if type(original_only) is not bool or original_only and (not blind or format_feedback is not None):
         raise ValueError('Original-only reading requires blind mode without an old annotation draft')
+    if type(literal_fields) is not bool or literal_fields and not original_only:
+        raise ValueError('Literal fields require the original-only phase')
     targets = target_logic.targets(bundle) if not original_only and target_logic.enabled(bundle) else []
     supplied = ({k: copy.deepcopy(card[k]) for k in ('node_id', 'own_reference_ids',
         'selectable_reference_ids', 'missing_own_reference_ids', 'originals', 'scope')}
@@ -131,6 +144,19 @@ def messages(bundle, card, *, blind=False, format_feedback=None, original_only=F
             'Return target_links=[]; target interpretation belongs to a later phase. '
             'Choose references containing the actual fields and their context, not just names. '
             'Do not reconstruct historical dates, cohorts or outcomes from memory.\n')
+    if literal_fields:
+        system += ('\nSelect literal source_fields before target interpretation. Each fact has '
+            'an exact continuous quote inside its selected reference and a literal value '
+            'inside that quote. Use evidence_ids for every source_fields reference; '
+            'nearby unselected text cannot bind a name, date, metric or unit. '
+            'Return primary_field pointing to one submitted source fact by reference_id '
+            'and zero-based fact_index. Its quote must be at most 240 characters: the '
+            'program copies that quote unchanged into the observation, with no generated '
+            'interpretation. Keep complete qualifiers in other fields/context when needed. '
+            'Do not shorten by changing words or dropping necessary uncertainty. '
+            'Choose a substantive field, not a directory heading. Empty/missing fields '
+            'remain gaps, not invented values. Every role, field association, limitation '
+            'and applicability is provisional. This phase creates no target links.\n')
     from ForecastAgent.research_loop import predictive_focus
     if predictive_focus.enabled(bundle):
         system += predictive_focus.PREMISE_GUIDE
@@ -207,9 +233,10 @@ def verify_repair_core(draft,answer):
         raise ValueError('Annotation repair changed frozen target IDs')
 
 
-def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_only=False):
+def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_only=False, literal_fields=False):
     """Translate one bounded review to an ordinary merge, without truth certification."""
-    check_schema(answer, tool(card, map_tool, blind=blind, original_only=original_only)['function']['parameters'])
+    check_schema(answer, tool(card, map_tool, blind=blind, original_only=original_only,
+                              literal_fields=literal_fields)['function']['parameters'])
     selected = answer['evidence_ids']
     if not answer['review_reason'].strip():
         raise ValueError('A node review needs a nonempty review reason')
@@ -220,6 +247,21 @@ def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_on
             'meaning_verified': False, 'reason': answer['review_reason']}
     if not selected:
         raise ValueError('A reviewed observation requires a supplied own-source reference')
+    field_audit = None
+    if literal_fields:
+        from ForecastAgent.research_loop import source_facets
+        originals = [s for s in card['originals'] if s['evidence_id'] in selected]
+        field_audit = source_facets.bind(originals, answer['source_fields'])
+        primary = answer['primary_field']
+        chosen = [f for s in field_audit['sources'] if s['reference_id'] == primary['reference_id']
+                  for f in s['facts'] if f['fact_index'] == primary['fact_index']]
+        if len(chosen) != 1:
+            raise ValueError('Primary field is not bound to a selected literal original')
+        interpretation = chosen[0]['quote']
+        check_schema(interpretation, map_tool['function']['parameters']['properties']['nodes']['items']['properties']['interpretation'])
+        # The primary is copied exactly; rejected sibling facts stay in the
+        # audit. Field roles/associations and arbitrary prose are not certified.
+        answer = {**answer, 'interpretation': interpretation}
     node = copy.deepcopy(card['candidate'])
     for field in ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links'):
         node[field] = copy.deepcopy(answer[field])
@@ -240,8 +282,13 @@ def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_on
     allowed = map_tool['function']['parameters']['properties']
     args = {k: v for k, v in args.items() if k in allowed}
     check_schema(args, map_tool['function']['parameters'])
-    return args, {'node_id': card['node_id'], 'status': 'model_reviewed',
+    audit = {'node_id': card['node_id'], 'status': 'model_reviewed',
         'verdict': verdict, 'model_verdict': claimed_verdict, 'verdict_field_mismatch': mismatch,
         'blind_original_reading': blind, 'changed': changed, 'changed_fields': changed_fields,
         'selected_reference_ids': selected, 'missing_own_reference_ids': card['missing_own_reference_ids'],
         'meaning_verified': False, 'reason': answer['review_reason']}
+    if field_audit is not None:
+        audit.update(literal_field_binding=field_audit, primary_field=copy.deepcopy(answer['primary_field']),
+            observation_text_origin='unchanged_primary_original_quote',
+            original_only_observation=True, all_factual_premises_verified=False)
+    return args, audit
