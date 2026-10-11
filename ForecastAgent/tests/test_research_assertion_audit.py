@@ -84,4 +84,31 @@ class AssertionAuditTests(unittest.TestCase):
         self.claims[0]['reference_ids']=['R1'];self.claims[0]['qualifiers']=[None]
         with self.assertRaises(ValueError):self.prep()
 
+    def test_overlong_decomposition_isolates_only_bad_sibling(self):
+        original=[{'id':'C1'},{'id':'C2'}]
+        q={'aspect':'fact','text':'A fact.'}
+        answer={'assertions':[{'id':'C1','qualifiers':[q]*7},{'id':'C2','qualifiers':[q]}]}
+        r=audit.bind_decomposition(original,answer,max_qualifiers=5)
+        self.assertEqual(list(r['accepted']),['C2'])
+        self.assertEqual(r['unreviewed_assertion_ids'],['C1'])
+        self.assertFalse(r['truncation_or_enum_remapping'])
+        self.assertEqual(len(answer['assertions'][0]['qualifiers']),7)
+
+    def test_unknown_decomposition_aspect_not_silently_renamed(self):
+        answer={'assertions':[{'id':'C1','qualifiers':[{'aspect':'period','text':'2026 season'}]}]}
+        r=audit.bind_decomposition([{'id':'C1'}],answer)
+        self.assertEqual(r['accepted'],{})
+        self.assertEqual(r['additional_model_calls'],0)
+
+    def test_duplicate_decomposition_isolates_every_duplicate(self):
+        a={'id':'C1','qualifiers':[{'aspect':'time','text':'The event occurred in2026.'}]}
+        r=audit.bind_decomposition([{'id':'C1'}],{'assertions':[a,copy.deepcopy(a)]})
+        self.assertEqual(r['accepted'],{})
+        self.assertEqual(len(r['rejected']),2)
+
+    def test_missing_decomposition_is_unreviewed_not_supported(self):
+        r=audit.bind_decomposition([{'id':'C1'}],{'assertions':[]})
+        self.assertEqual(r['unreviewed_assertion_ids'],['C1'])
+        self.assertFalse(r['decomposition_completeness_verified'])
+
 if __name__=='__main__':unittest.main()

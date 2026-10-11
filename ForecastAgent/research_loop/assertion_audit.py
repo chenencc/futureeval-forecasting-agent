@@ -9,6 +9,43 @@ CHOICES = {
     'insufficient': 'At least one material clause is not established; missing information is not contradiction.'}
 ASPECTS = {'fact', 'entity', 'time', 'metric', 'unit', 'stage', 'coverage', 'comparison'}
 
+def bind_decomposition(assertions, answer, *, max_qualifiers=5, max_text_chars=300):
+    """Isolate malformed siblings without truncation, enum repair, or another call."""
+    from collections import Counter
+    from ForecastAgent.runtime.contracts import check_schema
+    if type(max_qualifiers) is not int or max_qualifiers < 1 or type(max_text_chars) is not int or max_text_chars < 1:
+        raise ValueError('Invalid registered decomposition limits')
+    known = {a['id'] for a in assertions}
+    if len(known) != len(assertions):
+        raise ValueError('Duplicate original assertion IDs')
+    if not isinstance(answer, dict) or set(answer) != {'assertions'} or not isinstance(answer['assertions'], list):
+        raise ValueError('Malformed decomposition envelope')
+    counts = Counter(a.get('id') for a in answer['assertions'] if isinstance(a,dict) and isinstance(a.get('id'),str))
+    schema = {'type':'object','properties':{
+        'id':{'type':'string','enum':sorted(known)},
+        'qualifiers':{'type':'array','minItems':1,'maxItems':max_qualifiers,
+            'items':{'type':'object','properties':{
+                'aspect':{'type':'string','enum':sorted(ASPECTS)},
+                'text':{'type':'string','minLength':1,'maxLength':max_text_chars}},
+                'required':['aspect','text'],'additionalProperties':False}}},
+        'required':['id','qualifiers'],'additionalProperties':False}
+    accepted, rejected = {}, []
+    for candidate in answer['assertions']:
+        ident = candidate.get('id') if isinstance(candidate,dict) else None
+        try:
+            if not isinstance(ident,str) or ident not in known or counts[ident] != 1:
+                raise ValueError('Unknown or duplicated assertion ID')
+            check_schema(candidate,schema)
+            if any(not p['text'].strip() for p in candidate['qualifiers']):
+                raise ValueError('Empty qualifier text')
+            accepted[ident] = copy.deepcopy(candidate['qualifiers'])
+        except (ValueError,TypeError,KeyError) as exc:
+            rejected.append({'id':ident,'error':str(exc),'meaning_verified':False})
+    return {'accepted':accepted,'rejected':rejected,
+        'unreviewed_assertion_ids':sorted(known-set(accepted)),
+        'decomposition_completeness_verified':False,'meaning_verified':False,
+        'truncation_or_enum_remapping':False,'additional_model_calls':0}
+
 def prepare(question, as_of_utc, originals, assertions, *, mode='atomic'):
     """Caller-proposed qualifiers are hypotheses. Decomposition completeness is unproved."""
     if mode not in {'whole', 'atomic'}:

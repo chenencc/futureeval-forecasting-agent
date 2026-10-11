@@ -16,6 +16,12 @@ contradicted or insufficient part cannot inherit support from another part.
 The threshold is not calibrated, decomposition completeness is not verified,
 and candidate support never grants a truth certificate or target coverage.
 
+`bind_decomposition` isolates invalid siblings against the registered limits.
+It never truncates a long qualifier list, renames an unknown aspect, retries the
+model, or discards every valid sibling because one assertion is malformed.
+Missing and duplicated IDs stay unreviewed. Structural acceptance does not prove
+that isolated names/dates still express the original subject-predicate relation.
+
 The caller must retain original reference coordinates, capture clocks, physical
 HTTP reservations, raw responses, unknown usage, and all preceding counters.
 Never infer a future outcome from missing documents, captions, navigation,
