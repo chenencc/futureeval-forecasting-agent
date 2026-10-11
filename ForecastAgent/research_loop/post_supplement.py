@@ -336,13 +336,21 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
         raise ValueError('consistency_review must be boolean')
     if type(source_first) is not bool:
         raise ValueError('source_first must be boolean')
+    if type(node_by_node) is not bool:
+        raise ValueError('node_by_node must be boolean')
+    if node_by_node and (not consistency_review or source_first):
+        raise ValueError('Isolated node review requires consistency review without a shared first reading')
+    if node_by_node:
+        from ForecastAgent.research_loop import reference_map
+        if not reference_map.enabled(bundle):
+            raise ValueError('Isolated node review requires reference-bound observations')
     if not state.enabled(bundle) or not gap_feedback.enabled(bundle):
         raise ValueError('Saved-material review requires an enabled native map')
     if type(http_cap) is not int or not 0 <= http_cap <= reserve_http(bundle['request']):
@@ -355,6 +363,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
     identity = {'policy': POLICY, 'parent_bundle_sha256': source_hash, 'http_cap': http_cap,
                 'consistency_review': consistency_review,
                 'source_first': source_first,
+                'node_by_node': node_by_node,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -399,6 +408,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         elif execute and http_cap and failure_cap:
             packet = reading_packet(task, consistency_review=consistency_review)
             save(root/'reading-packet.json', packet)
+            from ForecastAgent.research_loop import node_reconcile
+            node_cards = node_reconcile.cards(task.bundle, packet) if node_by_node else []
+            if node_by_node:
+                save(root/'node-review-cards.json', node_cards)
             journal = Journal(root/'model-http', http_cap)
             def observer(phase, record, token=None):
                 if phase == 'reserve' and sum(load(p).get('status') != 'received'
@@ -431,6 +444,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     status='provider_or_budget_failure'
                     save(root/'original-scope-error.json',{'error_type':type(exc).__name__})
             while (packet['evidence'] and (not source_first or source_reading and source_reading['facts'])
+                    and (not node_by_node or len(steps) < len(node_cards))
                     and len(list((root/'model-http').glob('*.json'))) < http_cap):
                 if deadline is not None and time.monotonic() >= deadline:
                     status = 'wall_time_exhausted'
@@ -469,20 +483,48 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     'previous_attempt': ({'accepted':steps[-1]['accepted'],
                         'feedback':steps[-1].get('feedback'), 'error':steps[-1].get('error')}
                         if steps else None)}, ensure_ascii=False)}]
+                map_tool = tools[0]
+                forced_tool = 'update_research_state'
+                if node_by_node:
+                    card = node_cards[len(steps)]
+                    if not card['selectable_reference_ids']:
+                        steps.append({'accepted': False, 'node_review': {'node_id': card['node_id'],
+                            'status': 'deferred', 'meaning_verified': False,
+                            'reason': 'No own original reference was supplied; no model request dispatched.'}})
+                        save(root/'steps.json', steps)
+                        status = 'partial_node_review'
+                        continue
+                    messages = node_reconcile.messages(task.bundle, card)
+                    tools = [node_reconcile.tool(card, map_tool)]
+                    forced_tool = node_reconcile.NAME
                 try:
                     message = ask_model(messages, os.environ['OPENROUTER_API_KEY'], tools=tools,
-                        forced_tool='update_research_state', observer=observer,
+                        forced_tool=forced_tool, observer=observer,
                         deadline=min(deadline or time.monotonic()+180, time.monotonic()+180),
                         **fusion.model_options(task, 'update_research_state'))
                     save(root/('proposal-'+str(len(steps)+1)+'.json'), message)
                     calls = message.get('tool_calls') or []
-                    if len(calls) != 1 or calls[0]['function']['name'] != 'update_research_state':
+                    if len(calls) != 1 or calls[0]['function']['name'] != forced_tool:
                         raise ValueError('Exactly one declared map update is required')
                     args = json.loads(calls[0]['function']['arguments'])
+                    node_audit = None
+                    if node_by_node:
+                        args, node_audit = node_reconcile.proposal(task.bundle, packet, card, args, map_tool)
+                        if args is None:
+                            steps.append({'accepted': False, 'node_review': node_audit})
+                            save(root/'steps.json', steps)
+                            status = 'partial_node_review'
+                            continue
                     before_pending = {m['material_id'] for m in gap_feedback.pending(task)}
                     outcome = runtime.execute(task, 'update_research_state', args)
                     steps.append({'accepted': True, 'outcome': outcome,
                                   'feedback':review_feedback(task, outcome, packet)})
+                    if node_by_node:
+                        steps[-1]['node_review'] = node_audit
+                        save(root/'steps.json', steps)
+                        status = ('nodes_reviewed' if len(steps) == len(node_cards)
+                                  and all(s['accepted'] for s in steps) else 'partial_node_review')
+                        continue
                     status = 'reviewed' if not gap_feedback.pending(task) else 'partial_review'
                     from ForecastAgent.research_loop import dispatch
                     if not dispatch.enabled(task.bundle) or not gap_feedback.pending(task):
@@ -497,6 +539,9 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 except (ValueError, KeyError, TypeError) as exc:
                     steps.append({'accepted': False, 'error': str(exc)[:1000],
                                   'acceptance': getattr(exc, 'report', None)})
+                    if node_by_node:
+                        steps[-1]['node_review'] = {'node_id': card['node_id'],
+                            'status': 'rejected', 'meaning_verified': False}
                     status = 'proposal_rejected'
                 except Exception as exc:
                     steps.append({'accepted': False, 'error_type': type(exc).__name__})
@@ -520,6 +565,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         report = {'status': status, 'initial_revision': bundle['research_loop']['revision'],
             'consistency_review_requested': consistency_review,
             'source_first_requested': source_first,
+            'node_by_node_requested': node_by_node,
             'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
@@ -531,6 +577,15 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'historical_ledgers_preserved': True, 'original_pages_preserved': True,
             'new_search_calls': 0, 'new_fetch_calls': 0, 'scores_generated': False, 'submitted': False}
         from ForecastAgent.research_loop import dispatch
+        if node_by_node:
+            all_ids = [n['id'] for n in (bundle['research_loop'].get('current') or {}).get('nodes', [])
+                       if n['kind'] == 'observation']
+            reviewed = [s['node_review']['node_id'] for s in steps
+                        if s.get('accepted') and s.get('node_review', {}).get('status') == 'model_reviewed']
+            report['node_review_coverage'] = {'requested_node_ids': all_ids,
+                'model_reviewed_node_ids': reviewed,
+                'unreviewed_node_ids': [i for i in all_ids if i not in reviewed],
+                'meaning_verified': False, 'material_receipts_granted': False}
         if dispatch.enabled(task.bundle):
             report['material_processing'] = dispatch.status(task)
         if (root/'reading-packet.json').exists():

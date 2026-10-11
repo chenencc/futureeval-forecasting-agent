@@ -204,3 +204,19 @@ R IDs. Full bound text remains in the local audit; it is not duplicated in the
 second request. Both old and independent interpretations remain unverified and
 must be reconciled against their originals. This option is experimental and off by
 default; offline tests do not establish better semantic or forecasting performance.
+
+## Isolated observation reconciliation (development opt-in)
+
+`node_by_node=True, consistency_review=True` runs one observation per model
+request. It cannot be combined with the shared original-first stage. Each request
+contains only the selected node, its own supplied original references, same-version
+context, immutable rules and target conditions. Other nodes and their source text
+are excluded. The model returns a retained, corrected, insufficient or deferred
+verdict. Program code translates accepted changes into an ordinary merge with no
+new material receipts and no automatic retirement. Missing, rejected and uncalled
+nodes remain explicit in `node_review_coverage`; model review is not verified truth.
+
+Both HTTP and map revisions consume existing allowances. Re-entry uses frozen
+receipts and never refreshes a budget. The feature is off by default and is not
+wired into the production worker. Development cap extensions must retain the old
+counts and event chains, and be recorded separately from native acquisition limits.
