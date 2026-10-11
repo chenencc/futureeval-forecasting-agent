@@ -111,7 +111,19 @@ def messages(bundle, card, *, blind=False, format_feedback=None):
         'scope_limits': {'coverage': 'supplied_originals_only', 'cross_source_latestness_verified': False}}
     if format_feedback is not None:
         payload['annotation_format_repair'] = copy.deepcopy(format_feedback)
-    return [{'role': 'system', 'content': BLIND_SYSTEM if blind else SYSTEM},
+    system = BLIND_SYSTEM if blind else SYSTEM
+    from ForecastAgent.research_loop import predictive_focus
+    if predictive_focus.enabled(bundle):
+        system += predictive_focus.PREMISE_GUIDE
+        if not blind:
+            # Reuse the source/rule origin audit on this candidate's own
+            # actually delivered bindings only. Other nodes never supply proof.
+            own = set(card['own_reference_ids'])
+            candidate = {**copy.deepcopy(card['candidate']), 'id':card['node_id'],
+                         'kind':'observation', 'bindings':[
+                             copy.deepcopy(s) for s in card['originals'] if s['evidence_id'] in own]}
+            payload['candidate_literal_origins'] = predictive_focus.audit(bundle, [candidate], [])
+    return [{'role': 'system', 'content': system},
         {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}]
 
 

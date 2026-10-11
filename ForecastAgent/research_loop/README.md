@@ -864,3 +864,14 @@ when that exact original is supplied, with identical captured body/view identity
 Independent-reading bindings retain decoded coordinates and structural metadata.
 Neither operation certifies a field relationship. Correct unsupported old nodes
 explicitly instead of merely adding another current observation.
+### Source-only premise review in observation reconciliation
+
+When predictive focus is enabled, observation reconciliation receives the shared
+premise guide and a source/rule literal-origin audit for that candidate only.
+The audit uses its selected, actually delivered original bindings; nearby or
+other-node originals do not certify a candidate. Signals remain advisory because
+legitimate target comparisons can contain rule-only thresholds or dates. Blind
+reading hides the candidate and its candidate-origin signals. Existing bounded
+annotation-format recovery keeps the emitted draft, references and target IDs,
+consumes the same registered model allowance, and does not certify meaning.
+

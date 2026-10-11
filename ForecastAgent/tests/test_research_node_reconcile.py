@@ -97,6 +97,28 @@ class NodeReconcileTests(unittest.TestCase):
         schema = nr.tool(card, mt, blind=True)['function']['parameters']
         self.assertNotIn('verdict', schema['properties'])
 
+    def test_premise_audit_is_own_source_only_advisory_and_hidden_in_blind_mode(self):
+        from ForecastAgent.research_loop import predictive_focus
+        b, packet, card, mt, answer = self.sample()
+        b['request'][predictive_focus.FIELD] = predictive_focus.POLICY
+        b['request']['resolution_criteria'] = 'Target cohort on July 20, 2026 has 18 members.'
+        card['candidate']['interpretation'] = '18 members as of July 20, 2026.'
+        # An unrelated delivered source with those numbers cannot certify this
+        # candidate, and nearby context not actually selected is not a binding.
+        other = copy.deepcopy(card['originals'][0])
+        other.update(evidence_id='R_other', text='18 members July 20, 2026.',
+                     url='https://other.example/cohort')
+        card['originals'].append(other)
+        data = json.loads(nr.messages(b, card)[1]['content'])
+        audit = data['candidate_literal_origins']
+        self.assertFalse(audit['meaning_verified'])
+        self.assertFalse(audit['originals_rejected_by_risk_signals'])
+        self.assertEqual(len(audit['node_review_signals']), 1)
+        origins = {r['literal']:r['origin'] for r in audit['node_review_signals'][0]['numeric_literal_origins']}
+        self.assertEqual(origins['18'], 'rule_only')
+        self.assertEqual(origins['20'], 'rule_only')
+        self.assertNotIn('candidate_literal_origins', json.loads(nr.messages(b,card,blind=True)[1]['content']))
+
     def test_blind_translation_measures_edits_and_preserves_reference_binding(self):
         b, packet, card, mt, answer = self.sample()
         answer.pop('verdict')

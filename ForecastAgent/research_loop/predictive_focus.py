@@ -18,7 +18,8 @@ future_unknown uses future_outcome and availability=future_event, source_url='';
 retain uncertainty and seek a present baseline/indicator rather than its final
 future result. Other requests cannot have future_event availability. A missing
 date/window/metric in delivered text is a scope limitation, not proof of absence.
-Interpretation risk signals check syntax/support anchors only. Neither a clean
+'''
+PREMISE_GUIDE = '''Interpretation risk signals check syntax/support anchors only. Neither a clean
 signal nor an accepted ID certifies meaning. Recheck the bound ORIGINALS before
 asserting intention, nonoccurrence, actual-vs-guidance, or an exact target value.
 Rule-defined numbers, dates and cohorts describe what must be forecast; they do
@@ -32,6 +33,7 @@ the source's actual measurement/date separate or unknown. Review signals listing
 rule-only literals expose that distinction; legitimate comparisons can trigger
 them, so they do not automatically reject evidence or certify a mistake.
 '''
+GUIDE += PREMISE_GUIDE
 STATES = ('saved_unread', 'obtainable', 'future_unknown')
 PURPOSES = ('definition', 'baseline', 'history', 'indicator', 'counterevidence', 'future_outcome')
 EXTENSIONS = {
