@@ -24,12 +24,23 @@ class SourceHttpCapError(RuntimeError):
     """A source-local reservation cannot consume another source's allowance."""
 
 
-def review_tools(task, choice, *, navigate):
+def review_tools(task, choice, *, navigate, source_view=None):
     """Offer one exact saved source, never another channel or a network tool."""
     tools = dispatch.tools_for(task, runtime.configure(task, []), choice)
     tools = [t for t in tools if t['function']['name'] == 'update_research_state' or
              navigate and t['function']['name'] == 'inspect_research_state']
     for entry in tools:
+        if entry['function']['name'] == 'update_research_state' and source_view:
+            schema = entry['function']['parameters']
+            schema['properties']['source_reading_basis'] = {'type':'string', 'enum':
+                ['complete_saved_scope', 'explicit_scope_mismatch', 'partial_reading'],
+                'description':'Optional reading basis. An irrelevant judgment on a partial window '
+                    'requires explicit_scope_mismatch with cited positive evidence of a different scope. '
+                    'An unread result or missing row is partial_reading; defer it.'}
+            allowed = list(dict.fromkeys(dispatch.review_scope(task, choice)['inspected_reference_ids'] +
+                                        [row[0] for row in source_view['rows']]))
+            for section in ('nodes', 'material_reviews'):
+                schema['properties'][section]['items']['properties']['evidence_ids']['items']['enum'] = allowed
         if entry['function']['name'] == 'inspect_research_state':
             schema = entry['function']['parameters']
             schema['properties']['url']['enum'] = [choice['url']]
@@ -41,7 +52,7 @@ def review_tools(task, choice, *, navigate):
     return sorted(tools, key=lambda t: t['function']['name'] != 'update_research_state')
 
 
-def messages(task, reading, choice, *, prior_readings=None, navigation=None):
+def messages(task, reading, choice, *, prior_readings=None, navigation=None, source_view=None):
     from ForecastAgent.research_loop import post_supplement, reference_map, target_logic
     system = post_supplement.SYSTEM.split('Copy material_sha256')[0]
     if reference_map.enabled(task.bundle):
@@ -58,6 +69,14 @@ def messages(task, reading, choice, *, prior_readings=None, navigation=None):
                "including irrelevant and duplicate. Deferred preserves unfinished interpretation, "
                "not a coverage credit. Review usefulness for forecasting, not just final resolution: "
                "a current baseline can inform a future target without containing its final value.")
+    if source_view:
+        system += ('\nThe saved_source_window contains literal originals and a coordinate-indexed '
+            'reference table, not a summary. Read its rows as well as the earlier excerpts. '
+            'You may cite its exact R IDs directly: the program binds the selected original rows. '
+            'Do not infer source-wide absence from a partial window. If the window is partial, '
+            'irrelevant requires source_reading_basis=explicit_scope_mismatch and cited positive '
+            'evidence of that mismatch; otherwise read further or defer. Complete saved scope '
+            'means only the preserved eligible text, not a complete website or verified truth.')
     if navigation and navigation['available']:
         system += ('\nChoose exactly one available tool. If delivered text is navigation or lacks '
             'the needed row, use inspect_research_state for this SAME saved URL before a map update. '
@@ -85,6 +104,8 @@ def messages(task, reading, choice, *, prior_readings=None, navigation=None):
         'instruction': 'One source-specific material_review; no search, capture or score.'}
     if target_logic.enabled(task.bundle):
         packet['targets'] = target_logic.targets(task.bundle)
+    if source_view:
+        packet['saved_source_window'] = source_view
     if navigation:
         packet['local_reading_allowance'] = copy.deepcopy(navigation)
         packet['instruction'] = 'One exact-source local reading OR one material_review; no search, capture or score.'
@@ -106,6 +127,114 @@ def messages(task, reading, choice, *, prior_readings=None, navigation=None):
               {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False)}]
     dispatch.validate_delivery(task, result)
     return result
+
+
+def source_window(task, reading, choice, *, prior_readings=None, navigation=None):
+    """Fit whole literal rows in remaining registered context, without a model call.
+
+    Never change the native catalog, original bytes, prior readings or hard cap.
+    Small sources are delivered completely; large sources expose a truthful cursor.
+    Coordinates refer to the catalog reading view, including decoded/visible scopes.
+    """
+    scope = dispatch.review_scope(task, choice)
+    catalog = state.catalog(task.bundle, task.cutoff)
+    spans = sorted((s for s in catalog['spans'].values() if s['url'] == choice['url']),
+                   key=lambda s: (s['start'], s['end']))
+    ids = {s['evidence_id'] for s in reading.get('evidence', [])}
+    anchor = min((i for i, s in enumerate(spans) if s['evidence_id'] in ids), default=0)
+    view = {'policy':'literal_saved_source_window_v1', 'url':choice['url'],
+        'body_sha256':scope['body_sha256'], 'scope_sha256':scope['scope_sha256'],
+        'columns':['evidence_id','start','end','text','representation_metadata'],
+        'rows':[], 'start_span_offset':anchor, 'total_catalog_spans':len(spans),
+        'next_span_offset':anchor, 'complete_saved_scope':False,
+        'source_truncated':catalog['sources'][choice['url']]['truncated'],
+        'omitted_catalog_spans':len(spans), 'whole_original_or_website_verified':False,
+        'instruction':'Only rows delivered here are selectable. Unread text is not absent evidence.'}
+    # Try complete delivery first, even if the last small excerpt was mid-source.
+    # If it does not fit, page forward from the current native reading anchor.
+    def row(span):
+        excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
+        return [span['evidence_id'],span['start'],span['end'],span['text'],
+                {k:copy.deepcopy(v) for k,v in span.items() if k not in excluded}]
+    complete = {**view, 'rows':[row(s) for s in spans], 'start_span_offset':0,
+        'next_span_offset':None, 'complete_saved_scope':True, 'omitted_catalog_spans':0}
+    from ForecastAgent.runtime.context import ContextProjectionError
+    def fits(candidate):
+        try:
+            messages(task,reading,choice,prior_readings=prior_readings,
+                     navigation=navigation,source_view=candidate)
+            return True
+        except ContextProjectionError:
+            return False
+    if fits(complete):
+        return complete
+    available = complete['rows'][anchor:]
+    low, high = 0, len(available)
+    while low < high:
+        count = (low+high+1)//2
+        candidate = {**view, 'rows':available[:count],
+            'next_span_offset':anchor+count if anchor+count < len(spans) else None,
+            'omitted_catalog_spans':len(spans)-count}
+        if fits(candidate):
+            low = count
+        else:
+            high = count-1
+    view.update(rows=available[:low],next_span_offset=anchor+low if anchor+low<len(spans) else None,
+                omitted_catalog_spans=len(spans)-low)
+    return view
+
+
+def bind_source_window(task, choice, args, tools, source_view):
+    """Bind only selected, actually delivered literal originals; certify no meaning."""
+    scope = dispatch.review_scope(task,choice)
+    native = copy.deepcopy(args)
+    basis = native.pop('source_reading_basis',None)
+    if basis not in {None,'complete_saved_scope','explicit_scope_mismatch','partial_reading'}:
+        raise ValueError('Unknown source reading basis')
+    rows = {row[0]:row for row in source_view['rows']}
+    allowed = set(rows) | set(scope['inspected_reference_ids'])
+    selected = set()
+    # Keep native node isolation: a malformed sibling does not invalidate a
+    # valid receipt. Never register a node's invented or undelivered handle.
+    for entry in native.get('nodes',[]):
+        if isinstance(entry,dict) and isinstance(entry.get('evidence_ids'),list):
+            selected.update(i for i in entry['evidence_ids'] if isinstance(i,str) and i in allowed)
+    for entry in native.get('material_reviews',[]):
+        if isinstance(entry,dict) and isinstance(entry.get('evidence_ids'),list):
+            selected.update(i for i in entry['evidence_ids'] if isinstance(i,str))
+    if not selected <= allowed:
+        raise ValueError('Selected source references were not delivered in this exact frame')
+    if len(selected) > 16:
+        raise ValueError('Selected original references exceed native retained-handle cap')
+    for review in native.get('material_reviews',[]):
+        if isinstance(review,dict) and review.get('disposition')=='irrelevant' and not source_view['complete_saved_scope']:
+            if basis!='explicit_scope_mismatch' or not review.get('evidence_ids'):
+                raise ValueError('Partial saved-source reading cannot establish source-wide irrelevance; read or defer')
+    if basis=='complete_saved_scope' and not source_view['complete_saved_scope']:
+        raise ValueError('Model cannot declare unread source scope complete')
+    catalog = state.catalog(task.bundle,task.cutoff)
+    delivered = []
+    for ident in sorted(selected):
+        span = catalog['spans'][ident]
+        if ident in rows:
+            current = [span['evidence_id'],span['start'],span['end'],span['text']]
+            if current != rows[ident][:4]:
+                raise ValueError('Delivered original row changed before binding')
+        delivered.append({k:span[k] for k in ('evidence_id','url','body_sha256','start','end')})
+    # Register the selected delivery only. The table is a real literal reading,
+    # not permission to claim that undisplayed or discarded text was inspected.
+    previous = fusion.inspected_references(task,catalog)
+    task.bundle['research_acquisition']['inspected_references'] = (
+        delivered + [r for r in previous if r['evidence_id'] not in selected])[:16]
+    native_tools = copy.deepcopy(tools)
+    for entry in native_tools:
+        if entry['function']['name']=='update_research_state':
+            entry['function']['parameters']['properties'].pop('source_reading_basis',None)
+    return native, native_tools, {'policy':'selected_delivered_originals_v1',
+        'selected_reference_ids':sorted(selected), 'source_window_sha256':digest(source_view),
+        'source_reading_basis':basis, 'complete_saved_scope':source_view['complete_saved_scope'],
+        'original_model_arguments_sha256':digest(args), 'factual_arguments_rewritten':False,
+        'meaning_verified':False}
 
 
 def run(task, root, *, http_cap, observer, call, deadline=None):
@@ -172,15 +301,19 @@ def run(task, root, *, http_cap, observer, call, deadline=None):
                     break
                 navigate = (len(prior) < MAX_LOCAL_READS and
                             source_cap - (count() - start_http) > 1)
-                tools = review_tools(task, choice, navigate=navigate)
                 allowance = {'available':navigate, 'additional_reads_max':MAX_LOCAL_READS-len(prior),
                              'source_actual_http_remaining':source_cap-(count()-start_http),
                              'later_sources_reserved':min(later, max(0,http_cap-count()-source_cap+(count()-start_http))),
                              'same_saved_source_only':True, 'new_search_or_capture_allowed':False}
-                packet = messages(task, reading, choice, prior_readings=prior, navigation=allowance)
+                source_view = source_window(task,reading,choice,prior_readings=prior,navigation=allowance)
+                tools = review_tools(task, choice, navigate=navigate,source_view=source_view)
+                packet = messages(task, reading, choice, prior_readings=prior, navigation=allowance,source_view=source_view)
                 turn_folder = folder if turn == 0 else folder/'turns'/f'{turn+1:03d}'
                 turn_folder.mkdir(parents=True, exist_ok=turn == 0)
                 save(turn_folder / 'request-input.json', {'messages':packet, 'tools':tools, 'choice':choice})
+                save(turn_folder/'source-window.json',source_view)
+                step['source_reading'] = {k:source_view[k] for k in ('complete_saved_scope',
+                    'start_span_offset','next_span_offset','total_catalog_spans','omitted_catalog_spans','source_truncated')}
                 dispatch.record_selection(task, choice)
                 turn_clock = {'started_at_utc':datetime.now(timezone.utc).isoformat(),
                               'clock_source':'local_utc_client','server_time_verified':False}
@@ -225,7 +358,9 @@ def run(task, root, *, http_cap, observer, call, deadline=None):
                         seen.update(new_ids);prior.append(reading);reading=next_reading
                         turn += 1
                         continue
-                    bound, _, proof = dispatch.bind_arguments(task,name,args,tools,choice)
+                    native_args,native_tools,delivery_proof = bind_source_window(task,choice,args,tools,source_view)
+                    save(turn_folder/'source-delivery-binding.json',delivery_proof)
+                    bound, _, proof = dispatch.bind_arguments(task,name,native_args,native_tools,choice)
                     save(turn_folder/'binding.json',proof)
                     outcome = runtime.execute(task,name,bound)
                     reviews = outcome.get('gap_feedback',{}).get('accepted_reviews',[])

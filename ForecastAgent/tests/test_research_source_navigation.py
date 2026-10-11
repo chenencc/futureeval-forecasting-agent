@@ -37,7 +37,8 @@ class SourceNavigationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             t, helper = self.fixture(root)
             pages = copy.deepcopy(t.bundle['pages']); budget=t.budget(); packets=[]; updates=[]
-            final = helper.model(updates,['irrelevant','irrelevant'])
+            final = helper.model(updates,['irrelevant','irrelevant'],
+                lambda args,data,index:args.update(source_reading_basis='explicit_scope_mismatch'))
             def reply(messages,key,**kwargs):
                 packet=json.loads(messages[1]['content']);packets.append(packet)
                 names={entry['function']['name'] for entry in kwargs['tools']}

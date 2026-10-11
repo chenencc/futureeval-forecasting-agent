@@ -759,6 +759,26 @@ scope. Only named duplicated global navigation is omitted with hash records.
 Context overflow stays explicit rather than cutting original text. A validated
 receipt covers delivered excerpts only, never the complete page or factual truth.
 
+Final review also fits a coordinate-indexed literal source window into the
+remaining registered context. Small saved sources are delivered completely;
+larger sources retain a span cursor and omitted-row count. Earlier originals,
+rules and the hard context limit remain unchanged. No source is summarized,
+refetched or marked read merely because it was indexed. The window contains
+exact native R IDs, original text and representation metadata. The program
+registers only the references selected from actually delivered rows, with the
+native 16-handle cap, before binding the update. Native node isolation remains
+in force; invented node references never become registered originals.
+
+An irrelevant judgment from a partial window needs the explicit
+`source_reading_basis=explicit_scope_mismatch` and cited positive evidence of a
+different scope. Otherwise the proposal is rejected before map edits and remains
+pending; use local reading or defer. This exception is a model judgment, not a
+verified mismatch. Complete saved scope covers only eligible catalog text, and
+can still be a truncated capture, decoded view or restricted visible window.
+Each request preserves `source-window.json` and the selected-delivery binding
+receipt. Processing acknowledgment, reading coverage and semantic truth are
+separate states.
+
 The scheduled tool omits `expected_revision` and `material_sha256` from model
 arguments. After verifying that the scheduled material and map revision are still
 current, the program binds these two execution fields literally and records them.
