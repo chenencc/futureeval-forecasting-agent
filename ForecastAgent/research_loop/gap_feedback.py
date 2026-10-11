@@ -344,7 +344,8 @@ def review(task, proposals, before, explanation, result):
                 'meaning_verified':False})
         except (ValueError, KeyError, TypeError) as exc:
             rejected.append({'section':'material_reviews', 'index':index, 'error':str(exc), 'entry_sha256':digest(proposal)})
-            supplied = inventory.get(proposal.get('material_id')) if isinstance(proposal, dict) else None
+            ident = proposal.get('material_id') if isinstance(proposal, dict) else None
+            supplied = inventory.get(ident) if isinstance(ident, str) else None
             if supplied:
                 rejected[-1]['repair_context'] = {
                     'material_id': supplied['material_id'],

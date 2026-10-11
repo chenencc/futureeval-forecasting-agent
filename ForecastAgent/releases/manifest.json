@@ -264,7 +264,7 @@
     "ForecastAgent/research_loop/fusion.py": "1a1110477bd64ffaa75b1014f2e4c7cfc3c58cd6e555161e92a6567c63bbbca5",
     "ForecastAgent/research_loop/FUSION_README.md": "35f96c6b4225124138b70aa4ffc77a5135aa21dd42ac795bf98481c92b08f535",
     "ForecastAgent/research_loop/fusion_trial.py": "854de264d64237c581adf36cf73014a4d07a2fec3dc93d1b463356af280af231",
-    "ForecastAgent/research_loop/gap_feedback.py": "0c4cecdb7ccef190501ea166b9f96865f312637a445cf359eb5f17f411f6ed7f",
+    "ForecastAgent/research_loop/gap_feedback.py": "ad75eb9e207062011dd556f8d6a5fda49e05401a7f436cd5b0e838a18f640810",
     "ForecastAgent/research_loop/GAP_FEEDBACK_README.md": "0b29a888999b229b2082805ce9861aa44bed809985d9ce71c35a47b6c6794896",
     "ForecastAgent/research_loop/grounding.py": "1485c04a0476a6d3daffc299dfb0bdec436ad64896e39c557655902a4d2f444a",
     "ForecastAgent/research_loop/labels.py": "ed41fe2514ebb7cbae91aaadb3ece99d40f1084c68c10277026e92051814eb24",

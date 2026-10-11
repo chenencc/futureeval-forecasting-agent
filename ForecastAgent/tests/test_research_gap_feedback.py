@@ -144,6 +144,16 @@ class GapFeedbackTests(unittest.TestCase):
             self.assertEqual(t.budget(),budget)
             self.assertEqual(t.bundle['pages'],before['pages'])
 
+    def test_malformed_material_identity_is_rejected_without_repair_crash(self):
+        with tempfile.TemporaryDirectory() as root:
+            t=task(root);initial(t)
+            malformed=receipt(t,'https://example.org/report')
+            malformed['material_id']=[]
+            result=t.execute('update_research_state',patch(t,[malformed]),'test')
+            rejected=result['gap_feedback']['rejected_reviews']
+            self.assertEqual(len(rejected),1)
+            self.assertNotIn('repair_context',rejected[0])
+
     def test_irrelevant_source_can_be_reviewed_without_a_graph_change(self):
         with tempfile.TemporaryDirectory() as root:
             t=task(root);initial(t);revision=t.bundle['research_loop']['revision']
