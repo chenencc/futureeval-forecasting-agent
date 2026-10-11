@@ -733,6 +733,16 @@ own acceptance. Deferred reviews remain pending, and a valid irrelevant/duplicat
 receipt can acknowledge a source without inventing a graph edit. General and
 post-supplement batch updates retain their existing sibling isolation semantics.
 
+Scheduled binding validates the envelope, array limits and exact receipt atomically.
+It delegates individual nodes, relationships and material requests to the native
+isolation validator. The model-facing schema remains strict. An overlong optional
+interpretation or invalid target annotation is recorded and omitted; its unchanged
+valid original reference can survive with unverified applicability. A rejected
+reference or missing retained source observation cannot earn an incorporated
+receipt. Invalid siblings do not silently become facts, unknowns or completed work.
+Replay received proposals against the same saved bodies before new model calls;
+replay frames are local derivatives, never replacement provider receipts.
+
 The scheduled tool omits `expected_revision` and `material_sha256` from model
 arguments. After verifying that the scheduled material and map revision are still
 current, the program binds these two execution fields literally and records them.

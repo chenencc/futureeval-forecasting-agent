@@ -482,14 +482,25 @@ def bind_arguments(task, name, args, tools, choice):
         # the unfiltered native schema. Do not repair the emitted receipt.
         restricted = tools_for(task, tools, choice)
         entry = next(t for t in restricted if t['function']['name'] == name)
-        check_schema(args, entry['function']['parameters'])
+        # The scheduled frame and receipt are atomic. Graph entries use the
+        # native per-entry validator: an invalid annotation must not prevent
+        # valid original references or siblings from reaching isolation.
+        # Keep the model-facing schema strict and preserve all array caps.
+        envelope = copy.deepcopy(entry['function']['parameters'])
+        isolated_sections = ('nodes', 'relations', 'material_requests')
+        for section in isolated_sections:
+            envelope['properties'][section]['items'] = {}
+        check_schema(args, envelope)
         current = {n['id']: n for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])}
         protected = set(scope['protected_observation_node_ids'])
         if protected & set(args.get('retired_node_ids', [])):
             raise ValueError('Scheduled source review cannot retire another source observation')
         for node in args.get('nodes', []):
-            if node['id'] in protected and (node['kind'] != 'observation' or
-                    set(node['evidence_ids']) != set(current[node['id']]['evidence_ids'])):
+            if not isinstance(node, dict) or not isinstance(node.get('id'), str):
+                continue  # Native isolation records malformed graph entries.
+            if node['id'] in protected and (node.get('kind') != 'observation' or
+                    not isinstance(node.get('evidence_ids'), list) or
+                    node['evidence_ids'] != current[node['id']]['evidence_ids']):
                 raise ValueError('Use a distinct observation ID; scheduled review cannot rebind another source')
         bound = {**copy.deepcopy(args), 'expected_revision': choice['revision'],
                  'material_sha256': choice['material_sha256']}
@@ -499,8 +510,10 @@ def bind_arguments(task, name, args, tools, choice):
             expected_revision={'type': 'integer', 'enum': [choice['revision']]},
             material_sha256={'type': 'string', 'enum': [choice['material_sha256']], 'maxLength': 64})
         schema['required'] += ['expected_revision', 'material_sha256']
-        return bound, native, {'policy': 'exact_scheduled_material_review_v2',
+        return bound, native, {'policy': 'exact_scheduled_material_review_v3',
             **scope, 'arguments_rewritten': True, 'factual_arguments_rewritten': False,
+            'native_isolation_sections': list(isolated_sections),
+            'scheduled_receipt_validated_atomically': True,
             'program_bound_fields': {k: bound[k] for k in ('expected_revision', 'material_sha256')},
             'meaning_verified': False}
     if not choice or choice['phase'] not in {'capture_discovery', 'capture_frontier'} or name != 'read_sources':
