@@ -61,3 +61,10 @@ Ordering and excerpts are navigation aids, not verified relevance or evidence.
 The model must distinguish the target aggregate from related subgroups/issues,
 and the current baseline from earlier terms or event stages. A larger eligible
 pool does not prove correct selection, successful fetching or better forecasts.
+
+For these two discovery phases, the native `read_sources` model schema uses
+short `source_ids` instead of copied long URLs. The program validates IDs against
+the exact turn registry, restores the unchanged native URL interface, and records
+the ID-to-URL binding in the step journal before execution. Unknown IDs, duplicate
+IDs and mixed ID/URL requests fail before a network reservation. No approximate
+URL repair or inference is permitted. Other routes retain their native schema.

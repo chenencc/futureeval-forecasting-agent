@@ -4,6 +4,7 @@ This module routes work, not truth. It never creates receipts, probabilities,
 source URLs, provider calls or renewed allowances.
 """
 import copy
+import hashlib
 import re
 
 FIELD = 'research_dispatch_policy'
@@ -78,7 +79,8 @@ def discovered_candidates(task, *, include_rule_leads=False):
     urls = sorted((u for u in known if canonical_url(u) in observed and canonical_url(u) not in attempted),
         key=lambda u: (-discovery_score(task.bundle['request'], u, known[u].get('title') or '',
             named_primary(task, u), known[u].get('published_date')), u))[:24]
-    return {'urls': urls, 'sources': [{'url': u, 'title': known[u].get('title') or '',
+    return {'urls': urls, 'sources': [{'source_id': 'L' + hashlib.sha256(u.encode()).hexdigest()[:12],
+        'url': u, 'title': known[u].get('title') or '',
         'published_date': known[u].get('published_date'),
         'discovery_excerpt': str(known[u].get('content') or known[u].get('text') or '')[:600],
         'evidence_status': 'unread_discovery_lead'} for u in urls]}
@@ -115,7 +117,8 @@ def choose(task):
                 'Do not fetch every candidate. Compare titles and discovery excerpts against '
                 'the target entity, metric, subgroup, event stage and date. Prefer an exact '
                 'current baseline over a related issue, historical term or subgroup. '
-                'Use an actual JSON array for urls. Future outcomes remain unknown.'}
+                'Select source_ids from this registry; the program binds exact original URLs. '
+                'Use an actual JSON array. Future outcomes remain unknown.'}
     pending = gap_feedback.pending(task)
     # Two review proposals per exact source scope. Failed interpretations remain
     # pending, but cannot starve all subsequent sources or extend a soft stop.
@@ -181,7 +184,8 @@ def choose(task):
                     'before another saved-page map cycle. Choose relevant exact-source detail or '
                     'independent context. These are observed leads, not verified evidence. '
                     'Failed captures stay gaps and pending originals remain pending. '
-                    'Use a JSON array for urls; all existing capture and model caps apply.'}
+                    'Select source_ids from the supplied registry; the program binds original URLs. '
+                    'Use a JSON array; all existing capture and model caps apply.'}
     remaining = task.bundle['research_loop']['update_cap'] - revision
     reserve = record['limits']['post_review_revisions']
     if usable and remaining > reserve:
@@ -234,7 +238,20 @@ def tools_for(task, tools, choice):
             return []  # Preserve an explicit routing gap; do not grant arbitrary URLs.
         for entry in tools:
             if entry['function']['name'] == 'read_sources' and ordered:
-                entry['function']['parameters']['properties']['urls']['items']['enum'] = ordered
+                schema = entry['function']['parameters']
+                if choice['phase'] in {'capture_discovery', 'capture_frontier'}:
+                    sources = choice['candidates']['sources']
+                    ids = [s['source_id'] for s in sources if s['url'] in ordered]
+                    selection = schema['properties'].pop('urls')
+                    selection['items'] = {'type': 'string', 'enum': ids}
+                    selection['description'] = 'Select observed source IDs; exact URLs are bound by the program.'
+                    schema['properties']['source_ids'] = selection
+                    schema['required'] = ['source_ids' if k == 'urls' else k for k in schema.get('required', [])]
+                    if 'source_ids' not in schema['required']:
+                        schema['required'].append('source_ids')
+                    schema['additionalProperties'] = False
+                else:
+                    schema['properties']['urls']['items']['enum'] = ordered
     if choice['phase'] == 'acquire_gap':
         from ForecastAgent.tools.capabilities import get
         selected = [t for t in tools if 'network' in get(t['function']['name']).effects]
@@ -252,6 +269,38 @@ def tools_for(task, tools, choice):
                 schema['properties']['url']['enum'] = [choice['url']]
                 schema['required'] = list(dict.fromkeys(schema.get('required', []) + ['url']))
     return tools
+
+
+def bind_arguments(task, name, args, tools, choice):
+    """Validate the emitted ID registry, then restore the native URL interface.
+
+    Raw model arguments remain in HTTP receipts. Binding is exact, never fuzzy;
+    an unknown ID or mixed URL/ID request fails before a network reservation.
+    The native handler retains its existing effects, validation and quotas.
+    """
+    if not choice or choice['phase'] not in {'capture_discovery', 'capture_frontier'} or name != 'read_sources':
+        return args, tools, None
+    from ForecastAgent.runtime.contracts import check_schema
+    entry = next(t for t in tools if t['function']['name'] == name)
+    check_schema(args, entry['function']['parameters'])
+    ids = args['source_ids']
+    if not ids or len(ids) != len(set(ids)):
+        raise ValueError('Choose distinct observed source IDs')
+    registry = {s['source_id']: s['url'] for s in choice['candidates']['sources']}
+    urls = [registry[i] for i in ids]
+    if any(u not in task.catalog() for u in urls):
+        raise ValueError('Source registry no longer matches discovered catalog')
+    bound = copy.deepcopy(args)
+    bound['urls'] = urls
+    del bound['source_ids']
+    native_tools = copy.deepcopy(tools)
+    schema = next(t['function']['parameters'] for t in native_tools if t['function']['name'] == name)
+    selection = schema['properties'].pop('source_ids')
+    selection['items'] = {'type': 'string', 'enum': choice['candidates']['urls']}
+    schema['properties']['urls'] = selection
+    schema['required'] = ['urls' if k == 'source_ids' else k for k in schema['required']]
+    return bound, native_tools, {'policy': 'exact_observed_source_id_v1',
+        'source_ids': ids, 'urls': urls, 'url_rewriting': False}
 
 
 def status(task):

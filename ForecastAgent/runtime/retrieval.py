@@ -1535,11 +1535,16 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     if time.monotonic() >= deadline:
                         raise RuntimeError('Collection run deadline exhausted')
                     args = json.loads(call["function"]["arguments"])
+                    args, validation_tools, source_binding = research_dispatch.bind_arguments(
+                        task, name, args, turn_tools, dispatch_choice)
+                    if source_binding:
+                        step['source_selection_binding'] = source_binding
+                        task.save()
                     from ForecastAgent.research_loop.runtime import NAMES as research_names, validate_args as validate_research
                     if name in research_names:
-                        validate_research(task, name, args, turn_tools)
+                        validate_research(task, name, args, validation_tools)
                     else:
-                        validate(task, name, args, turn_tools)
+                        validate(task, name, args, validation_tools)
                     if collection and repaired(task) and control['forced_close'] and name != 'finish_collection':
                         raise ContractError('program_closing', 'tool', 'The material repair/closure limit is reached. Preserve the ledger and finish with gaps; no further plan or acquisition call is allowed.')
                     if control["forced_close"] and name not in {"audit_evidence", "finish_retrieval", "finish_collection", "plan_evidence"}:

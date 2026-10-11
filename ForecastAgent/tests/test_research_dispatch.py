@@ -44,9 +44,21 @@ class DispatchTests(unittest.TestCase):
             tools = [{'function': {'name': 'read_sources', 'parameters': {'properties':
                 {'urls': {'type': 'array', 'maxItems': 4, 'items': {'type': 'string'}}}}}}]
             routed = dispatch.tools_for(t, tools, choice)
-            urls = routed[0]['function']['parameters']['properties']['urls']
-            self.assertEqual(urls['maxItems'], 4)
-            self.assertIn(exact, urls['items']['enum'])
+            selection = routed[0]['function']['parameters']['properties']['source_ids']
+            self.assertEqual(selection['maxItems'], 4)
+            source_id = source['source_id']
+            self.assertIn(source_id, selection['items']['enum'])
+            args, native, binding = dispatch.bind_arguments(t, 'read_sources',
+                {'source_ids': [source_id]}, routed, choice)
+            self.assertEqual(args, {'urls': [exact]})
+            self.assertEqual(binding['urls'], [exact])
+            self.assertFalse(binding['url_rewriting'])
+            self.assertEqual(native[0]['function']['parameters']['properties']['urls']['maxItems'], 4)
+            self.assertIn('source_ids', routed[0]['function']['parameters']['properties'])
+            for invalid in ({'source_ids': ['invented']}, {'source_ids': [source_id, source_id]},
+                            {'source_ids': [source_id], 'urls': [exact]}):
+                with self.assertRaises(ValueError):
+                    dispatch.bind_arguments(t, 'read_sources', invalid, routed, choice)
             # Initialization may add a ledger; observed data and quota remain unchanged.
             self.assertEqual(t.bundle['searches'], before['searches'])
             self.assertEqual(t.budget(), budget)
@@ -189,7 +201,8 @@ class DispatchTests(unittest.TestCase):
             tools = [{'function': {'name': 'read_sources', 'parameters': {'properties':
                 {'urls': {'type':'array','items':{'type':'string'}}}}}}]
             selected = dispatch.tools_for(t, tools, choice)
-            self.assertEqual(selected[0]['function']['parameters']['properties']['urls']['items']['enum'], [url])
+            source_id = choice['candidates']['sources'][0]['source_id']
+            self.assertEqual(selected[0]['function']['parameters']['properties']['source_ids']['items']['enum'], [source_id])
             self.assertEqual(t.bundle['pages'], original)
             self.assertEqual(t.budget(), budget)
             # Invalid proposals cannot create an endless forced-reading loop.
