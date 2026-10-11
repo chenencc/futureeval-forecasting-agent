@@ -11,7 +11,7 @@ from ForecastAgent.acquisition.handoff import uncovered
 from ForecastAgent.competition.mercury import packet_for
 from ForecastAgent.analysis.mercury_evidence_chain import request_bytes, SECOND_BYTES
 from ForecastAgent.analysis.pilot import digest
-from ForecastAgent.research_loop import decision
+from ForecastAgent.research_loop import decision, forecast_projection
 
 POLICY = 'equal-originals-map-headroom-v1'
 
@@ -59,11 +59,17 @@ def bind_group(bundle, original, bindings):
     return result, added
 
 
-def align(bundle, mapped_bundle, original, heads, *, maximum=SECOND_BYTES, margin=0):
+def align(bundle, mapped_bundle, original, heads, *, maximum=SECOND_BYTES, margin=0,
+          projection=forecast_projection.LEGACY):
     # request_bytes matches the provider's exact JSON body. Extra padding is an
     # explicit caller preference, not an unrecorded reduction of its hard cap.
     if type(maximum) is not int or type(margin) is not int or not 0 <= margin < maximum <= SECOND_BYTES:
         raise ValueError('Invalid shared forecast request bound')
+    forecast_projection.validate(projection)
+    def notes_for(candidate):
+        notes, note_audit = decision.scoring_map(mapped_bundle, candidate)
+        projected, delivery_audit = forecast_projection.project(notes, policy=projection)
+        return projected, {**note_audit, 'forecast_projection': delivery_audit}
     if original.get('research_map'):
         raise ValueError('The shared original parent cannot contain a map')
     common = copy.deepcopy(original)
@@ -81,7 +87,7 @@ def align(bundle, mapped_bundle, original, heads, *, maximum=SECOND_BYTES, margi
             group = {'node_id': node['id']}
             try:
                 candidate, added = bind_group(bundle, common, node['bindings'])
-                notes, note_audit = decision.scoring_map(mapped_bundle, candidate)
+                notes, note_audit = notes_for(candidate)
                 enriched = {**copy.deepcopy(candidate), 'research_map': notes}
                 raw_bytes, mapped_bytes = request_bytes(candidate, heads), request_bytes(enriched, heads)
                 reserve = mapped_bytes - raw_bytes + margin
@@ -98,7 +104,7 @@ def align(bundle, mapped_bundle, original, heads, *, maximum=SECOND_BYTES, margi
             except ValueError as exc:
                 group.update(status='unsupported_binding', reason=str(exc))
             record['groups'].append(group)
-    notes, final_audit = decision.scoring_map(mapped_bundle, common)
+    notes, final_audit = notes_for(common)
     mapped = copy.deepcopy(common)
     independent = bool(notes.get('factual_grounding_present'))
     if independent:

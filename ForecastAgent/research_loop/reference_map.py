@@ -73,13 +73,7 @@ def prompt(context='', *, bundle=None, local_only=False, phase='map'):
     """One authoritative graph contract; callers pass operational context only."""
     if phase not in {'map','acquisition','review'}:
         raise ValueError('Unknown reference-map prompt phase')
-    target_guide = TARGET_GUIDE
-    if bundle is not None and bundle.get('request', {}).get('forecast_target_registry_policy') == 'question_and_research_targets_v1':
-        target_guide = TARGET_GUIDE.replace('Use frozen T IDs in target_links.',
-            'Use supplied frozen T research-need IDs and F forecast-target IDs in target_links. '
-            'T coverage never implies F coverage. Link each useful observation to the F target '
-            'when applicable, with explicit scope and limits. A future F outcome is unknown; '
-            'available history or expectations can still be baseline/indicator links, never direct realized results.')
+    target_guide = target_prompt(bundle)
     from ForecastAgent.research_loop.node_review import GUIDE as REVIEW_GUIDE
     result = (ACQUISITION_SYSTEM if phase=='acquisition' else SYSTEM) + target_guide + RECEIPT_GUIDE + REVIEW_GUIDE + context
     if local_only:
@@ -92,6 +86,17 @@ def prompt(context='', *, bundle=None, local_only=False, phase='map'):
         if predictive_focus.enabled(bundle):
             result += predictive_focus.GUIDE
     return result
+
+
+def target_prompt(bundle=None):
+    """Share the same T/F registry instructions across native review phases."""
+    if bundle is not None and bundle.get('request', {}).get('forecast_target_registry_policy') == 'question_and_research_targets_v1':
+        return TARGET_GUIDE.replace('Use frozen T IDs in target_links.',
+            'Use supplied frozen T research-need IDs and F forecast-target IDs in target_links. '
+            'T coverage never implies F coverage. Link each useful observation to the F target '
+            'when applicable, with explicit scope and limits. A future F outcome is unknown; '
+            'available history or expectations can still be baseline/indicator links, never direct realized results.')
+    return TARGET_GUIDE
 
 
 TARGET_GUIDE = '''

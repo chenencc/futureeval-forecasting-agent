@@ -20,7 +20,10 @@ def messages(task, reading, choice):
     from ForecastAgent.research_loop import post_supplement, reference_map, target_logic
     system = post_supplement.SYSTEM.split('Copy material_sha256')[0]
     if reference_map.enabled(task.bundle):
-        system += reference_map.TARGET_GUIDE
+        system += reference_map.target_prompt(task.bundle)
+    from ForecastAgent.research_loop import predictive_focus
+    if predictive_focus.enabled(task.bundle):
+        system += predictive_focus.GUIDE
     system += ("\nThe program owns expected_revision and material_sha256; emit neither. "
                "Review exactly the scheduled source with its inspected R IDs. "
                "Omit unchanged nodes. Never rebind or retire protected observation IDs. "

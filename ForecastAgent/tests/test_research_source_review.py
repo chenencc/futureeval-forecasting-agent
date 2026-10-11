@@ -12,6 +12,29 @@ from ForecastAgent.tests.test_research_gap_feedback import initial
 
 
 class SourceReviewTests(unittest.TestCase):
+    def test_final_review_shares_root_target_and_information_state_guide(self):
+        from ForecastAgent.research_loop import source_review, reference_map, predictive_focus, target_logic
+        with tempfile.TemporaryDirectory() as root:
+            t = self.fixture(root)
+            t.bundle['request'].update({reference_map.FIELD: reference_map.POLICY,
+                predictive_focus.FIELD: predictive_focus.POLICY,
+                target_logic.FIELD: target_logic.POLICY,
+                'forecast_target_registry_policy':'question_and_research_targets_v1'})
+            url = 'https://example.org/a'
+            reading = t.execute('inspect_research_state', {'url':url,'limit':3}, '')
+            choice = {'url':url, 'revision':t.bundle['research_loop']['revision'],
+                'material_sha256':source_review.state.catalog(t.bundle,t.cutoff)['material_sha256'],
+                'material_id': next(m['material_id'] for m in
+                source_review.gap_feedback.pending(t) if m['url']==url)}
+            messages = source_review.messages(t, reading, choice)
+            self.assertIn(reference_map.target_prompt(t.bundle),messages[0]['content'])
+            self.assertEqual(messages[0]['content'].count('Predictive focus:'),1)
+            self.assertIn('future_unknown',messages[0]['content'])
+            self.assertIn('rather than its final',messages[0]['content'])
+            self.assertNotIn('Copy material_sha256',messages[0]['content'])
+            self.assertNotIn('Use frozen T IDs in target_links.',messages[0]['content'])
+            self.assertEqual(json.loads(messages[1]['content'])['reading']['evidence'],reading['evidence'])
+
     def fixture(self, root):
         t = fresh(root); initial(t)
         for suffix in ('a', 'b'):
@@ -140,3 +163,5 @@ class SourceReviewTests(unittest.TestCase):
     def test_native_identity_covers_the_new_final_stage_dependency(self):
         from ForecastAgent.channels.contracts import code_identity
         self.assertIn('research_loop/source_review.py', code_identity())
+        self.assertIn('research_loop/reference_map.py', code_identity())
+        self.assertIn('research_loop/predictive_focus.py', code_identity())

@@ -5,6 +5,28 @@ This prototype adds revisable reasoning to acquisition and an independent final
 Mercury decision. It does not implement a mandatory DAG, a CPT, or graph-based
 probability arithmetic. It is not a new production release.
 
+## Forecast-facing metadata projection experiment
+
+`shared_map_input.align(..., projection='forecast-bound-map-metadata-v1')`
+is an opt-in delivery experiment. The default remains `legacy`. It removes only
+named map protocol switches, target bookkeeping counters and suggested tool names
+from the decision sideband. Exact omitted paths, full values and hashes stay in
+the saved projection audit. Unknown extensions remain visible.
+
+Complete node interpretations, source bindings, relations, target conditions,
+unassessed target IDs, contrary effects, availability, information-state labels,
+gap reasons and limitations remain literal. In particular, an unpublished future
+outcome is distinct from an obtainable missing current baseline. This projection
+does not repair that distinction when the model originally classified it wrongly.
+It does not certify relevance or turn a source receipt into adequate evidence.
+
+Both decision arms must share identical original text. A caller must freeze and
+audit the actual selected spans: smaller notes can change selection under a shared
+byte ceiling. Packet size savings alone do not prove token savings, calibration
+or prediction improvement. Existing graph/acquisition journals and production
+analysis remain unchanged. No new source, model call or probability is generated
+by projection itself.
+
 ## Target-first delivery and forecast brief experiment
 
 ### Local-context selector experiment (v2)

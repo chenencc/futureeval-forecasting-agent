@@ -6,6 +6,14 @@ production workers keep their pinned policies and code identity.
 
 ## Flow
 
+Source-isolated review shares the same research-target and forecast-target ID
+guide as acquisition. With predictive focus explicitly enabled, it also receives
+the full saved-unread, obtainable and future-unknown contract. Tool schemas alone
+do not explain the difference between a missing current baseline and a future
+realization. This adds guidance rather than correcting model interpretations or
+granting evidence credit. Both prompt dependencies are frozen in native code
+identity; existing inputs require a declared migration before execution.
+
 For opt-in `material_gap_dispatch_v1` inputs, ordinary final review uses the
 native source-isolated dispatcher. Each pending exact URL gets one local
 inspection and at most one proposal per round. The schema permits only that
