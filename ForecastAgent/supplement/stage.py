@@ -16,6 +16,10 @@ from ForecastAgent.readers.loader import load_response
 from ForecastAgent.readers.quality import body_diagnostics
 from ForecastAgent.providers.ultra import SafeRedirects, public_url
 from ForecastAgent.tavily_research import canonical_url
+from ForecastAgent.runtime.filesystem import io_path
+from ForecastAgent.supplement.transport import capture as bounded_capture, CaptureFailure
+
+BROWSER_TRANSPORT_PROFILE = {'backend': 'playwright', 'query': ''}
 
 
 def now():
@@ -23,6 +27,7 @@ def now():
 
 
 def save(path, value):
+    path=io_path(path)
     path.parent.mkdir(parents=True,exist_ok=True)
     temporary=path.with_suffix('.tmp')
     temporary.write_text(json.dumps(value,indent=2,ensure_ascii=False),encoding='utf-8')
@@ -131,10 +136,13 @@ def fetch_document(url):
         return page
 
 
-def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
+def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2,operation_timeout_seconds=60):
     if not 1<=len(ids)<=5 or len(set(ids))!=len(ids) or not all(i.isdecimal() for i in ids):
         raise ValueError('Select one to five unique task IDs')
-    output=Path(output);output.mkdir(parents=True,exist_ok=True)
+    if not 0 < operation_timeout_seconds <= 120:
+        raise ValueError('Supplement operation wall deadline must be between 0 and 120 seconds')
+    archive=io_path(archive)
+    output=io_path(output);output.mkdir(parents=True,exist_ok=True)
     with task_lock(output):
         plan=inventory(Path(archive))
         with zipfile.ZipFile(archive) as source:
@@ -144,6 +152,8 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
             'routing_policy':'observed_frontier_v2',
             'ids':ids,'network_enabled':network,'browser_limit_per_task':browser_limit,
             'http_limit_per_task':http_limit,'browser_request_limit_per_render':25,
+            'transport_boundary':{'policy':'one_process_per_operation_v1',
+                'wall_seconds':operation_timeout_seconds,'browser_profile':dict(BROWSER_TRANSPORT_PROFILE)},
             'source_run_id':__import__('os').environ.get('SUPPLEMENT_SOURCE_RUN_ID')}
         if (output/'manifest.json').exists():
             previous=json.loads((output/'manifest.json').read_text())
@@ -219,7 +229,11 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                         'origin':row.get('origin'), 'gap_kind':row['kind']}
                     child['attempts'].append(attempt);save(path,child)
                     try:
-                        result=parse_saved(page) if method=='reparse' else render_page(url,retrieved_at=now()) if method=='browser' else fetch_document(url)
+                        key=hashlib.sha256((method+url).encode()).hexdigest()
+                        result=(parse_saved(page) if method=='reparse' else
+                            bounded_capture(method,url,folder/'operations'/key,
+                                            timeout_seconds=operation_timeout_seconds,
+                                            browser_profile=BROWSER_TRANSPORT_PROFILE))
                         result['body_diagnostics']=body_diagnostics(result.get('content',''),documents=result.get('documents',[]))
                         key=hashlib.sha256((method+url).encode()).hexdigest()
                         result['supplement_provenance']={'parent_bundle_sha256':child['parent_bundle_sha256'],'task_id':ident,'method':method}
@@ -228,11 +242,14 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
                             capture_file=f'captures/{key}.json',capture_json_sha256=digest(result),
                             browser_audit=result.get('browser_audit'))
                         if result.get('http_audit'):attempt['http_audit']=result['http_audit']
+                        if result.get('supplement_transport_boundary'):
+                            attempt['transport_boundary']=result['supplement_transport_boundary']
                         child['captures'][url]={'file':attempt['capture_file'],'json_sha256':digest(result),'readable':attempt['status']=='captured'}
                     except Exception as exc:
                         attempt.update(status='failed',error=type(exc).__name__,detail=str(exc)[:500])
                         if isinstance(exc,BrowserCaptureError):attempt['browser_audit']=exc.audit
                         if isinstance(exc,RepairHTTPError):attempt['http_audit']=exc.audit
+                        if isinstance(exc,CaptureFailure):attempt['transport_boundary']=exc.audit
                     finally:
                         attempt['finished_at_utc']=now();save(path,child)
                 child['remaining_gaps']=[r for r in candidates if r['category']!='already_recovered' and not child['captures'].get(r['url'],{}).get('readable')]
@@ -254,7 +271,7 @@ def run(archive,output,ids,*,network=False,browser_limit=2,http_limit=2):
 def analysis_overlay(bundle,supplement_root,ident):
     """Validate the sidecar and expose new pages without mutating the parent."""
     import copy
-    folder=Path(supplement_root)/'tasks'/ident
+    folder=io_path(supplement_root)/'tasks'/ident
     child=json.loads((folder/'supplement.json').read_text(encoding='utf-8'))
     if child['task_id']!=ident or child['parent_bundle_json_sha256']!=digest(bundle):
         raise ValueError('Supplement does not belong to this parent bundle')

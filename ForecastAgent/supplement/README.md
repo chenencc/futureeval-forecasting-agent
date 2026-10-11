@@ -67,3 +67,29 @@ and retain their gaps. For interrupted campaigns, supply the last completed
 campaign `resume_run`; never start a fresh queue to replace exhausted allowances.
 Use `campaign-state.json` to locate each task's batch and pass that batch folder
 to `analysis_overlay`. Original forecasts and collection states remain unchanged.
+
+## Supplemental operation containment
+
+Each network or browser repair runs in one bounded child process. The default
+wall deadline is 60 seconds; `operation_timeout_seconds` accepts values up to
+120 seconds. This is a total operation limit, unlike a socket inactivity timeout.
+The manifest freezes this deadline and the browser backend/query profile. A
+changed policy cannot silently resume an old manifest. HTTP, browser, search,
+byte, and model allowances are not reset or increased.
+
+The child retains a request, result, process log, and terminal process receipt.
+A timed-out operation retains an explicit failure with unknown remote transport
+activity; it is charged once and is not retried automatically. The parent can
+continue to review available material and preserve the transport gap. A missing
+or mismatched response never becomes evidence. The guard terminates the child
+process tree, including browser descendants. Windows execution needs permission
+to control its own worker processes; Linux containment requires its own gate.
+
+Crawl4AI configuration crosses the process boundary explicitly. Its admission
+check still quarantines denied text. Windows extended paths are applied at local
+IO boundaries so long capture names can be written and read without changing
+source URLs, body hashes, relative capture names, or parent ownership checks.
+
+This development change requires real-service and Linux validation before
+production promotion. Process completion and readable text do not prove target
+coverage or prediction accuracy.

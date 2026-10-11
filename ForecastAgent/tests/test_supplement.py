@@ -3,15 +3,39 @@ import base64
 import copy
 import hashlib
 import json
+import os
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 import zipfile
 from ForecastAgent.supplement.stage import run, analysis_overlay, digest
+from ForecastAgent.runtime.filesystem import io_path
 
 
 class SupplementTests(unittest.TestCase):
+    @unittest.skipUnless(os.name=='nt','Windows extended path regression')
+    def test_long_capture_path_roundtrip_uses_regular_caller_paths(self):
+        with tempfile.TemporaryDirectory() as d:
+            short=Path(d)
+            root=short/('a'*60)/('b'*60)/('c'*60)
+            io_path(root).mkdir(parents=True,exist_ok=True)
+            try:
+                archive,bundle=self.fixture(io_path(root))
+                page={'content':'Measured data. '*40}
+                before=archive.read_bytes()
+                with patch('ForecastAgent.supplement.stage.bounded_capture',return_value=page):
+                    run(archive,root/'out',['1'],network=True)
+                overlay=analysis_overlay(bundle,root/'out','1')
+                self.assertEqual(overlay['pages']['https://example.org/data']['content'],page['content'])
+                self.assertEqual(archive.read_bytes(),before)
+                self.assertEqual(bundle['pages'],{})
+            finally:
+                resolved=root.resolve()
+                self.assertTrue(resolved.is_relative_to(short.resolve()))
+                shutil.rmtree(io_path(resolved))
+
     def fixture(self,folder):
         raw=b'<html><body>Please enable javascript</body></html>'
         url='https://example.org/data'
@@ -30,7 +54,7 @@ class SupplementTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);archive,bundle=self.fixture(folder);before=archive.read_bytes()
             page={'content':'Measured data. '*40,'body_diagnostics':{'state':'readable','usable_text':True}}
-            with patch('ForecastAgent.supplement.stage.render_page',return_value=page) as browser:
+            with patch('ForecastAgent.supplement.stage.bounded_capture',return_value=page) as browser:
                 run(archive,folder/'out',['1'],network=True)
                 run(archive,folder/'out',['1'],network=True)
                 self.assertEqual(browser.call_count,1)
@@ -43,16 +67,17 @@ class SupplementTests(unittest.TestCase):
     def test_failed_attempt_counts_and_policy_change_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);archive,_=self.fixture(folder)
-            with patch('ForecastAgent.supplement.stage.render_page',side_effect=RuntimeError('failed')) as browser:
+            with patch('ForecastAgent.supplement.stage.bounded_capture',side_effect=RuntimeError('failed')) as browser:
                 run(archive,folder/'out',['1'],network=True)
                 run(archive,folder/'out',['1'],network=True)
                 self.assertEqual(browser.call_count,1)
             with self.assertRaises(ValueError):run(archive,folder/'out',['1'],network=True,browser_limit=3)
+            with self.assertRaises(ValueError):run(archive,folder/'out',['1'],network=True,operation_timeout_seconds=90)
 
     def test_offline_mode_never_renders(self):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);archive,_=self.fixture(folder)
-            with patch('ForecastAgent.supplement.stage.render_page') as browser:
+            with patch('ForecastAgent.supplement.stage.bounded_capture') as browser:
                 run(archive,folder/'out',['1'])
                 browser.assert_not_called()
 
@@ -64,19 +89,19 @@ class SupplementTests(unittest.TestCase):
             path=folder/'out/tasks/1/supplement.json';child=json.loads(path.read_text())
             child['attempts']=[{'url':'https://example.org/data','method':'browser','status':'reserved'}]
             path.write_text(json.dumps(child))
-            with patch('ForecastAgent.supplement.stage.render_page') as browser:
+            with patch('ForecastAgent.supplement.stage.bounded_capture') as browser:
                 run(archive,folder/'out',['1'],network=True,browser_limit=0)
                 browser.assert_not_called()
 
     def test_legacy_packaging_migration_retains_attempts(self):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);archive,_=self.fixture(folder)
-            with patch('ForecastAgent.supplement.stage.render_page',side_effect=RuntimeError('failed')):
+            with patch('ForecastAgent.supplement.stage.bounded_capture',side_effect=RuntimeError('failed')):
                 run(archive,folder/'out',['1'],network=True)
             manifest=folder/'out/manifest.json';previous=json.loads(manifest.read_text())
             previous.pop('parent_files_sha256');previous['parent_sha256']='legacy_zip_hash'
             manifest.write_text(json.dumps(previous))
-            with patch('ForecastAgent.supplement.stage.render_page') as browser:
+            with patch('ForecastAgent.supplement.stage.bounded_capture') as browser:
                 run(archive,folder/'out',['1'],network=True)
                 browser.assert_not_called()
             self.assertTrue((folder/'out/manifest-packaging-migration.json').exists())

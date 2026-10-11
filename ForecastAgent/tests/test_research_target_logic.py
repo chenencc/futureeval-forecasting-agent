@@ -100,6 +100,21 @@ class TargetLogicTests(unittest.TestCase):
             self.assertEqual(result['acceptance']['target_coverage']['targets'][0]['status'],'unassessed')
             self.assertTrue(any(r['section']=='target_links' for r in result['acceptance']['rejected']))
 
+    def test_invalid_role_exposes_repair_values_without_accepting_link(self):
+        b,p=fixture()
+        entry=link(b)
+        entry['role']='background'
+        p['nodes'][0]['target_links']=[entry]
+        original=copy.deepcopy(b['pages'])
+        result=apply(b,p)
+        rejection=next(r for r in result['acceptance']['rejected'] if r['section']=='target_links')
+        self.assertEqual(rejection['contract_error']['code'],'invalid_choice')
+        self.assertEqual(rejection['contract_error']['field'],'arguments.role')
+        self.assertIn('baseline',rejection['contract_error']['allowed_values'])
+        self.assertNotIn('background',rejection['contract_error']['allowed_values'])
+        self.assertEqual(b['research_loop']['current']['nodes'][0]['target_links'],[])
+        self.assertEqual(b['pages'],original)
+
     def test_direct_is_a_declaration_never_resolution(self):
         b,p=fixture(); p['nodes'][0]['applicability']='target'
         p['nodes'][0]['target_links']=[link(b,'direct','context')]

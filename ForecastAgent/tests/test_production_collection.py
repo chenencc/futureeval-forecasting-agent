@@ -79,12 +79,14 @@ class ProductionCollectionTests(TestCase):
         before=copy.deepcopy(old)
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);archive=archived(folder,old);raw=archive.read_bytes()
-            with patch('ForecastAgent.supplement.stage.fetch_document',return_value=page()) as http, \
+            def capture(method,*args,**kwargs):
+                if method=='browser':raise RuntimeError('Unavailable')
+                return page()
+            with patch('ForecastAgent.supplement.stage.bounded_capture',side_effect=capture) as transport, \
                  patch('ForecastAgent.supplement.stage.render_page',side_effect=RuntimeError('Unavailable')) as browser:
                 result=run(archive,folder/'out',['1'],network=True)
                 run(archive,folder/'out',['1'],network=True)
-                self.assertEqual(http.call_count,2)
-                self.assertEqual(browser.call_count,1)
+                self.assertEqual(transport.call_count,3)
                 self.assertEqual(result[0]['new_readable_captures'],2)
             overlay=analysis_overlay(old,folder/'out','1')
             self.assertFalse(overlay['pages'][fixture[0]['url']]['body_diagnostics']['usable_text'])

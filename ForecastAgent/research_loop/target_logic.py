@@ -5,7 +5,7 @@ from collections import Counter
 
 from ForecastAgent.analysis.pilot import digest
 from ForecastAgent.research_loop.schema import TARGET_LINK
-from ForecastAgent.runtime.contracts import check_schema
+from ForecastAgent.runtime.contracts import check_schema, ContractError
 
 FIELD = 'research_target_logic_policy'
 POLICY = 'source_bound_target_links_v1'
@@ -159,6 +159,8 @@ def isolate_node(bundle, original):
         except (ValueError, TypeError, KeyError) as exc:
             errors.append({'section': 'target_links', 'node_id': chosen.get('id'),
                            'index': index, 'entry_sha256': digest(link), 'error': str(exc)})
+            if isinstance(exc, ContractError):
+                errors[-1]['contract_error'] = copy.deepcopy(exc.details)
     chosen['target_links'] = kept
     return chosen, errors
 

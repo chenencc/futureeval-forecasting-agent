@@ -8,6 +8,7 @@ import socket
 import sys
 import threading
 import unittest
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -17,15 +18,42 @@ from ForecastAgent.analysis.pilot import save
 from ForecastAgent.releases.guard import execute
 
 
+@contextmanager
+def forbidden_network():
+    """Permit only the standard library's owned socketpair handshake."""
+    original_connect = socket.socket.connect
+    original_socketpair = socket.socketpair
+    local = threading.local()
+
+    def connect(sock, address):
+        if getattr(local, 'socketpair', False) and isinstance(address, tuple) and address[0] in ('127.0.0.1', '::1'):
+            return original_connect(sock, address)
+        raise AssertionError('Network forbidden in regression gate')
+
+    def socketpair(*args, **kwargs):
+        previous = getattr(local, 'socketpair', False)
+        local.socketpair = True
+        try:
+            return original_socketpair(*args, **kwargs)
+        finally:
+            local.socketpair = previous
+
+    with patch.object(socket.socket, 'connect', connect), \
+         patch.object(socket, 'socketpair', socketpair), \
+         patch.object(socket, 'create_connection', side_effect=AssertionError('Network forbidden in regression gate')):
+        yield
+
+
 def regressions(root):
     modules=['ForecastAgent.tests.test_intelligence_worker','ForecastAgent.tests.test_official_competition',
         'ForecastAgent.tests.test_predictive_intelligence','ForecastAgent.tests.test_intelligence_validation',
-        'ForecastAgent.tests.test_release_1_0_5']
+        'ForecastAgent.tests.test_release_1_0_5','ForecastAgent.tests.test_supplement_transport_boundary',
+        'ForecastAgent.tests.test_supplement','ForecastAgent.tests.test_production_collection',
+        'ForecastAgent.tests.test_crawl4ai_adapter','ForecastAgent.tests.test_linux_gate_network']
     loader=unittest.TestLoader()
     suite=unittest.TestSuite([loader.loadTestsFromNames(modules),
         loader.discover('ForecastAgent/tests',pattern='test_research*.py')])
-    with patch.object(socket.socket,'connect',side_effect=AssertionError('Network forbidden in regression gate')), \
-         patch.object(socket,'create_connection',side_effect=AssertionError('Network forbidden in regression gate')):
+    with forbidden_network():
         with (root/'offline-tests.log').open('w',encoding='utf-8') as stream:
             result=unittest.TextTestRunner(stream=stream,verbosity=2).run(suite)
     report={'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),

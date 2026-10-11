@@ -97,3 +97,23 @@ journal remains on disk; the next model request receives compact actionable
 feedback instead of another copy of the full previous outcome. Existing HTTP,
 failure, revision and no-processing-progress limits still apply. Offline packet
 size reductions are not actual token savings or evidence of better forecasts.
+
+## Model context metadata projection
+
+When an integrated acquisition request exceeds its delivery ceiling, compact
+navigable source summaries and mirrored feedback before paging original spans.
+Immutable rules, current nodes, targets, gap requests, cursor, budget, operating
+clock, rejection meanings, material identity, partial scope, and processing
+handles remain. Audit-only hashes and repeated descriptions stay in the durable
+ledger. Corrective map feedback remains available.
+
+Whole original spans can then be paged, with delivered and omitted IDs recorded
+explicitly. Quotes are never shortened. Omission does not establish absence,
+full-page reading, target relevance, or an accepted processing receipt. If the
+remaining immutable content cannot fit, fail locally before a model request.
+
+Invalid enum values remain rejected. Their structured contract feedback includes
+the failing field and allowed values, so a later model update can repair its own
+proposal. This diagnostic does not change the accepted node, source quotation,
+material receipt, target effect, revision, or budget. Plain semantic failures,
+such as using another source's node for incorporation, remain explicit rejections.

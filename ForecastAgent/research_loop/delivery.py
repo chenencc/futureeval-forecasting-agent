@@ -7,6 +7,42 @@ FIELD = 'research_delivery_policy'
 POLICY = 'bounded_reading_delta_v1'
 
 
+def compact_navigation(payload):
+    """Compact model-facing metadata only; callers retain the durable full ledger."""
+    omitted = []
+    for key in ('saved_sources', 'saved_body_diagnostics'):
+        if key in payload:
+            payload[key + '_omitted_count'] = len(payload.pop(key))
+            omitted.append(key)
+    frame = payload.get('research_binding_frame') or {}
+    feedback = frame.get('gap_feedback') or {}
+    for material in feedback.get('pending_materials', []):
+        for key in ('origin', 'acquisition_action_ids'):
+            material.pop(key, None)
+    update = feedback.get('last_update') or {}
+    actual = update.get('actual_graph_delta') or {}
+    explanation = update.get('program_explanation') or {}
+    for key in ('node_changes', 'relation_changes'):
+        mirror = explanation.get(key)
+        if isinstance(mirror, dict) and all(k in actual and actual[k] == v for k, v in mirror.items()):
+            explanation.pop(key)
+    if ('material_requests_changed' in explanation and
+            explanation['material_requests_changed'] == actual.get('material_requests_changed')):
+        explanation.pop('material_requests_changed')
+    update.pop('model_explanation', None)
+    for rejection in (payload.get('last_map_feedback') or {}).get('rejected', []):
+        rejection.pop('entry_sha256', None)
+    # These notices describe the same durable navigation and verification limit.
+    # Corrective instructions in last_map_feedback remain intact.
+    for record in (feedback, frame, explanation):
+        record.pop('instruction', None)
+    payload['navigation_projection'] = {
+        'omitted_sections': omitted,
+        'instruction': 'Navigation summaries and mirrored audit metadata omitted; full records remain saved. '
+            'Rules, original spans, IDs, scope hashes, processing state and rejection meanings are retained. '
+            'Omission never proves absence, full-page reading, relevance or processing acceptance.'}
+
+
 def fit_messages(messages, payload, maximum):
     """Page whole evidence spans; never slice rules, quotes or source identities."""
     from ForecastAgent.runtime.context import encode, ContextProjectionError
@@ -31,6 +67,9 @@ def fit_messages(messages, payload, maximum):
         # in the transcript; the binding frame and acceptance feedback are pinned.
         groups = []
         notice['omitted_tool_group'] = True
+    if len(encode(render())) > maximum:
+        compact_navigation(payload)
+        notice['navigation_compacted'] = True
     frame = payload.get('research_binding_frame') or {}
     evidence = frame.get('inspected_evidence', [])
     contexts = frame.get('source_context', [])

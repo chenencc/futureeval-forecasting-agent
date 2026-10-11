@@ -338,6 +338,8 @@ def review(task, proposals, before, explanation, result):
                 'meaning_verified':False})
         except (ValueError, KeyError, TypeError) as exc:
             rejected.append({'section':'material_reviews', 'index':index, 'error':str(exc), 'entry_sha256':digest(proposal)})
+            if isinstance(exc, ContractError):
+                rejected[-1]['contract_error'] = copy.deepcopy(exc.details)
     change = graph_delta(before, current)
     event = {'map_revision':task.bundle['research_loop']['revision'],
         'map_event_sha256':task.bundle['research_loop']['events'][-1]['event_sha256'] if task.bundle['research_loop']['events'] else None,

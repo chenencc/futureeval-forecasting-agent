@@ -195,6 +195,7 @@ def supplement_backend(query=''):
     """Process-local opt-in seam; callers run one pipeline per process."""
     from ForecastAgent.supplement import stage
     original = stage.render_page
+    original_profile = stage.BROWSER_TRANSPORT_PROFILE
     def adapter(url, **kwargs):
         snapshot = render_page(url, query=query, **kwargs)
         if not snapshot['capture_status']['usable_text']:
@@ -205,10 +206,12 @@ def supplement_backend(query=''):
                 content='', documents=[])
         return snapshot
     stage.render_page = adapter
+    stage.BROWSER_TRANSPORT_PROFILE = {'backend': 'crawl4ai', 'query': query}
     try:
         yield
     finally:
         stage.render_page = original
+        stage.BROWSER_TRANSPORT_PROFILE = original_profile
 
 
 def pipeline_request(request):
