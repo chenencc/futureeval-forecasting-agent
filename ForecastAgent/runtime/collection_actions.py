@@ -119,6 +119,16 @@ def primary_rescue(task):
     # Another document on the same host does not supply this failed source.
     from ForecastAgent.runtime.needs import active_needs
     needs=[n for n in active_needs(task.bundle) if n['priority']=='critical']
+    rule_urls = []
+    for field in ('resolution_criteria', 'fine_print'):
+        rule_urls.extend(re.findall(r'https?://[^\s<>\)\]"\x27]+', str(task.bundle['request'].get(field, ''))))
+    def publisher(url):
+        host = (urlsplit(url).hostname or '').lower()
+        return host[4:] if host.startswith('www.') else host
+    rule_hosts = {publisher(url) for url in rule_urls}
+    rule_needs = [n['id'] for n in needs if not n.get('question_refs') or any(
+        ref.startswith(('Q_resolution_criteria_', 'Q_fine_print_'))
+        for ref in n.get('question_refs', []) if isinstance(ref, str))]
     rows=[]
     for url in task.rescue_candidates():
         host=(urlsplit(url).hostname or '').lower()
@@ -129,8 +139,17 @@ def primary_rescue(task):
         labels=set(re.findall(r'[a-z0-9]{2,}',host))-generic
         matches=[n['id'] for n in needs if labels &
                  (set(re.findall(r'[a-z0-9]{2,}',n.get('expected_source','').lower()))-generic)]
+        rule_match = publisher(url) in rule_hosts and bool(rule_needs)
+        if rule_match:
+            matches = sorted(set(matches + rule_needs))
         if matches:
-            rows.append({'url':url,'need_ids':matches,'reason':'Failed discovered host matches a named critical expected source; a routing hint, not authority verification.'})
+            rows.append({'url':url,'need_ids':matches,'reason':
+                ('Failed discovered publisher is explicitly linked by immutable resolution rules; '
+                 'need association is a routing hint, not relevance or authority verification.' if rule_match else
+                 'Failed discovered host matches a named critical expected source; a routing hint, not authority verification.')})
+    exact_rules = {canonical_url(u) for u in rule_urls}
+    rows.sort(key=lambda row: (canonical_url(row['url']) not in exact_rules,
+                              publisher(row['url']) not in rule_hosts))
     return rows[:5]
 
 

@@ -34,3 +34,6 @@ market total and team scoring baselines to the model; their omission was not a
 body-delivery failure. The prior legal graph retained an interpretation error
 despite valid literal references. The registry does not solve either semantic
 problem by itself.
+
+The native acquisition, map and review prompts and the target-link tool schema must all expose both T and F namespaces when this policy is enabled. Default legacy prompts retain the T-only contract. This changes routing guidance; it does not prove that a model uses every relevant original or interprets it correctly.
+

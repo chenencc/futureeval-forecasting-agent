@@ -210,7 +210,7 @@ def configure(task, tools):
                 tool['function']['parameters']=gap_feedback.schema(tool['function']['parameters'])
             from ForecastAgent.research_loop import target_logic
             if target_logic.enabled(task.bundle):
-                tool['function']['parameters']=target_logic.schema(tool['function']['parameters'])
+                tool['function']['parameters']=target_logic.schema(tool['function']['parameters'], bundle=task.bundle)
             node = tool['function']['parameters']['properties']['nodes']['items']['properties']
             node['claim']['description'] = 'For observation, COPY a short CONTIGUOUS literal quote from one supplied R span. No paraphrase, added entity or URL. Put your explanation in interpretation. Other kinds are explicit hypotheses or gaps.'
             if gap_feedback.enabled(task.bundle):

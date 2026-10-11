@@ -77,12 +77,15 @@ def targets(bundle):
     return rows
 
 
-def schema(base):
+def schema(base, *, bundle=None):
     result = copy.deepcopy(base)
     node = result['properties']['nodes']['items']
     node['properties']['target_links'] = {
         'type': 'array', 'maxItems': 4, 'items': copy.deepcopy(TARGET_LINK),
-        'description': 'Use exact frozen T IDs. Explain the target-specific effect and limits. [] is unassessed, never covered.'}
+        'description': ('Use exact supplied frozen T research-need and F forecast-target IDs. '
+            'T coverage never implies F coverage. Explain scope and limits; [] is unassessed, never covered.'
+            if bundle is not None and bundle.get('request', {}).get('forecast_target_registry_policy') == 'question_and_research_targets_v1' else
+            'Use exact frozen T IDs. Explain the target-specific effect and limits. [] is unassessed, never covered.')}
     if 'target_links' not in node['required']:
         node['required'].append('target_links')
     return result

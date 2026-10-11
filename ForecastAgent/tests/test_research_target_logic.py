@@ -33,6 +33,24 @@ def apply(b, p):
 
 
 class TargetLogicTests(unittest.TestCase):
+    def test_root_registry_prompt_and_tool_schema_agree_in_all_native_phases(self):
+        from ForecastAgent.research_loop import reference_map
+        b, _ = fixture()
+        original = reference_map.prompt(bundle=b)
+        original_schema = logic.schema(simple_map.MAP_SCHEMA)
+        b['request']['forecast_target_registry_policy'] = 'question_and_research_targets_v1'
+        for phase in ('acquisition', 'map', 'review'):
+            rendered = reference_map.prompt(bundle=b, phase=phase)
+            self.assertNotIn('Use frozen T IDs in target_links.', rendered)
+            self.assertIn('F forecast-target IDs', rendered)
+            self.assertIn('T coverage never implies F coverage', rendered)
+        rendered_schema = logic.schema(simple_map.MAP_SCHEMA, bundle=b)
+        description = rendered_schema['properties']['nodes']['items']['properties']['target_links']['description']
+        self.assertIn('F forecast-target IDs', description)
+        b['request'].pop('forecast_target_registry_policy')
+        self.assertEqual(reference_map.prompt(bundle=b), original)
+        self.assertEqual(logic.schema(simple_map.MAP_SCHEMA, bundle=b), original_schema)
+
     def test_forecast_target_is_independent_of_plan_and_not_covered_by_schedule(self):
         b, _ = fixture()
         b['request']['forecast_target_registry_policy'] = 'question_and_research_targets_v1'

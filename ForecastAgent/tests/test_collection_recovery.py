@@ -31,6 +31,31 @@ def closed_bundle():
 
 
 class RecoveryTests(TestCase):
+    def test_rule_publisher_rescue_survives_plan_alias_without_extra_fetch_allowance(self):
+        from ForecastAgent.runtime.collection_actions import raw_stop_reason
+        with tempfile.TemporaryDirectory() as directory:
+            task, url = self.task(Path(directory), 'Exchange settlement', 'publisher.example')
+            task.bundle['request'] = copy.deepcopy(task.bundle['request'])
+            # A Markdown link supplies the exact immutable URL without sentence punctuation.
+            task.bundle['request']['resolution_criteria'] = 'Use [settlement](https://www.publisher.example/report)'
+            task.bundle['plan'][0]['question_refs'] = ['Q_resolution_criteria_original']
+            task.bundle['fetch_attempts'] *= 8
+            before = copy.deepcopy(task.bundle)
+            self.assertEqual(task.budget()['page_fetch_remaining'], 0)
+            candidates = primary_rescue(task)
+            self.assertEqual(candidates[0]['url'], url)
+            self.assertIn('immutable resolution rules', candidates[0]['reason'])
+            self.assertIsNone(raw_stop_reason(task))
+            self.assertEqual(task.bundle, before)
+            task.bundle['request']['resolution_criteria'] = ''
+            task.bundle['request']['background'] = 'https://publisher.example/report'
+            self.assertEqual(primary_rescue(task), [])
+            task.bundle['request']['fine_print'] = 'https://publisher.example.evil.test/report'
+            self.assertEqual(primary_rescue(task), [])
+            task.bundle['request']['fine_print'] = 'https://publisher.example/report'
+            task.verified_only = True
+            self.assertEqual(primary_rescue(task), [])
+
     def test_development_cli_cannot_submit(self):
         with patch('sys.argv',['release','--root','unused','--snapshots','unused','--submit']), \
              patch.object(release,'verify_release',return_value={'development_only':True}), \
