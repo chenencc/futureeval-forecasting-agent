@@ -65,19 +65,23 @@ def choose(task):
     material = state.catalog(task.bundle, task.cutoff)
     revision = task.bundle['research_loop']['revision']
     history = record['selections']
-    if not material['sources']:
-        from ForecastAgent.runtime.collection_actions import discovery_read_action
-        discovery = discovery_read_action(task)
-        discovery_round = len(task.bundle.get('searches', [])) + len(task.bundle.get('exa_searches', []))
-        attempts = sum(s['phase'] == 'capture_discovery' and s.get('discovery_round') == discovery_round
-                       for s in history)
-        if discovery and attempts < 2:
-            return {'phase': 'capture_discovery', 'revision': revision,
-                    'discovery_round': discovery_round, 'tool': 'read_sources',
-                    'candidates': discovery,
-                    'instruction': 'Capture one batch of already discovered exact URLs using '
-                    'read_sources. Do not load skills or inspect an empty map first. '
-                    'Use an actual JSON array for urls. Future outcomes remain unknown.'}
+    # Preserve the release discovery-to-reading obligation even when an earlier
+    # page is already saved. Otherwise repeated map work can starve a newly
+    # discovered primary detail page until the same model budget is exhausted.
+    from ForecastAgent.runtime.collection_actions import discovery_read_action
+    discovery = discovery_read_action(task)
+    discovery_round = len(task.bundle.get('searches', [])) + len(task.bundle.get('exa_searches', []))
+    attempts = sum(s['phase'] == 'capture_discovery' and s.get('discovery_round') == discovery_round
+                   for s in history)
+    if discovery and attempts < 2:
+        return {'phase': 'capture_discovery', 'revision': revision,
+                'discovery_round': discovery_round, 'tool': 'read_sources',
+                'candidates': discovery,
+                'instruction': 'Capture one batch of these already discovered unread URLs using '
+                'read_sources before additional map interpretation. A saved background page '
+                'does not fulfill this new discovery batch. Choose the most useful exact '
+                'rule-source detail or dated baseline; ranking does not verify relevance. '
+                'Use an actual JSON array for urls. Future outcomes remain unknown.'}
     pending = gap_feedback.pending(task)
     # Two review proposals per exact source scope. Failed interpretations remain
     # pending, but cannot starve all subsequent sources or extend a soft stop.
@@ -174,6 +178,9 @@ def tools_for(task, tools, choice):
             u in task.bundle['pages'],
             -len(terms & set(re.findall(r'[a-z0-9]{4,}',
                 (u + ' ' + str(known[u].get('title', ''))).lower()))), u))[:24]
+        if choice['phase'] == 'capture_discovery':
+            ordered = [u for u in choice['candidates']['urls']
+                       if u in known and u not in failed and u not in task.bundle['pages']]
         if not ordered:
             return []  # Preserve an explicit routing gap; do not grant arbitrary URLs.
         for entry in tools:

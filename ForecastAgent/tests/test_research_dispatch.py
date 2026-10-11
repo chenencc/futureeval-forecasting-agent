@@ -111,6 +111,41 @@ class DispatchTests(unittest.TestCase):
             self.assertEqual(choice['phase'], 'capture_discovery')
             self.assertEqual(choice['tool'], 'read_sources')
 
+    def test_new_discovery_is_read_before_reinterpreting_an_existing_page(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            original = copy.deepcopy(t.bundle['pages'])
+            url = 'https://example.org/current-statistics'
+            t.bundle['searches'] = [{'results': [{'url': url, 'title': 'Target latest official data'}]}]
+            budget = copy.deepcopy(t.budget())
+            choice = dispatch.choose(t)
+            self.assertEqual(choice['phase'], 'capture_discovery')
+            self.assertIn(url, choice['candidates']['urls'])
+            tools = [{'function': {'name': 'read_sources', 'parameters': {'properties':
+                {'urls': {'type':'array','items':{'type':'string'}}}}}}]
+            selected = dispatch.tools_for(t, tools, choice)
+            self.assertEqual(selected[0]['function']['parameters']['properties']['urls']['items']['enum'], [url])
+            self.assertEqual(t.bundle['pages'], original)
+            self.assertEqual(t.budget(), budget)
+            # Invalid proposals cannot create an endless forced-reading loop.
+            dispatch.record_selection(t, choice)
+            dispatch.record_selection(t, dispatch.choose(t))
+            self.assertEqual(dispatch.choose(t)['phase'], 'process_read')
+            # A completed reading consumes the existing obligation, not new quota.
+            t.bundle['control']['read_after_discovery'] = 1
+            self.assertEqual(dispatch.choose(t)['phase'], 'process_read')
+
+    def test_discovery_priority_cannot_override_hard_close_or_fetch_cap(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            t.bundle['searches'] = [{'results': [{'url': 'https://example.org/detail', 'title': 'Target'}]}]
+            t.bundle['control']['forced_close'] = True
+            self.assertIsNone(dispatch.choose(t))
+            t.bundle['control']['forced_close'] = False
+            budget = t.budget(); budget['page_fetch_remaining'] = 0
+            with patch.object(t, 'budget', return_value=budget):
+                self.assertEqual(dispatch.choose(t)['phase'], 'process_read')
+
     def test_reserved_reviewer_continues_after_partial_acceptance(self):
         with tempfile.TemporaryDirectory() as root:
             t = fresh(root)

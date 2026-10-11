@@ -101,3 +101,10 @@ preserves failed Mercury receipts and refuses account/quota/unknown failures.
 All five payload formats, cached replay, failed fallback caps and transport/result
 consistency are offline-tested. This is behavioral fault coverage, not proof that
 its forecasts equal the release reasoning fallback or improve prediction.
+
+The RIVM capture gap exposed a scheduling regression: the graph scheduler only
+honored discovery-to-reading while no original page existed. A saved overview
+could therefore take precedence over new detail-page leads. The next candidate
+preserves the existing release reading obligation after each discovery advance,
+limits that phase to observed unread URLs, and retains the same two-proposal and
+source-budget bounds. This is a general queue fix; fresh recall remains unproved.
