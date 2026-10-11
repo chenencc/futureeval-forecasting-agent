@@ -1490,8 +1490,8 @@ def run_retrieval(request, directory, tavily_key, router_key, *, replay=False):
                     model_messages = supplemental_messages(task)
                     if fusion.enabled(task):
                         model_messages.append({'role':'user','content':json.dumps({'research_frontier':fusion.frontier(task)})})
-                if collection and len(encode(model_messages)) > MAX_CONTEXT_CHARS:
-                    raise ContextProjectionError('Context ceiling exceeded after dispatch projection; no model HTTP issued')
+                if collection:
+                    research_dispatch.validate_delivery(task, model_messages)
                 message = ask_ultra(model_messages, router_key, tools=turn_tools, forced_tool=forced,
                                     observer=observer, deadline=deadline, **fusion.model_options(task, forced))
                 current_session['model_decisions'] += 1

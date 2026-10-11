@@ -156,6 +156,21 @@ def model_context(task, choice, *, forced_tool=None):
         return messages
 
 
+def validate_delivery(task, messages):
+    """Check the final wire-bound messages against the task's registered cap.
+
+    This runs after supplemental routing too. Legacy collection remains 28K;
+    only explicit research dispatch can register a larger hard ceiling.
+    """
+    from ForecastAgent.runtime.context import encode, MAX_CONTEXT_CHARS, ContextProjectionError
+    from ForecastAgent.research_loop.context_budget import ceilings
+    request = task.bundle.get('request', {})
+    limits(request)
+    maximum = ceilings(request)[-1] if enabled(task.bundle) else MAX_CONTEXT_CHARS
+    if len(encode(messages)) > maximum:
+        raise ContextProjectionError('Context ceiling exceeded after final routing; no model HTTP issued')
+
+
 def choose(task):
     """A phase consumes decisions; it cannot override hard closure or Exa duty."""
     record = ledger(task)

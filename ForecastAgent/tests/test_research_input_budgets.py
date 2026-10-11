@@ -2,7 +2,9 @@
 import copy
 import hashlib
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from ForecastAgent.research_loop import context_budget, dispatch, shared_map_input
@@ -45,6 +47,46 @@ class ContextCeilingTests(unittest.TestCase):
                 context_budget.ceilings({context_budget.FIELD: value})
         with self.assertRaises(ValueError):
             dispatch.limits({context_budget.FIELD: {'preferred_chars': 28000, 'maximum_chars': 40000}})
+
+    def test_final_routing_uses_registered_limit_and_still_rejects_true_overflow(self):
+        messages = [{'role': 'user', 'content': 'x' * 32000}]
+        for request, accepted in (({}, False),
+            ({dispatch.FIELD: dispatch.POLICY, context_budget.FIELD:
+                {'preferred_chars': 28000, 'maximum_chars': 40000}}, True)):
+            task = SimpleNamespace(bundle={'request': request})
+            if accepted:
+                dispatch.validate_delivery(task, messages)
+                with self.assertRaises(ContextProjectionError):
+                    dispatch.validate_delivery(task, messages + [{'role': 'user', 'content': 'x' * 10000}])
+            else:
+                with self.assertRaises(ContextProjectionError):
+                    dispatch.validate_delivery(task, messages)
+
+    def test_real_collection_send_boundary_honors_opt_in_ceiling(self):
+        from ForecastAgent.runtime.retrieval import RetrievalTask, run_retrieval
+        from ForecastAgent.tests.test_research_loop import source_bundle
+        from ForecastAgent.tests.test_collection import PLAN
+        for registered, size, sends in ((False, 32000, 0), (True, 32000, 1), (True, 41000, 0)):
+            request = copy.deepcopy(source_bundle()['request'])
+            request[dispatch.FIELD] = dispatch.POLICY
+            if registered:
+                request[context_budget.FIELD] = {'preferred_chars': 28000, 'maximum_chars': 40000}
+            with tempfile.TemporaryDirectory() as root, patch.dict('os.environ', {'EXA_API_KEY': ''}):
+                task = RetrievalTask(Path(root), request)
+                task.execute('plan_evidence', PLAN, '')
+                task.save()
+                messages = [{'role': 'user', 'content': 'x' * size}]
+                with patch.object(dispatch, 'choose', return_value=None), \
+                    patch.object(dispatch, 'model_context', return_value=messages), \
+                    patch('ForecastAgent.runtime.material_protocol.closure_ready', return_value=False), \
+                    patch('ForecastAgent.runtime.collection_actions.raw_stop_reason', return_value=None), \
+                    patch('ForecastAgent.runtime.retrieval.ask_ultra', side_effect=RuntimeError('Test send boundary reached')) as send, \
+                    patch('urllib.request.urlopen', side_effect=AssertionError('No network')):
+                    result = run_retrieval(request, Path(root), '', '')
+                self.assertEqual(send.call_count, sends)
+                self.assertEqual(result['last_error'], 'RuntimeError' if sends else 'ContextProjectionError')
+                self.assertFalse(result.get('model_attempts', []))
+                self.assertFalse(result['searches'])
 
 
 class SharedMapOriginalTests(unittest.TestCase):

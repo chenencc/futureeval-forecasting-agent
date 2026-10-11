@@ -670,6 +670,11 @@ Neither mechanism is wired into production by this development module.
 
 ## Registered input budgets
 
+The final collection send boundary uses the same frozen hard ceiling after all
+supplemental routing. A larger local projection cannot bypass a second legacy
+28K guard or silently authorize another provider call. Integration coverage
+checks legacy rejection, registered delivery and true overflow before transport.
+
 `research_context_budget` is an explicit task input with `preferred_chars` and
 `maximum_chars`. Old tasks keep their 28,000-character ceiling. An opted-in task
 can retry local projection at its registered larger ceiling before any provider
