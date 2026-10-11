@@ -26,6 +26,30 @@ def fresh(root):
 
 
 class DispatchTests(unittest.TestCase):
+    def test_committed_review_yields_to_unread_frontier_without_claiming_pending_processed(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root); initial(t)
+            t.bundle['pages']['https://example.org/second'] = {
+                'content':'An additional saved background source still needs source-bound review.'}
+            url='https://example.org/target-current-detail'
+            t.bundle['searches']=[{'results':[{'url':url,'title':'Target current detail'}]}]
+            t.bundle['control']['read_after_discovery']=1
+            dispatch.ledger(t)['selections'].append({'phase':'process_update','revision':0})
+            before=copy.deepcopy(t.bundle['pages']);budget=copy.deepcopy(t.budget())
+            pending=dispatch.status(t)['pending_material_count']
+            choice=dispatch.choose(t)
+            self.assertEqual(choice['phase'],'capture_frontier')
+            self.assertEqual(choice['candidates']['urls'],[url])
+            self.assertEqual(t.bundle['pages'],before)
+            self.assertEqual(t.budget(),budget)
+            self.assertEqual(dispatch.status(t)['pending_material_count'],pending)
+            for _ in range(2):dispatch.record_selection(t,choice)
+            self.assertNotEqual(dispatch.choose(t)['phase'],'capture_frontier')
+            # Failed/attempted aliases must not become a fresh capture slot.
+            dispatch.ledger(t)['selections']=dispatch.ledger(t)['selections'][:1]
+            t.bundle['fetch_attempts']=[{'url':url+'/','status':'failed'}]
+            self.assertNotEqual(dispatch.choose(t)['phase'],'capture_frontier')
+
     def test_frozen_caps_survive_restart_and_change_is_rejected(self):
         with tempfile.TemporaryDirectory() as root:
             t = fresh(root)

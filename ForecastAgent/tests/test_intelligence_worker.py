@@ -23,6 +23,19 @@ from ForecastAgent.tests.test_research_reference_map import proposal, apply
 
 
 class WorkerTests(unittest.TestCase):
+    def test_empty_export_is_not_complete_or_scoreable(self):
+        request_path=self.root/'empty-request.json';save(request_path,{'id':'101'})
+        directory=self.root/'empty-job'
+        with patch.object(worker.pipeline,'collect',return_value={
+                'view':{'pages':{},'plan':None,'result':None},
+                'report':{'status':'needs_material_recovery'}}):
+            worker.collect_child(request_path,directory,'2026-10-11T00:00:00+00:00')
+        receipt=load(directory/'worker-collection-result.json')
+        self.assertFalse(receipt['complete'])
+        self.assertTrue(receipt['raw_export_available'])
+        self.assertEqual(receipt['status'],'needs_material_recovery')
+        self.assertEqual(receipt['collection_usage']['http'],0)
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
         self.docs={str(100+i):{'id':100+i,'title':str(i),'user_permission':'forecaster',

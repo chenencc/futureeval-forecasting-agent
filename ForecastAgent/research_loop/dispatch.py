@@ -133,6 +133,32 @@ def choose(task):
                 'A future realization is not an obtainable document; preserve that uncertainty. '
                 'suggested_tool is an intent category, not a function name. Call only an offered '
                 'tool. All array arguments must be JSON arrays, never encoded strings.'}
+    # After a committed source review, offer one existing unread lead batch
+    # before draining every other saved page into notes. The final review still
+    # owns pending material; a graph cannot monopolize the initial acquisition.
+    reviewed = any(s['phase'] == 'process_update' and s['revision'] < revision for s in history)
+    frontier_attempts = sum(s['phase'] == 'capture_frontier' and s['revision'] == revision for s in history)
+    if reviewed and usable and can_network and frontier_attempts < 2:
+        from ForecastAgent.tavily_research import canonical_url
+        attempted = {canonical_url(a['url']) for a in task.bundle.get('fetch_attempts', []) if a.get('url')}
+        attempted.update(canonical_url(u) for u in task.bundle['pages'])
+        known = task.catalog()
+        search_leads = {canonical_url(hit['url']) for result in
+            task.bundle.get('searches', []) + task.bundle.get('exa_searches', [])
+            for hit in result.get('results', []) if hit.get('url')}
+        from ForecastAgent.evidence.acquisition_quality import discovery_score
+        from ForecastAgent.runtime.collection_actions import named_primary
+        urls = sorted((u for u in known if canonical_url(u) in search_leads and canonical_url(u) not in attempted),
+            key=lambda u: (-discovery_score(task.bundle['request'], u, known[u].get('title') or '',
+                named_primary(task, u), known[u].get('published_date')), u))[:24]
+        if urls:
+            return {'phase':'capture_frontier', 'revision':revision, 'tool':'read_sources',
+                    'candidates':{'urls':urls},
+                    'instruction':'Use this existing unread discovery batch to extend the evidence '
+                    'before another saved-page map cycle. Choose relevant exact-source detail or '
+                    'independent context. These are observed leads, not verified evidence. '
+                    'Failed captures stay gaps and pending originals remain pending. '
+                    'Use a JSON array for urls; all existing capture and model caps apply.'}
     remaining = task.bundle['research_loop']['update_cap'] - revision
     reserve = record['limits']['post_review_revisions']
     if usable and remaining > reserve:
@@ -178,7 +204,7 @@ def tools_for(task, tools, choice):
             u in task.bundle['pages'],
             -len(terms & set(re.findall(r'[a-z0-9]{4,}',
                 (u + ' ' + str(known[u].get('title', ''))).lower()))), u))[:24]
-        if choice['phase'] == 'capture_discovery':
+        if choice['phase'] in {'capture_discovery', 'capture_frontier'}:
             ordered = [u for u in choice['candidates']['urls']
                        if u in known and u not in failed and u not in task.bundle['pages']]
         if not ordered:

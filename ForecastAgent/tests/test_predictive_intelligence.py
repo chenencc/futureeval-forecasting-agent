@@ -29,6 +29,22 @@ def bundle(pages=None):
 
 
 class AdmissionTests(TestCase):
+    def test_uninitialized_plan_and_result_export_a_gap_without_mutating_receipts(self):
+        original = bundle()
+        original.update(plan=None, result=None, gaps=None)
+        before = copy.deepcopy(original)
+        with tempfile.TemporaryDirectory() as root:
+            view, report = prepare_package(original, root, "2026-10-11T00:00:00+00:00")
+            self.assertEqual(report['status'], 'needs_material_recovery')
+            self.assertFalse(report['research_map']['map_delivered'])
+            self.assertEqual(load(Path(root)/'requirements.json')['material_plan_state'], 'uninitialized')
+            self.assertEqual(view['pages'], {})
+            self.assertEqual(view['fetch_attempts'], before['fetch_attempts'])
+        self.assertEqual(original, before)
+        broken = copy.deepcopy(original); broken['plan'] = 'corrupt'
+        with tempfile.TemporaryDirectory() as root, self.assertRaisesRegex(ValueError, 'material plan'):
+            prepare_package(broken, root, "2026-10-11T00:00:00+00:00")
+
     def test_site_name_and_identical_boilerplate_are_not_original_evidence(self):
         chrome = "Study record managers: refer to the Data Element Definitions if submitting registration or results information."
         original = bundle({"https://a.example/1": {"content": chrome},

@@ -81,7 +81,10 @@ def prepare(bundle):
     # Bank entries referring to excluded aliases must never be silently rebound.
     view["excerpts"] = [e for e in view.get("excerpts", []) if e.get("url") in admitted]
     view["evidence"] = [e for e in view.get("evidence", []) if e.get("url") in admitted]
-    gaps = list(view.get("gaps", view.get("result", {}).get("gaps", [])))
+    result = view.get("result")
+    if result is not None and not isinstance(result, dict):
+        raise ValueError("Saved collection result must be an object or uninitialized")
+    gaps = list(view.get("gaps") or (result or {}).get("gaps") or [])
     gaps.extend({"code": "body_not_admitted", "url": r["url"],
                  "body_state": r["diagnostics"]["state"]}
                 for r in ledger if r["action"] == "exclude_body")

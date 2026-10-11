@@ -108,3 +108,28 @@ could therefore take precedence over new detail-page leads. The next candidate
 preserves the existing release reading obligation after each discovery advance,
 limits that phase to observed unread URLs, and retains the same two-proposal and
 source-budget bounds. This is a general queue fix; fresh recall remains unproved.
+
+The next prospective adapter trial exposed two additional reliability failures.
+An uninitialized material plan/result must export an explicit recovery state;
+empty raw exports must never be labelled complete or advance to scoring. The
+candidate now handles null plan/result without mutating collector originals and
+retains unknown physical request reservations. The prompt distinguishes current
+baseline query dates from immutable target boundaries and requires an obtainable
+critical need. Prompt efficacy remains an actual-model gate.
+
+The election trial also spent successive native actions reading/updating saved
+pages while observed search leads remained unread. After a committed source
+review, the dispatcher now offers one bounded batch of unattempted search leads
+before another saved-page map cycle. It excludes unrelated navigation-only link
+catalog entries, preserves pending receipts, permits no invented URL or renewed
+quota, and retains the two-proposal bound and source/model caps. A saved-snapshot
+counterfactual verifies routing to the existing statistical-report lead, not its
+capture or semantic adequacy. Independent-context discovery remains agent work.
+
+Prospective three-case result is incomplete: PJM control scored; candidate had a
+Windows process termination with one unknown model reservation. Wheat control
+has no readable body; candidate stopped after two rejected plans and hit the null
+plan export defect. Rajasthan control and candidate both scored; candidate kept
+four official bodies, control seven bodies including independent reports. No
+quality superiority, forecast accuracy, production promotion or deployment is
+established. The two held/failed candidate cases are not silently rerun.

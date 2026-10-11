@@ -52,6 +52,13 @@ baselines, comparable history and contrary evidence. First capture useful public
 originals; do not spend an empty inspection/map update before initial discovery.
 When the target is still in the future, plan an obtainable baseline or leading
 indicator first. Its final realization is not the first mandatory document.
+At least one obtainable external need must have priority='critical'; do not make
+every need merely useful. A condition describes the required evidence, not a
+new resolution deadline. Use 'latest available before collection' for a current
+baseline; today's date and historical research dates belong in query, not in
+condition unless supplied by the immutable question or platform time fields.
+Keep the exact instrument or event identity when selecting comparable history;
+an earlier calendar year does not imply that a later-dated contract existed then.
 Use operating_clock_utc to distinguish them; a future target date is not today.
 ''' + CORE
 

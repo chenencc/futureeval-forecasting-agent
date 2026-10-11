@@ -91,7 +91,8 @@ def collect_child(request_path, directory, clock):
     freeze(directory/'worker-policy.json',POLICY)
     with remaining_budget(directory):
         result=pipeline.collect(request,directory,clock_utc=clock,research_map=True,channel_tools=True)
-    save(directory/'worker-collection-result.json',{'complete':bool(result.get('view')),
+    save(directory/'worker-collection-result.json',{'complete':bool((result.get('view') or {}).get('pages')),
+        'raw_export_available':bool(result.get('view')),
         'status':result.get('status') or result.get('report',{}).get('status'),
         'collection_usage':attempts(directory), 'submitted':False})
 
@@ -136,6 +137,8 @@ class Adapter:
         if not marker.exists():
             self.acquisition(request_path,job,clock)
             result_path=job/'worker-collection-result.json'
+            if result_path.exists() and load(result_path).get('raw_export_available') and not load(result_path)['complete']:
+                raise RuntimeError('No readable material; raw export and original lifetime budgets preserved')
             if not result_path.exists() or not load(result_path)['complete']:
                 raise RuntimeError('Collection interrupted; original lifetime budgets preserved')
             path=job/'final-map-package.json'

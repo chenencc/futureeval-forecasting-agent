@@ -21,9 +21,13 @@ def prepare_package(bundle, directory, clock_utc):
     """Freeze a derivative package. Raw captures, journals and quotas stay intact."""
     directory = Path(directory)
     requirements = contract(bundle["request"], clock_utc=clock_utc)
+    needs = bundle.get("plan")
+    if needs is not None and not isinstance(needs, list):
+        raise ValueError("Saved material plan must be a list or uninitialized")
     requirements["planned_need_observability"] = [
         {"id": need.get("id"), "condition": need.get("condition"),
-         **classify_need(need, clock_utc)} for need in bundle.get("plan", [])]
+         **classify_need(need, clock_utc)} for need in (needs or [])]
+    requirements["material_plan_state"] = "uninitialized" if needs is None else "recorded"
     identity = {"protocol": VERSION, "original_bundle_sha256": digest(bundle),
                 "requirements_sha256": digest(requirements), "code": code_identity(), "budget_reset": False}
     if (directory / "identity.json").exists() and load(directory / "identity.json") != identity:
