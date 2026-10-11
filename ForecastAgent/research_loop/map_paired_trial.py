@@ -7,7 +7,8 @@ from pathlib import Path
 
 from ForecastAgent.acquisition.pipeline import reject_outcomes, verify_baseline
 from ForecastAgent.analysis import mercury_evidence_chain as chain
-from ForecastAgent.analysis.pilot import digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import POLICY, conditional, decision, decision_http, live_trial, state
 from ForecastAgent.research_loop.forecast_brief_refs import blocks
 from ForecastAgent.runtime.task_lock import task_lock

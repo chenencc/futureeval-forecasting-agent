@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from ForecastAgent.analysis.pilot import load, save
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import decision, POLICY
 from ForecastAgent.research_loop.live_trial import SUPER, SUPER_HTTP_CAP, sha, visible_catalog
 from ForecastAgent.research_loop.state import now, initialize

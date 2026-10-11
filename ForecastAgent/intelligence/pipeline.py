@@ -8,7 +8,8 @@ from collections import Counter
 from contextlib import nullcontext
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.intelligence import VERSION
 from ForecastAgent.intelligence.admission import prepare
 from ForecastAgent.intelligence.requirements import contract, classify_need

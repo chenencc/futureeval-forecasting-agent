@@ -2,7 +2,8 @@
 import copy
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.acquisition.pipeline import reject_outcomes
 from ForecastAgent.research_loop import POLICY, delta, delivery, gap_feedback, grounding, reading_views, post_supplement
 from ForecastAgent.research_loop.fusion import POLICY_FIELD, POLICY_NAME

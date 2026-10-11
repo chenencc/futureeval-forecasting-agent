@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ForecastAgent.acquisition.pipeline import reject_outcomes
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.analysis.distributions import grid, range_metadata
 from ForecastAgent.research_loop.evaluate_trial import score
 from ForecastAgent.research_loop.labels import contract, validate as validate_label

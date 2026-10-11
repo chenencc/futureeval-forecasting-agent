@@ -8,7 +8,8 @@ import time
 from pathlib import Path
 
 from ForecastAgent.acquisition.pipeline import reject_outcomes
-from ForecastAgent.analysis.pilot import Journal, digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.providers.model import ask_model, SUPER_MODEL, configured_model
 from ForecastAgent.research_loop import decision, grounding, simple_map, state, target_logic, reference_map
 from ForecastAgent.research_loop.acceptance import accept

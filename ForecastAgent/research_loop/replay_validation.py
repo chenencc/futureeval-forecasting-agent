@@ -6,7 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ForecastAgent.acquisition.handoff import uncovered
-from ForecastAgent.analysis.pilot import load, save, digest
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import POLICY, VERSION
 from ForecastAgent.research_loop.__main__ import replay
 from ForecastAgent.research_loop.decision import prepare, run

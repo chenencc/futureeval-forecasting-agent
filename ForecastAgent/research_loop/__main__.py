@@ -5,7 +5,8 @@ import hashlib
 import os
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import load, save, digest
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import POLICY, VERSION
 from ForecastAgent.research_loop.state import initialize, catalog, audit
 from ForecastAgent.research_loop.acceptance import accept

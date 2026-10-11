@@ -5,7 +5,8 @@ import os
 import time
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import Journal, digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.analysis import mercury_evidence_chain as chain, mercury_nonbinary_trial as typed
 from ForecastAgent.analysis.distributions import payload
 from ForecastAgent.competition.mercury import distribution_spec

@@ -7,7 +7,8 @@ import re
 import time
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import Journal, digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.analysis import mercury_evidence_chain as chain
 from ForecastAgent.analysis.distributions import payload
 from ForecastAgent.providers.model import ask_model

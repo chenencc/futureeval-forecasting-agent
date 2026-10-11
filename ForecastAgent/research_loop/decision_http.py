@@ -7,7 +7,8 @@ from email.utils import parsedate_to_datetime
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from ForecastAgent.providers.decisions import MODEL, ENDPOINT, validate
-from ForecastAgent.analysis.pilot import digest, load, save, Journal
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save, Journal
 
 def response_headers(headers):
     """Keep useful limit metadata only; never record authentication headers."""

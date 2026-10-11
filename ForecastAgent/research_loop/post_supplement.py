@@ -8,7 +8,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import Journal, digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.providers.model import ask_model, configured_model
 from ForecastAgent.research_loop import state, fusion, runtime, gap_feedback
 from ForecastAgent.runtime.retrieval import RetrievalTask

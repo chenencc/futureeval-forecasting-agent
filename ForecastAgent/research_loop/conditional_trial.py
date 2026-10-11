@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 import os
 
-from ForecastAgent.analysis.pilot import load, save, WARNING
+from ForecastAgent.analysis.pilot import WARNING
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import POLICY, conditional, decision, live_trial, state
 from ForecastAgent.runtime.task_lock import task_lock
 

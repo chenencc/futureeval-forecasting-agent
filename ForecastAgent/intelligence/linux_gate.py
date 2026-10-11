@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
-from ForecastAgent.analysis.pilot import save
+from ForecastAgent.runtime.records import save
 from ForecastAgent.releases.guard import execute
 
 
@@ -49,7 +49,8 @@ def regressions(root):
         'ForecastAgent.tests.test_predictive_intelligence','ForecastAgent.tests.test_intelligence_validation',
         'ForecastAgent.tests.test_release_1_0_5','ForecastAgent.tests.test_supplement_transport_boundary',
         'ForecastAgent.tests.test_supplement','ForecastAgent.tests.test_production_collection',
-        'ForecastAgent.tests.test_crawl4ai_adapter','ForecastAgent.tests.test_linux_gate_network']
+        'ForecastAgent.tests.test_crawl4ai_adapter','ForecastAgent.tests.test_linux_gate_network',
+        'ForecastAgent.tests.test_windows_record_paths']
     loader=unittest.TestLoader()
     suite=unittest.TestSuite([loader.loadTestsFromNames(modules),
         loader.discover('ForecastAgent/tests',pattern='test_research*.py')])

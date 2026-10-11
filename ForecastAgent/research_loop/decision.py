@@ -8,7 +8,8 @@ from ForecastAgent.acquisition.handoff import uncovered
 from ForecastAgent.acquisition.pipeline import reject_outcomes, verify_baseline
 from ForecastAgent.analysis import mercury_evidence_chain as chain, mercury_nonbinary_trial as typed
 from ForecastAgent.analysis.distributions import payload
-from ForecastAgent.analysis.pilot import digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.competition.mercury import distribution_spec
 from ForecastAgent.releases.context_decisions import select_first
 from ForecastAgent.research_loop import VERSION

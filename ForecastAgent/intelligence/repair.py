@@ -3,7 +3,8 @@ import copy
 import hashlib
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.intelligence.admission import prepare
 from ForecastAgent.intelligence.identity import code_identity
 from ForecastAgent.intelligence.sources import recovery_plan, read_candidate

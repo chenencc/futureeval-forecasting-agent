@@ -10,7 +10,8 @@ import hashlib
 from pathlib import Path
 
 from ForecastAgent.acquisition import pipeline
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import decision, full_loop_trial, live_trial, map_paired_trial, state
 from ForecastAgent.research_loop.forecast_brief import registry
 from ForecastAgent.research_loop.target_pack import pack

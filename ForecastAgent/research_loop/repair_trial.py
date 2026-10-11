@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 import shutil
 
-from ForecastAgent.analysis.pilot import load, save
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import live_trial, decision
 from ForecastAgent.research_loop.state import now
 

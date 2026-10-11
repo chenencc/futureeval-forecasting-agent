@@ -7,7 +7,8 @@ import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from ForecastAgent.analysis.pilot import Journal, digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.providers.model import ask_model
 from ForecastAgent.research_loop import fusion, runtime, state, delta, delivery, reading_views, live_trial, gap_feedback
 from ForecastAgent.runtime.retrieval import RetrievalTask

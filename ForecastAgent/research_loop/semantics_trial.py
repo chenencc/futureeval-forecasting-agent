@@ -2,7 +2,8 @@
 import argparse
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import brief_semantics as semantics, forecast_brief_refs as refs
 from ForecastAgent.research_loop import decision_http, live_trial, decision
 from ForecastAgent.runtime.task_lock import task_lock

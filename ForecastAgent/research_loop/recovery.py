@@ -3,7 +3,8 @@ from pathlib import Path
 
 from ForecastAgent.analysis import mercury_evidence_chain as chain, mercury_nonbinary_trial as typed
 from ForecastAgent.analysis.distributions import payload
-from ForecastAgent.analysis.pilot import load, save, digest
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.providers.decisions import validate
 from ForecastAgent.research_loop.decision import prepare
 from ForecastAgent.research_loop.distribution import forecast

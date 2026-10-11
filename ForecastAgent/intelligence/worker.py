@@ -12,7 +12,8 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import digest, load, save
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.intelligence import pipeline
 from ForecastAgent.intelligence.identity import code_identity
 from ForecastAgent.releases import surfaces

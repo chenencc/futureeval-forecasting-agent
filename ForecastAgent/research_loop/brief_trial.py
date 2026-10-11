@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 
 from ForecastAgent.acquisition import handoff
-from ForecastAgent.analysis.pilot import digest, load, save, WARNING
+from ForecastAgent.analysis.pilot import digest, WARNING
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.releases.context_decisions import select_first
 from ForecastAgent.research_loop import decision, live_trial, target_pack, forecast_brief
 from ForecastAgent.runtime.task_lock import task_lock

@@ -7,7 +7,7 @@ import sys
 import time
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import load, save
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import decision, live_trial, simple_map, state
 from ForecastAgent.runtime.task_lock import task_lock
 

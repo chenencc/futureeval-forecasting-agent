@@ -6,7 +6,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ForecastAgent.analysis.pilot import load, save, digest
+from ForecastAgent.analysis.pilot import digest
+from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop import decision, labels
 
 

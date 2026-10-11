@@ -11,7 +11,8 @@ from pathlib import Path
 
 from ForecastAgent.acquisition.handoff import uncovered
 from ForecastAgent.analysis import mercury_evidence_chain as chain
-from ForecastAgent.analysis.pilot import Journal, WARNING, digest, load, save
+from ForecastAgent.analysis.pilot import WARNING, digest
+from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.providers.model import ask_model
 from ForecastAgent.research_loop import POLICY
 from ForecastAgent.research_loop import decision
