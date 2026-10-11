@@ -710,3 +710,16 @@ wrong-source receipts are not rebound. The native fact and graph validators stil
 own acceptance. Deferred reviews remain pending, and a valid irrelevant/duplicate
 receipt can acknowledge a source without inventing a graph edit. General and
 post-supplement batch updates retain their existing sibling isolation semantics.
+
+The scheduled tool omits `expected_revision` and `material_sha256` from model
+arguments. After verifying that the scheduled material and map revision are still
+current, the program binds these two execution fields literally and records them.
+Models cannot override them. Source selections, claims, interpretations and reviews
+are unchanged, and the native concurrency checks remain authoritative. This avoids
+the common confusion between the current revision and the proposed next revision.
+
+The scheduled scope also identifies observations bound to another exact source URL.
+They may be retained unchanged, but cannot be rebound to the new source or retired
+in this source-specific turn. The model must propose a distinct new observation ID,
+or justify a duplicate using the current material's inspected references. Equal raw
+body hashes do not authorize replacing another URL's evidence binding.

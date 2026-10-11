@@ -12,6 +12,11 @@ from ForecastAgent.tests.test_research_dispatch import fresh
 from ForecastAgent.tests.test_research_gap_feedback import initial, receipt, patch as proposal
 
 
+def emitted_proposal(t, reviews):
+    return {k: v for k, v in proposal(t, reviews).items()
+            if k not in {'expected_revision', 'material_sha256'}}
+
+
 class SourceScopeTests(unittest.TestCase):
     def add_link(self, t):
         parent = 'https://example.org/report'
@@ -120,7 +125,7 @@ class SourceScopeTests(unittest.TestCase):
             foreign['evidence_ids'] = receipt(t, 'https://example.org/report')['evidence_ids']
             for reviews in ([], [wrong], [foreign], [valid, valid]):
                 with self.assertRaises(ValueError):
-                    dispatch.bind_arguments(t, 'update_research_state', proposal(t, reviews), tools, choice)
+                    dispatch.bind_arguments(t, 'update_research_state', emitted_proposal(t, reviews), tools, choice)
                 self.assertEqual(t.bundle, before); self.assertEqual(t.budget(), budget)
 
     def test_valid_no_edit_receipt_acknowledges_only_scheduled_source(self):
@@ -128,9 +133,11 @@ class SourceScopeTests(unittest.TestCase):
             t, choice, tools = self.ready(root)
             old_nodes = copy.deepcopy(t.bundle['research_loop']['current']['nodes']); budget = t.budget()
             review = receipt(t, choice['url'], 'irrelevant', [], 'no_change')
-            args = proposal(t, [review])
+            args = emitted_proposal(t, [review])
             bound, _, proof = dispatch.bind_arguments(t, 'update_research_state', args, tools, choice)
-            self.assertEqual(args, bound); self.assertFalse(proof['arguments_rewritten'])
+            self.assertEqual(args, {k: v for k, v in bound.items()
+                                   if k not in proof['program_bound_fields']})
+            self.assertFalse(proof['factual_arguments_rewritten'])
             result = t.execute('update_research_state', bound, 'offline')
             self.assertTrue(result['material_acknowledged']); self.assertFalse(result['committed'])
             self.assertEqual(t.bundle['research_loop']['current']['nodes'], old_nodes)
@@ -140,12 +147,56 @@ class SourceScopeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             t, choice, tools = self.ready(root)
             review = receipt(t, choice['url'], 'deferred', [], 'unknown'); review['evidence_ids'] = []
-            args, _, _ = dispatch.bind_arguments(t, 'update_research_state', proposal(t, [review]), tools, choice)
+            args, _, _ = dispatch.bind_arguments(t, 'update_research_state', emitted_proposal(t, [review]), tools, choice)
             t.execute('update_research_state', args, 'offline')
             self.assertIn(choice['material_id'], [m['material_id'] for m in gf.pending(t)])
             t.bundle['pages'][choice['url']]['content'] += ' New body version.'
             with self.assertRaisesRegex(ValueError, 'current material scope'):
                 dispatch.bind_arguments(t, 'update_research_state', args, tools, choice)
+
+    def test_model_cannot_override_program_revision_or_body_hash(self):
+        with tempfile.TemporaryDirectory() as root:
+            t, choice, tools = self.ready(root)
+            args = emitted_proposal(t, [receipt(t, choice['url'], 'deferred', [], 'unknown')])
+            before = copy.deepcopy(t.bundle)
+            for field, value in (('expected_revision', choice['revision'] + 1),
+                                 ('material_sha256', '0' * 64)):
+                with self.assertRaisesRegex(ValueError, 'program-owned'):
+                    dispatch.bind_arguments(t, 'update_research_state', {**args, field: value}, tools, choice)
+            self.assertEqual(t.bundle, before)
+            routed = dispatch.tools_for(t, tools, choice)
+            schema = next(t['function']['parameters'] for t in routed
+                          if t['function']['name'] == 'update_research_state')
+            self.assertNotIn('expected_revision', schema['properties'])
+            self.assertNotIn('material_sha256', schema['properties'])
+
+    def test_current_source_cannot_replace_or_retire_foreign_observation(self):
+        with tempfile.TemporaryDirectory() as root:
+            t, choice, tools = self.ready(root)
+            args = emitted_proposal(t, [receipt(t, choice['url'], 'deferred', [], 'unknown')])
+            old_node = t.bundle['research_loop']['current']['nodes'][0]
+            from ForecastAgent.research_loop.delta import node_input
+            wrong = node_input(old_node)
+            wrong['evidence_ids'] = dispatch.review_scope(t, choice)['inspected_reference_ids'][:3]
+            before = copy.deepcopy(t.bundle)
+            with self.assertRaisesRegex(ValueError, 'cannot rebind'):
+                dispatch.bind_arguments(t, 'update_research_state', {**args, 'nodes': [wrong]}, tools, choice)
+            with self.assertRaisesRegex(ValueError, 'cannot retire'):
+                dispatch.bind_arguments(t, 'update_research_state', {**args,
+                    'retired_node_ids': [old_node['id']]}, tools, choice)
+            self.assertEqual(t.bundle, before)
+            self.assertIn(old_node['id'], dispatch.review_scope(t, choice)['protected_observation_node_ids'])
+
+    def test_unchanged_foreign_node_may_be_retained_without_rebinding(self):
+        with tempfile.TemporaryDirectory() as root:
+            t, choice, tools = self.ready(root)
+            from ForecastAgent.research_loop.delta import node_input
+            args = emitted_proposal(t, [receipt(t, choice['url'], 'deferred', [], 'unknown')])
+            old_node = node_input(t.bundle['research_loop']['current']['nodes'][0])
+            bound, _, proof = dispatch.bind_arguments(t, 'update_research_state',
+                {**args, 'nodes': [old_node]}, tools, choice)
+            self.assertEqual(bound['nodes'], [old_node])
+            self.assertFalse(proof['factual_arguments_rewritten'])
 
     def test_model_receives_exact_review_scope_without_budget_or_graph_changes(self):
         with tempfile.TemporaryDirectory() as root:

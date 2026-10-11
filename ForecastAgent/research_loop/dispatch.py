@@ -159,9 +159,13 @@ def review_scope(task, choice):
             choice['revision'] != task.bundle['research_loop']['revision'] or
             choice['material_sha256'] != material['material_sha256']):
         raise ValueError('Scheduled review no longer matches the current material scope')
-    return {k: copy.deepcopy(source[k]) for k in (
+    result = {k: copy.deepcopy(source[k]) for k in (
         'material_id', 'url', 'body_sha256', 'scope_sha256', 'inspected_reference_ids',
         'bound_observation_node_ids', 'same_body_material_ids')}
+    result['protected_observation_node_ids'] = [n['id'] for n in
+        (task.bundle['research_loop'].get('current') or {}).get('nodes', [])
+        if n['kind'] == 'observation' and any(b['url'] != source['url'] for b in n.get('bindings', []))]
+    return result
 
 
 def model_context(task, choice, *, forced_tool=None):
@@ -188,7 +192,11 @@ def model_context(task, choice, *, forced_tool=None):
             projected['instruction'] += (' Return exactly one material_review for this material_id. '
                 'Use only its inspected_reference_ids; unrelated retained nodes do not incorporate it. '
                 'Merge only changed nodes, preserving previous source bindings. Deferred is valid '
-                'when interpretation is unfinished; do not force a fact or an irrelevant verdict.')
+                'when interpretation is unfinished; do not force a fact or an irrelevant verdict. '
+                'Do not emit expected_revision or material_sha256: the program binds the '
+                'unchanged scheduled execution frame, including its current revision. '
+                'Never rebind or retire protected_observation_node_ids for this source; '
+                'use a distinct ID for a new source, even when another URL has identical bytes.')
         if discovery:
             candidates = projected['candidates']
             candidates.pop('urls', None)  # Every exact URL remains in sources.
@@ -438,6 +446,12 @@ def tools_for(task, tools, choice):
         for tool in tools:
             if tool['function']['name'] == 'update_research_state':
                 schema = tool['function']['parameters']
+                # The model supplies interpretation, not bookkeeping. Native
+                # concurrency checks use the unchanged scheduled frame.
+                for key in ('expected_revision', 'material_sha256'):
+                    schema['properties'].pop(key, None)
+                schema['required'] = [k for k in schema.get('required', [])
+                                      if k not in {'expected_revision', 'material_sha256'}]
                 reviews = schema['properties']['material_reviews']
                 reviews.update(minItems=1, maxItems=1)
                 props = reviews['items']['properties']
@@ -447,6 +461,8 @@ def tools_for(task, tools, choice):
                     'Only its inspected references are allowed. Deferred may cite no references. '
                     'A receipt does not establish factual truth or force a graph edit.')
                 schema['required'] = list(dict.fromkeys(schema.get('required', []) + ['material_reviews']))
+                tool['function']['description'] += (' This scheduled turn omits expected_revision '
+                    'and material_sha256 arguments; the program binds both. Emit neither field.')
     return tools
 
 
@@ -460,13 +476,33 @@ def bind_arguments(task, name, args, tools, choice):
     if choice and choice['phase'] == 'process_update' and name == 'update_research_state':
         from ForecastAgent.runtime.contracts import check_schema
         scope = review_scope(task, choice)
+        if set(args) & {'expected_revision', 'material_sha256'}:
+            raise ValueError('Scheduled execution frame is program-owned; omit revision and material hash arguments')
         # Rebuild the dynamic restrictions at execution, even if a caller supplied
         # the unfiltered native schema. Do not repair the emitted receipt.
         restricted = tools_for(task, tools, choice)
         entry = next(t for t in restricted if t['function']['name'] == name)
         check_schema(args, entry['function']['parameters'])
-        return args, restricted, {'policy': 'exact_scheduled_material_review_v1',
-            **scope, 'arguments_rewritten': False, 'meaning_verified': False}
+        current = {n['id']: n for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])}
+        protected = set(scope['protected_observation_node_ids'])
+        if protected & set(args.get('retired_node_ids', [])):
+            raise ValueError('Scheduled source review cannot retire another source observation')
+        for node in args.get('nodes', []):
+            if node['id'] in protected and (node['kind'] != 'observation' or
+                    set(node['evidence_ids']) != set(current[node['id']]['evidence_ids'])):
+                raise ValueError('Use a distinct observation ID; scheduled review cannot rebind another source')
+        bound = {**copy.deepcopy(args), 'expected_revision': choice['revision'],
+                 'material_sha256': choice['material_sha256']}
+        native = copy.deepcopy(restricted)
+        schema = next(t['function']['parameters'] for t in native if t['function']['name'] == name)
+        schema['properties'].update(
+            expected_revision={'type': 'integer', 'enum': [choice['revision']]},
+            material_sha256={'type': 'string', 'enum': [choice['material_sha256']], 'maxLength': 64})
+        schema['required'] += ['expected_revision', 'material_sha256']
+        return bound, native, {'policy': 'exact_scheduled_material_review_v2',
+            **scope, 'arguments_rewritten': True, 'factual_arguments_rewritten': False,
+            'program_bound_fields': {k: bound[k] for k in ('expected_revision', 'material_sha256')},
+            'meaning_verified': False}
     if not choice or choice['phase'] not in {'capture_discovery', 'capture_frontier'} or name != 'read_sources':
         return args, tools, None
     from ForecastAgent.runtime.contracts import check_schema
