@@ -240,6 +240,9 @@ def configure(task, tools):
         for tool in tools:
             if tool['function']['name'] == 'update_research_state':
                 tool['function']['parameters'] = reference_map.schema(tool['function']['parameters'])
+                from ForecastAgent.research_loop import predictive_focus
+                if predictive_focus.enabled(task.bundle):
+                    tool['function']['parameters'] = predictive_focus.schema(tool['function']['parameters'])
                 tool['function']['description'] = ('Select delivered original R IDs and explain target relations. '
                     'Program binds complete originals. No quotations, dates or offsets to copy. No network inside this tool.')
     return tools

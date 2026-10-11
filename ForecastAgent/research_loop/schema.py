@@ -49,6 +49,11 @@ NEED = obj({'target': text(260), 'reason': text(260), 'node_ids': array(text(40)
 NEED['properties'].update(decision_impact=text(180),
     importance={'type': 'string', 'enum': ['high', 'medium', 'low']},
     availability={'type': 'string', 'enum': ['available', 'uncertain', 'future_event']})
+# Explicitly optional for archived protocols; predictive-focus requires all three.
+NEED['properties'].update(
+    information_state={'type':'string', 'enum':['saved_unread','obtainable','future_unknown']},
+    purpose={'type':'string', 'enum':['definition','baseline','history','indicator','counterevidence','future_outcome']},
+    source_url={'type':'string', 'maxLength':2000})
 PROPOSAL = obj({'expected_revision': {'type': 'integer', 'minimum': 0},
     'revision_kind': {'type': 'string', 'enum': ['material_update', 'interpretation_correction']},
     'material_sha256': text(64), 'nodes': array(NODE, 12, 1),

@@ -84,8 +84,31 @@ def choose(task):
     usable = [m for m in pending if sum(s.get('material_id') == m['material_id']
         and s['phase'] == 'process_update' for s in history) < 2]
     last = history[-1] if history else {}
+    from ForecastAgent.research_loop import predictive_focus
+    if predictive_focus.enabled(task.bundle):
+        for gap in gap_feedback.gaps(task):
+            need = {k:v for k,v in gap.items() if k in predictive_focus.NEED['properties']}
+            try:
+                local = predictive_focus.validate_need(task.bundle, need) == 'saved_unread'
+            except (ValueError, TypeError, KeyError):
+                local = False
+            used = sum(s.get('gap_id') == gap['gap_id'] and s['phase'] == 'process_update' for s in history)
+            if not local or used >= 2 or task.bundle['research_loop']['update_cap'] - revision <= record['limits']['post_review_revisions']:
+                continue
+            source = next((m for m in gap_feedback.materials(task, material).values() if m['url'] == gap['source_url']), None)
+            if source is None:
+                continue
+            ready = (last.get('phase') == 'process_read' and last.get('gap_id') == gap['gap_id']
+                     and last.get('revision') == revision and last.get('material_sha256') == material['material_sha256']
+                     and bool(source['inspected_reference_ids']))
+            return {'phase':'process_update' if ready else 'process_read', 'revision':revision,
+                    'gap_id':gap['gap_id'], 'material_sha256':material['material_sha256'],
+                    'material_id':source['material_id'], 'url':source['url'],
+                    'tool':'update_research_state' if ready else 'inspect_research_state',
+                    'instruction':'Read the exact saved source for this gap, then correct its interpretation/request. '
+                                  'No network fetch; preserve uncertainty and use source-specific receipts.'}
     gaps = [g for g in gap_feedback.gaps(task)
-            if g.get('availability') != 'future_event'
+            if predictive_focus.network_candidate(task.bundle, g)
             and g.get('importance') != 'low'
             and g.get('attempts_without_readable_body', 0) < 2]
     # One explicit agent acquisition opportunity after each committed graph.

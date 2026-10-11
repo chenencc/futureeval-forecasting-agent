@@ -68,6 +68,11 @@ def scoring_map(bundle, baseline):
         from ForecastAgent.research_loop import target_logic
         if target_logic.enabled(bundle):
             result['target_coverage'] = target_logic.audit(bundle, selected, result['material_requests'])
+        from ForecastAgent.research_loop import predictive_focus
+        if predictive_focus.enabled(bundle):
+            # Audit exactly the delivered subset; hidden observations cannot support it.
+            subset = [n for n in current['nodes'] if n['id'] in kept]
+            result['interpretation_scope_audit'] = predictive_focus.brief(bundle, subset, result['material_requests'])
         return result
     result = assemble(nodes, hidden)
     if len(json.dumps(result).encode()) > MAP_BYTE_CAP:

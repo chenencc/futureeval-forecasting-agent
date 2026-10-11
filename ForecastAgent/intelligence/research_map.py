@@ -11,7 +11,7 @@ from ForecastAgent.research_loop.prospective_trial import prepared_pair
 DONOR_COMMIT = '44532209cd4cf25e16093ea2023059bbe31d4f7e'
 
 
-def enable(request, *, target_links=False, reference_bound=False):
+def enable(request, *, target_links=False, reference_bound=False, predictive_focus=False):
     """Select map tools explicitly; do not change models, source limits or ledgers."""
     reject_outcomes(request)
     result = copy.deepcopy(request)
@@ -23,6 +23,8 @@ def enable(request, *, target_links=False, reference_bound=False):
         if field in result and result[field] != value:
             raise ValueError('Incompatible frozen research policy: ' + field)
     result.update(policies)
+    if predictive_focus:
+        reference_bound = True
     if target_links or reference_bound:
         from ForecastAgent.research_loop import target_logic
         if target_logic.FIELD in result and result[target_logic.FIELD] != target_logic.POLICY:
@@ -33,6 +35,11 @@ def enable(request, *, target_links=False, reference_bound=False):
         if reference_map.FIELD in result and result[reference_map.FIELD] != reference_map.POLICY:
             raise ValueError('Incompatible frozen reference map policy')
         result[reference_map.FIELD] = reference_map.POLICY
+    if predictive_focus:
+        from ForecastAgent.research_loop import predictive_focus as focus
+        if focus.FIELD in result and result[focus.FIELD] != focus.POLICY:
+            raise ValueError('Incompatible frozen predictive focus policy')
+        result[focus.FIELD] = focus.POLICY
     return result
 
 

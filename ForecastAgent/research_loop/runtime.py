@@ -55,6 +55,9 @@ def guide(task, system):
         'Do not assign probabilities, certify facts, submit forecasts or trade.\nMaintain provisional research notes under the experimental policy below.')
     from ForecastAgent.research_loop import fusion, grounding
     from ForecastAgent.research_loop import gap_feedback
+    from ForecastAgent.research_loop import reference_map
+    if reference_map.enabled(task.bundle):
+        return system + reference_map.prompt(bundle=task.bundle)
     guide_text = fusion.GUIDE if fusion.enabled(task) else GUIDE
     from ForecastAgent.research_loop import dispatch
     if dispatch.enabled(task.bundle):
@@ -66,8 +69,7 @@ def guide(task, system):
             'registry. Do not spend the phase loading skills or browsing unrelated navigation. '
             'The map is a research aid; missing future outcomes remain unknown.\n')
     from ForecastAgent.research_loop import target_logic
-    from ForecastAgent.research_loop import reference_map
-    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '') + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '') + (reference_map.GUIDE if reference_map.enabled(task.bundle) else '')
+    return system + guide_text + (grounding.GUIDE if grounding.enabled(task.bundle) else '') + (gap_feedback.GUIDE if gap_feedback.enabled(task.bundle) else '') + (target_logic.GUIDE if target_logic.enabled(task.bundle) else '')
 
 
 def execute(task, name, args):
@@ -105,7 +107,8 @@ def execute(task, name, args):
             reviews = args.pop('material_reviews')
             if not args['revision_reason'].strip():
                 raise ValueError('Explain what changed or why the graph did not change in revision_reason')
-            args, format_bindings = quote_bindings.prepare(task,args)
+            if not reference_map.enabled(task.bundle):
+                args, format_bindings = quote_bindings.prepare(task,args)
         delta_report=None
         prior_observations={r['evidence_id'] for n in (task.bundle['research_loop'].get('current') or {}).get('nodes',[])
             if n['kind']=='observation' for r in n['bindings']}

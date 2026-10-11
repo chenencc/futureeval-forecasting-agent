@@ -86,9 +86,7 @@ def run(parents, originals, directory, *, execute=False):
                 if arm=='reference_bound':
                     tool['function']['parameters']=reference_map.schema(tool['function']['parameters'])
                     tool['function']['description']='Select exact supplied original R IDs; the program binds full original spans. Explain target relationships separately.'
-                    system=reference_map.SYSTEM + target_logic.GUIDE.replace(
-                        'with ellipses or paraphrase a headline. If a short exact quote cannot be bound,\nrecord an explicit unknown; no accepted factual map is better than invented text.',
-                        'with ellipses or paraphrase a headline. Select an exact supplied reference ID;\nthe program binds the original text. Never invent a reference.')
+                    system=reference_map.prompt(bundle=candidate)
                 messages=[{'role':'system','content':system},{'role':'user','content':json.dumps(common,ensure_ascii=False)}]
                 if len(json.dumps(messages,ensure_ascii=False)) > MAX_CHARS:
                     raise ValueError('Local model context ceiling exceeded')

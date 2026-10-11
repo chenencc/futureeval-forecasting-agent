@@ -174,9 +174,10 @@ def audit(bundle, nodes=None, requests=None):
                   'unresolved' if 'unknown' in roles else 'unassessed')
         ids = {l['node_id'] for l in own}
         linked_requests = [r for r in requests if set(r['node_ids']) & ids]
+        from ForecastAgent.research_loop import predictive_focus
         rows.append({**target, 'status': status, 'links': own,
                      'material_request_count': len(linked_requests),
-                     'has_obtainable_request': any(r.get('availability') != 'future_event' for r in linked_requests),
+                     'has_obtainable_request': any(predictive_focus.network_candidate(bundle, r) for r in linked_requests),
                      'adequacy_verified': False})
     return {'policy': POLICY, 'enabled': enabled(bundle), 'targets': rows,
             'unassessed_target_ids': [r['id'] for r in rows if r['status'] == 'unassessed'],

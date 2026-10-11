@@ -12,8 +12,7 @@ POLICY = 'visible_original_reference_v1'
 PROTOCOL = 'reference-map-v1'
 ORIGIN = 'source_reference'
 GUIDE = '''
-Reference-bound map interface (the declared tool schema overrides legacy quote
-examples): select exact supplied R IDs in evidence_ids, never copy quotations,
+Reference-bound map interface: select exact supplied R IDs in evidence_ids, never copy quotations,
 offsets, dates or units into graph fields. An observation has hypothesis=''. The
 program binds the COMPLETE referenced originals with their hashes and coordinates.
 Explain the target relationship in interpretation and target_links; state limits
@@ -38,11 +37,50 @@ never multiply marginals or invent a CPT. Keep paths short and the map compact.
 ''' + GUIDE
 
 
-def prompt(system):
-    """Disambiguate archived guidance without changing a disabled-policy prompt."""
-    system = system.replace('Copy a short contiguous quotation EXACTLY; put paraphrases in interpretation.',
-        'Select exact supplied original reference IDs; put target relationships in interpretation.')
-    return system + GUIDE
+def prompt(context='', *, bundle=None, local_only=False):
+    """One authoritative graph contract; callers pass operational context only."""
+    result = SYSTEM + TARGET_GUIDE + RECEIPT_GUIDE + context
+    if local_only:
+        result += '\nLocal saved-material review only. No search, fetch or scoring. Prefer merge; retain useful old nodes.\n'
+    if bundle is not None:
+        cap = bundle.get('research_loop', {}).get('update_cap')
+        if cap is not None:
+            result += '\nFrozen lifetime map-update cap: ' + str(cap) + '. Forced closure overrides graph improvement.\n'
+        from ForecastAgent.research_loop import predictive_focus
+        if predictive_focus.enabled(bundle):
+            result += predictive_focus.GUIDE
+    return result
+
+
+TARGET_GUIDE = '''
+Use frozen T IDs in target_links. Roles: direct (exact realized target), indicator
+(leading signal), baseline (comparable history), procedure (event rules), context,
+unknown or driver (hypothesis). Context/procedure have effect=context; unknown has
+effect=unresolved. Numeric/choice effects name the range or option; supports is not
+binary YES. applicability is target/background/expectation/unknown. Guidance is an
+observation about an expectation, not a realized outcome. Explain entity, period,
+metric, unit and stage differences explicitly. Unknown means absent from DELIVERED
+material, unless an original establishes a wider search scope. Never assert a
+person's intention or event absence from a biography, historical event or failed
+fetch. Drivers are hypothetical mechanisms, not unsupported current facts.
+Keep original observations even when their target interpretation is uncertain.
+Select substantive rows WITH available headers/context. Titles alone are navigation.
+Seek currently obtainable baseline, history, mechanism or counterevidence; a future
+final release remains an expected unknown. No target/node/edge coverage quota.
+'''
+RECEIPT_GUIDE = '''
+One acquisition/map loop, no nested calls. Use inspected R IDs only; inspect saved
+material before acquiring more. Network actions link exact research_node_ids and
+listed research_gap_ids within existing tool/provider budgets. Use merge for
+additions/replacements; omitted old nodes remain. Retire IDs only deliberately.
+Material reviews use supplied M IDs and source-specific R IDs: incorporated needs
+a retained observation of THAT source; conflict keeps both, duplicate names its
+related source, irrelevant needs a read reference, deferred preserves unfinished
+work. Unread/omitted text is not absent evidence. A receipt covers only the delivered
+source scope. Explain actual changes in revision_reason. No pending receipts does
+not mean sufficient evidence. Parse arrays as JSON arrays; no encoded strings.
+Decoded views use their named coordinate space and provenance, not raw byte offsets.
+'''
 
 
 def enabled(bundle):

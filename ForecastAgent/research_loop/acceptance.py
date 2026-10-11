@@ -134,6 +134,10 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
                         simple_map.validate_relation(entry, ledger['rules'])
                 elif (not set(entry['node_ids']) <= keep or not entry['target'].strip() or not entry['reason'].strip()):
                     raise ValueError('Material request node unavailable or target/reason empty')
+                if section == 'material_requests':
+                    from ForecastAgent.research_loop import predictive_focus
+                    if predictive_focus.enabled(candidate):
+                        predictive_focus.validate_need(candidate, entry)
                 target.append(copy.deepcopy(entry))
             except (ValueError, TypeError, KeyError) as exc:
                 reject(section, index, entry, exc)
@@ -155,6 +159,9 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
     from ForecastAgent.research_loop import target_logic
     if target_logic.enabled(candidate):
         report['target_coverage'] = target_logic.audit(candidate, nodes, needs)
+    from ForecastAgent.research_loop import predictive_focus
+    if predictive_focus.enabled(candidate):
+        report['interpretation_scope_audit'] = predictive_focus.audit(candidate, nodes, needs)
     gap_only = intentional_gaps and bool(nodes)
     if not report['factual_grounding_present'] and not gap_only:
         report['status'] = 'no_grounded_map'
