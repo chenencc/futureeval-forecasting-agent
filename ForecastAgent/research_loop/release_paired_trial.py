@@ -127,6 +127,44 @@ def timed_call(call, state, folder, heads):
             save(path, clock)
 
 
+def native_pair_inputs(bundle, mapped_bundle, control, *, first_original_limit=16000,
+                       source_context=True):
+    """Prepare equal original/map inputs from native acquisition, without HTTP.
+
+    The execution boundary precedes the frozen selector. Both arms then receive
+    the complete original bindings that fit the shared forecast envelope. This
+    explicitly changes common selection and does not replay release reread
+    routing. Callers must freeze these inputs before either forecast is sent.
+    """
+    from ForecastAgent.research_loop import scoring_input, shared_map_input
+    if type(first_original_limit) is not int or not 0 < first_original_limit <= chain.FIRST_BYTES:
+        raise ValueError('Invalid native original seed byte limit')
+    native_hash, map_hash = digest(bundle), digest(mapped_bundle)
+    projected, boundary = scoring_input.project(bundle)
+    heads, spec = registry(projected['request'])
+    if registry(bundle['request']) != (heads, spec):
+        raise ValueError('Native forecast registry changed across the boundary')
+    with pinned_reader(control):
+        seed, selection = release.delivery.baseline(projected, heads, limit=first_original_limit)
+        scope = None
+        if source_context:
+            seed, scope = contextual_original(projected, seed, heads)
+        common, mapped, alignment = shared_map_input.align(projected, mapped_bundle, seed, heads)
+    if digest(bundle) != native_hash or digest(mapped_bundle) != map_hash:
+        raise ValueError('Native acquisition parent or research map changed')
+    if {k: v for k, v in mapped.items() if k != 'research_map'} != common:
+        raise ValueError('Native pair does not have identical originals')
+    audit = {'policy': 'native-acquisition-common-original-map-inputs-v1',
+        'native_parent_sha256': native_hash, 'map_parent_sha256': map_hash,
+        'forecast_boundary': boundary, 'first_original_limit': first_original_limit,
+        'seed_selection': selection, 'source_context': scope, 'alignment': alignment,
+        'release_core_sha256_lf': verify_control(control), 'new_http': 0,
+        'selection_differs_from_frozen_release': True,
+        'full_release_reread_schedule_comparison': False,
+        'originals_identical_between_arms': True, 'prediction_gain_proven': False}
+    return projected, heads, spec, common, mapped, audit
+
+
 def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False, source_context=False):
     """Run the actual release function; only its provider seam is intercepted."""
     folder = Path(folder); rows = []; saved_call = chain.call

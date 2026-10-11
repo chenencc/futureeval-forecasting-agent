@@ -745,3 +745,21 @@ They may be retained unchanged, but cannot be rebound to the new source or retir
 in this source-specific turn. The model must propose a distinct new observation ID,
 or justify a duplicate using the current material's inspected references. Equal raw
 body hashes do not authorize replacing another URL's evidence binding.
+
+## Native acquisition to paired forecasts
+
+`release_paired_trial.native_pair_inputs` is the research entry point for a
+completed native acquisition view and its saved map. It projects named execution
+fields before invoking the frozen forecast selector. Exact platform rules,
+options, dates, unknown fields, originals and cumulative ledgers remain intact.
+The parent and omitted-field hashes are recorded; oversized unknown platform
+contracts still fail locally before a provider call.
+
+Both arms receive identical selected originals. Complete map bindings are added
+to both arms only when the original plus map request fits the existing shared
+byte envelope. The default original seed limit is 16,000 bytes; record this
+limit in each reservation. This changes common original selection and compares
+first forecasts rather than the release's conditional reread schedule. If no
+supported map fits, report an original-only input; never count a copied forecast
+as a second independent result. Freeze prepared inputs before either call, retain
+pending source reviews and collect actual provider receipts separately.
