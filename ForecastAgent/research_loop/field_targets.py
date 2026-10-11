@@ -137,6 +137,8 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
             if len(contexts) != len(set(contexts)) or ident in contexts:
                 raise ValueError('Context field IDs must be distinct from the primary')
             fact = facts[ident]
+            if not reference_map.substantive(fact['quote']):
+                raise ValueError('Primary field is a heading/table separator, not a substantive original observation')
             if any(_source_scope(facts[i]) != _source_scope(fact) for i in contexts):
                 raise ValueError('An atomic observation cannot borrow another source version or view')
             refs = list(dict.fromkeys(facts[i]['canonical_reference_id'] for i in [ident] + contexts))

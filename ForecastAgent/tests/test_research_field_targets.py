@@ -82,6 +82,33 @@ class FieldTargetTests(unittest.TestCase):
         self.assertFalse(packet['source_field_coverage_complete'])
         self.assertFalse(packet['reading']['meaning_verified'])
 
+    def test_heading_primary_cannot_be_rescued_by_substantive_context(self):
+        b, mt, frozen, answer = self.sample()
+        url = frozen['originals'][0]['url']
+        b['pages'][url]['content'] = '# Revenue header\n\n' + b['pages'][url]['content']
+        catalog = state.catalog(b)
+        sources = [s for s in catalog['spans'].values() if s['url'] == url]
+        title = next(s for s in sources if '# Revenue header' in s['text'])
+        content = next(s for s in sources if 'Revenue was 24 billion dollars.' in s['text'])
+        if title['evidence_id'] == content['evidence_id']:
+            sources = [title]
+        else:
+            sources = [title, content]
+        fields = {'fields': [
+            {'reference_id': title['evidence_id'], 'kind': 'issuer', 'coverage': 'content_excerpt',
+             'quote': '# Revenue header', 'value': 'Revenue'},
+            {'reference_id': content['evidence_id'], 'kind': 'measurement', 'coverage': 'content_excerpt',
+             'quote': 'Revenue was 24 billion dollars.', 'value': '24'}], 'unknowns': []}
+        fresh = sf.registry(sources, fields, flat=True)
+        answer['registry_sha256'] = fresh['registry_sha256']
+        answer['observations'][0]['fact_id'] = fresh['facts'][0]['fact_id']
+        answer['observations'][0]['context_fact_ids'] = [fresh['facts'][1]['fact_id']]
+        args, audit = ft.proposal(b, fresh, answer, mt)
+        self.assertIsNone(args)
+        self.assertIn('heading/table separator', audit['rejected'][0]['error'])
+        self.assertEqual(len(fresh['facts']), 2)
+        self.assertFalse(audit['meaning_verified'])
+
     def test_registry_role_disagreement_preserved_for_identical_literal(self):
         b, mt, frozen, answer = self.sample()
         proposal = copy.deepcopy(frozen['received_proposal'])

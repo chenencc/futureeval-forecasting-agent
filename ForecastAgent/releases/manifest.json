@@ -292,7 +292,7 @@
     "ForecastAgent/research_loop/prospective_trial.py": "66dad42eec029ae1c45a13a63a9ac0729e0af97584382ade90430c39e6afc923",
     "ForecastAgent/research_loop/quote_bindings.py": "763de97d19eb98623132b19dae130cc2927267b81749eb193984bd76051a4a0b",
     "ForecastAgent/research_loop/reading_views.py": "fceab6ad78e2bbb03c99be46a135120fdea8cca5bd1984abe775ba1ee45457fe",
-    "ForecastAgent/research_loop/README.md": "36aa48424c8d86e2e53e3fcea7c962fbcb09acb682391c6e0640cc1c080ccf48",
+    "ForecastAgent/research_loop/README.md": "b893dd85cb7618de26f53d3af4308dd08a0fc775af56f2b0b8af3a46e01e0ca1",
     "ForecastAgent/research_loop/recovery.py": "47485c6959424ea756265821eae65c2d2d18e1801776e32751fea829897b2da8",
     "ForecastAgent/research_loop/reference_map.py": "59719bb0e60059710597af1eee58974097414ae3c1645ceb261e73f3237a6977",
     "ForecastAgent/research_loop/reference_map_trial.py": "81a3b35fab50c0015b649e31d18a50623be34861437617fef3c3b2489ad96125",
@@ -430,7 +430,7 @@
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
     "ForecastAgent/research_loop/literal_context.py": "4832a7595512e538bc67a0c9aba54961153dc5df78d2cc8842fd4fe9867258e0",
-    "ForecastAgent/research_loop/field_targets.py": "ab9a11515cc51ad226b1367e1eed6c09f76e4040c2270bb483eff765ebab376b"
+    "ForecastAgent/research_loop/field_targets.py": "e4b8a038910dcd63404d3404fae4272d1979e5162210cfeaaa3a31aa79d142c7"
   },
   "development_only": true,
   "base_release_tag": "v1.0.5-crawl4ai.1",

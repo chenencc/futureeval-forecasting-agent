@@ -966,4 +966,10 @@ hypothesis and unknown stays in the frozen record. No compulsory coverage quota,
 whole-source reading receipt or factual truth credit is introduced. Legacy source
 record mode stays the default. A finish_reason=length reply without a declared tool
 call remains a failed stage; its reasoning text is never mined for factual output.
+The target compiler checks the primary quote itself with the existing substantive
+text predicate. A pure Markdown heading or table separator cannot become the
+observation merely because a selected context reference contains substantive data.
+Such selections are rejected explicitly; the program never redirects the primary
+to a nearby field. All original fields and model annotations remain in the audit.
+This syntactic guard does not certify broader semantic usefulness or field roles.
 
