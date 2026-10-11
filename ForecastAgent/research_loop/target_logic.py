@@ -52,12 +52,29 @@ def enabled(bundle):
 
 
 def targets(bundle):
-    """Stable IDs inherit the existing plan; no new semantic decomposition."""
-    return [{'id': 'T' + digest(n['id'])[:12], 'material_need_id': n['id'],
+    """Keep research needs distinct from the optional immutable forecast target."""
+    rows = [{'id': 'T' + digest(n['id'])[:12], 'material_need_id': n['id'],
              'kind': 'research_target', 'condition': n['condition'],
              'priority': n['priority'], 'expected_source': n['expected_source'],
              'question_refs': n.get('question_refs', []), 'meaning_verified': False}
             for n in bundle.get('plan') or []]
+    policy = bundle.get('request', {}).get('forecast_target_registry_policy', 'disabled')
+    if policy not in {'disabled', 'question_and_research_targets_v1'}:
+        raise ValueError('Unknown forecast target registry policy')
+    if policy == 'question_and_research_targets_v1':
+        if not enabled(bundle):
+            raise ValueError('Forecast target registry requires target logic')
+        request = bundle['request']
+        frozen = {k: request.get(k, '') for k in ('id', 'question', 'question_type',
+            'resolution_criteria', 'fine_print', 'scaling', 'options')}
+        rows.append({'id': 'F' + digest(frozen)[:12], 'material_need_id': None,
+            'kind': 'forecast_target', 'condition': request['question'],
+            'priority': 'critical', 'expected_source': 'Exact immutable resolution criteria and fine print',
+            'question_refs': [], 'meaning_verified': False,
+            'instruction': 'The eventual resolving outcome. Research-need coverage does not cover this target. '
+                'Link available quantified baselines or predictions as baseline/indicator with scope and limits, '
+                'never as direct realized results. Keep unpublished outcomes unresolved.'})
+    return rows
 
 
 def schema(base):

@@ -33,6 +33,29 @@ def apply(b, p):
 
 
 class TargetLogicTests(unittest.TestCase):
+    def test_forecast_target_is_independent_of_plan_and_not_covered_by_schedule(self):
+        b, _ = fixture()
+        b['request']['forecast_target_registry_policy'] = 'question_and_research_targets_v1'
+        b['request']['question'] = 'How many total points will the target game have?'
+        b['plan'][0]['condition'] = 'Confirm the scheduled game participants.'
+        registry = logic.targets(b)
+        root = registry[-1]
+        self.assertEqual(root['kind'], 'forecast_target')
+        self.assertEqual(root['condition'], b['request']['question'])
+        old_id = root['id']
+        node = {'id': 'schedule', 'kind': 'observation', 'applicability': 'target',
+                'target_links': [link(b, 'direct', 'supports')]}
+        report = logic.audit(b, nodes=[node], requests=[])
+        self.assertEqual(report['targets'][0]['status'], 'direct_evidence_declared')
+        self.assertEqual(report['targets'][-1]['status'], 'unassessed')
+        b['plan'][0]['condition'] = 'Look up historical scores.'
+        self.assertEqual(logic.targets(b)[-1]['id'], old_id)
+        b['request']['resolution_criteria'] += ' Include overtime.'
+        self.assertNotEqual(logic.targets(b)[-1]['id'], old_id)
+        b['request']['forecast_target_registry_policy'] = 'unknown'
+        with self.assertRaises(ValueError):
+            logic.targets(b)
+
     def test_target_paths_work_without_fabricated_causal_edges(self):
         b,p = fixture(); p['nodes'][0]['target_links'] = [link(b)]
         p['nodes'][2]['target_links'] = [link(b,'unknown','unresolved')]
