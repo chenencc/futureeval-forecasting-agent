@@ -292,6 +292,11 @@ def forecast_summary(result, question):
         return {'probabilities': p['probability_yes_per_category']}
     from ForecastAgent.analysis.distributions import grid, range_metadata
     xs = grid(range_metadata(question)); ps = p['continuous_cdf']; censored = {}
+    # Discrete platform CDF locations are bin edges. Their centers identify
+    # possible outcomes; interpolating inside a bin invents an impossible count.
+    outcomes = [(a+b)/2 for a,b in zip(xs,xs[1:])] if kind == 'discrete' else None
+    if outcomes is not None:
+        outcomes = [int(round(x)) if math.isclose(x,round(x),rel_tol=0.,abs_tol=1e-12) else x for x in outcomes]
     def quantile(level):
         if level <= ps[0]:
             censored[str(level)] = {'status': 'at_or_below_lower_bound', 'bound': xs[0]}
@@ -301,11 +306,17 @@ def forecast_summary(result, question):
             return None
         for i in range(1, len(ps)):
             if ps[i] >= level and ps[i] > ps[i-1]:
+                if outcomes is not None:
+                    return outcomes[i-1]
                 return xs[i-1] + (xs[i]-xs[i-1])*(level-ps[i-1])/(ps[i]-ps[i-1])
         raise ValueError('Valid CDF did not bracket an in-range quantile')
-    return {'p10': quantile(.1), 'median': quantile(.5), 'p90': quantile(.9),
+    summary = {'p10': quantile(.1), 'median': quantile(.5), 'p90': quantile(.9),
             'quantile_censoring': censored,
             'cdf_points': len(ps), 'lower_tail_mass': ps[0], 'upper_tail_mass': 1-ps[-1]}
+    if outcomes is not None:
+        summary.update(quantile_method='discrete_inverse_cdf',
+            discrete_pmf=[{'outcome':x,'probability':ps[i+1]-ps[i]} for i,x in enumerate(outcomes)])
+    return summary
 
 
 def import_baseline(parent_root, ident, baseline, registry, folder):

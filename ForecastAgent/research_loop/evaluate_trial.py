@@ -3,7 +3,7 @@ import argparse
 import math
 from pathlib import Path
 
-from ForecastAgent.analysis.distributions import grid, range_metadata, nominal
+from ForecastAgent.analysis.distributions import grid, range_metadata, nominal, probability
 from ForecastAgent.analysis.pilot import digest, WARNING
 from ForecastAgent.runtime.records import load, save
 from ForecastAgent.research_loop.labels import validate as validate_label
@@ -22,6 +22,36 @@ def cdf_loss(xs, ps, truth):
     return total/(xs[-1]-xs[0])
 
 
+def discrete_score(ps, question, label):
+    """Proper ordinal score over outcome masses, including explicit open tails."""
+    meta=range_metadata(question);xs=grid(meta);ps=[probability(p) for p in ps]
+    if len(ps)!=len(xs) or any(a>b for a,b in zip(ps,ps[1:])):
+        raise ValueError('Invalid discrete cumulative distribution')
+    if (not meta['open_lower_bound'] and ps[0]!=0) or (not meta['open_upper_bound'] and ps[-1]!=1):
+        raise ValueError('Closed discrete tail has probability mass')
+    interval=label.get('result_kind')
+    if interval=='below_lower_bound':
+        if not meta['open_lower_bound']:raise ValueError('Resolved lower tail is not open')
+        truth=None;below=True;above=False
+    elif interval=='above_upper_bound':
+        if not meta['open_upper_bound']:raise ValueError('Resolved upper tail is not open')
+        truth=None;below=False;above=True
+    else:
+        truth=nominal(label['value'],meta)
+        below=truth<xs[0] and meta['open_lower_bound']
+        above=truth>=xs[-1] and meta['open_upper_bound']
+        centers=[(a+b)/2 for a,b in zip(xs,xs[1:])]
+        if not (below or above or any(math.isclose(truth,x,rel_tol=0.,abs_tol=1e-9) for x in centers)):
+            raise ValueError('Resolved value is not a possible discrete outcome')
+    # K ordered categories have K-1 nontrivial cumulative thresholds.
+    indices=range(0 if meta['open_lower_bound'] else 1,
+                  len(ps) if meta['open_upper_bound'] else len(ps)-1)
+    losses=[(ps[i]-(1. if below else 0. if above else float(truth<xs[i])))**2 for i in indices]
+    total=math.fsum(losses)
+    return {'ranked_probability_score':total,
+            'normalized_ranked_probability_score':total/len(losses) if losses else 0.}
+
+
 def score(payload, question, label):
     kind = question['question_type']
     if kind == 'binary':
@@ -36,6 +66,8 @@ def score(payload, question, label):
             raise ValueError('Resolved option does not match frozen exact options')
         return {'multiclass_brier': sum((p-float(k == truth))**2 for k, p in ps.items()),
                 'log_loss': -math.log(ps[truth])}
+    if kind == 'discrete':
+        return discrete_score(payload['continuous_cdf'],question,label)
     xs = grid(range_metadata(question)); ps = payload['continuous_cdf']
     interval = label.get('result_kind')
     truth = xs[0] if interval == 'below_lower_bound' else xs[-1] if interval == 'above_upper_bound' else nominal(label['value'], range_metadata(question))
@@ -78,7 +110,7 @@ def evaluate(root, labels_path):
         'small_sample': True, 'evaluation_warning': WARNING,
         'A_cost': 'Baseline Mercury HTTP usage only',
         'B_cost': 'Super map HTTP usage plus enriched Mercury HTTP usage',
-        'tail_limitation': 'Bounded CDF loss does not distinguish beyond-range outcomes',
+        'tail_limitation': 'Numeric/date bounded CDF loss does not distinguish beyond-range outcomes; discrete RPS retains explicit open-tail categories',
         'all_attempts_report': str(root/'report.json')}
     save(root/'evaluation.json', result)
     return result

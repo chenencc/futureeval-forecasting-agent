@@ -51,3 +51,16 @@ response, and the cumulative `report.json`.
 
 Review node evidence, periods, metrics and units before interpreting score shifts.
 Unresolved cases cannot provide Brier, accuracy, or a measured map-quality benefit.
+
+Discrete summaries invert the cumulative bin masses at possible outcome centers;
+they do not interpolate a fractional count or extrapolate into an open tail.
+The summary also exposes each outcome mass. Saved provider replies and platform
+payloads remain unchanged. Continuous numeric and date summaries keep their
+existing interpolation policy. Replaying a summary consumes no model requests.
+
+After independently bound outcomes become available, discrete questions use
+ranked probability score over ordered outcome masses. An explicit open tail is
+an additional category. Impossible fractional outcome labels are rejected;
+tail outcomes are not replaced by a fabricated boundary value. Continuous
+numeric/date questions retain the bounded linear-CDF diagnostic. These metric
+implementations do not supply missing official outcomes or prove predictive skill.

@@ -89,6 +89,42 @@ class LiveTrialTests(unittest.TestCase):
         self.assertAlmostEqual(cdf_loss([0, 1], [0, 1], 1), 1/3)
         self.assertAlmostEqual(cdf_loss([800, 2200], [0, 1], 1500), 1/12)
 
+    def test_discrete_count_summary_uses_possible_outcomes_and_preserves_payload(self):
+        import copy
+        q={'question_type':'discrete','scaling':{'range_min':-.5,'range_max':3.5,
+            'nominal_min':0,'nominal_max':3},'inbound_outcome_count':4,
+            'open_lower_bound':False,'open_upper_bound':False}
+        result={'payload':{'continuous_cdf':[0.,.02,.022500002,.025000004,1.]}}
+        original=copy.deepcopy(result)
+        summary=trial.forecast_summary(result,q)
+        self.assertEqual([summary[k] for k in ('p10','median','p90')],[3,3,3])
+        self.assertEqual([v['outcome'] for v in summary['discrete_pmf']],[0,1,2,3])
+        self.assertAlmostEqual(sum(v['probability'] for v in summary['discrete_pmf']),1.)
+        self.assertEqual(result,original)
+
+    def test_discrete_noninteger_outcomes_are_not_rounded_into_counts(self):
+        q={'question_type':'discrete','scaling':{'range_min':.05,'range_max':.35,
+            'continuous_range':[.05,.15,.25,.35]},'inbound_outcome_count':3,
+            'open_lower_bound':False,'open_upper_bound':False}
+        summary=trial.forecast_summary({'payload':{'continuous_cdf':[0.,.2,.8,1.]}},q)
+        self.assertAlmostEqual(summary['p10'],.1)
+        self.assertAlmostEqual(summary['median'],.2)
+        self.assertAlmostEqual(summary['p90'],.3)
+
+    def test_discrete_open_tail_quantiles_remain_censored(self):
+        q={'question_type':'discrete','scaling':{'range_min':-.5,'range_max':2.5},
+            'inbound_outcome_count':3,'open_lower_bound':True,'open_upper_bound':True}
+        summary=trial.forecast_summary({'payload':{'continuous_cdf':[.2,.4,.6,.8]}},q)
+        self.assertIsNone(summary['p10']);self.assertEqual(summary['median'],1);self.assertIsNone(summary['p90'])
+        self.assertEqual(summary['quantile_censoring']['0.1']['bound'],-.5)
+        self.assertEqual(summary['quantile_censoring']['0.9']['bound'],2.5)
+
+    def test_large_discrete_fractional_value_keeps_its_fraction(self):
+        q={'question_type':'discrete','scaling':{'range_min':1e9,'range_max':1e9+2},
+            'inbound_outcome_count':2,'open_lower_bound':False,'open_upper_bound':False}
+        summary=trial.forecast_summary({'payload':{'continuous_cdf':[0.,.8,1.]}},q)
+        self.assertEqual(summary['median'],1e9+.5)
+
     def test_censored_quantile_summary_never_extrapolates_a_tail_value(self):
         from ForecastAgent.analysis.distributions import grid, range_metadata
         q = source_bundle('numeric')['request']; xs = grid(range_metadata(q))
