@@ -117,3 +117,17 @@ the failing field and allowed values, so a later model update can repair its own
 proposal. This diagnostic does not change the accepted node, source quotation,
 material receipt, target effect, revision, or budget. Plain semantic failures,
 such as using another source's node for incorporation, remain explicit rejections.
+
+## Source-specific review choices
+
+Material descriptors expose up to three `same_body_material_ids` whose retained
+body hashes match exactly. This is a byte-identity hint, not equivalence of URLs,
+reading scopes, authority, or target relevance. A duplicate disposition still
+requires this material's inspected reference, a related material ID, and the
+model's reason. No receipt or graph node is generated automatically.
+
+Rejected source reviews include a bounded repair context: exact material ID,
+inspected reference IDs, source-bound observation nodes, and identical-body
+material IDs. Cross-source incorporation remains rejected. A missing suitable
+node requires a justified source-bound observation or an explicit unfinished
+disposition. Successful processing does not prove the target fact or forecast.

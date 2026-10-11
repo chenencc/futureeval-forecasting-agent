@@ -51,6 +51,9 @@ of the newly read source. Add a short source-bound observation or explicitly def
 Past observations can inform a future forecast as background. Being earlier than
 the target date does not alone make a source irrelevant. A future result is not
 obtainable now: seek an available baseline or leading indicator, not its realization.
+same_body_material_ids lists byte-identical saved bodies, not matching reading
+scopes or semantic relevance. For a duplicate judgment cite THIS material's read
+reference and a related material ID; do not incorporate another source's node.
 Whitespace and ordinary HTTP Markdown link display may be mapped back to exact
 original coordinates. Facts, numbers, dates, polarity and units cannot be repaired.
 '''
@@ -109,6 +112,9 @@ def materials(task, material=None):
             (task.bundle.get('research_loop',{}).get('current') or {}).get('nodes',[])
             if n['kind']=='observation' and any(r['evidence_id'] in result[ident]['reference_ids']
                 and r['body_sha256']==source['body_sha256'] and r['url']==url for r in n['bindings'])]
+    for ident, row in result.items():
+        row['same_body_material_ids'] = sorted(other for other, saved in result.items()
+            if other != ident and saved['body_sha256'] == row['body_sha256'])[:3]
     return result
 
 
@@ -338,6 +344,14 @@ def review(task, proposals, before, explanation, result):
                 'meaning_verified':False})
         except (ValueError, KeyError, TypeError) as exc:
             rejected.append({'section':'material_reviews', 'index':index, 'error':str(exc), 'entry_sha256':digest(proposal)})
+            supplied = inventory.get(proposal.get('material_id')) if isinstance(proposal, dict) else None
+            if supplied:
+                rejected[-1]['repair_context'] = {
+                    'material_id': supplied['material_id'],
+                    'inspected_reference_ids': supplied['inspected_reference_ids'],
+                    'bound_observation_node_ids': supplied['bound_observation_node_ids'],
+                    'same_body_material_ids': supplied['same_body_material_ids'],
+                    'scope': 'Current exact source only. Choose a justified disposition; no automatic acceptance.'}
             if isinstance(exc, ContractError):
                 rejected[-1]['contract_error'] = copy.deepcopy(exc.details)
     change = graph_delta(before, current)

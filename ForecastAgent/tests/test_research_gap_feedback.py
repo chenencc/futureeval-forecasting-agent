@@ -106,6 +106,10 @@ class GapFeedbackTests(unittest.TestCase):
             result=t.execute('update_research_state',patch(t,[r]),'test')
             self.assertFalse(result['material_acknowledged'])
             self.assertIn('retained observation',result['gap_feedback']['rejected_reviews'][0]['error'])
+            repair=result['gap_feedback']['rejected_reviews'][0]['repair_context']
+            self.assertEqual(repair['material_id'],r['material_id'])
+            self.assertEqual(repair['inspected_reference_ids'],r['evidence_ids'])
+            self.assertEqual(repair['bound_observation_node_ids'],[])
             self.assertEqual(result['acceptance']['status'],'partial')
             recorded=t.bundle['research_gap_feedback']['events'][-1]
             self.assertEqual(recorded['rejected_reviews'],result['gap_feedback']['rejected_reviews'])
@@ -114,6 +118,31 @@ class GapFeedbackTests(unittest.TestCase):
             self.assertEqual(len(t.bundle['research_gap_feedback']['events']),count)
             self.assertEqual(gf.view(t)['pending_material_count'],1)
             self.assertTrue(t.bundle['research_acquisition']['pending_map_update'])
+
+    def test_identical_body_hint_does_not_create_receipt_or_cross_source_binding(self):
+        with tempfile.TemporaryDirectory() as root:
+            t=task(root);initial(t)
+            original_url='https://example.org/report';alias='https://example.org/report?alias=1'
+            t.bundle['pages'][alias]=copy.deepcopy(t.bundle['pages'][original_url])
+            t.execute('inspect_research_state',{'url':alias,'limit':3},'test')
+            before=copy.deepcopy(t.bundle);budget=t.budget()
+            inventory=gf.materials(t)
+            original=next(m for m in inventory.values() if m['url']==original_url)
+            added=next(m for m in inventory.values() if m['url']==alias)
+            self.assertEqual(added['same_body_material_ids'],[original['material_id']])
+            self.assertEqual(added['bound_observation_node_ids'],[])
+            self.assertEqual(t.bundle,before)
+            wrong=receipt(t,alias)
+            rejected=t.execute('update_research_state',patch(t,[wrong]),'test')
+            self.assertFalse(rejected['material_acknowledged'])
+            self.assertEqual(rejected['gap_feedback']['rejected_reviews'][0]['repair_context']['same_body_material_ids'],[original['material_id']])
+            duplicate=receipt(t,alias,'duplicate',[], 'no_change')
+            duplicate['related_material_ids']=[original['material_id']]
+            accepted=t.execute('update_research_state',patch(t,[duplicate]),'test')
+            self.assertTrue(accepted['material_acknowledged'])
+            self.assertFalse(accepted['committed'])
+            self.assertEqual(t.budget(),budget)
+            self.assertEqual(t.bundle['pages'],before['pages'])
 
     def test_irrelevant_source_can_be_reviewed_without_a_graph_change(self):
         with tempfile.TemporaryDirectory() as root:

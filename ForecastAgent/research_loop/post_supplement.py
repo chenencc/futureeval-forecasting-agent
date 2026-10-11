@@ -221,7 +221,7 @@ def reading_packet(task):
         if any(s['url'] == m['url'] for s in evidence):
             projected_materials.append({k:copy.deepcopy(m[k]) for k in
                 ('material_id','url','body_sha256','scope_sha256','capture_time',
-                 'inspected_reference_ids','bound_observation_node_ids')})
+                 'inspected_reference_ids','bound_observation_node_ids','same_body_material_ids')})
             projected_materials[-1].update(accessible_reference_count=len(m['reference_ids']),
                 scope='Delivered excerpts only; omitted IDs are not selectable or credited as read.')
     return {'material_sha256': material['material_sha256'], 'evidence': evidence,
@@ -274,7 +274,7 @@ def review_feedback(task, outcome, packet):
         if ident in pending:
             current = inventory.get(ident, source)
             unresolved.append({k:current.get(k, []) for k in
-                ('material_id','url','inspected_reference_ids','bound_observation_node_ids')})
+                ('material_id','url','inspected_reference_ids','bound_observation_node_ids','same_body_material_ids')})
     row_ids = {s['evidence_id'] for s in packet['evidence'] if s['text'].strip().startswith('|')}
     unselected_context = []
     for node in (task.bundle['research_loop'].get('current') or {}).get('nodes', []):
