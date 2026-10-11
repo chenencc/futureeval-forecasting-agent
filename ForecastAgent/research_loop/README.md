@@ -636,3 +636,19 @@ client clocks and evaluates closed full-release pairs from physical receipts.
 The declared question clock is never substituted for missing call times. Old
 archives stay immutable and diagnostic; independent outcome bindings and reviewed
 first-public-event timing are required before prospective metrics can be reported.
+
+## Discovery navigation packing
+
+The acquisition dispatcher keeps every candidate source ID, exact URL and known
+publication date when search navigation is too large for the reading window.
+After shortening optional previews, it can transmit the same registry as a table
+and shorten titles with explicit omitted-character counts. Full search replies
+remain in the task archive. Tool argument binding still uses the complete exact
+registry; the projection grants no request, capture or map allowance. A genuinely
+oversized immutable question or original reading still fails explicitly.
+
+The first fresh three-question trial exposed this delivery failure in political,
+sports and technology questions. Same-state offline replay reproduces all three
+old failures and fits all three fixed contexts below the existing 28,000-character
+ceiling, with no new network call. This verifies context delivery only: it does
+not prove source relevance, resumed acquisition, graph coverage or forecast gain.

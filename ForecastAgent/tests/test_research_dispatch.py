@@ -65,7 +65,7 @@ class DispatchTests(unittest.TestCase):
                        side_effect=ContextProjectionError('Immutable objective cannot fit')) as mocked:
                 with self.assertRaises(ContextProjectionError):
                     dispatch.model_context(t, choice)
-            self.assertEqual(mocked.call_count, 3)
+            self.assertEqual(mocked.call_count, 6)
             self.assertNotIn('dispatch_context_projections', t.bundle)
 
     def test_discovery_pool_is_not_truncated_to_capture_batch_size(self):

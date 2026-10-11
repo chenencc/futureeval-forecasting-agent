@@ -95,9 +95,13 @@ def model_context(task, choice, *, forced_tool=None):
     """
     from ForecastAgent.runtime.context import collection_context, encode, MAX_CONTEXT_CHARS, ContextProjectionError
     discovery = choice and choice.get('phase') in {'capture_discovery', 'capture_frontier'}
-    tiers = (600, 300, 0) if discovery else (None,)
+    # Long titles and repeated dictionary keys can exhaust the remaining window
+    # even after previews are removed. Pack navigation as a table before failing;
+    # every source ID, exact URL and publication date survives every tier.
+    tiers = (('objects', 600, None), ('objects', 300, None), ('objects', 0, None),
+             ('rows', 0, None), ('rows', 0, 80), ('rows', 0, 0)) if discovery else (('objects', None, None),)
     failures = []
-    for preview_chars in tiers:
+    for tier_index, (registry_format, preview_chars, title_chars) in enumerate(tiers):
         projected = copy.deepcopy(choice)
         if discovery:
             candidates = projected['candidates']
@@ -106,6 +110,19 @@ def model_context(task, choice, *, forced_tool=None):
                 excerpt = source.get('discovery_excerpt', '')
                 source['discovery_excerpt'] = excerpt[:preview_chars]
                 source['excerpt_omitted_chars'] = max(0, len(excerpt) - preview_chars)
+            if registry_format == 'rows':
+                columns = ['source_id', 'url', 'title', 'published_date',
+                           'discovery_excerpt', 'title_omitted_chars', 'excerpt_omitted_chars']
+                rows = []
+                for source in candidates['sources']:
+                    title = source.get('title') or ''
+                    visible_title = title if title_chars is None else title[:title_chars]
+                    rows.append([source['source_id'], source['url'], visible_title,
+                                 source.get('published_date'), source['discovery_excerpt'],
+                                 len(title)-len(visible_title), source['excerpt_omitted_chars']])
+                projected['candidates'] = {'source_columns': columns, 'source_rows': rows,
+                    'total_source_count': len(rows),
+                    'instruction': 'Navigation table only; titles and previews may be shortened with explicit omitted-character counts. All exact source IDs, URLs and known publication dates are retained. Full search results remain saved; omitted text is not absent evidence.'}
         packet = ({'role': 'user', 'content': json.dumps(
             {'research_dispatch': projected}, ensure_ascii=False)} if projected else None)
         remaining = MAX_CONTEXT_CHARS - (len(encode(packet)) + 1 if packet else 0)
@@ -118,13 +135,14 @@ def model_context(task, choice, *, forced_tool=None):
                 raise ContextProjectionError('Context ceiling exceeded after dispatch projection; no model HTTP issued')
         except ContextProjectionError as exc:
             failures.append(str(exc))
-            if preview_chars == tiers[-1]:
+            if tier_index == len(tiers)-1:
                 raise
             continue
         if choice:
             task.bundle.setdefault('dispatch_context_projections', []).append({
                 'phase': choice['phase'], 'preview_chars': preview_chars,
-                'source_ids': [s['source_id'] for s in projected.get('candidates', {}).get('sources', [])],
+                'registry_format': registry_format, 'title_chars': title_chars,
+                'source_ids': [s['source_id'] for s in (choice or {}).get('candidates', {}).get('sources', [])],
                 'message_chars': size, 'ceiling_chars': MAX_CONTEXT_CHARS,
                 'local_projection_failures': failures, 'provider_calls': 0})
         return messages
