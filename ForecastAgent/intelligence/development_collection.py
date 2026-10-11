@@ -50,7 +50,17 @@ remains resumable and is not converted into a complete package by this adapter.
     if not isinstance(model, str) or not model.strip():
         raise ValueError('Collection model must be a nonempty configured model ID')
     with model_route(model):
+        # Reuse the release's audited raw-export recovery. This preserves every
+        # collector file and does not label a service interruption complete.
+        from ForecastAgent.releases.v1_0_5 import handoff
+        if (directory/'state.json').exists() and (directory/'collection/bundle.json').exists():
+            if load(directory/'identity.json') != pipeline.identity(request, True):
+                raise ValueError('Saved candidate acquisition identity changed')
+            handoff(directory)
         report = pipeline.run(request, directory, supplement_network=True)
+        if (report.get('state') != 'complete' and (directory/'state.json').exists()
+                and (directory/'collection/bundle.json').exists() and handoff(directory)):
+            report = pipeline.run(request, directory, supplement_network=True)
     marker = {'schema': 'native_channels_development_collection_v1', 'status': report.get('state'),
         'development_only': True, 'release_version_claimed': None,
         'budget_reset': False, 'analysis_started': False, 'submitted': False}

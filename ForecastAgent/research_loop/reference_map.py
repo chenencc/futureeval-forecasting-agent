@@ -11,12 +11,16 @@ FIELD = 'research_reference_map_policy'
 POLICY = 'visible_original_reference_v1'
 PROTOCOL = 'reference-map-v1'
 ORIGIN = 'source_reference'
+ANNOTATION_ERRORS = '_reference_annotation_rejections'
 GUIDE = '''
 Reference-bound map interface: select exact supplied R IDs in evidence_ids, never copy quotations,
 offsets, dates or units into graph fields. An observation has hypothesis=''. The
 program binds the COMPLETE referenced originals with their hashes and coordinates.
 Explain the target relationship in interpretation and target_links; state limits
 in limitation. These explanations are unverified, not source text or final answers.
+Keep interpretation within 240 characters and limitation within 180 characters.
+Invalid explanations are omitted with an audit receipt; valid source IDs remain
+bound but target applicability is unassessed until a valid explanation is supplied.
 Select a supplied header/context ID with a row when its date, unit or status is
 needed. Never guess a hidden reference. Unknowns/drivers/assumptions have no IDs;
 their hypothesis is explicit gap or hypothetical text. Empty or inaccessible
@@ -181,25 +185,61 @@ def prepare(bundle, proposal, allowed, cutoff=None):
         record = {'policy':POLICY, 'index':position, 'node_id':original.get('id') if isinstance(original,dict) else None,
                   'submitted_node_sha256':digest(original), 'meaning_verified':False}
         try:
-            check_schema(original, input_schema)
-            refs = original['evidence_ids']
+            # Validate source identity before isolating optional interpretations.
+            # Unknown fields, invented references and copied facts remain errors.
+            core_schema = copy.deepcopy(input_schema)
+            annotations = {'interpretation', 'limitation', 'applicability', 'target_links'}
+            for field in annotations & core_schema['properties'].keys():
+                core_schema['properties'][field] = {}
+            core_schema['required'] = [k for k in core_schema['required'] if k not in annotations]
+            check_schema(original, core_schema)
+            selected = copy.deepcopy(original)
+            errors = []
+            for field in ('interpretation', 'limitation'):
+                if field not in input_schema['properties']:
+                    continue
+                try:
+                    if field not in selected:
+                        raise ValueError('Supply arguments.' + field + '.')
+                    check_schema(selected[field], input_schema['properties'][field], 'arguments.' + field)
+                except (ValueError, TypeError, KeyError) as exc:
+                    errors.append({'section':'reference_annotations', 'node_id':original.get('id'),
+                        'field':field, 'entry_sha256':digest(original.get(field)), 'error':str(exc)})
+                    selected[field] = ''
+            if errors:
+                # Do not retain directional target effects whose explanation was
+                # rejected. The unchanged reference is still independently useful.
+                selected['applicability'] = 'unknown'
+                if selected.get('target_links'):
+                    errors.append({'section':'target_links', 'node_id':original.get('id'),
+                        'entry_sha256':digest(selected['target_links']),
+                        'error':'Target effects omitted with invalid interpretation or limitation.'})
+                if 'target_links' in input_schema['properties']:
+                    selected['target_links'] = []
+            if target_logic.enabled(bundle):
+                selected, isolated = target_logic.isolate_node(bundle, selected)
+                errors.extend(isolated)
+            check_schema(selected, input_schema)
+            refs = selected['evidence_ids']
             if len(refs) != len(set(refs)):
                 raise ValueError('Reference IDs must be unique')
-            observation = original['kind'] == 'observation'
-            if observation and original['hypothesis'] != '':
+            observation = selected['kind'] == 'observation'
+            if observation and selected['hypothesis'] != '':
                 raise ValueError('Observation cannot contain a model-written hypothesis or quote')
-            if not observation and (refs or not original['hypothesis'].strip()):
+            if not observation and (refs or not selected['hypothesis'].strip()):
                 raise ValueError('Hypothesis/gap needs explicit text and no source IDs')
-            chosen = {k:copy.deepcopy(v) for k,v in original.items() if k != 'hypothesis'}
-            chosen.update(claim=label(refs) if observation else original['hypothesis'],
-                          claim_origin=ORIGIN if observation else 'gap' if original['kind']=='unknown' else 'hypothesis',
+            chosen = {k:copy.deepcopy(v) for k,v in selected.items() if k != 'hypothesis'}
+            chosen.update(claim=label(refs) if observation else selected['hypothesis'],
+                          claim_origin=ORIGIN if observation else 'gap' if selected['kind']=='unknown' else 'hypothesis',
                           event_time='', time_status='unknown', event_stage='unknown', stage_basis='')
             spans = verify_node(chosen, material, set(allowed)) if observation else []
-            result['nodes'][position] = chosen
             record.update(status='bound' if observation else 'explicit_non_observation',
-                canonical_node_sha256=digest(chosen), original_bindings=[
+                canonical_node_sha256=digest(chosen), annotation_rejections=copy.deepcopy(errors), original_bindings=[
                     {k:s[k] for k in ('evidence_id','url','body_sha256','start','end','coordinate_space','view_sha256','parser','json_provenance') if k in s}
                     | {'text_sha256':hashlib.sha256(s['text'].encode()).hexdigest(), 'bound_characters':len(s['text'])} for s in spans])
+            if errors:
+                chosen[ANNOTATION_ERRORS] = errors
+            result['nodes'][position] = chosen
         except (ValueError, TypeError, KeyError) as exc:
             # Do not turn a failed observation into an apparently intentional gap.
             record.update(status='rejected', error=str(exc))

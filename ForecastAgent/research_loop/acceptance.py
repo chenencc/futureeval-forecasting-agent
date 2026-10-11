@@ -87,6 +87,12 @@ def accept(bundle, proposal, cutoff=None, allowed=None, *, map_protocol='legacy'
             if isinstance(original, dict) and isinstance(original.get('id'), str) and counts[original['id']] > 1:
                 raise ValueError('Duplicate node ID; every occurrence is quarantined')
             chosen = copy.deepcopy(original)
+            if map_protocol == reference_map.PROTOCOL and isinstance(chosen, dict):
+                if chosen.get('_reference_input_error'):
+                    # Hydration failures precede canonical claim validation. Do
+                    # not ask the model to supply a removed source-copy field.
+                    raise ValueError(chosen['_reference_input_error'])
+                rejected.extend(chosen.pop(reference_map.ANNOTATION_ERRORS, []))
             from ForecastAgent.research_loop import target_logic
             if target_logic.enabled(candidate):
                 chosen, fields = target_logic.isolate_node(candidate, chosen)

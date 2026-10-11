@@ -144,3 +144,34 @@ Before promotion, use a small fresh collection pilot with the exact same baselin
 and budgets, inspect actual target-field coverage, and keep future outcome labels
 separate. The next gate concerns real acquisition coverage, not increasing
 confidence or simply adding more calls.
+
+## Integrated development shadow worker
+
+`python -m ForecastAgent.intelligence.worker --root <fresh-shadow-root>
+--snapshots <official-snapshot-root>` runs a separate deadline-ordered queue. It
+uses the unchanged release platform/rule helpers, the latest native Channels
+catalog, integrated collection and supplement, reference-bound maps, admission,
+and one map-assisted Mercury score. An unavailable map selects the original-only
+input. It has no submission option or writable platform API. `shadow_scored` is
+never reported as a platform acceptance. Production ledgers cannot be adopted.
+
+The fixed initial policy allows 12 received decisions and 16 physical model
+attempts per task, including final map review, three Tavily basic searches, one
+Exa search, eight initial HTTP slots, one Extract batch, two supplement HTTP and
+two browser slots. Re-entry subtracts native and final-review attempts rather than
+renewing allowances. Unknown reservations require review. Completed packages and
+candidate hashes are checked before reuse. Child collection processes have a
+2100-second deadline and their descendants are contained. Each dispatch handles
+at most five tasks; subsequent invocations continue the queue without reopening
+scored, closed, expired, already-forecasted or blocked tasks.
+
+This worker is an engineering gate, not a production release. A completed,
+request-matched Mercury 5xx or invalid received response permits one Super
+reasoning forecast over the same original-only evidence. Its separate one-HTTP
+allowance is fixed before dispatch; no scoring retry or acquisition reset occurs.
+Account/quota errors and unknown reservations require review. This fallback
+preserves the release's single-available-route behavior, but uses a new bounded
+typed forecast interface. Its predictive equivalence has not been established.
+Linux validation uses credential-free synthetic
+stages, real browser/table extraction and process containment. It does not prove
+public-provider availability or improved forecasting skill.

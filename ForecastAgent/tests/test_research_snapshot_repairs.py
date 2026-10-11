@@ -151,7 +151,11 @@ class SnapshotRepairTests(unittest.TestCase):
             runtime.validate_args(t,'update_research_state',p,tools)
             result=t.execute('update_research_state',p,'native')
             self.assertTrue(result['committed']);self.assertIn(p['nodes'][0]['id'],result['acceptance']['accepted_node_ids'])
-            self.assertNotIn('bad',result['acceptance']['accepted_node_ids'])
+            self.assertIn('bad',result['acceptance']['accepted_node_ids'])
+            retained=next(n for n in t.bundle['research_loop']['current']['nodes'] if n['id']=='bad')
+            self.assertEqual(retained['claim'],bad['claim'])
+            self.assertEqual(retained['event_stage'],'unknown');self.assertEqual(retained['stage_basis'],'')
+            self.assertTrue(any(r.get('field')=='stage_basis' for r in result['acceptance']['rejected']))
 
     def test_duplicate_old_binding_cannot_ack_unreviewed_body_and_new_read_still_becomes_ready(self):
         with tempfile.TemporaryDirectory() as tmp:

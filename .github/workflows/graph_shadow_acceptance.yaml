@@ -1,0 +1,43 @@
+name: Graph shadow Linux acceptance
+on:
+  push:
+    branches: ['codex/official-intelligence-v106']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: graph-shadow-linux-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned reader runtime
+        run: |
+          python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
+          python -m playwright install --with-deps chromium
+      - name: Verify development source and unchanged baseline
+        run: |
+          python -c "from ForecastAgent.releases.manifest import verify; from ForecastAgent.acquisition.pipeline import verify_baseline; m=verify(); assert m['development_only'] and not m['production_promoted']; verify_baseline()"
+      - name: Verify queue recovery, process containment and rendered table capture
+        run: python -m ForecastAgent.intelligence.linux_gate --root snapshots/graph-shadow-gate
+      - name: Retain exact runner identity
+        if: always()
+        run: |
+          mkdir -p snapshots/graph-shadow-gate
+          git rev-parse HEAD > snapshots/graph-shadow-gate/commit.txt
+          python -m pip freeze > snapshots/graph-shadow-gate/runtime.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: graph-shadow-linux-${{ github.run_id }}
+          path: snapshots/graph-shadow-gate
+          if-no-files-found: error
+          retention-days: 30

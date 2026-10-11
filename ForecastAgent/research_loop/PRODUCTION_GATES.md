@@ -56,3 +56,48 @@ finished submissions remain immutable. New experiments have separately frozen
 budgets and never silently reopen a parent ledger. The initial aim is a bounded
 three-to-five-case gate, then broader frozen stress cases; a failed gate requires
 a mechanism repair before expansion.
+
+## Three-case result and next candidate (2026-10-11)
+
+The exact-release control and candidate each completed all three fresh unresolved
+cases. The candidate delivered a graph in all three and preserved original-only
+forecasts over the same scoring text. All frozen source/model caps passed. The
+first candidate coordinator had a nested-lock defect and stopped before any
+provider dispatch. Its original failure files are immutable; an explicitly
+registered runner-only amendment moved the outer lock and executed each candidate
+once, without repeating controls or renewing an attempted provider budget.
+
+Actual collection totals: release 30 HTTP / 286972 reported tokens; candidate
+34 HTTP / 370600 tokens (+29.14%). Analysis used four and six physical Mercury
+requests respectively. Mercury omitted total_tokens; input+output is retained
+separately rather than called a reported total. Outcomes remain unresolved.
+The gasoline candidate added historical price material, while the RIVM candidate
+missed current-case detail pages captured by the control. More graph nodes or
+readable bodies do not establish better evidence adequacy or forecast skill.
+
+A general defect was reproduced in three saved native proposals: an oversized
+interpretation erased a valid reference and the model saw an incorrect request
+for a removed claim field. The next candidate isolates invalid annotations,
+retains exact valid originals unassessed, removes dependent target effects and
+reports the actual rejected field. All three saved proposals now retain their
+valid bindings with zero new provider calls. This is a replay repair, not proof
+of improved fresh collection. Unsafe core IDs and source-copy fields still fail.
+
+The isolated shadow worker composes actual collection, supplement, admission,
+map projection and scoring adapters with unchanged release platform/rule helpers.
+Its synthetic queue tests cover five-plus-two batching, all five payload formats,
+cached replay, restore, empty materials, corrupted candidates, changed rules,
+shared lifetime budgets and service/unknown reservations. The candidate also
+reuses the release's original-preserving readable-service-error handoff.
+The production queue source and frozen baseline remain unchanged. A separate
+Linux workflow exercises pinned dependencies, browser table/data capture and
+process containment without provider credentials. Running that workflow and
+proving public-provider/fallback equivalence remain separate gates. No promotion.
+
+The development shadow now has a separately preregistered one-Super-HTTP fallback
+after a request-matched completed Mercury 5xx or invalid received response. It
+uses identical original-only scoring text and the same official outcome registry,
+preserves failed Mercury receipts and refuses account/quota/unknown failures.
+All five payload formats, cached replay, failed fallback caps and transport/result
+consistency are offline-tested. This is behavioral fault coverage, not proof that
+its forecasts equal the release reasoning fallback or improve prediction.

@@ -55,6 +55,44 @@ class ReferenceMapTests(unittest.TestCase):
         with self.assertRaises(MapAcceptanceError):apply(b,p)
         self.assertEqual(b['research_loop']['revision'],1)
 
+    def test_invalid_explanation_retains_exact_reference_without_target_effect(self):
+        for field, value in [('interpretation', 'x'*241), ('limitation', {'bad':'type'})]:
+            b,_=fixture();p=proposal(b);pages=copy.deepcopy(b['pages'])
+            p['nodes'][0][field]=value;before=copy.deepcopy(p)
+            result,records=apply(b,p)
+            node=b['research_loop']['current']['nodes'][0]
+            self.assertEqual(node['evidence_ids'],before['nodes'][0]['evidence_ids'])
+            self.assertEqual(node['applicability'],'unknown');self.assertEqual(node['target_links'],[])
+            self.assertEqual(node[field],'');self.assertFalse(node['interpretation_verified'])
+            self.assertNotIn(refs.ANNOTATION_ERRORS,node)
+            self.assertEqual(records[0]['submitted_node_sha256'],digest(before['nodes'][0]))
+            self.assertTrue(records[0]['annotation_rejections'])
+            self.assertTrue(result['acceptance']['narratives_omitted'])
+            self.assertFalse(result['acceptance']['target_coverage']['targets'][0]['adequacy_verified'])
+            self.assertEqual(b['pages'],pages);self.assertEqual(p,before)
+            self.assertEqual(node['bindings'][0]['text'],state.catalog(b)['spans'][node['evidence_ids'][0]]['text'])
+            state.verify_journal(b['research_loop'])
+
+    def test_invalid_target_annotation_does_not_erase_valid_original(self):
+        b,_=fixture();p=proposal(b)
+        p['nodes'][0]['target_links'].append({**link(b),'target_id':'invented'})
+        result,records=apply(b,p)
+        node=b['research_loop']['current']['nodes'][0]
+        self.assertEqual(len(node['target_links']),1)
+        self.assertTrue(records[0]['annotation_rejections'])
+        self.assertEqual(result['acceptance']['status'],'partial')
+
+    def test_core_reference_error_is_precise_even_when_annotation_is_invalid(self):
+        b,_=fixture();p=proposal(b)
+        p['nodes'][0].update(evidence_ids=['R_invented'],interpretation='x'*241)
+        with self.assertRaisesRegex(MapAcceptanceError,'Reference outside delivered original coverage') as caught:apply(b,p)
+        self.assertNotIn('Supply arguments.claim',str(caught.exception))
+        self.assertEqual(b.get('research_loop',{}).get('revision',0),0)
+
+    def test_model_cannot_inject_internal_annotation_receipts(self):
+        b,_=fixture();p=proposal(b);p['nodes'][0][refs.ANNOTATION_ERRORS]=[]
+        with self.assertRaisesRegex(MapAcceptanceError,'Use only declared parameters'):apply(b,p)
+
     def test_hidden_reference_never_binds_even_when_saved(self):
         b,_=fixture();p=proposal(b)
         canonical,records=refs.prepare(b,p,[])
