@@ -26,6 +26,47 @@ def fresh(root):
 
 
 class DispatchTests(unittest.TestCase):
+    def test_discovery_pool_is_not_truncated_to_capture_batch_size(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            exact = 'https://example.org/2026-10-10/detalle'
+            hits = [{'url': f'https://example.org/older-{i}', 'title': 'Target release'} for i in range(5)]
+            hits.append({'url': exact, 'title': 'Situacion actual', 'published_date': '2026-10-10',
+                         'content': 'Latest dated status for the named location.'})
+            t.bundle['searches'] = [{'results': hits}]
+            before = copy.deepcopy(t.bundle); budget = copy.deepcopy(t.budget())
+            choice = dispatch.choose(t)
+            self.assertIn(exact, choice['candidates']['urls'])
+            self.assertEqual(len(choice['candidates']['urls']), 6)
+            source = next(s for s in choice['candidates']['sources'] if s['url'] == exact)
+            self.assertEqual(source['evidence_status'], 'unread_discovery_lead')
+            self.assertIn('named location', source['discovery_excerpt'])
+            tools = [{'function': {'name': 'read_sources', 'parameters': {'properties':
+                {'urls': {'type': 'array', 'maxItems': 4, 'items': {'type': 'string'}}}}}}]
+            routed = dispatch.tools_for(t, tools, choice)
+            urls = routed[0]['function']['parameters']['properties']['urls']
+            self.assertEqual(urls['maxItems'], 4)
+            self.assertIn(exact, urls['items']['enum'])
+            # Initialization may add a ledger; observed data and quota remain unchanged.
+            self.assertEqual(t.bundle['searches'], before['searches'])
+            self.assertEqual(t.budget(), budget)
+
+    def test_candidate_pool_excludes_attempted_aliases_navigation_and_saved_pages(self):
+        with tempfile.TemporaryDirectory() as root:
+            t = fresh(root)
+            t.bundle['searches'] = [{'results': [{'url': f'https://example.org/detail-{i}',
+                                                  'title': 'Target'} for i in range(30)]}]
+            t.bundle['fetch_attempts'] = [{'url': 'https://example.org/detail-0/', 'status': 'failed'}]
+            t.bundle['source_leads']['https://example.org/navigation'] = {
+                'url': 'https://example.org/navigation', 'origin': 'page_link'}
+            candidates = dispatch.discovered_candidates(t)
+            self.assertEqual(len(candidates['urls']), 24)
+            self.assertNotIn('https://example.org/detail-0', candidates['urls'])
+            self.assertNotIn('https://example.org/navigation', candidates['urls'])
+            self.assertFalse(set(candidates['urls']) & set(t.bundle['pages']))
+            t.cutoff = '2026-10-01'
+            self.assertEqual(dispatch.discovered_candidates(t)['urls'], [])
+
     def test_committed_review_yields_to_unread_frontier_without_claiming_pending_processed(self):
         with tempfile.TemporaryDirectory() as root:
             t = fresh(root); initial(t)

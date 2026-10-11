@@ -46,3 +46,18 @@ An exported package is not evidence completeness. `material_processing` reports
 Receipt closure certifies declared handling of delivered excerpts only. It does
 not certify entire-page reading, target relevance, causal meaning or outcomes.
 Direct-original and map-assisted scoring remain separate experiments.
+
+## Discovery selection pool
+
+The opt-in dispatcher gives the agent up to 24 observed, unread search leads
+with titles, reported dates and short discovery excerpts. It does not truncate
+the selection pool to the smaller number of pages permitted in one fetch call.
+The agent selects a batch under the existing schema and remaining capture cap.
+Saved pages, attempted canonical aliases and unobserved navigation links do not
+become fresh capture slots. Question-specified sources are retained for initial
+discovery selection; historical tasks retain archive routing.
+
+Ordering and excerpts are navigation aids, not verified relevance or evidence.
+The model must distinguish the target aggregate from related subgroups/issues,
+and the current baseline from earlier terms or event stages. A larger eligible
+pool does not prove correct selection, successful fetching or better forecasts.

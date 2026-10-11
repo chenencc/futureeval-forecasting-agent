@@ -54,6 +54,36 @@ def ledger(task):
     return record
 
 
+def discovered_candidates(task, *, include_rule_leads=False):
+    """Offer observed leads for agent selection, never a required fetch batch.
+
+    Scores order navigation only. A four-item fetch limit must not become a
+    four-item relevance filter before the agent sees titles and source scope.
+    Historical replay retains its archive routing rather than live captures.
+    """
+    if task.cutoff or task.budget()['page_fetch_remaining'] <= 0:
+        return {'urls': [], 'sources': []}
+    from ForecastAgent.tavily_research import canonical_url
+    from ForecastAgent.evidence.acquisition_quality import discovery_score
+    from ForecastAgent.runtime.collection_actions import named_primary
+    attempted = {canonical_url(a['url']) for a in task.bundle.get('fetch_attempts', []) if a.get('url')}
+    attempted.update(canonical_url(u) for u in task.bundle['pages'])
+    observed = {canonical_url(hit['url']) for result in
+        task.bundle.get('searches', []) + task.bundle.get('exa_searches', [])
+        for hit in result.get('results', []) if hit.get('url')}
+    if include_rule_leads:
+        observed.update(canonical_url(u) for u, row in task.bundle.get('source_leads', {}).items()
+                        if row.get('origin', '').startswith('question_'))
+    known = task.catalog()
+    urls = sorted((u for u in known if canonical_url(u) in observed and canonical_url(u) not in attempted),
+        key=lambda u: (-discovery_score(task.bundle['request'], u, known[u].get('title') or '',
+            named_primary(task, u), known[u].get('published_date')), u))[:24]
+    return {'urls': urls, 'sources': [{'url': u, 'title': known[u].get('title') or '',
+        'published_date': known[u].get('published_date'),
+        'discovery_excerpt': str(known[u].get('content') or known[u].get('text') or '')[:600],
+        'evidence_status': 'unread_discovery_lead'} for u in urls]}
+
+
 def choose(task):
     """A phase consumes decisions; it cannot override hard closure or Exa duty."""
     record = ledger(task)
@@ -73,14 +103,18 @@ def choose(task):
     discovery_round = len(task.bundle.get('searches', [])) + len(task.bundle.get('exa_searches', []))
     attempts = sum(s['phase'] == 'capture_discovery' and s.get('discovery_round') == discovery_round
                    for s in history)
-    if discovery and attempts < 2:
+    candidates = discovered_candidates(task, include_rule_leads=True) if discovery and attempts < 2 else None
+    if candidates and candidates['urls']:
         return {'phase': 'capture_discovery', 'revision': revision,
                 'discovery_round': discovery_round, 'tool': 'read_sources',
-                'candidates': discovery,
-                'instruction': 'Capture one batch of these already discovered unread URLs using '
+                'candidates': candidates,
+                'instruction': 'Select one bounded batch from these already discovered unread URLs using '
                 'read_sources before additional map interpretation. A saved background page '
                 'does not fulfill this new discovery batch. Choose the most useful exact '
                 'rule-source detail or dated baseline; ranking does not verify relevance. '
+                'Do not fetch every candidate. Compare titles and discovery excerpts against '
+                'the target entity, metric, subgroup, event stage and date. Prefer an exact '
+                'current baseline over a related issue, historical term or subgroup. '
                 'Use an actual JSON array for urls. Future outcomes remain unknown.'}
     pending = gap_feedback.pending(task)
     # Two review proposals per exact source scope. Failed interpretations remain
@@ -139,21 +173,10 @@ def choose(task):
     reviewed = any(s['phase'] == 'process_update' and s['revision'] < revision for s in history)
     frontier_attempts = sum(s['phase'] == 'capture_frontier' and s['revision'] == revision for s in history)
     if reviewed and usable and can_network and frontier_attempts < 2:
-        from ForecastAgent.tavily_research import canonical_url
-        attempted = {canonical_url(a['url']) for a in task.bundle.get('fetch_attempts', []) if a.get('url')}
-        attempted.update(canonical_url(u) for u in task.bundle['pages'])
-        known = task.catalog()
-        search_leads = {canonical_url(hit['url']) for result in
-            task.bundle.get('searches', []) + task.bundle.get('exa_searches', [])
-            for hit in result.get('results', []) if hit.get('url')}
-        from ForecastAgent.evidence.acquisition_quality import discovery_score
-        from ForecastAgent.runtime.collection_actions import named_primary
-        urls = sorted((u for u in known if canonical_url(u) in search_leads and canonical_url(u) not in attempted),
-            key=lambda u: (-discovery_score(task.bundle['request'], u, known[u].get('title') or '',
-                named_primary(task, u), known[u].get('published_date')), u))[:24]
-        if urls:
+        candidates = discovered_candidates(task)
+        if candidates['urls']:
             return {'phase':'capture_frontier', 'revision':revision, 'tool':'read_sources',
-                    'candidates':{'urls':urls},
+                    'candidates':candidates,
                     'instruction':'Use this existing unread discovery batch to extend the evidence '
                     'before another saved-page map cycle. Choose relevant exact-source detail or '
                     'independent context. These are observed leads, not verified evidence. '
