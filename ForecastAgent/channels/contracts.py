@@ -51,6 +51,7 @@ def code_identity():
              root / 'research_loop/simple_map.py', root / 'research_loop/acceptance.py',
              root / 'research_loop/runtime.py', root / 'research_loop/delta.py',
              root / 'research_loop/post_supplement.py', root / 'research_loop/dispatch.py',
+             root / 'research_loop/source_review.py',
              root / 'research_loop/context_budget.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',

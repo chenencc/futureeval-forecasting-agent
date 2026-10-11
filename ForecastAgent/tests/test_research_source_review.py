@@ -102,3 +102,41 @@ class SourceReviewTests(unittest.TestCase):
             self.assertFalse(report['steps'][0]['accepted'])
             self.assertEqual(report['material_processing']['pending_material_count'], 2)
             self.assertEqual(child['research_loop']['current']['nodes'], t.bundle['research_loop']['current']['nodes'])
+
+    def test_context_projection_preserves_literal_spans_cursors_and_unknown_fields(self):
+        from ForecastAgent.research_loop import source_review, dispatch, state, gap_feedback
+        with tempfile.TemporaryDirectory() as tmp:
+            t = self.fixture(tmp)
+            source = gap_feedback.pending(t)[0]
+            reading = t.execute('inspect_research_state', {'url': source['url'], 'limit': 3}, '')
+            reading['future_extension'] = {'literal_unit': 'unknown'}
+            before = copy.deepcopy(reading)
+            choice = {'phase': 'process_update', 'material_id': source['material_id'],
+                      'url': source['url'], 'revision': t.bundle['research_loop']['revision'],
+                      'material_sha256': state.catalog(t.bundle)['material_sha256']}
+            reading['source_catalog'] = {'fixture_navigation': 'x' * 50000}
+            before = copy.deepcopy(reading)
+            data = json.loads(source_review.messages(t, reading, choice)[1]['content'])
+            for key in ('evidence', 'source_context', 'reading_cursor', 'excluded_sources', 'future_extension'):
+                self.assertEqual(data['reading'][key], before[key])
+            self.assertEqual(reading, before)
+            self.assertNotIn('source_catalog', data['reading'])
+            self.assertTrue(data['reading_projection']['original_spans_unchanged'])
+            self.assertIn('source_catalog', {r['field'] for r in data['reading_projection']['omitted_global_metadata']})
+
+    def test_native_partial_acceptance_is_not_reported_as_a_source_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = self.fixture(tmp); seen = []
+            def mutate(args, data, index): args['material_reviews'][0]['evidence_ids'] = []
+            with patch.dict('os.environ', {'OPENROUTER_API_KEY': 'fixture'}), patch.object(
+                    post, 'ask_model', side_effect=self.model(seen, ['irrelevant'], mutate)):
+                _, report = post.run(t.bundle, Path(tmp)/'post', http_cap=1)
+            step = report['steps'][0]
+            self.assertTrue(step['proposal_executed']); self.assertFalse(step['accepted'])
+            self.assertEqual(step['status'], 'source_receipt_rejected')
+            self.assertTrue(step['material_still_pending'])
+            self.assertEqual(report['material_processing']['pending_material_count'], 2)
+
+    def test_native_identity_covers_the_new_final_stage_dependency(self):
+        from ForecastAgent.channels.contracts import code_identity
+        self.assertIn('research_loop/source_review.py', code_identity())

@@ -15,6 +15,11 @@ Deferred or rejected sources stay pending while the next source gets its turn.
 Every physical attempt uses the existing shared journal and failure/wall caps;
 there is no per-source budget reset. Capture histories remain immutable. Exact
 request packets, proposals, bindings and client clocks are saved by material ID.
+The complete local inspection is saved separately. The model packet omits only
+four named global navigation summaries already represented by its current map,
+targets and scheduled scope, with hashes for those omissions. Complete original
+evidence/context spans, reading cursors, exclusions and unknown extensions stay
+unchanged; genuine original-text overflow remains an explicit preflight failure.
 Special consistency and independent-reading experiments retain their explicitly
 selected protocols. Processing receipts do not certify full reading, source
 meaning, causal correctness or target evidence sufficiency.

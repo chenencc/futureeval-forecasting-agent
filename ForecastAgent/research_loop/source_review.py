@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ForecastAgent.runtime.records import save
+from ForecastAgent.analysis.pilot import digest
 from ForecastAgent.research_loop import dispatch, gap_feedback, runtime, state, fusion
 
 
@@ -25,12 +26,28 @@ def messages(task, reading, choice):
                "Omit unchanged nodes. Never rebind or retire protected observation IDs. "
                "Use a distinct ID for another source, even when bytes match. "
                "Duplicate needs this source's references and a related material ID. "
-               "Deferred preserves unfinished interpretation, not a coverage credit.")
+               "Every non-deferred receipt needs at least one inspected reference ID, "
+               "including irrelevant and duplicate. Deferred preserves unfinished interpretation, "
+               "not a coverage credit. Review usefulness for forecasting, not just final resolution: "
+               "a current baseline can inform a future target without containing its final value.")
+    projected = copy.deepcopy(reading)
+    omitted = []
+    # The packet already supplies current map, targets and exact source scope.
+    # These named navigation summaries duplicate global state, not source text.
+    # Unknown fields, complete evidence/context spans and read cursors survive.
+    for key in ('research_state', 'research_frontier', 'source_catalog', 'gap_feedback'):
+        if key in projected:
+            value = projected.pop(key)
+            omitted.append({'field': key, 'sha256': digest(value),
+                            'reason': 'Global navigation retained locally; exact scheduled scope is supplied separately.'})
     packet = {
         'question': {k: copy.deepcopy(task.bundle['request'].get(k)) for k in
                      (*state.RULE_FIELDS, 'id', 'question_type', 'options', 'scaling', 'as_of_utc')},
-        'reading': reading, 'current_map': post_supplement.prompt_map(task),
+        'reading': projected, 'current_map': post_supplement.prompt_map(task),
         'scheduled_source': dispatch.review_scope(task, choice),
+        'reading_projection': {'omitted_global_metadata': omitted,
+                               'original_spans_unchanged': True,
+                               'full_reading_saved_locally': True},
         'instruction': 'One source-specific material_review; no search, capture or score.'}
     if target_logic.enabled(task.bundle):
         packet['targets'] = target_logic.targets(task.bundle)
@@ -69,6 +86,7 @@ def run(task, root, *, http_cap, observer, call, deadline=None):
                  'clock_source': 'local_utc_client', 'server_time_verified': False}
         try:
             reading = task.execute('inspect_research_state', {'url': source['url'], 'limit': 3}, '')
+            save(folder / 'reading.json', reading)
             material = state.catalog(task.bundle, task.cutoff)
             choice = {'phase': 'process_update', 'revision': task.bundle['research_loop']['revision'],
                       'material_sha256': material['material_sha256'],
@@ -98,7 +116,12 @@ def run(task, root, *, http_cap, observer, call, deadline=None):
             bound, _, proof = dispatch.bind_arguments(task, 'update_research_state', args, tools, choice)
             save(folder / 'binding.json', proof)
             outcome = runtime.execute(task, 'update_research_state', bound)
-            step.update(accepted=True, status='validated_proposal', outcome=outcome)
+            reviews = outcome.get('gap_feedback', {}).get('accepted_reviews', [])
+            accepted = any(r['material_id'] == source['material_id'] for r in reviews)
+            step.update(accepted=accepted, proposal_executed=True,
+                        status='validated_source_receipt' if accepted else 'source_receipt_rejected',
+                        material_still_pending=source['material_id'] in
+                        {m['material_id'] for m in gap_feedback.pending(task)}, outcome=outcome)
         except (ValueError, KeyError, TypeError) as exc:
             step.update(status='proposal_rejected', error=str(exc)[:1000],
                         acceptance=getattr(exc, 'report', None))
