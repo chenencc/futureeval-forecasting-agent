@@ -743,6 +743,22 @@ receipt. Invalid siblings do not silently become facts, unknowns or completed wo
 Replay received proposals against the same saved bodies before new model calls;
 replay frames are local derivatives, never replacement provider receipts.
 
+Final source review can choose `inspect_research_state` before its single map
+proposal. The URL is restricted to the scheduled saved source; local queries and
+span cursors read existing text without search, fetch or new channel allowance.
+Each source gets at most two additional reading decisions and three physical
+model HTTP attempts, within the shared round reservation. When possible, one
+model slot is left for each later source. Retries consume these same physical
+slots. The last source slot offers only the map update; rejection or deferral
+does not silently trigger another proposal. Repeated selectors or readings with
+no newly delivered references stop with an explicit pending-material status.
+
+Every turn retains its actual request, reply and client clock. Prior local
+readings remain exact in later packets, including unknown metadata and source
+scope. Only named duplicated global navigation is omitted with hash records.
+Context overflow stays explicit rather than cutting original text. A validated
+receipt covers delivered excerpts only, never the complete page or factual truth.
+
 The scheduled tool omits `expected_revision` and `material_sha256` from model
 arguments. After verifying that the scheduled material and map revision are still
 current, the program binds these two execution fields literally and records them.
