@@ -160,21 +160,34 @@ def reading_candidates(spans, terms):
     return result
 
 
-def reading_packet(task):
+def reading_packet(task, *, consistency_review=False):
     """Fair source coverage from saved spans; quotas and text are never changed."""
     material = state.catalog(task.bundle, task.cutoff)
     inventory = gap_feedback.materials(task, material)
     pending = gap_feedback.pending(task, inventory)
+    review_sources = list(inventory.values()) if consistency_review else pending
     old_bound = {r['url'] for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])
                  for r in n.get('bindings', [])}
     # New sources first; every source gets a small share before any long document.
-    pending.sort(key=lambda m: (m['url'] in old_bound, m['url']))
+    review_sources.sort(key=lambda m: (m['url'] in old_bound, m['url']))
     terms = set(re.findall(r'\b[a-z0-9]{4,}\b', ' '.join(
         str(task.bundle['request'].get(k, '')) for k in state.RULE_FIELDS).lower()))
     evidence, deferred, ranked_sources = [], [], []
-    for source in pending:
+    for source in review_sources:
         spans = [s for s in material['spans'].values() if s['url'] == source['url']]
-        ranked_sources.append((source, reading_candidates(spans, terms)))
+        candidates = reading_candidates(spans, terms)
+        if consistency_review:
+            from ForecastAgent.research_loop.node_review import dated_row_context
+            recent = dated_row_context(spans, task.bundle['request'].get('as_of_utc'))
+            bound_ids = {ident for node in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])
+                         for ident in node.get('evidence_ids', [])}
+            anchors = recent[:1] + [s for s in spans if s['evidence_id'] in bound_ids]
+            candidates, seen = [], set()
+            for span in anchors + recent[1:] + reading_candidates(spans, terms):
+                if span['evidence_id'] not in seen:
+                    candidates.append(span)
+                    seen.add(span['evidence_id'])
+        ranked_sources.append((source, candidates))
     # Give every pending source one opportunity before any gets a second span.
     # An omitted source remains pending; a delivered excerpt is not full reading.
     for round_index in range(2):
@@ -225,7 +238,14 @@ def reading_packet(task):
                  'inspected_reference_ids','bound_observation_node_ids','same_body_material_ids')})
             projected_materials[-1].update(accessible_reference_count=len(m['reference_ids']),
                 scope='Delivered excerpts only; omitted IDs are not selectable or credited as read.')
+    offered_ids = {s['evidence_id'] for s in evidence + context_evidence}
+    node_scope = [{'node_id': n['id'],
+        'delivered_reference_ids': [r for r in n.get('evidence_ids', []) if r in offered_ids],
+        'omitted_reference_ids': [r for r in n.get('evidence_ids', []) if r not in offered_ids],
+        'interpretation_verified': False}
+        for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])]
     return {'material_sha256': material['material_sha256'], 'evidence': evidence,
+            'existing_node_reading_scope': node_scope,
             'context_evidence': context_evidence, 'context_reference_ids': context_ids,
             'processing_instruction':'Select section/header context IDs with quantitative rows. '
                 'Do not label a generic price row as settlement or borrow a date from another source. '
@@ -235,10 +255,11 @@ def reading_packet(task):
             'identifier_registry': gap_feedback.identifiers(task, gap_feedback.materials(task, material)),
             'delivered_materials': projected_materials,
             'undelivered_materials': deferred,
+            'consistency_review_requested': consistency_review,
             'reading_coverage': [{'url': m['url'], 'material_id': m['material_id'],
                 'accessible_spans': len(m['reference_ids']),
                 'delivered_spans': sum(s['url'] == m['url'] for s in evidence),
-                'full_read_claimed': False} for m in pending],
+                'full_read_claimed': False} for m in review_sources],
             'scope': 'Exact bounded saved excerpts; not full-page reading.'}
 
 
@@ -315,9 +336,11 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
+    if type(consistency_review) is not bool:
+        raise ValueError('consistency_review must be boolean')
     if not state.enabled(bundle) or not gap_feedback.enabled(bundle):
         raise ValueError('Saved-material review requires an enabled native map')
     if type(http_cap) is not int or not 0 <= http_cap <= reserve_http(bundle['request']):
@@ -328,6 +351,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
     root.mkdir(parents=True, exist_ok=True)
     source_hash = digest(bundle)
     identity = {'policy': POLICY, 'parent_bundle_sha256': source_hash, 'http_cap': http_cap,
+                'consistency_review': consistency_review,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -366,10 +390,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         # A crash after reservation/response requires review, never another dispatch.
         if records:
             status = 'interrupted_receipt_requires_review'
-        elif execute and not gap_feedback.pending(task):
+        elif execute and not gap_feedback.pending(task) and not consistency_review:
             status = 'already_processed'
         elif execute and http_cap and failure_cap:
-            packet = reading_packet(task)
+            packet = reading_packet(task, consistency_review=consistency_review)
             save(root/'reading-packet.json', packet)
             journal = Journal(root/'model-http', http_cap)
             def observer(phase, record, token=None):
@@ -400,6 +424,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 if reference_map.enabled(task.bundle):
                     review_system = reference_map.prompt(bundle=task.bundle, local_only=True, phase='review')
                 from ForecastAgent.research_loop import predictive_focus
+                from ForecastAgent.research_loop import node_review
+                target_payload['existing_node_scope_review'] = node_review.brief(task.bundle)
                 if predictive_focus.enabled(task.bundle):
                     target_payload['interpretation_scope_audit'] = predictive_focus.brief(task.bundle)
                 messages = [{'role': 'system', 'content': review_system}, {'role': 'user', 'content': json.dumps({
@@ -433,7 +459,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     if no_progress >= 2:
                         status = 'processing_no_progress'
                         break
-                    packet = reading_packet(task)
+                    packet = reading_packet(task, consistency_review=consistency_review)
                     save(root/('reading-packet-'+str(len(steps)+1)+'.json'), packet)
                 except (ValueError, KeyError, TypeError) as exc:
                     steps.append({'accepted': False, 'error': str(exc)[:1000],
@@ -459,6 +485,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             raise ValueError('Capture input or historical ledger changed')
         from ForecastAgent.research_loop.live_trial import usage
         report = {'status': status, 'initial_revision': bundle['research_loop']['revision'],
+            'consistency_review_requested': consistency_review,
+            'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
             'pending_materials': gap_feedback.pending(task), 'map_audit': state.audit(task.bundle),
             'usage': usage(sorted((root/'model-http').glob('*.json'))),

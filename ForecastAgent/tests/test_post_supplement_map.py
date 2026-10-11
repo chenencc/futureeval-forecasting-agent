@@ -16,6 +16,50 @@ from ForecastAgent.acquisition import pipeline
 
 
 class PostSupplementTests(unittest.TestCase):
+    def test_processed_material_can_be_revisited_without_network_or_capture_reset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = task(Path(tmp)/'original')
+            initial(t)
+            self.assertFalse(gap_feedback.pending(t))
+            self.original = copy.deepcopy(t.bundle)
+            with patch.dict('os.environ', {'OPENROUTER_API_KEY':'test'}), patch.object(
+                    post, 'ask_model', side_effect=self.fake_model) as model:
+                skipped, old = post.run(self.original, Path(tmp)/'ordinary')
+                model.assert_not_called()
+                child, report = post.run(self.original, Path(tmp)/'consistency',
+                                        consistency_review=True, http_cap=1)
+            self.assertEqual(model.call_count, 1)
+            self.assertEqual(old['status'], 'already_processed')
+            self.assertEqual(report['usage']['totals']['http_attempts'], 1)
+            self.assertTrue(report['consistency_review_requested'])
+            self.assertFalse(report['interpretation_correctness_verified'])
+            self.assertTrue(report['reading_coverage'])
+            for key in post.PRESERVED:
+                self.assertEqual(child.get(key), self.original.get(key))
+
+    def test_consistency_packet_retains_old_binding_and_latest_literal_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = task(tmp)
+            url = 'https://example.org/history'
+            body = 'History downloaded 2026-10-11\n\n' + '\n\n'.join(
+                json.dumps({'date':date,'close':value}) for date,value in
+                [('2025-10-16',100),('2026-10-08',110),('2026-10-09',120)])
+            t.bundle['pages'] = {url:{'content':body}}
+            catalog = state.catalog(t.bundle, t.cutoff)
+            old = next(s for s in catalog['spans'].values() if '2025-10-16' in s['text'])
+            t.bundle['research_loop']['current'] = {'nodes':[{
+                'id':'old', 'kind':'observation', 'evidence_ids':[old['evidence_id']],
+                'bindings':[copy.deepcopy(old)]}]}
+            t.bundle['request']['as_of_utc'] = '2026-10-11T07:00:00Z'
+            before = copy.deepcopy(t.bundle['pages'])
+            packet = post.reading_packet(t, consistency_review=True)
+            self.assertIn(old['evidence_id'], {s['evidence_id'] for s in packet['evidence']})
+            self.assertIn('2026-10-09', packet['evidence'][0]['text'])
+            self.assertLessEqual(len(packet['evidence']),16)
+            self.assertEqual(t.bundle['pages'],before)
+            for span in packet['evidence']:
+                self.assertEqual(span['text'],body[span['start']:span['end']])
+
     def test_next_request_explains_missing_receipts_without_replaying_full_outcome(self):
         from ForecastAgent.research_loop import dispatch
         with tempfile.TemporaryDirectory() as tmp:

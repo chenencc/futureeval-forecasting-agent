@@ -74,7 +74,8 @@ def prompt(context='', *, bundle=None, local_only=False, phase='map'):
             'T coverage never implies F coverage. Link each useful observation to the F target '
             'when applicable, with explicit scope and limits. A future F outcome is unknown; '
             'available history or expectations can still be baseline/indicator links, never direct realized results.')
-    result = (ACQUISITION_SYSTEM if phase=='acquisition' else SYSTEM) + target_guide + RECEIPT_GUIDE + context
+    from ForecastAgent.research_loop.node_review import GUIDE as REVIEW_GUIDE
+    result = (ACQUISITION_SYSTEM if phase=='acquisition' else SYSTEM) + target_guide + RECEIPT_GUIDE + REVIEW_GUIDE + context
     if local_only:
         result += '\nLocal saved-material review only. No search, fetch or scoring. Prefer merge; retain useful old nodes.\n'
     if bundle is not None:
