@@ -1,6 +1,7 @@
 """Interpret immutable literal fields against targets without rewriting evidence."""
 import copy
 import json
+import re
 from collections import Counter
 
 from ForecastAgent.analysis.pilot import digest
@@ -9,6 +10,26 @@ from ForecastAgent.research_loop import source_facets, state, target_logic, refe
 from ForecastAgent.research_loop.schema import TARGET_LINK
 
 NAME = 'interpret_source_fields'
+QUALIFIED_GUIDE = '''
+Qualified source attribution: each link declares source_premise_fact_ids,
+rule_context_target_ids, scope_basis and scope_assumptions. Source premises must
+be selected primary/context fields of this same observation. Rule definitions
+are separate T/F conditions, never a source snapshot. scope_basis=source_only
+requires no rule contexts or assumptions; numerical premises must occur in the
+selected source quotes. A comparison with a rule threshold uses rule_context,
+not source_only. Explicit arithmetic or scope bridges use assumption.
+Rule_context requires declared rule IDs and no assumptions; numbers may come
+from those exact definitions, but are labelled as rule context, not observed facts.
+Assumption requires at least one explicit scope_assumptions string. For example,
+mapping an undated current listing to an older dated cohort is an assumption,
+not a source observation. The compiler places each assumption in a separate
+unverified hypothesis node. Its inferred effect belongs there; the original
+observation supplies context only. Do not invent a source date to avoid a gap.
+Keep qualified reason<=180, observation limitation<=155 and gap reason<=165
+characters. Raw annotations remain archived; the compiler labels model reasons
+and limitations explicitly. A passing numeric-origin check does not verify date
+roles, entity associations or semantic truth. No probabilities or CPTs.
+'''
 SYSTEM = '''Interpret the supplied immutable literal field registry against the exact
 question, rules and target conditions. Old graph interpretations are not supplied.
 The field quotes/values are originals; their proposed roles and associations remain
@@ -41,7 +62,9 @@ Copy registry_sha256 exactly. Preserve contradictions as separate source facts.
 '''
 
 
-def tool(bundle, packet):
+def tool(bundle, packet, *, qualified=False):
+    if type(qualified) is not bool:
+        raise ValueError('Qualified attribution mode must be boolean')
     source_facets.verify_registry(packet)
     if not target_logic.enabled(bundle) or not reference_map.enabled(bundle):
         raise ValueError('Field target interpretation requires native reference and target policies')
@@ -51,6 +74,14 @@ def tool(bundle, packet):
         raise ValueError('Field target interpretation requires bound facts and frozen targets')
     link = copy.deepcopy(TARGET_LINK)
     link['properties']['target_id']['enum'] = targets
+    if qualified:
+        link['properties'].update(
+            source_premise_fact_ids={'type':'array','minItems':1,'maxItems':3,'items':{'type':'string','enum':facts}},
+            rule_context_target_ids={'type':'array','maxItems':4,'items':{'type':'string','enum':targets}},
+            scope_basis={'type':'string','enum':['source_only','rule_context','assumption']},
+            scope_assumptions={'type':'array','maxItems':2,'items':{'type':'string','maxLength':180}})
+        link['required'] = list(link['properties'])
+        link['properties']['reason']['maxLength'] = 180
     observation = {'type': 'object', 'additionalProperties': False,
         'properties': {'fact_id': {'type': 'string', 'enum': facts},
             'context_fact_ids': {'type': 'array', 'maxItems': 2, 'items': {'type': 'string', 'enum': facts}},
@@ -58,11 +89,15 @@ def tool(bundle, packet):
             'target_links': {'type': 'array', 'maxItems': 4, 'items': link},
             'limitation': {'type': 'string', 'maxLength': 180}},
         'required': ['fact_id', 'context_fact_ids', 'applicability', 'target_links', 'limitation']}
+    if qualified:
+        observation['properties']['limitation']['maxLength'] = 155
     gap = {'type': 'object', 'additionalProperties': False,
         'properties': {'target_id': {'type': 'string', 'enum': targets},
             'missing_condition': {'type': 'string', 'maxLength': 240},
             'reason': {'type': 'string', 'maxLength': 180}},
         'required': ['target_id', 'missing_condition', 'reason']}
+    if qualified:
+        gap['properties']['reason']['maxLength'] = 165
     return {'type': 'function', 'function': {'name': NAME,
         'description': 'Select immutable source facts and explain target relevance; no generated source claims.',
         'parameters': {'type': 'object', 'additionalProperties': False,
@@ -73,7 +108,9 @@ def tool(bundle, packet):
             'required': ['registry_sha256', 'observations', 'unknown_targets', 'revision_reason']}}}
 
 
-def messages(bundle, packet):
+def messages(bundle, packet, *, qualified=False):
+    if type(qualified) is not bool:
+        raise ValueError('Qualified attribution mode must be boolean')
     source_facets.verify_registry(packet)
     if not packet['facts']:
         raise ValueError('No bound source facts; preserve the gap without a model call')
@@ -85,7 +122,7 @@ def messages(bundle, packet):
                  **({'coverage_hypotheses': copy.deepcopy(f['coverage_hypotheses'])} if 'coverage_hypotheses' in f else {}),
                  'literal_location_ambiguous': any(b['location_ambiguous'] for b in f['bindings'])}
               for f in packet['facts']]
-    return [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({
+    return [{'role': 'system', 'content': SYSTEM + (QUALIFIED_GUIDE if qualified else '')}, {'role': 'user', 'content': json.dumps({
         'question': {k: copy.deepcopy(bundle['request'].get(k)) for k in
             (*state.RULE_FIELDS, 'question_type', 'options', 'scaling', 'as_of_utc')},
         'target_conditions': target_logic.targets(bundle),
@@ -99,7 +136,46 @@ def _source_scope(fact):
             for b in fact['bindings']}
 
 
-def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
+def qualified_link(link, selected_fact_ids, facts, target_rows):
+    """Check declared premise origins, never certify a field relationship."""
+    source_ids = link['source_premise_fact_ids']
+    rule_ids = link['rule_context_target_ids']
+    assumptions = link['scope_assumptions']
+    if (len(source_ids) != len(set(source_ids)) or not set(source_ids) <= set(selected_fact_ids)
+            or len(rule_ids) != len(set(rule_ids)) or not set(rule_ids) <= set(target_rows)):
+        raise ValueError('Source premises or rule contexts are outside the declared observation scope')
+    basis = link['scope_basis']
+    if basis == 'source_only' and (rule_ids or assumptions):
+        raise ValueError('Source-only attribution cannot contain rule definitions or assumptions')
+    if basis == 'rule_context' and (not rule_ids or assumptions):
+        raise ValueError('Rule-context attribution requires definitions without a hidden assumption')
+    if basis == 'assumption' and (not assumptions or any(not s.strip() for s in assumptions)):
+        raise ValueError('A scope bridge needs an explicit nonempty assumption')
+    source_text = '\n'.join(facts[i]['quote'] for i in source_ids)
+    rule_text = '\n'.join(target_rows[i]['condition'] for i in rule_ids)
+    origins = []
+    for literal in sorted(set(re.findall(r'(?<![\w])\d+(?:[.,]\d+)*(?:%|\b)', link['reason']))):
+        pattern = r'(?<![\w])' + re.escape(literal) + r'(?![\w])'
+        in_source, in_rules = bool(re.search(pattern,source_text)), bool(re.search(pattern,rule_text))
+        origins.append({'literal':literal,'in_selected_source_quotes':in_source,
+                        'in_declared_rule_conditions':in_rules,'meaning_verified':False})
+    if basis == 'source_only' and any(not o['in_selected_source_quotes'] for o in origins):
+        raise ValueError('Source-only explanation contains an unbound numeric premise; classify rule context or an explicit assumption')
+    if basis == 'rule_context' and any(not (o['in_selected_source_quotes'] or o['in_declared_rule_conditions']) for o in origins):
+        raise ValueError('Rule-context explanation contains an unbound numerical inference')
+    prefix = {'source_only':'Model source relation: ', 'rule_context':'Model rule-context relation: ',
+              'assumption':'Model conditional relation: '}[basis]
+    native = {k:copy.deepcopy(link[k]) for k in ('target_id','role','effect')}
+    native['reason'] = prefix + link['reason']
+    if basis == 'assumption':
+        native.update(role='context',effect='context',
+            reason='Selected original fields supply context; the proposed scope bridge remains an explicit model assumption.')
+    return native, {'scope_basis':basis,'source_premise_fact_ids':source_ids,
+        'rule_context_target_ids':rule_ids,'scope_assumptions':copy.deepcopy(assumptions),
+        'received_reason':link['reason'],'numeric_origins':origins,'meaning_verified':False}
+
+
+def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False, qualified=False):
     """Compile selected facts to the existing native map; isolate invalid siblings."""
     if type(replace_previous_notes) is not bool:
         raise ValueError('Explicit note replacement must be boolean')
@@ -110,7 +186,7 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
         if current is None or any(current.get(k) != supplied.get(k) for k in
                 ('url', 'body_sha256', 'start', 'end', 'text', 'coordinate_space', 'view_sha256')):
             raise ValueError('Original field scope no longer matches the eligible native catalog')
-    schema = tool(bundle, packet)['function']['parameters']
+    schema = tool(bundle, packet, qualified=qualified)['function']['parameters']
     loose = copy.deepcopy(schema)
     loose['properties']['observations']['items'] = {}
     loose['properties']['unknown_targets']['items'] = {}
@@ -118,10 +194,11 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
     if not answer['revision_reason'].strip():
         raise ValueError('Explain the target interpretation')
     facts = {f['fact_id']: f for f in packet['facts']}
-    targets = {t['id'] for t in target_logic.targets(bundle)}
+    target_rows = {t['id']:t for t in target_logic.targets(bundle)}
+    targets = set(target_rows)
     counts = Counter(n.get('fact_id') for n in answer['observations']
                      if isinstance(n, dict) and isinstance(n.get('fact_id'), str))
-    nodes, reviews, rejected = [], [], []
+    nodes, reviews, rejected, relations = [], [], [], []
     node_schema = map_tool['function']['parameters']['properties']['nodes']['items']
     def base(ident, kind):
         return {'id': ident, 'kind': kind, 'gap_reason': 'none' if kind == 'observation' else 'ambiguous',
@@ -145,14 +222,51 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
             node = base('O' + ident[1:], 'observation')
             node.update(evidence_ids=refs, interpretation=fact['quote'], limitation=entry['limitation'],
                         applicability=entry['applicability'], target_links=copy.deepcopy(entry['target_links']))
+            attribution, annotation_errors, additions, edges = [], [], [], []
+            if qualified:
+                node['limitation'] = 'Model limitation: ' + entry['limitation'] if entry['limitation'] else ''
+                links = []
+                link_counts = Counter(l['target_id'] for l in entry['target_links'])
+                for position, link in enumerate(entry['target_links']):
+                    try:
+                        if link_counts[link['target_id']] != 1:
+                            raise ValueError('One qualified relation per target and observation')
+                        normalized, proof = qualified_link(link,[ident]+contexts,facts,target_rows)
+                        target_logic.validate_link(normalized,node,targets)
+                        hypotheses, dependencies = [], []
+                        if link['scope_basis'] == 'assumption':
+                            for assumption in link['scope_assumptions']:
+                                h = base('A'+digest([ident,link['target_id'],assumption])[:24],'assumption')
+                                h.update(gap_reason='ambiguous',hypothesis=assumption,
+                                    limitation='Model scope bridge; not established by the selected literal fields.',
+                                    target_links=[{'target_id':link['target_id'],'role':'driver','effect':link['effect'],
+                                        'reason':'Unverified scope assumption: '+link['reason']}])
+                                check_schema(h,node_schema)
+                                target_logic.validate_link(h['target_links'][0],h,targets)
+                                hypotheses.append(h)
+                                dependencies.append({'from_id':node['id'],'to_id':h['id'],'kind':'evidential',
+                                    'rationale':'Selected literal fields inform an unverified scope bridge.',
+                                    'mechanism':'','rule_quote':''})
+                        if len(nodes)+1+len(additions)+len(hypotheses)>map_tool['function']['parameters']['properties']['nodes']['maxItems']:
+                            raise ValueError('Assumption and original observation must fit the existing native node cap together')
+                        links.append(normalized);attribution.append(proof);additions.extend(hypotheses);edges.extend(dependencies)
+                    except (ValueError,KeyError,TypeError) as exc:
+                        annotation_errors.append({'link_index':position,'received_link':copy.deepcopy(link),'error':str(exc)})
+                node['target_links'] = links
+                if entry['target_links'] and not links:
+                    node['applicability'] = 'unknown'
             check_schema(node, node_schema)
             for link in node['target_links']:
                 target_logic.validate_link(link, node, targets)
             if len(nodes) >= map_tool['function']['parameters']['properties']['nodes']['maxItems']:
                 raise ValueError('Existing native node cap reached; field remains unselected')
             nodes.append(node)
+            nodes.extend(additions);relations.extend(edges)
             reviews.append({'node_id': node['id'], 'fact_id': ident, 'context_fact_ids': copy.deepcopy(contexts),
                 'selected_reference_ids': refs, 'source_quote_copied_exactly': True, 'meaning_verified': False})
+            if qualified:
+                reviews[-1].update(qualified_attribution=attribution,annotation_rejections=annotation_errors,
+                    received_limitation=entry['limitation'])
         except (ValueError, KeyError, TypeError) as exc:
             rejected.append({'index': index, 'fact_id': ident, 'error': str(exc), 'meaning_verified': False})
     gap_counts = Counter(g.get('target_id') for g in answer['unknown_targets']
@@ -166,6 +280,9 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
             node.update(hypothesis=entry['missing_condition'], limitation=entry['reason'],
                 target_links=[{'target_id': entry['target_id'], 'role': 'unknown', 'effect': 'unresolved',
                                'reason': entry['reason']}])
+            if qualified:
+                node['limitation']='Model gap: '+entry['reason']
+                node['target_links'][0]['reason']='Model gap: '+entry['reason']
             check_schema(node, node_schema)
             if len(nodes) >= map_tool['function']['parameters']['properties']['nodes']['maxItems']:
                 raise ValueError('Existing native node cap reached; target remains unresolved')
@@ -181,6 +298,9 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
         'source_field_coverage_complete': False, 'meaning_verified': False, 'probabilities_computed': False,
         'material_receipts_granted': False, 'replace_previous_notes': replace_previous_notes,
         'previous_notes_sha256': digest(old), 'old_notes_declared_false': False}
+    if qualified:
+        audit.update(qualified_attribution_policy='explicit_source_rule_assumption_v1',
+            source_role_meaning_verified=False,received_unknown_targets=copy.deepcopy(answer['unknown_targets']))
     repeated = {}
     for row in reviews:
         fact = facts[row['fact_id']]
@@ -191,7 +311,7 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
     if not nodes:
         return None, audit
     args = {'expected_revision': bundle['research_loop']['revision'], 'revision_kind': 'interpretation_correction',
-        'material_sha256': material['material_sha256'], 'nodes': nodes, 'relations': [],
+        'material_sha256': material['material_sha256'], 'nodes': nodes, 'relations': relations,
         'supporting_path': ('Repeated source quotations are not independent confirmation.'
                             if audit['repeated_literal_observation_groups'] else ''),
         'alternative_path': '', 'material_requests': [],

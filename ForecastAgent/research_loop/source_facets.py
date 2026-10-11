@@ -89,6 +89,12 @@ def messages(question, as_of, sources, *, original_only=False, flat=False):
         'question': question, 'as_of_utc': as_of, 'originals': sources,
         'scope': 'Only delivered text. No previous annotations, graph or resolved labels.'}
     system = SYSTEM
+    if question is not None and not original_only:
+        system += ('\nQuestion and rules are relevance context only. Prioritize the named '
+            'subject, exact metric, unit, stage and period with their original qualifiers. '
+            'A number, date or cohort defined by the question is NOT a source field unless '
+            'its exact quote and value occur in the selected original. Keep observations '
+            'of earlier available data; an unpublished future result is not an empty source.\n')
     if flat:
         system += ('\nReturn a FLAT fields array and unknowns array. Each field selects one '
             'reference_id with kind, coverage, exact quote and literal value. Do NOT '

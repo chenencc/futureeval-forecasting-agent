@@ -44,6 +44,99 @@ class FieldTargetTests(unittest.TestCase):
         self.assertFalse(audit['probabilities_computed'])
         self.assertEqual((b, frozen, answer), before)
 
+    def qualified_sample(self):
+        b, mt, frozen, answer = self.sample()
+        target = target_logic.targets(b)[0]['id']
+        b['plan'][0]['condition'] = 'Determine whether revenue is above 30 billion dollars.'
+        link = answer['observations'][0]['target_links'][0]
+        link.update(source_premise_fact_ids=[frozen['facts'][0]['fact_id']],
+            rule_context_target_ids=[],scope_basis='source_only',scope_assumptions=[],
+            reason='The source states revenue of 24 billion dollars.')
+        return b, mt, frozen, answer, target
+
+    def test_qualified_source_only_cannot_borrow_a_rule_threshold(self):
+        b, mt, frozen, answer, target = self.qualified_sample()
+        answer['observations'][0]['target_links'][0]['reason'] = 'The source records 30 billion dollars.'
+        args, audit = ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertEqual(len(args['nodes']),1)
+        self.assertEqual(args['nodes'][0]['interpretation'], 'Revenue was 24 billion dollars.')
+        self.assertEqual(args['nodes'][0]['target_links'], [])
+        self.assertEqual(args['nodes'][0]['applicability'], 'unknown')
+        self.assertIn('unbound numeric premise',audit['field_reviews'][0]['annotation_rejections'][0]['error'])
+        self.assertEqual(audit['field_reviews'][0]['annotation_rejections'][0]['received_link']['reason'],
+                         'The source records 30 billion dollars.')
+        self.assertFalse(audit['meaning_verified'])
+
+    def test_explicit_rule_comparison_is_allowed_without_becoming_source_evidence(self):
+        b, mt, frozen, answer, target = self.qualified_sample()
+        link=answer['observations'][0]['target_links'][0]
+        link.update(rule_context_target_ids=[target],scope_basis='rule_context',
+                    reason='Source revenue 24 is below the rule threshold 30.')
+        args,audit=ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertEqual(len(args['nodes'][0]['target_links']),1)
+        self.assertTrue(args['nodes'][0]['target_links'][0]['reason'].startswith('Model rule-context relation:'))
+        origins=audit['field_reviews'][0]['qualified_attribution'][0]['numeric_origins']
+        thirty=next(o for o in origins if o['literal']=='30')
+        self.assertFalse(thirty['in_selected_source_quotes'])
+        self.assertTrue(thirty['in_declared_rule_conditions'])
+        self.assertFalse(thirty['meaning_verified'])
+
+    def test_explicit_scope_bridge_is_hypothesis_not_dated_source_snapshot(self):
+        b, mt, frozen, answer, target = self.qualified_sample()
+        link=answer['observations'][0]['target_links'][0]
+        bridge='Assume the earlier source metric remains comparable in the future target period.'
+        link.update(scope_basis='assumption',rule_context_target_ids=[target],scope_assumptions=[bridge],
+                    effect='supports',reason='Comparable revenue may remain above 30 with growth.')
+        args,audit=ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertEqual(len(args['nodes']),2)
+        observation,hypothesis=args['nodes']
+        self.assertEqual(observation['interpretation'],'Revenue was 24 billion dollars.')
+        self.assertEqual(observation['target_links'][0]['role'],'context')
+        self.assertEqual(observation['target_links'][0]['effect'],'context')
+        self.assertEqual(hypothesis['kind'],'assumption')
+        self.assertEqual(hypothesis['hypothesis'],bridge)
+        self.assertEqual(hypothesis['evidence_ids'],[])
+        self.assertEqual(hypothesis['target_links'][0]['role'],'driver')
+        self.assertEqual(args['relations'][0]['from_id'],observation['id'])
+        self.assertEqual(args['relations'][0]['to_id'],hypothesis['id'])
+        self.assertFalse(audit['source_role_meaning_verified'])
+
+    def test_unselected_field_cannot_support_a_qualified_explanation(self):
+        b, mt, frozen, answer, target=self.qualified_sample()
+        # The unit field exists in the registry, but removing it from this
+        # observation's context prevents attributing it as a selected premise.
+        answer['observations'][0]['context_fact_ids']=[]
+        answer['observations'][0]['target_links'][0]['source_premise_fact_ids']=[frozen['facts'][1]['fact_id']]
+        args,audit=ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertEqual(args['nodes'][0]['target_links'],[])
+        self.assertIn('outside the declared observation scope',audit['field_reviews'][0]['annotation_rejections'][0]['error'])
+
+    def test_scope_bridge_cannot_hide_its_assumption_or_exceed_native_cap(self):
+        b,mt,frozen,answer,target=self.qualified_sample()
+        link=answer['observations'][0]['target_links'][0]
+        link.update(scope_basis='assumption',scope_assumptions=[])
+        args,audit=ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertEqual(args['nodes'][0]['target_links'],[])
+        self.assertIn('nonempty assumption',audit['field_reviews'][0]['annotation_rejections'][0]['error'])
+        link['scope_assumptions']=['Earlier source may be comparable to a future period.']
+        tight=copy.deepcopy(mt);tight['function']['parameters']['properties']['nodes']['maxItems']=1
+        args,audit=ft.proposal(b,frozen,answer,tight,qualified=True)
+        self.assertEqual(len(args['nodes']),1)
+        self.assertEqual(args['relations'],[])
+        self.assertEqual(args['nodes'][0]['target_links'],[])
+        self.assertIn('node cap together',audit['field_reviews'][0]['annotation_rejections'][0]['error'])
+
+    def test_qualified_unknowns_and_annotations_are_labelled_not_certified(self):
+        b,mt,frozen,answer,target=self.qualified_sample()
+        answer['unknown_targets']=[{'target_id':target,'missing_condition':'Future realized revenue remains unknown.',
+                                    'reason':'The delivered source metric does not establish the future outcome.'}]
+        args,audit=ft.proposal(b,frozen,answer,mt,qualified=True)
+        self.assertTrue(args['nodes'][0]['limitation'].startswith('Model limitation:'))
+        self.assertTrue(args['nodes'][1]['limitation'].startswith('Model gap:'))
+        self.assertEqual(audit['received_unknown_targets'],answer['unknown_targets'])
+        self.assertEqual(audit['qualified_attribution_policy'],'explicit_source_rule_assumption_v1')
+        self.assertFalse(audit['meaning_verified'])
+
     def test_flat_source_selection_keeps_multiple_fields_without_per_reference_envelopes(self):
         b, mt, frozen, answer = self.sample()
         ref = frozen['originals'][0]['evidence_id']
@@ -229,6 +322,25 @@ class FieldTargetTests(unittest.TestCase):
             self.assertTrue(all(n['interpretation'] == quote for n in t.bundle['research_loop']['current']['nodes']))
             state.verify_journal(t.bundle['research_loop'])
             self.assertFalse(audit['meaning_verified'])
+            for key in post.PRESERVED:
+                self.assertEqual(t.bundle.get(key), before.get(key))
+            # Native reference hydration also keeps the scope bridge as a
+            # separate hypothesis, never a literal source claim.
+            target=target_logic.targets(t.bundle)[0]['id']
+            answer['observations'][0]['target_links']=[{'target_id':target,'role':'baseline','effect':'supports',
+                'reason':'Earlier revenue may remain comparable to the target period.',
+                'source_premise_fact_ids':[frozen['facts'][0]['fact_id']], 'rule_context_target_ids':[target],
+                'scope_basis':'assumption','scope_assumptions':['Assume the earlier metric remains comparable in the target period.']}]
+            mt = next(tool for tool in runtime.filter_tools(t, runtime.configure(t, []))
+                      if tool['function']['name'] == 'update_research_state')
+            args,audit=ft.proposal(t.bundle,frozen,answer,mt,replace_previous_notes=True,qualified=True)
+            runtime.execute(t,'update_research_state',args)
+            state.verify_journal(t.bundle['research_loop'])
+            assumptions=[n for n in t.bundle['research_loop']['current']['nodes'] if n['kind']=='assumption']
+            self.assertEqual(len(assumptions),1)
+            self.assertEqual(assumptions[0]['claim_origin'],'hypothesis')
+            self.assertEqual(assumptions[0]['bindings'],[])
+            self.assertEqual(len(t.bundle['research_loop']['current']['relations']),1)
             for key in post.PRESERVED:
                 self.assertEqual(t.bundle.get(key), before.get(key))
 

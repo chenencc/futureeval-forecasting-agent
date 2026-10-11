@@ -979,3 +979,30 @@ If a full unknown node exceeds the unchanged scoring-map byte cap, a compact
 IDs in the same envelope. It does not verify the model's absence claim, rewrite
 its source explanation or enlarge either scoring arm's original evidence.
 
+### Explicit source, rule and assumption origins
+
+Optional `field_targets.tool/messages/proposal(..., qualified=True)` requires
+each target relation to declare selected `source_premise_fact_ids`, separate
+`rule_context_target_ids`, `scope_basis` and explicit `scope_assumptions`. Premise
+IDs cannot borrow fields from another observation. A source-only numeric
+explanation must use numbers printed in its selected source quotes. An explicit
+rule-threshold comparison remains valid as rule context; it does not turn the
+threshold into a source measurement. Calculations and scope bridges belong to
+model inference. These origin checks do not certify date roles, word-based claims,
+entity associations or semantic truth.
+
+Conditional bridges compile to separate assumption nodes, with no source IDs,
+and provisional evidential dependencies. The original observation supplies
+context; the assumed effect lives on the hypothesis. Both must fit the existing
+native node allowance together. Invalid relations are isolated while the original
+quote remains available, unassessed when no relation survives. Received reasons
+and limitations stay in the audit; native annotations explicitly identify model
+relations/gaps. No source prose is clipped or redirected, and no probability is
+computed. Legacy mode remains unchanged.
+
+The flat source extractor can retain question relevance while using exact
+quote/value guards. Rules guide which actors/metrics/periods to select, but cannot
+become source fields unless their literal support occurs in a selected original.
+Question-aware and original-only selection must be compared on unchanged saved
+source scopes before claiming a recall improvement.
+
