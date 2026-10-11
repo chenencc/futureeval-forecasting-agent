@@ -22,10 +22,14 @@ def enabled(bundle):
 
 
 def limits(request):
+    from ForecastAgent.research_loop import context_budget
+    context_budget.ceilings(request)
     policy = request.get(FIELD, 'disabled')
     if policy not in {'disabled', POLICY}:
         raise ValueError('Unknown research dispatch policy')
     if policy == 'disabled':
+        if context_budget.FIELD in request:
+            raise ValueError('Context budget requires research dispatch policy')
         if LIMIT_FIELD in request:
             raise ValueError('Research dispatch limits require an explicit policy')
         return {'map_updates': 3, 'post_review_http': 2,
@@ -94,6 +98,7 @@ def model_context(task, choice, *, forced_tool=None):
     remains authoritative for native argument binding and dispatch receipts.
     """
     from ForecastAgent.runtime.context import collection_context, encode, MAX_CONTEXT_CHARS, ContextProjectionError
+    from ForecastAgent.research_loop.context_budget import ceilings
     discovery = choice and choice.get('phase') in {'capture_discovery', 'capture_frontier'}
     # Long titles and repeated dictionary keys can exhaust the remaining window
     # even after previews are removed. Pack navigation as a table before failing;
@@ -101,7 +106,9 @@ def model_context(task, choice, *, forced_tool=None):
     tiers = (('objects', 600, None), ('objects', 300, None), ('objects', 0, None),
              ('rows', 0, None), ('rows', 0, 80), ('rows', 0, 0)) if discovery else (('objects', None, None),)
     failures = []
-    for tier_index, (registry_format, preview_chars, title_chars) in enumerate(tiers):
+    budgets = ceilings(task.bundle.get('request', {}))
+    trials = [(ceiling, tier) for ceiling in budgets for tier in tiers]
+    for tier_index, (ceiling, (registry_format, preview_chars, title_chars)) in enumerate(trials):
         projected = copy.deepcopy(choice)
         if discovery:
             candidates = projected['candidates']
@@ -125,17 +132,17 @@ def model_context(task, choice, *, forced_tool=None):
                     'instruction': 'Navigation table only; titles and previews may be shortened with explicit omitted-character counts. All exact source IDs, URLs and known publication dates are retained. Full search results remain saved; omitted text is not absent evidence.'}
         packet = ({'role': 'user', 'content': json.dumps(
             {'research_dispatch': projected}, ensure_ascii=False)} if projected else None)
-        remaining = MAX_CONTEXT_CHARS - (len(encode(packet)) + 1 if packet else 0)
+        remaining = ceiling - (len(encode(packet)) + 1 if packet else 0)
         try:
             messages = collection_context(task, forced_tool=forced_tool, max_chars=remaining)
             if packet:
                 messages.append(packet)
             size = len(encode(messages))
-            if size > MAX_CONTEXT_CHARS:
+            if size > ceiling:
                 raise ContextProjectionError('Context ceiling exceeded after dispatch projection; no model HTTP issued')
         except ContextProjectionError as exc:
             failures.append(str(exc))
-            if tier_index == len(tiers)-1:
+            if tier_index == len(trials)-1:
                 raise
             continue
         if choice:
@@ -143,7 +150,8 @@ def model_context(task, choice, *, forced_tool=None):
                 'phase': choice['phase'], 'preview_chars': preview_chars,
                 'registry_format': registry_format, 'title_chars': title_chars,
                 'source_ids': [s['source_id'] for s in (choice or {}).get('candidates', {}).get('sources', [])],
-                'message_chars': size, 'ceiling_chars': MAX_CONTEXT_CHARS,
+                'message_chars': size, 'ceiling_chars': ceiling,
+                'preferred_ceiling_chars': budgets[0], 'maximum_ceiling_chars': budgets[-1],
                 'local_projection_failures': failures, 'provider_calls': 0})
         return messages
 

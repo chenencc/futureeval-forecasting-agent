@@ -19,7 +19,7 @@ EXECUTION_FIELDS = frozenset({
     'research_delivery_policy', 'research_reading_policy', 'research_gap_policy',
     'research_reference_map_policy', 'research_target_logic_policy',
     'research_dispatch_policy', 'post_supplement_map_stage', 'post_supplement_map_policy',
-    'forecast_target_registry_policy'})
+    'forecast_target_registry_policy', 'research_context_budget'})
 
 
 def project(bundle):

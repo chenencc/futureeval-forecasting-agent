@@ -667,3 +667,23 @@ core. It retains all platform rules, dates, options, scales, bounds and unknown
 fields literally. It preserves original bodies and cumulative provider ledgers,
 records omitted execution-field hashes, and grants no new request allowance.
 Neither mechanism is wired into production by this development module.
+
+## Registered input budgets
+
+`research_context_budget` is an explicit task input with `preferred_chars` and
+`maximum_chars`. Old tasks keep their 28,000-character ceiling. An opted-in task
+can retry local projection at its registered larger ceiling before any provider
+request; this grants no HTTP, search, capture or map-revision allowance. Each
+delivered request records its actual size and ceilings. An oversized immutable
+contract still fails locally at the hard ceiling. The native source identity
+includes this budget implementation, and changing a saved task requires an
+audited derivative migration.
+
+`shared_map_input.align` is a separate research input experiment. It preserves
+every existing original span, adds exact missing portions of complete valid graph
+bindings to BOTH arms, then reserves the measured graph-note size under the
+shared decision request ceiling. No literal text is shortened to force a fit.
+Unsupported representations and groups that do not fit remain explicit gaps.
+The exact JSON request size is checked; optional extra padding is registered by
+the caller. This common selection differs from the frozen release's selector,
+so its paired results must be reported separately from release control results.
