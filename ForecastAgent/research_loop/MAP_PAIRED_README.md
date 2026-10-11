@@ -90,3 +90,35 @@ cleanliness remain unverified by this mechanical check.
 Official prediction-window eligibility is separate: a later shadow forecast can
 precede public resolution while missing the tournament deadline. This original
 versus map ablation does not execute the full production reread pipeline.
+
+## Release-schedule analysis ablation
+
+`release_paired_trial` retains the release Mercury registry, diagnostics, selector,
+conditional reread and final payload policy. Each mapped call has the exact same
+originals, instructions and target registry as its corresponding original call.
+The original release arm owns the reread schedule; mapped diagnostic answers do
+not change that schedule and are never passed to the original arm. This measures
+the map's contribution with matched reading, not independent routing policies.
+
+The harness verifies the pinned release Mercury dependencies. Its saved-source
+reader is loaded explicitly from that control and its consumers are patched only
+inside an isolated experimental process. This is not a production entry point.
+It neither compares fresh acquisition nor the production reasoning-only service
+fallback. A failure in the experimental map arm cannot contaminate a successful
+original release forecast. A reused fallback is not an independent observation.
+
+```text
+python -m ForecastAgent.research_loop.release_paired_trial \
+  --parent FROZEN_CURRENT_CLOCK_BUNDLE --root NEW_TRIAL --control FROZEN_RELEASE
+```
+
+Preparation uses no provider requests. Execution requires a five-attempt ceiling:
+one Super map over the release's first visible originals and up to two Mercury
+calls per arm. `--mapped-first` counterbalances the within-stage call order.
+No original text is removed to fit a map. A map that cannot fit is explicitly
+omitted; later reread text is not represented as if Super had already read it.
+Source captures retain their actual dates. A new research clock must be recorded
+in a separate parent derivative; it cannot be backdated to collection or replace
+an official tournament deadline. Bound labels and first-public-event audits remain
+required before interpreting outcome metrics. No search, fetch, submission or
+provider account budget reset is performed.
