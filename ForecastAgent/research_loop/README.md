@@ -811,6 +811,22 @@ body hashes do not authorize replacing another URL's evidence binding.
 
 ## Native acquisition to paired forecasts
 
+The optional `research_literal_context_policy=adjacent_original_windows_v1`
+adds contiguous original context references alongside existing primitive IDs.
+Windows contain at most 1,400 characters and eight visible primitive spans.
+Only whitespace gaps may be included; windows cannot cross hidden text,
+overlapping coordinates, omitted inline images or decoded-post provenance.
+The exact body/view coordinates, constituent IDs and unverified meaning remain
+explicit. Existing primitive references, body hashes and capture times do not
+change. A different catalog scope requires new material processing; historical
+receipts and budgets are retained and never credit the expanded scope.
+
+This feature provides nearby names, offices, dates or units as selectable text.
+It does not infer their relationship. Source review requests separate observations
+for distinct facts and retain missing historical dates as unknown. Grouped text
+still consumes the registered context envelope; large sources remain explicitly
+partial. The default catalog is unchanged while the policy is disabled.
+
 `release_paired_trial.native_pair_inputs` is the research entry point for a
 completed native acquisition view and its saved map. It projects named execution
 fields before invoking the frozen forecast selector. Exact platform rules,

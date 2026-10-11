@@ -26,6 +26,8 @@ def enabled(bundle):
 
 def catalog(bundle, cutoff=None):
     """No search snippets, blocked bodies or reconstructed cells enter the map."""
+    from ForecastAgent.research_loop import literal_context
+    context_enabled = literal_context.enabled(bundle)
     spans, sources, excluded = {}, {}, []
     windows = bundle.get('research_map_visible_references')
     if windows is not None:
@@ -74,14 +76,17 @@ def catalog(bundle, cutoff=None):
                 if representation:
                     sources[url]['reading_view']=representation
                     sources[url]['omitted_inline_image_characters']=sum(b-a for a,b in view.get('omitted_inline_image_ranges',[]))
+                context_text = view['text']
                 original_spans = [{'source_id':url, 'url':url, 'body_sha256':body_hash,
                     'start':a, 'end':b, 'text':view['text'][a:b], **representation,
                     **({'json_provenance':[p for p in view['provenance'] if p['start']<b and p['end']>a]} if 'provenance' in view else {})}
                     for a,b in ranges if view['text'][a:b].strip()]
             else:
+                context_text = body
                 original_spans = units(body, 0, {'source_id': url, 'url': url,
                                                'body_sha256': body_hash}, 1)
         else:
+            context_text = body
             selected = sorted((w for w in windows if w['url'] == url), key=lambda w: w['start'])
             previous_end = 0
             for w in selected:
@@ -90,12 +95,23 @@ def catalog(bundle, cutoff=None):
                 previous_end = w['end']
             original_spans = [{**w, 'source_id': url, 'text': body[w['start']:w['end']]}
                               for w in selected]
+        source_spans = []
         for span in original_spans:
             handle = 'R' + digest({k: span[k] for k in ('url', 'body_sha256', 'start', 'end','view_sha256') if k in span})[:24]
             spans[handle] = {**span, 'evidence_id': handle}
+            source_spans.append(spans[handle])
+        if context_enabled:
+            # Existing primitive references remain byte-identical. Only exact
+            # visible text is grouped; decoded coordinates remain explicit.
+            for context in literal_context.additions(source_spans, context_text):
+                if context['evidence_id'] not in spans:
+                    spans[context['evidence_id']] = context
     if windows is not None and any(w['url'] not in sources for w in windows):
         raise ValueError('Visible map reference points to an unavailable source')
     material_identity = sources if windows is None else {'sources': sources, 'visible_references': windows}
+    if context_enabled:
+        material_identity = {'original_scope': material_identity,
+                             'literal_context_policy': literal_context.POLICY}
     return {'material_sha256': digest(material_identity), 'sources': sources, 'spans': spans,
             'excluded_sources': excluded, 'visible_windows': copy.deepcopy(windows)}
 

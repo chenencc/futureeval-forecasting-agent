@@ -53,6 +53,7 @@ def code_identity():
              root / 'research_loop/post_supplement.py', root / 'research_loop/dispatch.py',
              root / 'research_loop/source_review.py',
              root / 'research_loop/reference_map.py', root / 'research_loop/predictive_focus.py',
+             root / 'research_loop/literal_context.py',
              root / 'research_loop/context_budget.py',
               root / 'intelligence/development_collection.py',
               root / 'intelligence/pipeline.py',

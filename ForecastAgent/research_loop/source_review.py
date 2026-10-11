@@ -77,6 +77,15 @@ def messages(task, reading, choice, *, prior_readings=None, navigation=None, sou
             'irrelevant requires source_reading_basis=explicit_scope_mismatch and cited positive '
             'evidence of that mismatch; otherwise read further or defer. Complete saved scope '
             'means only the preserved eligible text, not a complete website or verified truth.')
+        from ForecastAgent.research_loop import literal_context
+        if literal_context.enabled(task.bundle):
+            system += ('\nSome reference rows are literal_context_window: contiguous original text '
+                'including adjacent qualifiers, not a model summary. Prefer these when a name, '
+                'office, measurement or date is split across short rows. Keep each distinct fact '
+                'in a separate observation; do not bundle several people or measurements into '
+                'one interpretation supported by sample names. A window proves only its literal '
+                'contents. If its date or historical membership is absent, retain that as unknown '
+                'and do not import it from the resolution rules. No minimum node count is required.')
     if navigation and navigation['available']:
         system += ('\nChoose exactly one available tool. If delivered text is navigation or lacks '
             'the needed row, use inspect_research_state for this SAME saved URL before a map update. '
