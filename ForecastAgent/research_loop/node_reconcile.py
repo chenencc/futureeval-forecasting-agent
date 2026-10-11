@@ -124,7 +124,9 @@ def messages(bundle, card, *, blind=False, format_feedback=None, original_only=F
         for key in ('question','as_of_utc','target_conditions'):
             payload.pop(key)
         system += ('\nOriginal-only observation phase: no question, target condition or old '
-            'annotation is supplied. Give one concise source-local observation, preferably '
+            'annotation is supplied. Give one atomic fact about one entity or measurement; '
+            'do not aggregate several people or rows into one annotation. Use its literal '
+            'record qualifiers. Give one concise source-local observation, preferably '
             'under 160 characters, with its qualifiers or unknown date explicit. '
             'Return target_links=[]; target interpretation belongs to a later phase. '
             'Choose references containing the actual fields and their context, not just names. '

@@ -882,4 +882,6 @@ remain unchanged. The tool requires empty target links in this phase. Relation
 to the forecast target must be interpreted later against those immutable source
 observations. Default scheduled review is unchanged; a successful source-only
 rewrite does not certify factual truth or complete a forecast comparison.
+Each source-only node requests one atomic entity/measurement observation so a
+multi-record list does not compete with the unchanged annotation length limits.
 
