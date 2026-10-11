@@ -267,3 +267,25 @@ counts only the exact annotations actually applied, not merely proposed drafts.
 No source receipts, searches, probabilities or outcome resolution are granted.
 This mode consumes the existing journal and one map revision and cannot combine
 with the isolated-node or shared first-reading modes. It is off by default.
+
+## Literal source facets (development experiment)
+
+`source_facets` first extracts publication/event times, issuer/reporting authority,
+affected entities, measurements and measurement types from delivered originals.
+Every value and continuous quote must occur in its own source span. Program code
+stores quote hashes and local positions; repeated matches remain explicitly
+ambiguous. Source roles and coverage labels are provisional model judgments.
+Literal binding verifies text identity, never semantic truth or forecast skill.
+Invalid facts are isolated without discarding valid siblings; missing references
+remain unprocessed. Navigation cannot establish extracted event fields, and
+caption-only coverage cannot certify operational status.
+
+A separately budgeted extraction can be passed as the frozen raw object through
+`comparative_source_facets` with comparative review enabled. The review request
+keeps the same originals and adds program-bound fields, without old annotations.
+Navigation/caption-only references cannot carry directional target effects. An
+invalid draft is rejected and the parent remains unreviewed, not silently repaired.
+Extraction receipts and graph-review receipts must both count toward the registered
+experiment and historical allowances. This opt-in makes no new source receipts,
+searches, probability calls or production changes. Prospective predictive quality
+and free-generation semantics require separate real-material evaluation.

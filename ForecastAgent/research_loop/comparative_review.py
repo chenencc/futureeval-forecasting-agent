@@ -37,18 +37,24 @@ def tool(cards,map_tool):
             'review_reason':{'type':'string','maxLength':240}},
             'required':['observations','review_reason'],'additionalProperties':False}}}
 
-def messages(bundle,cards):
+def messages(bundle,cards,source_facets=None):
     originals={s['evidence_id']:copy.deepcopy(s) for c in cards for s in c['originals']}
-    return [{'role':'system','content':SYSTEM},{'role':'user','content':json.dumps({
+    payload={
         'question':{k:bundle['request'].get(k,'') for k in state.RULE_FIELDS},
         'as_of_utc':bundle['request'].get('as_of_utc'),
         'target_conditions':target_logic.targets(bundle) if target_logic.enabled(bundle) else [],
         'observation_registry':[{k:copy.deepcopy(c[k]) for k in ('node_id','selectable_reference_ids','missing_own_reference_ids')} for c in cards],
         'originals':list(originals.values()),
         'comparison_scope':{'full_archive_read':False,'future_reporting_available':False,
-            'instruction':'Compare this delivered set only; earlier values remain useful but cannot all be the latest.'}},ensure_ascii=False)}]
+            'instruction':'Compare this delivered set only; earlier values remain useful but cannot all be the latest.'}}
+    system=SYSTEM
+    if source_facets is not None:
+        from ForecastAgent.research_loop import source_facets as facets
+        payload['bound_source_facets']=facets.bind(list(originals.values()),source_facets)
+        system+='\nUse the source-local fields before assigning target relevance. Quotes and literal values are bound, but their role and coverage labels are model opinions. Recheck disputed roles in the originals. Navigation/caption-only excerpts cannot provide directional evidence about a later event. Do not transfer publication dates to event dates or reporting authorities to issuers.\n'
+    return [{'role':'system','content':system},{'role':'user','content':json.dumps(payload,ensure_ascii=False)}]
 
-def proposal(bundle,packet,cards,answer,map_tool):
+def proposal(bundle,packet,cards,answer,map_tool,source_facets=None):
     """Isolate invalid observations; bind valid own-scope siblings by ordinary merge."""
     schema=copy.deepcopy(tool(cards,map_tool)['function']['parameters'])
     schema['properties']['observations']['items']={}
@@ -58,6 +64,10 @@ def proposal(bundle,packet,cards,answer,map_tool):
     counts=Counter(n.get('node_id') for n in answer['observations'] if isinstance(n,dict) and isinstance(n.get('node_id'),str))
     known_targets={t['id'] for t in target_logic.targets(bundle)} if target_logic.enabled(bundle) else set()
     args=None;reviews=[];rejected=[]
+    facets_by_id={}
+    if source_facets is not None:
+        from ForecastAgent.research_loop import source_facets as facets
+        facets_by_id={s['reference_id']:s for s in facets.bind(facets.originals(cards),source_facets)['sources']}
     for entry in answer['observations']:
         ident=entry.get('node_id') if isinstance(entry,dict) else None
         try:
@@ -66,6 +76,11 @@ def proposal(bundle,packet,cards,answer,map_tool):
             links=entry.get('target_links',[])
             if not isinstance(links,list) or any(not isinstance(l,dict) or l.get('target_id') not in known_targets for l in links):
                 raise ValueError('Observation target ID is unknown')
+            selected=entry.get('evidence_ids',[])
+            if source_facets is not None and isinstance(selected,list) and selected and all(
+                    i in facets_by_id and facets_by_id[i]['coverage'] in {'navigation_only','caption_text'} for i in selected):
+                if any(l.get('effect') in {'supports','opposes'} for l in links):
+                    raise ValueError('Navigation/caption-only source scope cannot carry directional target effects')
             item,audit=node_reconcile.proposal(bundle,packet,byid[ident],entry,map_tool,blind=True)
             if args is None:args=item
             else:args['nodes'].extend(item['nodes'])

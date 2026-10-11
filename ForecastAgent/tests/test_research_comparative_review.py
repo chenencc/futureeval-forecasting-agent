@@ -58,6 +58,28 @@ class ComparativeReviewTests(unittest.TestCase):
         result,audit=cr.proposal(b,p,[c],{'observations':[a],'review_reason':'Unknown target.'},mt)
         self.assertIsNone(result);self.assertIn('target ID',audit['rejected'][0]['error'])
 
+    def test_facets_share_original_scope_without_certifying_labels(self):
+        b,p,c,mt,a=self.sample()
+        source=c['originals'][0]
+        facets={'sources':[{'reference_id':source['evidence_id'],'coverage':'content_excerpt',
+            'coverage_quote':source['text'][:40],'facts':[],'unknowns':[]}]}
+        payload=json.loads(cr.messages(b,[c],facets)[1]['content'])
+        self.assertEqual(payload['originals'],c['originals'])
+        self.assertFalse(payload['bound_source_facets']['meaning_verified'])
+        self.assertFalse(payload['bound_source_facets']['sources'][0]['coverage_verified'])
+
+    def test_weak_coverage_directional_claim_is_rejected(self):
+        b,p,c,mt,a=self.sample()
+        source=c['originals'][0]
+        a['evidence_ids']=[source['evidence_id']]
+        a['target_links'][0]['effect']='opposes'
+        facets={'sources':[{'reference_id':source['evidence_id'],'coverage':'navigation_only',
+            'coverage_quote':source['text'][:40],'facts':[],'unknowns':['Status not known.']}]}
+        result,audit=cr.proposal(b,p,[c],{'observations':[a],'review_reason':'Unsafe direction.'},mt,facets)
+        self.assertIsNone(result)
+        self.assertIn('directional target effects',audit['rejected'][0]['error'])
+        self.assertEqual(audit['unreviewed_node_ids'],[c['node_id']])
+
     def test_post_comparison_uses_one_call_and_cached_reentry_uses_none(self):
         with tempfile.TemporaryDirectory() as tmp:
             t=task(Path(tmp)/'original');apply(t.bundle,proposal(t.bundle))
