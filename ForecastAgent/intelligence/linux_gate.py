@@ -59,9 +59,20 @@ def regressions(root):
             result=unittest.TextTestRunner(stream=stream,verbosity=2).run(suite)
     report={'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),
             'passed':result.wasSuccessful(),'external_sockets_forbidden':True}
+    report['failed_tests'] = [{'test':case.id(), 'traceback':trace[-2000:]}
+                             for case,trace in (result.failures+result.errors)[:10]]
     save(root/'offline-tests.json',report)
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        for failure in report['failed_tests']:
+            annotation('Offline regression', json.dumps(failure))
     if not result.wasSuccessful():raise ValueError('Offline regression gate failed')
     return report
+
+
+def annotation(title, message):
+    """Expose bounded fixture diagnostics through read-only check metadata."""
+    escaped = str(message).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+    print(f'::error title={title}::{escaped}', flush=True)
 
 
 def process_gate(root):
@@ -136,6 +147,8 @@ def run(root):
         report['status']='passed'
     except Exception as exc:
         report.update(status='failed',error_type=type(exc).__name__,error=str(exc))
+        if os.environ.get('GITHUB_ACTIONS') == 'true':
+            annotation('Runner fixture gate', type(exc).__name__+': '+str(exc)[:2000])
         raise
     finally:save(root/'runner-gate.json',report)
     return report

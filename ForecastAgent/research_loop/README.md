@@ -826,6 +826,12 @@ It does not infer their relationship. Source review requests separate observatio
 for distinct facts and retain missing historical dates as unknown. Grouped text
 still consumes the registered context envelope; large sources remain explicitly
 partial. The default catalog is unchanged while the policy is disabled.
+Source-review delivery uses each context window and any uncovered primitives
+once. Covered primitive aliases remain in the native catalog and historical
+bindings, but their repeated text is omitted from this packet. The packet records
+both catalog and delivered partition counts; complete saved scope requires full
+literal coverage, not delivery of every redundant ID. Undelivered aliases cannot
+be newly selected. This reduces duplicated text without summarizing originals.
 
 `release_paired_trial.native_pair_inputs` is the research entry point for a
 completed native acquisition view and its saved map. It projects named execution

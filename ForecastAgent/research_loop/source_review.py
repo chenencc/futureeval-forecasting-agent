@@ -151,6 +151,16 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
     catalog = state.catalog(task.bundle, task.cutoff)
     spans = sorted((s for s in catalog['spans'].values() if s['url'] == choice['url']),
                    key=lambda s: (s['start'], s['end']))
+    native_span_count = len(spans)
+    from ForecastAgent.research_loop import literal_context
+    context_projection = literal_context.enabled(task.bundle)
+    if context_projection:
+        windows = [s for s in spans if s.get('reference_kind') == 'literal_context_window']
+        covered = {ident for window in windows for ident in window['constituent_reference_ids']}
+        # Deliver each literal character once. Primitive IDs remain in the
+        # native catalog and old bindings, but redundant aliases need not repeat
+        # the same text/metadata in this model packet. No summary substitutes it.
+        spans = [s for s in spans if s['evidence_id'] not in covered]
     ids = {s['evidence_id'] for s in reading.get('evidence', [])}
     anchor = min((i for i, s in enumerate(spans) if s['evidence_id'] in ids), default=0)
     excluded = {'evidence_id','start','end','text','url','source_id','body_sha256'}
@@ -166,6 +176,12 @@ def source_window(task, reading, choice, *, prior_readings=None, navigation=None
         'source_truncated':catalog['sources'][choice['url']]['truncated'],
         'omitted_catalog_spans':len(spans), 'whole_original_or_website_verified':False,
         'instruction':'Only rows delivered here are selectable. Unread text is not absent evidence.'}
+    if context_projection:
+        view.update(total_native_catalog_spans=native_span_count,
+                    redundant_primitive_references_omitted=native_span_count-len(spans),
+                    scope_partition='context_windows_plus_ungrouped_primitives',
+                    primitive_bindings_preserved=True,
+                    projected_source_character_coverage_unchanged=True)
     # Try complete delivery first, even if the last small excerpt was mid-source.
     # If it does not fit, page forward from the current native reading anchor.
     def row(span):

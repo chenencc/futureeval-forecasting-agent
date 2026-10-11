@@ -139,6 +139,43 @@ class LiteralContextTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['text'], text[1502:])
 
+    def test_context_delivery_preserves_literal_coverage_without_alias_repetition(self):
+        from ForecastAgent.research_loop import dispatch, gap_feedback
+        with tempfile.TemporaryDirectory() as root:
+            task, _, _, _ = self.fixture(root)
+            primitive = state.catalog(task.bundle)
+            task.bundle['request'][context.FIELD] = context.POLICY
+            material = state.catalog(task.bundle)
+            url = 'https://example.org/a'
+            reading = task.execute('inspect_research_state', {'url':url,'limit':3}, '')
+            source = next(m for m in gap_feedback.pending(task) if m['url']==url)
+            choice = {'url':url,'material_id':source['material_id'],
+                      'phase':'process_update','tool':'update_research_state',
+                      'revision':task.bundle['research_loop']['revision'],
+                      'material_sha256':material['material_sha256']}
+            view = source_review.source_window(task, reading, choice)
+            self.assertTrue(view['complete_saved_scope'])
+            self.assertGreater(view['redundant_primitive_references_omitted'], 0)
+            self.assertLess(len(view['rows']), view['total_native_catalog_spans'])
+            rows = sorted(view['rows'], key=lambda row:row[1])
+            for left, right in zip(rows,rows[1:]):
+                self.assertLessEqual(left[2],right[1])
+            for span in primitive['spans'].values():
+                if span['url']==url:
+                    self.assertTrue(any(row[1]<=span['start'] and span['end']<=row[2] for row in rows))
+            messages = source_review.messages(task, reading, choice, source_view=view)
+            dispatch.validate_delivery(task, messages)
+            # Existing aliases stay valid historically, but unseen aliases do
+            # not become eligible selections merely because a parent was read.
+            ids = {row[0] for row in rows}
+            ids.update(dispatch.review_scope(task,choice)['inspected_reference_ids'])
+            unseen = next(s['evidence_id'] for s in primitive['spans'].values()
+                          if s['url']==url and 'Minister 19' in s['text'] and s['evidence_id'] not in ids)
+            with self.assertRaisesRegex(ValueError, 'not delivered'):
+                source_review.bind_source_window(task,choice,
+                    {'nodes':[], 'material_reviews':[{'evidence_ids':[unseen]}]},
+                    source_review.review_tools(task,choice,navigate=False,source_view=view),view)
+
 
 if __name__ == '__main__':
     unittest.main()
