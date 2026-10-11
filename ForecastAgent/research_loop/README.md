@@ -628,3 +628,11 @@ python -m ForecastAgent.research_loop.semantics_trial --parent saved-brief-exper
 Comparisons against archived scores are exploratory repeats, not controlled
 simultaneous A/B trials. Unknown future outcomes cannot yield accuracy or Brier.
 Synthetic known-answer probes check API mechanics, not forecast calibration.
+
+## Full release-pair evaluation
+
+[Frozen outcome evaluation](RELEASE_EVALUATION.md) retains actual experimental
+client clocks and evaluates closed full-release pairs from physical receipts.
+The declared question clock is never substituted for missing call times. Old
+archives stay immutable and diagnostic; independent outcome bindings and reviewed
+first-public-event timing are required before prospective metrics can be reported.

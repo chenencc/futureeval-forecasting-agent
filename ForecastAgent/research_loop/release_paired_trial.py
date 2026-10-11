@@ -9,6 +9,7 @@ import copy
 import hashlib
 import importlib.util
 import os
+from datetime import datetime, timezone
 from contextlib import contextmanager, ExitStack
 from pathlib import Path
 from unittest.mock import patch
@@ -97,6 +98,35 @@ def decode(response, question, spec):
     return payload(question, raw)
 
 
+def timed_call(call, state, folder, heads):
+    """Keep a research-only client clock without altering the release provider.
+
+    Cached replies never receive a new forecast time. A completed sidecar binds
+    the one new physical receipt, not a declared question clock or file mtime.
+    """
+    folder = Path(folder)
+    before = list((folder/'http').glob('*.json'))
+    started = datetime.now(timezone.utc).isoformat()
+    try:
+        return call(state, folder, heads)
+    finally:
+        after = list((folder/'http').glob('*.json'))
+        if not before and len(after) == 1:
+            receipt = load(after[0])
+            clock = {'schema': 'research-stage-client-clock-v1',
+                     'started_at_utc': started,
+                     'finished_at_utc': datetime.now(timezone.utc).isoformat(),
+                     'receipt_sha256': live_trial.sha(after[0]),
+                     'request_sha256': digest(receipt.get('request')),
+                     'response_sha256': digest(receipt.get('response')),
+                     'receipt_status': receipt.get('status'),
+                     'clock_source': 'local_utc_client', 'server_time_verified': False}
+            path = folder/'client-clock.json'
+            if path.exists():
+                raise ValueError('Existing stage clock cannot be replaced')
+            save(path, clock)
+
+
 def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False, source_context=False):
     """Run the actual release function; only its provider seam is intercepted."""
     folder = Path(folder); rows = []; saved_call = chain.call
@@ -123,7 +153,7 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False, source_
             if list((target/'http').glob('*.json')) and not (target/'response.json').exists():
                 raise ValueError('Preserved unfinished stage requires inspection')
             try:
-                replies[arm] = saved_call(selected, target, heads)
+                replies[arm] = timed_call(saved_call, selected, target, heads)
             except Exception as exc:
                 if arm == 'original':
                     raise
