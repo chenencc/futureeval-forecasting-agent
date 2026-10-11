@@ -64,3 +64,29 @@ an additional category. Impossible fractional outcome labels are rejected;
 tail outcomes are not replaced by a fabricated boundary value. Continuous
 numeric/date questions retain the bounded linear-CDF diagnostic. These metric
 implementations do not supply missing official outcomes or prove predictive skill.
+
+## Sealed current-clock shadow pairs
+
+`evaluate_shadow` reads the separately registered three-case shadow trial without
+changing its closed archive or making model requests. It checks the frozen
+original hashes, question identity, forecast clock, equal target registries,
+separate received replies and forecasts reconstructed from those replies.
+Gap-only maps remain `not_independent`; unresolved pairs remain `pending_outcome`.
+
+```text
+python -m ForecastAgent.research_loop.evaluate_shadow \
+  --root SEALED_TRIAL --output SEPARATE_EVALUATION.json
+```
+
+Optional `--labels` accepts the independently archived bindings used by
+`research_loop.labels`. An ID-only outcome is quarantined. Numeric metrics are
+diagnostics until a reviewed first public outcome time establishes that the
+forecast preceded that event. Add `first_public_outcome_at` (timezone required)
+and `first_public_outcome_reviewed: true` to the bound label provenance only
+after reviewing the archived public event evidence. Official resolution time is
+not a substitute for first public event time. Source truth and model-memory
+cleanliness remain unverified by this mechanical check.
+
+Official prediction-window eligibility is separate: a later shadow forecast can
+precede public resolution while missing the tournament deadline. This original
+versus map ablation does not execute the full production reread pipeline.
