@@ -875,3 +875,11 @@ reading hides the candidate and its candidate-origin signals. Existing bounded
 annotation-format recovery keeps the emitted draft, references and target IDs,
 consumes the same registered model allowance, and does not certify meaning.
 
+`node_reconcile.messages/tool/proposal(..., blind=True, original_only=True)` is a
+controlled source-observation experiment. It hides rules, target conditions,
+clocks, old annotations and repair drafts; originals and their literal handles
+remain unchanged. The tool requires empty target links in this phase. Relation
+to the forecast target must be interpreted later against those immutable source
+observations. Default scheduled review is unchanged; a successful source-only
+rewrite does not certify factual truth or complete a forecast comparison.
+

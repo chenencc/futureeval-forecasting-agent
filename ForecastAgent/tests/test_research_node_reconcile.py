@@ -130,6 +130,31 @@ class NodeReconcileTests(unittest.TestCase):
         self.assertEqual(p['material_reviews'], [])
         self.assertFalse(audit['meaning_verified'])
 
+    def test_original_only_phase_hides_rule_and_prior_anchors_without_implicit_links(self):
+        b, packet, card, mt, answer = self.sample()
+        b['request']['question'] = 'TARGET_ANCHOR'
+        b['request']['resolution_criteria'] = 'RULE_ANCHOR'
+        card['candidate']['interpretation'] = 'OLD_ANCHOR'
+        messages = nr.messages(b,card,blind=True,original_only=True)
+        data = json.loads(messages[1]['content'])
+        for key in ('question','as_of_utc','target_conditions'):
+            self.assertNotIn(key, data)
+        for word in ('TARGET_ANCHOR','RULE_ANCHOR','OLD_ANCHOR'):
+            self.assertNotIn(word, messages[1]['content'])
+        self.assertEqual(data['observation_to_review']['originals'], card['originals'])
+        self.assertIn('target_links=[]', messages[0]['content'])
+        with self.assertRaisesRegex(ValueError,'blind mode'):
+            nr.messages(b,card,original_only=True)
+        with self.assertRaisesRegex(ValueError,'blind mode'):
+            nr.messages(b,card,blind=True,original_only=True,format_feedback={'draft':answer})
+        answer.pop('verdict')
+        with self.assertRaises(ValueError):
+            nr.proposal(b,packet,card,answer,mt,blind=True,original_only=True)
+        answer['target_links'] = []
+        proposal, audit = nr.proposal(b,packet,card,answer,mt,blind=True,original_only=True)
+        self.assertEqual(proposal['nodes'][0]['target_links'], [])
+        self.assertFalse(audit['meaning_verified'])
+
     def test_blind_still_rejects_overlong_annotations(self):
         b, packet, card, mt, answer = self.sample()
         answer.pop('verdict'); answer['interpretation'] = 'x'*241

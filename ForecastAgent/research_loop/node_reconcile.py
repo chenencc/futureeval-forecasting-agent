@@ -84,7 +84,9 @@ def cards(bundle, packet):
     return result
 
 
-def tool(card, map_tool, *, blind=False):
+def tool(card, map_tool, *, blind=False, original_only=False):
+    if type(original_only) is not bool or original_only and not blind:
+        raise ValueError('Original-only tool requires blind mode')
     node_schema = map_tool['function']['parameters']['properties']['nodes']['items']
     fields = ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links')
     properties = {k: copy.deepcopy(node_schema['properties'][k]) for k in fields}
@@ -93,14 +95,18 @@ def tool(card, map_tool, *, blind=False):
         review_reason={'type': 'string', 'maxLength': 240})
     if blind:
         properties.pop('verdict')
+    if original_only:
+        properties['target_links']['maxItems'] = 0
     return {'type': 'function', 'function': {'name': NAME,
         'description': 'Review one source-bound observation; retain originals and repair fallible annotations.',
         'parameters': {'type': 'object', 'properties': properties,
             'required': list(properties), 'additionalProperties': False}}}
 
 
-def messages(bundle, card, *, blind=False, format_feedback=None):
-    targets = target_logic.targets(bundle) if target_logic.enabled(bundle) else []
+def messages(bundle, card, *, blind=False, format_feedback=None, original_only=False):
+    if type(original_only) is not bool or original_only and (not blind or format_feedback is not None):
+        raise ValueError('Original-only reading requires blind mode without an old annotation draft')
+    targets = target_logic.targets(bundle) if not original_only and target_logic.enabled(bundle) else []
     supplied = ({k: copy.deepcopy(card[k]) for k in ('node_id', 'own_reference_ids',
         'selectable_reference_ids', 'missing_own_reference_ids', 'originals', 'scope')}
         if blind else card)
@@ -112,6 +118,17 @@ def messages(bundle, card, *, blind=False, format_feedback=None):
     if format_feedback is not None:
         payload['annotation_format_repair'] = copy.deepcopy(format_feedback)
     system = BLIND_SYSTEM if blind else SYSTEM
+    if original_only:
+        # Separate source observation from target interpretation. Do not expose
+        # old dates/cohorts through rules, conditions, clocks or repair drafts.
+        for key in ('question','as_of_utc','target_conditions'):
+            payload.pop(key)
+        system += ('\nOriginal-only observation phase: no question, target condition or old '
+            'annotation is supplied. Give one concise source-local observation, preferably '
+            'under 160 characters, with its qualifiers or unknown date explicit. '
+            'Return target_links=[]; target interpretation belongs to a later phase. '
+            'Choose references containing the actual fields and their context, not just names. '
+            'Do not reconstruct historical dates, cohorts or outcomes from memory.\n')
     from ForecastAgent.research_loop import predictive_focus
     if predictive_focus.enabled(bundle):
         system += predictive_focus.PREMISE_GUIDE
@@ -188,9 +205,9 @@ def verify_repair_core(draft,answer):
         raise ValueError('Annotation repair changed frozen target IDs')
 
 
-def proposal(bundle, packet, card, answer, map_tool, *, blind=False):
+def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_only=False):
     """Translate one bounded review to an ordinary merge, without truth certification."""
-    check_schema(answer, tool(card, map_tool, blind=blind)['function']['parameters'])
+    check_schema(answer, tool(card, map_tool, blind=blind, original_only=original_only)['function']['parameters'])
     selected = answer['evidence_ids']
     if not answer['review_reason'].strip():
         raise ValueError('A node review needs a nonempty review reason')
