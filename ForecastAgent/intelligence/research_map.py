@@ -11,7 +11,7 @@ from ForecastAgent.research_loop.prospective_trial import prepared_pair
 DONOR_COMMIT = '44532209cd4cf25e16093ea2023059bbe31d4f7e'
 
 
-def enable(request, *, target_links=False, reference_bound=False, predictive_focus=False):
+def enable(request, *, target_links=False, reference_bound=False, predictive_focus=False, scoring_delivery=False):
     """Select map tools explicitly; do not change models, source limits or ledgers."""
     reject_outcomes(request)
     result = copy.deepcopy(request)
@@ -23,7 +23,7 @@ def enable(request, *, target_links=False, reference_bound=False, predictive_foc
         if field in result and result[field] != value:
             raise ValueError('Incompatible frozen research policy: ' + field)
     result.update(policies)
-    if predictive_focus:
+    if predictive_focus or scoring_delivery:
         reference_bound = True
     if target_links or reference_bound:
         from ForecastAgent.research_loop import target_logic
@@ -40,6 +40,11 @@ def enable(request, *, target_links=False, reference_bound=False, predictive_foc
         if focus.FIELD in result and result[focus.FIELD] != focus.POLICY:
             raise ValueError('Incompatible frozen predictive focus policy')
         result[focus.FIELD] = focus.POLICY
+    if scoring_delivery:
+        from ForecastAgent.research_loop import scoring_delivery as projection
+        if projection.FIELD in result and result[projection.FIELD] != projection.POLICY:
+            raise ValueError('Incompatible frozen scoring delivery policy')
+        result[projection.FIELD] = projection.POLICY
     return result
 
 
@@ -50,8 +55,10 @@ def project(bundle, admitted_view, directory):
     produce a recorded original-only fallback, never a fabricated graph.
     """
     directory = Path(directory)
+    from ForecastAgent.intelligence.identity import code_identity
     identity = {'original_bundle_sha256': digest(bundle),
-                'admitted_view_sha256': digest(admitted_view), 'donor_commit': DONOR_COMMIT}
+                'admitted_view_sha256': digest(admitted_view), 'donor_commit': DONOR_COMMIT,
+                'implementation': code_identity()}
     marker = directory / 'identity.json'
     if marker.exists() and load(marker) != identity:
         raise ValueError('Frozen map projection inputs changed')

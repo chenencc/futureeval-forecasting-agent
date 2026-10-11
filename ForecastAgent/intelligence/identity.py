@@ -6,7 +6,7 @@ from pathlib import Path
 def code_identity():
     root = Path(__file__).parent
     files = list(root.glob('*.py'))
-    for folder in ('channels', 'tools/intelligence_box'):
+    for folder in ('channels', 'tools/intelligence_box', 'research_loop'):
         files.extend(root.parent.joinpath(folder).glob('*.py'))
     files.append(root.parent / 'tools/capabilities.py')
     files.append(root.parent / 'tools/original_navigation.py')

@@ -75,6 +75,7 @@ def scoring_map(bundle, baseline):
             result['interpretation_scope_audit'] = predictive_focus.brief(bundle, subset, result['material_requests'])
         return result
     result = assemble(nodes, hidden)
+    report = {**report, 'coverage_omitted_node_ids': list(hidden)}
     if len(json.dumps(result).encode()) > MAP_BYTE_CAP:
         # Pack complete nodes, prioritizing grounded observations; raw text is fixed.
         ordered = sorted(nodes, key=lambda n: (n['kind'] != 'observation', not n['bindings']))

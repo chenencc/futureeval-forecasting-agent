@@ -77,7 +77,9 @@ class NativeCapabilityTests(unittest.TestCase):
                 self.assertEqual(os.environ['FORECAST_MODEL'], development_collection.DEFAULT_MODEL)
                 self.assertEqual(os.environ['FORECAST_MODEL_FALLBACK_SUPER'], '0')
                 self.assertEqual(kwargs['http_cap'], 2)
-                return value, {'status': 'map_review_complete'}
+                return value, {'status': 'map_review_complete','usage':{'totals':{'http_attempts':0}},
+                    'receipt_sha256':{},'review_bundle_sha256':pipeline.digest(value),
+                    'original_pages_preserved':True,'historical_ledgers_preserved':True}
             with patch.dict(os.environ, {'FORECAST_MODEL': 'previous-model'}), \
                  patch.object(pipeline, 'contract', return_value={}), \
                  patch.object(pipeline, 'load', side_effect=read), \

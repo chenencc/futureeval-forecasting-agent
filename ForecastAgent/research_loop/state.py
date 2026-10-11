@@ -49,9 +49,14 @@ def catalog(bundle, cutoff=None):
         if page.get('content_sha256') and page['content_sha256'] != body_hash:
             raise ValueError('Saved source body checksum mismatch')
         diagnostics = body_diagnostics(body)
+        from ForecastAgent.research_loop import predictive_focus
+        if predictive_focus.enabled(bundle):
+            from ForecastAgent.intelligence.admission import inspect as inspect_body
+            diagnostics = inspect_body(page)
         if (page.get('body_diagnostics', {}).get('usable_text') is False or
                 not diagnostics['usable_text'] or (cutoff and not eligible(page, cutoff))):
-            excluded.append({'url': url, 'reason': 'unreadable_or_temporally_blocked'})
+            excluded.append({'url': url, 'reason': 'unreadable_or_temporally_blocked',
+                **({'body_state':diagnostics.get('state')} if predictive_focus.enabled(bundle) else {})})
             continue
         sources[url] = {'url': url, 'body_sha256': body_hash,
             'capture_time': page.get('retrieved_at_utc'),

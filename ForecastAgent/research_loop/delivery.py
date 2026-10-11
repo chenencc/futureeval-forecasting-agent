@@ -105,7 +105,19 @@ def context(task, *, forced=None, maximum=28000):
         current_state = state.view(b, task.cutoff)
         payload['update_cursor'] = {k: current_state[k] for k in ('revision', 'material_sha256')}
         payload['update_cursor']['expected_revision'] = payload['update_cursor'].pop('revision')
+        # The operating clock was omitted from the compact prompt. A future
+        # target date must not silently become a request for realized data now.
+        contract = b['request'].get('predictive_information_contract') or {}
+        payload['operating_clock_utc'] = contract.get('operating_clock_utc') or b['request'].get('as_of_utc')
+        payload['observable_input_policy'] = {
+            'inputs': ['current_baseline', 'history', 'indicator', 'procedure', 'counterevidence'],
+            'future_outcome': 'Retain as unknown; investigate presently available inputs instead.',
+            'clock_is_not_evidence_cutoff': True,
+            'observability_is_not_verified': True}
         payload['current_nodes'] = [reference_map.input_node(n) for n in current.get('nodes', [])]
+        from ForecastAgent.intelligence.admission import inspect as inspect_body
+        payload['saved_body_diagnostics'] = [{'url':u, 'state':inspect_body(p)['state'],
+            'source_relevance_verified':False} for u,p in list(b['pages'].items())[:8]]
         payload['instruction'] = 'Select supplied original IDs; program binds complete originals. Explain scope separately. Unread material is not missing evidence. No new quota.'
         from ForecastAgent.research_loop import predictive_focus
         if predictive_focus.enabled(b):

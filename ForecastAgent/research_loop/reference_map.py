@@ -46,6 +46,9 @@ not tasks to rediscover the question, its resolution criteria or its fine print.
 Use their Q IDs to bind scope. Look for current status, decision milestones, dated
 baselines, comparable history and contrary evidence. First capture useful public
 originals; do not spend an empty inspection/map update before initial discovery.
+When the target is still in the future, plan an obtainable baseline or leading
+indicator first. Its final realization is not the first mandatory document.
+Use operating_clock_utc to distinguish them; a future target date is not today.
 ''' + CORE
 
 
@@ -79,6 +82,8 @@ person's intention or event absence from a biography, historical event or failed
 fetch. Drivers are hypothetical mechanisms, not unsupported current facts.
 Keep original observations even when their target interpretation is uncertain.
 Select substantive rows WITH available headers/context. Titles alone are navigation.
+navigation_only diagnostics describe captured chrome, not an event outcome. Seek
+data/detail links or a current baseline; retain the empty-target scope as a gap.
 Seek currently obtainable baseline, history, mechanism or counterevidence; a future
 final release remains an expected unknown. No target/node/edge coverage quota.
 '''

@@ -122,6 +122,16 @@ def _collect(request, directory, *, clock_utc, recover_data=True):
             package, post_report = post_supplement.run(package, root / 'final-map-review',
                 http_cap=post_supplement.remaining_http(package, limits),
                 failure_cap=post_supplement.remaining_failures(package, limits), deadline=deadline)
+        # A derivative receipt links the separately preserved review journal;
+        # captured bodies and native provider attempts are never rewritten.
+        package['post_supplement_review'] = {
+            'status': post_report['status'], 'usage': copy.deepcopy(post_report['usage']),
+            'receipt_sha256': copy.deepcopy(post_report['receipt_sha256']),
+            'review_report_sha256': digest(post_report),
+            'unattached_review_bundle_sha256': post_report['review_bundle_sha256'],
+            'source': 'final-map-review/result.json',
+            'original_pages_preserved': post_report['original_pages_preserved'],
+            'historical_ledgers_preserved': post_report['historical_ledgers_preserved']}
         save(root / 'final-map-package.json', package)
     view, report = prepare_package(package, root / "intelligence", clock_utc)
     report["data_recovery"] = recovery

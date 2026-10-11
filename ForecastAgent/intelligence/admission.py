@@ -35,6 +35,17 @@ def inspect(page):
         words = residue.split()
         if len(words) <= 3 and not re.search(r"\d", residue) and not page.get("rows"):
             result.update(state="title_only", usable_text=False)
+    if result['usable_text'] and not page.get('rows'):
+        # Conservative chrome signature, independent of the target/outcome.
+        # A short dated notice, measured value or sentence is not rejected.
+        visible = re.sub(r'https?://\S+', '', residue)
+        nav = re.findall(r'\b(?:dashboard|overview|view chart details|download|'
+                         r'privacy policy|disclaimer|take our survey|mission areas|'
+                         r'website owner|search button)\b', visible, flags=re.I)
+        sentence = bool(re.search(r'\w[^\n]{12,}[.!?](?:\s|$)', visible))
+        measured = bool(re.search(r'\d|(?:level|value|category|status)\s*:', visible, re.I))
+        if len(nav) >= 3 and not sentence and not measured:
+            result.update(state='navigation_only', usable_text=False)
     if "snippet" in str(page.get("capture_method", "")).lower():
         result.update(state="discovery_snippet_only", usable_text=False)
     result.update(schema="predictive_body_admission_v1", content_fingerprint=fingerprint(text),

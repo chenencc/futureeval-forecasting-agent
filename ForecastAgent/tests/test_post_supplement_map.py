@@ -248,7 +248,10 @@ class PostSupplementTests(unittest.TestCase):
                 order.append('review')
                 self.assertIn('https://example.org/recovered',b['pages'])
                 self.assertLessEqual(kwargs['http_cap'],2)
-                return b,{'status':'partial_review'}
+                return b,{'status':'partial_review','usage':{'totals':{'http_attempts':2,
+                    'known_total_tokens':25,'unknown_total_tokens_attempts':1}},
+                    'receipt_sha256':{'001.json':'test'},'review_bundle_sha256':digest(b),
+                    'original_pages_preserved':True,'historical_ledgers_preserved':True}
             with patch('ForecastAgent.releases.v1_0_5.collect',return_value={'release_acquisition':{}}) as collector, patch(
                     'ForecastAgent.releases.v1_0_5.supplement',return_value=captured), patch(
                     'ForecastAgent.intelligence.repair.recover',side_effect=recover), patch(
@@ -258,6 +261,11 @@ class PostSupplementTests(unittest.TestCase):
                 intelligence._collect(t.bundle['request'],root,clock_utc='2026-10-10T00:00:00Z')
             self.assertEqual(order,['recover','review'])
             self.assertEqual(collector.call_args.args[0][post.STAGE_FIELD],'intelligence_after_data_recovery')
+            package=json.loads((root/'final-map-package.json').read_text(encoding='utf-8'))
+            self.assertEqual(package['post_supplement_review']['usage']['totals']['http_attempts'],2)
+            self.assertEqual(package['pages'],repaired['pages'])
+            from ForecastAgent.research_loop.fusion_trial import acquisition_summary
+            self.assertEqual(acquisition_summary(package)['post_supplement_http'],2)
 
 
 if __name__=='__main__':

@@ -2,7 +2,39 @@
 
 This local candidate is maintained on `codex/official-intelligence-v106`, starting
 from the frozen `v1.0.5-crawl4ai.1` code (`ba94cea`). It is not a production release.
-Existing release files, workflows and submission behavior are unchanged.
+Production workflows and submission behavior are unchanged. The local manifest
+is explicitly development-only; it freezes candidate changes without promoting
+them or claiming the current production tag.
+
+## Production-readiness candidate
+
+The current control is the exact `v1.0.5-recovery.2` tree, not this branch's older
+base tag. See [production gates](../research_loop/PRODUCTION_GATES.md) for the
+required source, scoring, recovery and Linux evidence.
+
+New tasks can explicitly choose the complete integrated candidate:
+
+```python
+from ForecastAgent.intelligence.research_map import enable
+from ForecastAgent.intelligence.pipeline import collect
+
+request = enable(request, predictive_focus=True, scoring_delivery=True)
+result = collect(request, output_directory, clock_utc=operating_clock,
+                 research_map=True, channel_tools=True)
+```
+
+This enables the current native channel guide, reference-selected source maps,
+shared final-review allowance and complete bound-original scoring projection.
+It still performs acquisition and prepares scoring inputs only; it does not
+submit or replace the production worker. Existing frozen requests cannot acquire
+these policies silently. A missing useful body retains `needs_material_recovery`.
+Both prepared scoring arms contain identical originals, exact rules and heads.
+Local fingerprints and the duplicated acquisition contract stay in audit files,
+outside the decision question. Original text and provider ledgers remain intact.
+
+Projection identity now includes the graph and source-selection implementation.
+Reopening a derivative after code drift fails closed; create an explicitly
+identified replay without changing its archived parent or execution allowance.
 
 ## Four capabilities
 

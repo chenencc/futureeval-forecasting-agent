@@ -127,7 +127,7 @@ def rank(text, group, target):
             int(group['kind'] == 'table_row' and names > 0), -group['ranges'][-1][0])
 
 
-def pack(bundle, registry, *, limit=BYTE_CAP):
+def pack(bundle, registry, *, limit=BYTE_CAP, required_groups=()):
     reject_outcomes(bundle['request'])
     original_sha = digest(bundle)
     packet = packet_for(bundle); target = profile(packet['question'])
@@ -141,6 +141,33 @@ def pack(bundle, registry, *, limit=BYTE_CAP):
     if chain.request_bytes(state, registry) > limit:
         raise ValueError('Exact question and registry exceed the evidence byte cap')
     candidates, omitted, admitted, selected = {}, [], [], set()
+    bound_groups = []
+    by_url = {s['url']: sid for sid,s in sources.items()}
+    # Pin whole source groups before heuristic fill. Graph references select
+    # originals but cannot introduce paraphrases, transformed rows or new facts.
+    for group in required_groups:
+        trial = copy.deepcopy(state); ranges = []
+        error = None
+        for ref in group['references']:
+            sid = by_url.get(ref['url']); source = sources.get(sid, {})
+            text = bundle['pages'].get(ref['url'], {}).get('content', '')
+            if (not sid or source.get('body_sha256') != ref['body_sha256'] or
+                    type(ref['start']) is not int or type(ref['end']) is not int or
+                    not 0 <= ref['start'] < ref['end'] <= len(text) or
+                    ref.get('view_sha256', ref['body_sha256']) != ref['body_sha256']):
+                error = 'invalid_original_binding'; break
+            if sid not in {s['source_id'] for s in trial['sources']}:
+                trial['sources'].append({k:source[k] for k in
+                    ('source_id','url','body_sha256','capture_metadata','saved_body_truncated') if k in source})
+            ranges.append({'source_id':sid,'start':ref['start'],'end':ref['end']})
+        if not error:
+            trial['evidence'] = handoff.compact(trial['evidence'] + ranges, bundle['pages'], sources)
+            if chain.request_bytes(trial, registry) > limit:
+                error = 'complete_group_exceeds_common_request_limit'
+        bound_groups.append({'node_id':group['node_id'], 'status':'omitted' if error else 'delivered',
+                             'reason':error, 'references':copy.deepcopy(group['references'])})
+        if not error:
+            state.clear(); state.update(trial)
     for sid, source in sources.items():
         text = bundle['pages'][source['url']]['content']
         if hashlib.sha256(text.encode()).hexdigest() != source['body_sha256']:
@@ -192,6 +219,7 @@ def pack(bundle, registry, *, limit=BYTE_CAP):
     return state, {'schema':PROTOCOL, 'source_bundle_sha256':original_sha,
         'state_sha256':digest(state), 'request_bytes':chain.request_bytes(state,registry),
         'request_byte_limit':limit, 'target_profile':target, 'admissions':admitted,
+        'bound_original_groups':bound_groups,
         'omissions':omitted, 'unranked_or_zero_match_groups':sum(g['score'][0]<=0 for _,g in ordered),
         'raw_snapshots_preserved':True, 'old_visible_passages_mandatory':False,
         'truth_verified':False, 'model_http':0, 'searches':0, 'fetches':0, 'submitted':False}

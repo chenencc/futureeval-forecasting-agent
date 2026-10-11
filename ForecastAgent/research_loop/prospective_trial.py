@@ -23,7 +23,14 @@ ARMS = ('original', 'mapped')
 def prepared_pair(bundle, *, original_view=None):
     """A map may add interpretation, never original text absent from the control."""
     heads, spec = registry(bundle['request'])
-    common, selection = pack(bundle if original_view is None else original_view, heads)
+    view = bundle if original_view is None else original_view
+    from ForecastAgent.research_loop import scoring_delivery
+    if scoring_delivery.enabled(bundle):
+        view, groups, delivery_audit = scoring_delivery.prepare(bundle, view)
+        common, selection = pack(view, heads, required_groups=groups)
+        selection['bound_source_delivery'] = delivery_audit
+    else:
+        common, selection = pack(view, heads)
     pair = {arm: map_paired_trial.prepare(common, heads, spec, bundle if arm == 'mapped' else None)
             for arm in ARMS}
     mapped = pair['mapped']['state'].get('research_map')

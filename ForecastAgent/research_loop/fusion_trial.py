@@ -59,12 +59,18 @@ def acquisition_summary(bundle):
     events = bundle.get('research_acquisition', {}).get('events', [])
     tokens = [a.get('usage',{}).get('total_tokens') for a in attempts if isinstance(a.get('usage'),dict)]
     post = bundle.get('post_supplement_review', {})
+    # New reserved-review reports contain physical receipts under usage; old
+    # archives used flat counters. Do not add both representations twice.
+    post_totals = post.get('usage', {}).get('totals', {})
+    post_http = post_totals.get('http_attempts', post.get('model_http_attempts', 0))
+    post_known = post_totals.get('known_total_tokens', post.get('known_total_tokens', 0))
+    post_unknown = post_totals.get('unknown_total_tokens_attempts', post.get('unknown_usage_attempts', 0))
     return {'readable_pages':len(readable), 'readable_characters':sum(len(p['content']) for p in readable.values()),
             'saved_pages':len(bundle['pages']), 'excerpts':len(bundle.get('excerpts',[])),
-            'super_http':len(attempts)+post.get('model_http_attempts',0),
-            'post_supplement_http':post.get('model_http_attempts',0),
-            'known_total_tokens':sum(t for t in tokens if type(t) is int)+post.get('known_total_tokens',0),
-            'unknown_total_usage_attempts':len(attempts)-sum(type(t) is int for t in tokens)+post.get('unknown_usage_attempts',0),
+            'super_http':len(attempts)+post_http,
+            'post_supplement_http':post_http,
+            'known_total_tokens':sum(t for t in tokens if type(t) is int)+post_known,
+            'unknown_total_usage_attempts':len(attempts)-sum(type(t) is int for t in tokens)+post_unknown,
             'tavily_basic':len(bundle.get('searches',[])), 'exa':len(bundle.get('exa_searches',[])),
             'initial_fetch_reservations':len(bundle.get('fetch_attempts',[])),
             'extract_batches':len(bundle.get('extract_attempts',[])),

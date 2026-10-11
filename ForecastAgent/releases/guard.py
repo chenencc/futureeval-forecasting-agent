@@ -14,7 +14,8 @@ def execute(command, log, timeout, cwd=None):
     with log.open('wb') as output:
         proc=subprocess.Popen(command,cwd=cwd,stdout=output,stderr=subprocess.STDOUT,
             start_new_session=os.name!='nt',
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name=='nt' else 0)
+            creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
+                if os.name=='nt' else 0)
         timed_out=False
         try:
             proc.wait(timeout=timeout)
@@ -22,7 +23,8 @@ def execute(command, log, timeout, cwd=None):
             timed_out=True
             if os.name=='nt':
                 subprocess.run(['taskkill','/PID',str(proc.pid),'/T','/F'],
-                               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10)
+                               stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=10,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 try:os.killpg(proc.pid,signal.SIGTERM)
                 except ProcessLookupError:pass
