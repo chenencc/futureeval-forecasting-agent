@@ -35,6 +35,22 @@ def mapped(child, common):
 
 
 class MapPairTests(unittest.TestCase):
+    def test_unclosed_snapshot_delivery_preserves_originals_and_gaps(self):
+        bundle = source_bundle()
+        bundle['result'] = None
+        bundle['gaps'] = ['Current target outcome not yet observed']
+        original = copy.deepcopy(bundle)
+        heads, _ = registry(bundle['request'])
+        common, audit = pack(bundle, heads)
+        self.assertTrue(common['evidence'])
+        self.assertEqual(common['retrieval_gap_count'], 1)
+        self.assertEqual(bundle, original)
+        self.assertIsNone(bundle['result'])
+        malformed = copy.deepcopy(bundle)
+        malformed['result'] = 'completed'
+        with self.assertRaisesRegex(ValueError, 'object or uninitialized'):
+            pack(malformed, heads)
+
     def test_map_handles_cover_visible_blocks_only_and_source_text_is_unchanged(self):
         bundle, common, heads, spec, child, audit = inputs()
         material = state.catalog(child)

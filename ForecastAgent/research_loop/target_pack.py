@@ -130,7 +130,15 @@ def rank(text, group, target):
 def pack(bundle, registry, *, limit=BYTE_CAP, required_groups=()):
     reject_outcomes(bundle['request'])
     original_sha = digest(bundle)
-    packet = packet_for(bundle); target = profile(packet['question'])
+    # An in-progress raw snapshot has no closure result. Normalize only the
+    # private delivery copy; absence of closure is not successful acquisition.
+    packet_bundle = copy.deepcopy(bundle)
+    result = packet_bundle.get('result')
+    if result is not None and not isinstance(result, dict):
+        raise ValueError('Saved collection result must be an object or uninitialized')
+    if result is None:
+        packet_bundle['result'] = {}
+    packet = packet_for(packet_bundle); target = profile(packet['question'])
     sources = {s['source_id']:copy.deepcopy(s) for s in packet['sources']}
     state = chain.initial_state(packet)
     state.update(evaluation_warning=WARNING, as_of_utc=bundle['request'].get('as_of_utc'),
