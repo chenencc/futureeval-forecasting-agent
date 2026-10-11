@@ -39,6 +39,7 @@ class FieldTargetTests(unittest.TestCase):
         args, audit = ft.proposal(b, frozen, answer, mt)
         self.assertEqual(args['nodes'][0]['interpretation'], 'Revenue was 24 billion dollars.')
         self.assertEqual(len(audit['field_reviews'][0]['context_fact_ids']), 2)
+        self.assertEqual(audit['unselected_fact_ids'], [])
         self.assertFalse(audit['meaning_verified'])
         self.assertFalse(audit['probabilities_computed'])
         self.assertEqual((b, frozen, answer), before)
@@ -230,6 +231,28 @@ class FieldTargetTests(unittest.TestCase):
             self.assertFalse(audit['meaning_verified'])
             for key in post.PRESERVED:
                 self.assertEqual(t.bundle.get(key), before.get(key))
+
+    def test_scoring_byte_limit_keeps_exact_omitted_unknown_predicate(self):
+        from unittest.mock import patch
+        from ForecastAgent.research_loop import decision
+        b, mt, frozen, answer = self.sample()
+        source = frozen['originals'][0]
+        baseline = {'sources': [{'source_id': 'body', 'url': source['url'], 'body_sha256': source['body_sha256']}],
+            'evidence': [{'source_id': 'body', 'start': source['start'], 'end': source['end'],
+                          'text': source['text']}]}
+        full, _ = decision.scoring_map(b, baseline)
+        cap = len(json.dumps(full).encode()) - 1
+        before = copy.deepcopy((b, baseline))
+        with patch.object(decision, 'MAP_BYTE_CAP', cap):
+            notes, audit = decision.scoring_map(b, baseline)
+        unknown = next(n for n in b['research_loop']['current']['nodes'] if n['kind'] == 'unknown')
+        self.assertIn(unknown['id'], notes['hidden_node_ids'])
+        item = next(g for g in notes['omitted_unknown_predicates'] if g['node_id'] == unknown['id'])
+        self.assertEqual(item['claim'], unknown['claim'])
+        self.assertEqual(item['gap_reason'], unknown['gap_reason'])
+        self.assertFalse(item['meaning_verified'])
+        self.assertLessEqual(len(json.dumps(notes).encode()), cap)
+        self.assertEqual((b, baseline), before)
 
 
 if __name__ == '__main__': unittest.main()

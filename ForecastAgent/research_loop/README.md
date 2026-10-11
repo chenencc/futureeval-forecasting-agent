@@ -972,4 +972,10 @@ observation merely because a selected context reference contains substantive dat
 Such selections are rejected explicitly; the program never redirects the primary
 to a nearby field. All original fields and model annotations remain in the audit.
 This syntactic guard does not certify broader semantic usefulness or field roles.
+Target-review audits distinguish selected primary fields, selected context fields
+and genuinely unused fields. Context fields are not counted as lost observations.
+If a full unknown node exceeds the unchanged scoring-map byte cap, a compact
+`omitted_unknown_predicates` index retains its exact claim, gap reason and target
+IDs in the same envelope. It does not verify the model's absence claim, rewrite
+its source explanation or enlarge either scoring arm's original evidence.
 

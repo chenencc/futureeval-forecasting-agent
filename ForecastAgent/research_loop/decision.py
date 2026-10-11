@@ -63,6 +63,16 @@ def scoring_map(bundle, baseline):
             'material_requests': [n for n in current['material_requests'] if set(n['node_ids']) <= kept],
             'hidden_node_ids': omitted,
             'instruction': 'All notes, claims and arrows are unverified hypotheses. Original text and exact resolution rules control the answer. Recheck entity, stage, metric, units, period, exceptions and contrary evidence. Gaps, failed fetches and future publications never establish nonoccurrence. Do not multiply node probabilities. You may reject this entire map. Binding coordinates point into the original evidence already supplied; missing map nodes are not negative evidence.'}
+        # Keep the exact missing-predicate claim when a complete unknown node
+        # cannot fit. No model reason is rewritten or absence claim certified.
+        # This index shares the same byte cap and must not force more originals
+        # or larger requests into either scoring arm.
+        unknowns = [{'node_id': n['id'], 'claim': n['claim'], 'gap_reason': n['gap_reason'],
+            'target_ids': [link['target_id'] for link in n.get('target_links', [])],
+            'meaning_verified': False} for n in current['nodes']
+            if n['id'] in omitted and n['kind'] == 'unknown']
+        if unknowns:
+            result['omitted_unknown_predicates'] = unknowns
         if simple:
             result.update(map_protocol=bundle['research_loop']['events'][-1]['acceptance']['map_protocol'],
                 evidence_groups=simple_map.grouping(selected))

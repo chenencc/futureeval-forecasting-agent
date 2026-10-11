@@ -250,7 +250,7 @@
     "ForecastAgent/research_loop/conditional.py": "ea75d7ed26cb3a8b42642651dd364e315e2ff5bd02599bf9096e9debdf6ff5b9",
     "ForecastAgent/research_loop/conditional_trial.py": "1d64bc69415f61a45d9237ba3621293579f9c7cbad3d2718c736733cbfbdfb4b",
     "ForecastAgent/research_loop/context_budget.py": "e78535bcfdde5a61c7af705a101d44d91f8ccb2eb32af8532f67bd60ffc2a351",
-    "ForecastAgent/research_loop/decision.py": "3200ced465dfcae1ddf451a0061feb2b864981f7aae7eff91cda90ac5351fcd2",
+    "ForecastAgent/research_loop/decision.py": "a5a6421c723b4470f9b65c20912804100a04e0c86eb0ebc62c1ed4c83eb8bcaf",
     "ForecastAgent/research_loop/decision_http.py": "9c52e9c593fe23c8de3ef88f81e43f1a431f2c57c443a2f73ba13bec365633c8",
     "ForecastAgent/research_loop/delivery.py": "b818a787041043a25eaeb96e658177daf0ee01cee4427b196cc550a150a0cef8",
     "ForecastAgent/research_loop/delta.py": "5163f519442a55b1fd77359680dfc98d4b56d1f2882091dce5a63c6913ffa79e",
@@ -292,7 +292,7 @@
     "ForecastAgent/research_loop/prospective_trial.py": "66dad42eec029ae1c45a13a63a9ac0729e0af97584382ade90430c39e6afc923",
     "ForecastAgent/research_loop/quote_bindings.py": "763de97d19eb98623132b19dae130cc2927267b81749eb193984bd76051a4a0b",
     "ForecastAgent/research_loop/reading_views.py": "fceab6ad78e2bbb03c99be46a135120fdea8cca5bd1984abe775ba1ee45457fe",
-    "ForecastAgent/research_loop/README.md": "b893dd85cb7618de26f53d3af4308dd08a0fc775af56f2b0b8af3a46e01e0ca1",
+    "ForecastAgent/research_loop/README.md": "4221d129e1be4cd5058aef3114997a4c3bd69eeb822a902fc74deaceeae5e0a5",
     "ForecastAgent/research_loop/recovery.py": "47485c6959424ea756265821eae65c2d2d18e1801776e32751fea829897b2da8",
     "ForecastAgent/research_loop/reference_map.py": "59719bb0e60059710597af1eee58974097414ae3c1645ceb261e73f3237a6977",
     "ForecastAgent/research_loop/reference_map_trial.py": "81a3b35fab50c0015b649e31d18a50623be34861437617fef3c3b2489ad96125",
@@ -430,7 +430,7 @@
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
     "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
     "ForecastAgent/research_loop/literal_context.py": "4832a7595512e538bc67a0c9aba54961153dc5df78d2cc8842fd4fe9867258e0",
-    "ForecastAgent/research_loop/field_targets.py": "e4b8a038910dcd63404d3404fae4272d1979e5162210cfeaaa3a31aa79d142c7"
+    "ForecastAgent/research_loop/field_targets.py": "65a53342f5dd1eb96868743952cd1e6c14874a193c8b9bf5608a67d6c0a4919c"
   },
   "development_only": true,
   "base_release_tag": "v1.0.5-crawl4ai.1",

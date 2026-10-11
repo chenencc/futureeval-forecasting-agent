@@ -173,8 +173,11 @@ def proposal(bundle, packet, answer, map_tool, *, replace_previous_notes=False):
         except (ValueError, KeyError, TypeError) as exc:
             rejected.append({'gap_index': index, 'error': str(exc), 'meaning_verified': False})
     old = (bundle['research_loop'].get('current') or {}).get('nodes', [])
+    primary_ids = {r['fact_id'] for r in reviews}
+    context_ids = {i for r in reviews for i in r['context_fact_ids']}
     audit = {'registry_sha256': packet['registry_sha256'], 'field_reviews': reviews, 'rejected': rejected,
-        'unselected_fact_ids': [i for i in facts if i not in {r['fact_id'] for r in reviews}],
+        'selected_primary_fact_ids': sorted(primary_ids), 'selected_context_fact_ids': sorted(context_ids),
+        'unselected_fact_ids': [i for i in facts if i not in primary_ids | context_ids],
         'source_field_coverage_complete': False, 'meaning_verified': False, 'probabilities_computed': False,
         'material_receipts_granted': False, 'replace_previous_notes': replace_previous_notes,
         'previous_notes_sha256': digest(old), 'old_notes_declared_false': False}
