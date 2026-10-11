@@ -89,6 +89,8 @@ def tool(card, map_tool, *, blind=False, original_only=False, literal_fields=Fal
         raise ValueError('Original-only tool requires blind mode')
     if type(literal_fields) is not bool or literal_fields and not original_only:
         raise ValueError('Literal fields require the original-only phase')
+    if literal_fields and not card['selectable_reference_ids']:
+        raise ValueError('Literal fields need delivered originals; defer without a model call')
     node_schema = map_tool['function']['parameters']['properties']['nodes']['items']
     fields = ('evidence_ids', 'interpretation', 'limitation', 'applicability', 'target_links')
     properties = {k: copy.deepcopy(node_schema['properties'][k]) for k in fields}
@@ -102,8 +104,8 @@ def tool(card, map_tool, *, blind=False, original_only=False, literal_fields=Fal
     if literal_fields:
         from ForecastAgent.research_loop import source_facets
         properties.pop('interpretation')
-        properties['source_fields'] = copy.deepcopy(source_facets.tool(card['originals'])['function']['parameters'])
-        properties['source_fields']['properties']['sources']['maxItems'] = 3
+        properties['source_fields'] = copy.deepcopy(source_facets.tool(card['originals'])['function']['parameters']['properties']['sources'])
+        properties['source_fields']['maxItems'] = 3
         properties['primary_field'] = {'type': 'object', 'additionalProperties': False,
             'properties': {'reference_id': {'type': 'string', 'enum': card['selectable_reference_ids']},
                            'fact_index': {'type': 'integer', 'minimum': 0, 'maximum': 11}},
@@ -119,6 +121,8 @@ def messages(bundle, card, *, blind=False, format_feedback=None, original_only=F
         raise ValueError('Original-only reading requires blind mode without an old annotation draft')
     if type(literal_fields) is not bool or literal_fields and not original_only:
         raise ValueError('Literal fields require the original-only phase')
+    if literal_fields and not card['selectable_reference_ids']:
+        raise ValueError('Literal fields need delivered originals; defer without a model call')
     targets = target_logic.targets(bundle) if not original_only and target_logic.enabled(bundle) else []
     supplied = ({k: copy.deepcopy(card[k]) for k in ('node_id', 'own_reference_ids',
         'selectable_reference_ids', 'missing_own_reference_ids', 'originals', 'scope')}
@@ -251,7 +255,7 @@ def proposal(bundle, packet, card, answer, map_tool, *, blind=False, original_on
     if literal_fields:
         from ForecastAgent.research_loop import source_facets
         originals = [s for s in card['originals'] if s['evidence_id'] in selected]
-        field_audit = source_facets.bind(originals, answer['source_fields'])
+        field_audit = source_facets.bind(originals, {'sources': answer['source_fields']})
         primary = answer['primary_field']
         chosen = [f for s in field_audit['sources'] if s['reference_id'] == primary['reference_id']
                   for f in s['facts'] if f['fact_index'] == primary['fact_index']]

@@ -282,6 +282,48 @@ def reading_context(spans, selected):
     return list({s['evidence_id']:s for s in result}.values())
 
 
+def node_reading_packet(task, node_id):
+    """Deliver a node's saved originals first, within the existing packet caps."""
+    material = state.catalog(task.bundle, task.cutoff)
+    nodes = (task.bundle['research_loop'].get('current') or {}).get('nodes', [])
+    node = next((n for n in nodes if n['id'] == node_id and n['kind'] == 'observation'), None)
+    if node is None:
+        raise ValueError('Node reading requires an existing observation')
+    evidence, contexts, omitted, context_ids = [], [], [], {}
+    for ident in node['evidence_ids']:
+        span = material['spans'].get(ident)
+        if span is None:
+            omitted.append({'reference_id': ident, 'reason': 'Unavailable in current eligible saved scope'})
+        elif len(evidence) >= 16 or sum(len(s['text']) for s in evidence) + len(span['text']) > 24000:
+            omitted.append({'reference_id': ident, 'reason': 'Existing exact-original packet cap; no clipping'})
+        else:
+            evidence.append(copy.deepcopy(span))
+    delivered = {s['evidence_id'] for s in evidence}
+    for own in evidence:
+        same_view = [s for s in material['spans'].values() if all(s.get(k) == own.get(k)
+            for k in ('url', 'body_sha256', 'coordinate_space', 'view_sha256'))]
+        preferred = material['sources'][own['url']].get('context_delivery_references', [])
+        indexed = {s['evidence_id']: s for s in preferred}
+        records = [{**copy.deepcopy(s), **copy.deepcopy(indexed[s['evidence_id']])} for s in same_view
+                   if s['evidence_id'] in indexed and s['start'] < own['end'] and own['start'] < s['end']]
+        ids = []
+        for other in records + reading_context(same_view, own):
+            ident = other['evidence_id']
+            if ident not in delivered:
+                if len(contexts) >= 12 or sum(len(s['text']) for s in contexts) + len(other['text']) > 6000:
+                    continue
+                contexts.append(copy.deepcopy(other)); delivered.add(ident)
+            if ident not in ids:
+                ids.append(ident)
+        context_ids[own['evidence_id']] = ids
+    return {'material_sha256': material['material_sha256'], 'evidence': evidence,
+        'context_evidence': contexts, 'context_reference_ids': context_ids, 'node_id': node_id,
+        'omitted_own_references': omitted, 'all_own_originals_delivered': not omitted,
+        'source_or_website_complete': False, 'meaning_verified': False,
+        'selection_policy': 'node_own_originals_with_bound_context_v1',
+        'scope': 'This node exact saved originals and bounded same-view record/header context only; no target interpretation.'}
+
+
 def review_feedback(task, outcome, packet):
     """Separate applied edits from unfinished source processing; no auto receipts."""
     gap = outcome.get('gap_feedback') or {}
@@ -540,6 +582,20 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         forced_tool=fragment_review.NAME
                 if node_by_node:
                     card = node_cards[len(steps)]
+                    node_packet = packet
+                    if literal_node_fields:
+                        node_packet = node_reading_packet(task, card['node_id'])
+                        save(root/('node-reading-packet-'+str(len(steps)+1)+'.json'), node_packet)
+                        card = next(c for c in node_reconcile.cards(task.bundle, node_packet) if c['node_id'] == card['node_id'])
+                        task.bundle['research_acquisition']['inspected_references'] = [
+                            {k:s[k] for k in ('evidence_id','url','body_sha256','start','end')}
+                            for s in node_packet['evidence']]
+                        task.bundle['research_acquisition']['inspected_context_references'] = [
+                            {k:s[k] for k in ('evidence_id','url','body_sha256','start','end')}
+                            for s in node_packet['context_evidence']]
+                        task.save()
+                        map_tool = next(t for t in runtime.filter_tools(task, runtime.configure(task, []))
+                                        if t['function']['name'] == 'update_research_state')
                     if not card['selectable_reference_ids']:
                         steps.append({'accepted': False, 'node_review': {'node_id': card['node_id'],
                             'status': 'deferred', 'meaning_verified': False,
@@ -585,7 +641,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                             node_reconcile.verify_repair_core(seed,answer)
                         repaired = seed is not None
                         try:
-                            args, node_audit = node_reconcile.proposal(task.bundle, packet, card, answer, map_tool, blind=blind_node_read,
+                            args, node_audit = node_reconcile.proposal(task.bundle, node_packet, card, answer, map_tool, blind=blind_node_read,
                                 original_only=original_only_nodes, literal_fields=literal_node_fields)
                         except ValueError:
                             feedback = (None if original_only_nodes else
@@ -626,6 +682,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         break
                     if node_by_node:
                         steps[-1]['node_review'] = node_audit
+                        if literal_node_fields:
+                            steps[-1]['node_original_delivery'] = {k:copy.deepcopy(node_packet[k]) for k in
+                                ('node_id','selection_policy','omitted_own_references','all_own_originals_delivered',
+                                 'source_or_website_complete','meaning_verified')}
                         save(root/'steps.json', steps)
                         status = ('nodes_reviewed' if len(steps) == len(node_cards)
                                   and all(s['accepted'] for s in steps) else 'partial_node_review')

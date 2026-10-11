@@ -910,4 +910,17 @@ includes both phase flags. Cached re-entry makes no new calls and rejects change
 flags. Original-only runs cannot receive old annotation seeds or format-repair
 drafts. They still use the existing model/revision reservation and preserve all
 original collection ledgers. Scheduled production remains unchanged.
+The `source_fields` argument is a direct JSON array of source records, avoiding a
+redundant nested `sources` container. Empty delivered scope prevents field-mode
+message/tool construction before a provider call; the derivative runner records
+that node as deferred. This does not grant permission to select undelivered IDs
+from the archive or infer source absence from a global packet cap.
+In this opt-in mode, the derivative runner prepares a separate reading packet
+for each node. Its exact saved own references take priority over unrelated sources
+in the global round-robin packet. Bounded record/header context must have the same
+URL, body version and decoded coordinate/view identity. Existing 24,000 original
+and 6,000 context character caps remain; no hidden clipping, refetch or full-source
+reading credit is introduced. Only the new packet's delivered handles are offered.
+Unavailable or oversized own originals remain explicit omissions. Each request
+packet and its delivery summary are retained alongside the native review audit.
 

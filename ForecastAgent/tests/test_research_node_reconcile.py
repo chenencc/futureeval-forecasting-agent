@@ -169,12 +169,12 @@ class NodeReconcileTests(unittest.TestCase):
                         view_sha256='d'*64, json_provenance={'post_id': 123})
         answer.pop('verdict'); answer.pop('interpretation')
         answer['target_links'] = []
-        answer['source_fields'] = {'sources': [{'reference_id': original['evidence_id'],
+        answer['source_fields'] = [{'reference_id': original['evidence_id'],
             'coverage': 'content_excerpt', 'coverage_quote': 'Prime Minister\nAndy Burnham',
             'facts': [{'kind': 'subject_entity', 'quote': 'Prime Minister\nAndy Burnham',
                        'value': 'Andy Burnham'},
                       {'kind': 'publication_time', 'quote': 'Published 12 October.', 'value': '12 October'}],
-            'unknowns': ['Event date is not established.']}]}
+            'unknowns': ['Event date is not established.']}]
         answer['primary_field'] = {'reference_id': original['evidence_id'], 'fact_index': 0}
         return b, packet, card, mt, answer
 
@@ -204,14 +204,14 @@ class NodeReconcileTests(unittest.TestCase):
         # contain it. Never redirect to the nearby correct reference silently.
         with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
             nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
-        answer['source_fields']['sources'][0]['reference_id'] = other['evidence_id']
+        answer['source_fields'][0]['reference_id'] = other['evidence_id']
         answer['primary_field']['reference_id'] = other['evidence_id']
         with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
             nr.proposal(b, packet, card, answer, mt, blind=True, original_only=True, literal_fields=True)
 
     def test_invalid_sibling_field_cannot_shift_the_primary_index(self):
         b, packet, card, mt, answer = self.literal_sample()
-        fields = answer['source_fields']['sources'][0]['facts']
+        fields = answer['source_fields'][0]['facts']
         fields[0]['value'] = 'Someone absent'
         # Index 0 fails; accepted index 1 must not masquerade as primary 0.
         with self.assertRaisesRegex(ValueError, 'Primary field is not bound'):
@@ -227,7 +227,7 @@ class NodeReconcileTests(unittest.TestCase):
         b, packet, card, mt, answer = self.literal_sample()
         original = card['originals'][0]
         original['text'] += '\nPrime Minister\nAndy Burnham'
-        answer['source_fields']['sources'][0]['facts'][0]['kind'] = 'event_time'
+        answer['source_fields'][0]['facts'][0]['kind'] = 'event_time'
         _, audit = nr.proposal(b, packet, card, answer, mt, blind=True,
                               original_only=True, literal_fields=True)
         bound = audit['literal_field_binding']['sources'][0]['facts'][0]
@@ -239,7 +239,7 @@ class NodeReconcileTests(unittest.TestCase):
     def test_literal_field_mode_rejects_overlong_primary_without_clipping_or_mutation(self):
         b, packet, card, mt, answer = self.literal_sample()
         original = card['originals'][0]; original['text'] = 'x'*241
-        source = answer['source_fields']['sources'][0]
+        source = answer['source_fields'][0]
         source['coverage_quote'] = original['text']
         source['facts'] = [{'kind': 'measurement', 'quote': original['text'], 'value': 'x'}]
         before = copy.deepcopy(answer)
@@ -257,11 +257,56 @@ class NodeReconcileTests(unittest.TestCase):
         self.assertNotIn('interpretation', schema['properties'])
         self.assertIn('source_fields', schema['required'])
         self.assertIn('primary_field', schema['required'])
+        self.assertEqual(schema['properties']['source_fields']['type'], 'array')
         self.assertIn('program copies that quote unchanged', messages[0]['content'])
         with self.assertRaisesRegex(ValueError, 'original-only'):
             nr.messages(b, card, blind=True, literal_fields=True)
         with self.assertRaisesRegex(ValueError, 'original-only'):
             nr.tool(card, mt, blind=True, literal_fields=True)
+
+    def test_missing_originals_prevent_literal_field_request_and_tool_creation(self):
+        b, packet, card, mt, answer = self.literal_sample()
+        card.update(originals=[], selectable_reference_ids=[])
+        with self.assertRaisesRegex(ValueError, 'defer without a model call'):
+            nr.messages(b, card, blind=True, original_only=True, literal_fields=True)
+        with self.assertRaisesRegex(ValueError, 'defer without a model call'):
+            nr.tool(card, mt, blind=True, original_only=True, literal_fields=True)
+
+    def test_node_packet_recovers_own_saved_original_omitted_by_global_round_robin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = task(Path(tmp)/'original'); apply(t.bundle, proposal(t.bundle))
+            source = copy.deepcopy(t.bundle['pages']['https://example.org/report'])
+            for i in range(20):
+                t.bundle['pages']['https://other.example/' + str(i)] = copy.deepcopy(source)
+            original = copy.deepcopy(t.bundle)
+            global_packet = post.reading_packet(t, consistency_review=True)
+            global_card = nr.cards(t.bundle, global_packet)[0]
+            self.assertEqual(global_card['selectable_reference_ids'], [])
+            local = post.node_reading_packet(t, global_card['node_id'])
+            local_card = nr.cards(t.bundle, local)[0]
+            self.assertTrue(local['all_own_originals_delivered'])
+            self.assertTrue(local_card['selectable_reference_ids'])
+            self.assertTrue(all(s['url'] == 'https://example.org/report' for s in local_card['originals']))
+            self.assertFalse(local['source_or_website_complete'])
+            for key in post.PRESERVED:
+                self.assertEqual(t.bundle.get(key), original.get(key))
+
+    def test_node_packet_never_clips_an_oversized_or_restores_an_unavailable_original(self):
+        b, packet, card, mt, answer = self.sample()
+        original = packet['evidence'][0]
+        material = state.catalog(b)
+        material['spans'][original['evidence_id']]['text'] = 'x'*24001
+        fake = type('SavedTask', (), {'bundle': b, 'cutoff': None})()
+        with patch.object(state, 'catalog', return_value=material):
+            local = post.node_reading_packet(fake, card['node_id'])
+        self.assertEqual(local['evidence'], [])
+        self.assertIn('no clipping', local['omitted_own_references'][0]['reason'])
+        self.assertFalse(local['all_own_originals_delivered'])
+        material['spans'].pop(original['evidence_id'])
+        with patch.object(state, 'catalog', return_value=material):
+            local = post.node_reading_packet(fake, card['node_id'])
+        self.assertEqual(local['evidence'], [])
+        self.assertIn('Unavailable', local['omitted_own_references'][0]['reason'])
 
     def test_deferred_is_not_an_accepted_review_or_map_edit(self):
         b, packet, card, mt, answer = self.sample()
@@ -320,6 +365,8 @@ class NodeReconcileTests(unittest.TestCase):
     def test_literal_fields_post_review_preserves_ledgers_and_freezes_mode_on_reentry(self):
         with tempfile.TemporaryDirectory() as tmp:
             t = task(Path(tmp)/'original'); apply(t.bundle, proposal(t.bundle))
+            for i in range(20):
+                t.bundle['pages']['https://other.example/' + str(i)] = copy.deepcopy(t.bundle['pages']['https://example.org/report'])
             t.bundle['request_hash'] = hashlib.sha256(json.dumps(t.bundle['request'], sort_keys=True).encode()).hexdigest()
             t.save(); original = copy.deepcopy(t.bundle)
             def model(messages, key, **kwargs):
@@ -332,9 +379,9 @@ class NodeReconcileTests(unittest.TestCase):
                 answer = {'node_id': card['node_id'], 'evidence_ids': [source['evidence_id']],
                     'limitation': 'Source-local excerpt; roles are provisional.',
                     'applicability': 'background', 'target_links': [], 'review_reason': 'Bound literal fields.',
-                    'source_fields': {'sources': [{'reference_id': source['evidence_id'],
+                    'source_fields': [{'reference_id': source['evidence_id'],
                         'coverage': 'content_excerpt', 'coverage_quote': quote,
-                        'facts': [{'kind': 'subject_entity', 'quote': quote, 'value': quote}], 'unknowns': []}]},
+                        'facts': [{'kind': 'subject_entity', 'quote': quote, 'value': quote}], 'unknowns': []}],
                     'primary_field': {'reference_id': source['evidence_id'], 'fact_index': 0}}
                 record = {'status': 'reserved', 'request': {'model': 'test'}}
                 token = kwargs['observer']('reserve', record)
@@ -353,6 +400,7 @@ class NodeReconcileTests(unittest.TestCase):
             self.assertEqual(report['status'], 'nodes_reviewed', report)
             self.assertTrue(report['literal_node_fields_requested'])
             self.assertTrue(report['original_only_nodes_requested'])
+            self.assertTrue(report['steps'][0]['node_original_delivery']['all_own_originals_delivered'])
             audit = report['steps'][0]['node_review']
             self.assertFalse(audit['all_factual_premises_verified'])
             self.assertEqual(child, again); self.assertEqual(report, cached)
