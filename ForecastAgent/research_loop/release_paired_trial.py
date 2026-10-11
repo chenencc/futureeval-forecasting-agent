@@ -20,7 +20,7 @@ from ForecastAgent.competition.mercury import distribution_spec
 from ForecastAgent.acquisition.pipeline import reject_outcomes
 from ForecastAgent.acquisition import handoff, handoff_replay
 from ForecastAgent.releases import context_decisions as release
-from ForecastAgent.research_loop import decision, live_trial, map_paired_trial, forecast_map, reference_map, target_logic
+from ForecastAgent.research_loop import decision, live_trial, map_paired_trial, forecast_map, reference_map, target_logic, source_scope
 from ForecastAgent.runtime.records import load, save
 from ForecastAgent.runtime.task_lock import task_lock
 
@@ -79,6 +79,13 @@ def mapped_state(bundle, original, heads):
     return mapped, audit
 
 
+def contextual_original(bundle, original, heads):
+    enriched, audit = source_scope.attach(bundle, original)
+    if chain.request_bytes(enriched, heads) > chain.SECOND_BYTES:
+        return copy.deepcopy(original), {**audit, 'sideband_present': False, 'omitted': 'shared_request_cap'}
+    return enriched, audit
+
+
 def decode(response, question, spec):
     if spec is None:
         raw = {'probability_yes': response['answers']['event_yes']['noul']}
@@ -88,7 +95,7 @@ def decode(response, question, spec):
     return payload(question, raw)
 
 
-def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False):
+def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False, source_context=False):
     """Run the actual release function; only its provider seam is intercepted."""
     folder = Path(folder); rows = []; saved_call = chain.call
     heads, spec = registry(bundle['request'])
@@ -99,6 +106,9 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False):
         stage = Path(stage_folder).name
         if stage not in ('first', 'second') or stage in {r['stage'] for r in rows}:
             raise ValueError('Unexpected or duplicate release stage')
+        context_audit = None
+        if source_context:
+            original, context_audit = contextual_original(bundle, original, heads)
         enriched, audit = mapped_state(mapped_bundle, original, heads)
         independent = 'research_map' in enriched
         replies = {}; mapped_error = None
@@ -124,6 +134,7 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False):
         row = {'stage': stage, 'same_originals': True, 'original_state_sha256': digest(original),
                'originals': copy.deepcopy(original), 'registry_sha256': digest(heads),
                'map_audit': audit, 'independent_map_request': independent and mapped_error is None,
+               'source_context_audit': context_audit,
                'mapped_error': mapped_error,
                'original_payload': decode(replies['original'], bundle['request'], spec),
                'mapped_payload': decode(replies['mapped'], bundle['request'], spec) if 'mapped' in replies else None,
@@ -140,10 +151,11 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False):
             'independent_final_pair': rows[-1]['independent_map_request'],
             'routing_owner': 'original_release_arm', 'second_call_required': len(rows) == 2,
             'mapped_own_routing_applied': False, 'submitted': False,
-            'scope': 'Exact release Mercury selector, registry, diagnostics, conditional reread and payload. Mapped scoring uses the same stage schedule; no acquisition or reasoning-service fallback comparison.'}
+            'scope': ('Release Mercury selector, registry and original-owned reread schedule with equal saved DOM scope sidebands. Not the unaugmented production reading input or a full worker comparison.' if source_context else
+                'Exact release Mercury selector, registry, diagnostics, conditional reread and payload. Mapped scoring uses the same stage schedule; no acquisition or reasoning-service fallback comparison.')}
 
 
-def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL):
+def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL, source_context=False):
     parent, folder = Path(parent), Path(folder)
     if not 0 <= max_http <= 5:
         raise ValueError('Reserve at most one map and four Mercury attempts')
@@ -151,6 +163,8 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
         raise ValueError('Unsupported release-pair map protocol')
     bundle = load(parent); reject_outcomes(bundle['request']); core = verify_control(control)
     heads, _ = registry(bundle['request']); first, selection = release.select_first(bundle, heads)
+    if source_context:
+        first, context_audit = contextual_original(bundle, first, heads)
     child, references = map_paired_trial.freeze_references(bundle, first)
     if map_protocol == reference_map.PROTOCOL:
         child['request'][reference_map.FIELD] = reference_map.POLICY
@@ -165,6 +179,10 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
                 'searches': 0, 'fetches': 0, 'submitted': False, 'full_worker_comparison': False}
     if map_protocol != forecast_map.PROTOCOL:
         identity['map_protocol'] = map_protocol
+    if source_context:
+        identity['source_context'] = source_scope.VERSION
+        identity['source_context_audit'] = context_audit
+        identity['reading_scope'] = 'Saved DOM scope sideband delivered equally to both arms. Not the unaugmented production reading input.'
     folder.mkdir(parents=True, exist_ok=True)
     with task_lock(folder):
         if (folder/'closure.json').exists():
@@ -186,7 +204,7 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
             save(folder/'map-unavailable.json', {'type': type(exc).__name__,
                 'message': str(exc)[:500], 'original_release_still_available': True})
         save(folder/'map-package.json', child)
-        result = paired_release(bundle, child, folder/'analysis', mapped_first=mapped_first)
+        result = paired_release(bundle, child, folder/'analysis', mapped_first=mapped_first, source_context=source_context)
         result['usage'] = live_trial.usage(list(folder.rglob('http/*.json')))
         if result['usage']['totals']['http_attempts'] > max_http:
             raise ValueError('Reserved physical request ceiling exceeded')
@@ -196,9 +214,9 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
         return result
 
 
-def run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL):
+def run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL, source_context=False):
     with pinned_reader(control):
-        return _run(parent, folder, control, execute=execute, max_http=max_http, mapped_first=mapped_first, map_protocol=map_protocol)
+        return _run(parent, folder, control, execute=execute, max_http=max_http, mapped_first=mapped_first, map_protocol=map_protocol, source_context=source_context)
 
 
 def main():
@@ -209,8 +227,9 @@ def main():
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--mapped-first', action='store_true')
     parser.add_argument('--map-protocol', choices=[forecast_map.PROTOCOL, reference_map.PROTOCOL], default=forecast_map.PROTOCOL)
+    parser.add_argument('--source-context', action='store_true')
     args = parser.parse_args()
-    run(args.parent, args.root, args.control, execute=args.execute, mapped_first=args.mapped_first, map_protocol=args.map_protocol)
+    run(args.parent, args.root, args.control, execute=args.execute, mapped_first=args.mapped_first, map_protocol=args.map_protocol, source_context=args.source_context)
 
 
 if __name__ == '__main__':

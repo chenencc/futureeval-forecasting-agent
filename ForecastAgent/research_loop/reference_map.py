@@ -23,6 +23,12 @@ Invalid explanations are omitted with an audit receipt; valid source IDs remain
 bound but target applicability is unassessed until a valid explanation is supplied.
 Select a supplied header/context ID with a row when its date, unit or status is
 needed. Never guess a hidden reference. Unknowns/drivers/assumptions have no IDs;
+An observation uses gap_reason='none'; keep its unresolved limitation separately
+or in an unknown node. Never mix a selected observation with a missing-data gap.
+If original_evidence contains source_scope_context, use its literal local headings
+and links to distinguish embedded history from the page's target event. These
+qualifiers are not new R IDs or certified event labels. A previous-event card
+does not become a direct target result because it is hosted on the target URL.
 their hypothesis is explicit gap or hypothetical text. Empty or inaccessible
 material is not negative evidence. Event timing/stage remain unknown in structured
 fields; explain any provisional stage inference separately in interpretation.

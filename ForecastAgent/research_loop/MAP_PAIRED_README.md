@@ -131,3 +131,14 @@ or factual meaning is certified by an ID binding. Applied binding receipts retai
 source hashes and coordinates. This protocol is part of the frozen experiment
 identity and cannot be switched after preparation. The default copied-quote
 protocol and all sealed prior experiments retain their original identities.
+
+`--source-context` is a separate opt-in reading experiment. It supplies literal
+DOM ancestor headings and links around text that matches the selected originals.
+Both Mercury arms receive the same bounded sideband, and Super receives it before
+selecting references. Archived raw HTML hashes and XPath coordinates are retained;
+matching repeated text is ambiguous and does not verify the target event. This
+repairs lost local context such as a previous-event card embedded in a current
+event page. It does not infer results, dates, source reliability or applicability.
+Unsupported/corrupt originals and truncated contexts remain explicit. No original
+text is deleted to fit context. The frozen identity records this changed reading
+scope: these inputs are not the unaugmented production release reading input.

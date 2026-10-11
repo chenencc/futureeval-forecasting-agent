@@ -84,6 +84,8 @@ class ReleaseReferenceTests(unittest.TestCase):
             self.assertEqual(load(parent), original)
             with self.assertRaisesRegex(ValueError, 'identity changed'):
                 release_pair._run(parent, folder, Path(tmp))
+            with self.assertRaisesRegex(ValueError, 'identity changed'):
+                release_pair._run(parent, folder, Path(tmp), map_protocol=reference_map.PROTOCOL, source_context=True)
             with self.assertRaisesRegex(ValueError, 'Unsupported'):
                 release_pair._run(parent, Path(tmp)/'other', Path(tmp), map_protocol='invented')
 
