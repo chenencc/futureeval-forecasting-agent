@@ -16,7 +16,7 @@ from ForecastAgent.runtime.records import Journal, load, save
 from ForecastAgent.providers.model import ask_model
 from ForecastAgent.research_loop import POLICY
 from ForecastAgent.research_loop import decision
-from ForecastAgent.research_loop import simple_map, forecast_map, conditional
+from ForecastAgent.research_loop import simple_map, forecast_map, conditional, reference_map, target_logic
 from ForecastAgent.research_loop.schema import TOOLS
 from ForecastAgent.research_loop.state import audit, catalog, initialize, now
 from ForecastAgent.research_loop.acceptance import accept, MapAcceptanceError
@@ -117,7 +117,13 @@ def parse_map(message, child, allowed, *, map_protocol='legacy', scoring_baselin
         if map_protocol == conditional.PROTOCOL:
             score_plan = proposal.pop('score_plan', None)
     candidate = copy.deepcopy(child)
-    accept(candidate, proposal, allowed=allowed, map_protocol=map_protocol, score_plan=score_plan)
+    canonical, receipts = reference_map.prepare(candidate, proposal, allowed) if map_protocol == reference_map.PROTOCOL else (proposal, [])
+    accept(candidate, canonical, allowed=allowed, map_protocol=map_protocol, score_plan=score_plan)
+    if map_protocol == reference_map.PROTOCOL:
+        event = candidate['research_loop']['events'][-1]
+        event['acceptance']['reference_binding_receipts'] = reference_map.finalize(receipts, event['state'])
+        event['acceptance']['reference_submitted_proposal_sha256'] = digest(proposal)
+        event['event_sha256'] = digest({k: v for k, v in event.items() if k != 'event_sha256'})
     if scoring_baseline is None:
         prepared = decision.prepare(candidate)
         notes, map_audit = prepared['enriched'].get('research_map', {}), prepared['audit']['map']
@@ -144,12 +150,23 @@ def map_stage(child, baseline, folder, api_key, *, seed=None, http_cap=SUPER_HTT
         raise ValueError('Source-first maps use one response without seeded format repair')
     tool = (conditional.TOOL if map_protocol == conditional.PROTOCOL else
             forecast_map.TOOL if map_protocol == forecast_map.PROTOCOL else simple_map.TOOL if simple else TOOLS[1])
+    system = conditional.SYSTEM if map_protocol == conditional.PROTOCOL else forecast_map.SYSTEM if map_protocol == forecast_map.PROTOCOL else simple_map.SYSTEM if simple else SYSTEM
+    if map_protocol == reference_map.PROTOCOL:
+        if not reference_map.enabled(child):
+            raise ValueError('Reference protocol requires its explicit policy')
+        tool = copy.deepcopy(simple_map.TOOL)
+        schema = target_logic.schema(tool['function']['parameters'], bundle=child) if target_logic.enabled(child) else tool['function']['parameters']
+        tool['function']['parameters'] = reference_map.schema(schema)
+        tool['function']['description'] = 'Select supplied R IDs. The program binds unchanged originals; explain target relationships separately.'
+        system = reference_map.prompt(bundle=child)
     material, refs = visible_catalog(child, baseline)
     state = {'original_evidence': map_original_view(child, baseline), 'material_sha256': material['material_sha256'],
         'allowed_references': refs, 'no_new_material': True, 'expected_revision': 0}
     if map_protocol in {forecast_map.PROTOCOL, conditional.PROTOCOL}:
         state['source_groups'] = forecast_map.inventory(state['original_evidence'])
-    messages = [{'role': 'system', 'content': conditional.SYSTEM if map_protocol == conditional.PROTOCOL else forecast_map.SYSTEM if map_protocol == forecast_map.PROTOCOL else simple_map.SYSTEM if simple else SYSTEM},
+    if map_protocol == reference_map.PROTOCOL and target_logic.enabled(child):
+        state['targets'] = target_logic.targets(child)
+    messages = [{'role': 'system', 'content': system},
                 {'role': 'user', 'content': json.dumps(state, ensure_ascii=False)}]
     if seed is not None:
         # Prior failed output is data for a targeted correction, not a new observation.
@@ -175,7 +192,13 @@ def map_stage(child, baseline, folder, api_key, *, seed=None, http_cap=SUPER_HTT
     if (folder/'validated-proposal.json').exists():
         proposal = load(folder/'validated-proposal.json')
         cached_plan = load(folder/'score-plan-audit.json')['proposal'] if map_protocol == conditional.PROTOCOL else None
-        candidate = copy.deepcopy(child); accept(candidate, proposal, allowed=[r['evidence_id'] for r in refs], map_protocol=map_protocol, score_plan=cached_plan)
+        candidate = copy.deepcopy(child)
+        if map_protocol == reference_map.PROTOCOL:
+            cached_message = {'tool_calls': [{'function': {'name': 'update_research_state', 'arguments': json.dumps(proposal)}}]}
+            _, candidate = parse_map(cached_message, child, [r['evidence_id'] for r in refs], map_protocol=map_protocol,
+                scoring_baseline=baseline if frozen_scoring_coverage else None)
+        else:
+            accept(candidate, proposal, allowed=[r['evidence_id'] for r in refs], map_protocol=map_protocol, score_plan=cached_plan)
         stored_path = folder/'accepted-state.json'
         legacy_path = folder.parent/'research-package.json'
         source = stored_path if stored_path.exists() else legacy_path

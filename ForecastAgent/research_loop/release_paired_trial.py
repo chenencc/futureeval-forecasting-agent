@@ -20,7 +20,7 @@ from ForecastAgent.competition.mercury import distribution_spec
 from ForecastAgent.acquisition.pipeline import reject_outcomes
 from ForecastAgent.acquisition import handoff, handoff_replay
 from ForecastAgent.releases import context_decisions as release
-from ForecastAgent.research_loop import decision, live_trial, map_paired_trial, forecast_map
+from ForecastAgent.research_loop import decision, live_trial, map_paired_trial, forecast_map, reference_map, target_logic
 from ForecastAgent.runtime.records import load, save
 from ForecastAgent.runtime.task_lock import task_lock
 
@@ -143,13 +143,19 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False):
             'scope': 'Exact release Mercury selector, registry, diagnostics, conditional reread and payload. Mapped scoring uses the same stage schedule; no acquisition or reasoning-service fallback comparison.'}
 
 
-def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False):
+def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL):
     parent, folder = Path(parent), Path(folder)
     if not 0 <= max_http <= 5:
         raise ValueError('Reserve at most one map and four Mercury attempts')
+    if map_protocol not in {forecast_map.PROTOCOL, reference_map.PROTOCOL}:
+        raise ValueError('Unsupported release-pair map protocol')
     bundle = load(parent); reject_outcomes(bundle['request']); core = verify_control(control)
     heads, _ = registry(bundle['request']); first, selection = release.select_first(bundle, heads)
     child, references = map_paired_trial.freeze_references(bundle, first)
+    if map_protocol == reference_map.PROTOCOL:
+        child['request'][reference_map.FIELD] = reference_map.POLICY
+        child['request'][target_logic.FIELD] = target_logic.POLICY
+        child['request']['forecast_target_registry_policy'] = 'question_and_research_targets_v1'
     identity = {'protocol': 'release-schedule-map-ablation-v1', 'parent_sha256': live_trial.sha(parent),
                 'release_core_sha256_lf': core, 'model': live_trial.SUPER,
                 'mercury_model': 'inception/mercury-decide:free', 'registry_sha256': digest(heads),
@@ -157,6 +163,8 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
                 'mapped_first': mapped_first,
                 'map_coverage': 'Release first request only; later reread originals never fabricated into map',
                 'searches': 0, 'fetches': 0, 'submitted': False, 'full_worker_comparison': False}
+    if map_protocol != forecast_map.PROTOCOL:
+        identity['map_protocol'] = map_protocol
     folder.mkdir(parents=True, exist_ok=True)
     with task_lock(folder):
         if (folder/'closure.json').exists():
@@ -173,7 +181,7 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
             raise ValueError('Inspect existing physical receipts before attempting continuation')
         try:
             child = live_trial.map_stage(child, first, folder/'map', os.environ['OPENROUTER_API_KEY'],
-                http_cap=1, map_protocol=forecast_map.PROTOCOL, frozen_scoring_coverage=True)
+                http_cap=1, map_protocol=map_protocol, frozen_scoring_coverage=True)
         except Exception as exc:
             save(folder/'map-unavailable.json', {'type': type(exc).__name__,
                 'message': str(exc)[:500], 'original_release_still_available': True})
@@ -188,9 +196,9 @@ def _run(parent, folder, control, *, execute=False, max_http=5, mapped_first=Fal
         return result
 
 
-def run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False):
+def run(parent, folder, control, *, execute=False, max_http=5, mapped_first=False, map_protocol=forecast_map.PROTOCOL):
     with pinned_reader(control):
-        return _run(parent, folder, control, execute=execute, max_http=max_http, mapped_first=mapped_first)
+        return _run(parent, folder, control, execute=execute, max_http=max_http, mapped_first=mapped_first, map_protocol=map_protocol)
 
 
 def main():
@@ -200,8 +208,9 @@ def main():
     parser.add_argument('--control', type=Path, required=True)
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--mapped-first', action='store_true')
+    parser.add_argument('--map-protocol', choices=[forecast_map.PROTOCOL, reference_map.PROTOCOL], default=forecast_map.PROTOCOL)
     args = parser.parse_args()
-    run(args.parent, args.root, args.control, execute=args.execute, mapped_first=args.mapped_first)
+    run(args.parent, args.root, args.control, execute=args.execute, mapped_first=args.mapped_first, map_protocol=args.map_protocol)
 
 
 if __name__ == '__main__':

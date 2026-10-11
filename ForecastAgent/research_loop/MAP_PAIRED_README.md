@@ -122,3 +122,12 @@ in a separate parent derivative; it cannot be backdated to collection or replace
 an official tournament deadline. Bound labels and first-public-event audits remain
 required before interpreting outcome metrics. No search, fetch, submission or
 provider account budget reset is performed.
+
+The optional `--map-protocol reference-map-v1` selects the existing reference-bound
+interface throughout prompting, schema, program hydration, acceptance and cached
+replay. Super selects visible R IDs and explains relationships to frozen targets;
+the program binds complete unchanged originals. No copied claim, inferred timing
+or factual meaning is certified by an ID binding. Applied binding receipts retain
+source hashes and coordinates. This protocol is part of the frozen experiment
+identity and cannot be switched after preparation. The default copied-quote
+protocol and all sealed prior experiments retain their original identities.
