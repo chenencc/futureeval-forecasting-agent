@@ -423,6 +423,17 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             status = 'interrupted_receipt_requires_review'
         elif execute and not gap_feedback.pending(task) and not consistency_review:
             status = 'already_processed'
+        elif (execute and http_cap and failure_cap and not consistency_review and not source_first
+              and bundle['request'].get('research_dispatch_policy') == 'material_gap_dispatch_v1'):
+            from ForecastAgent.research_loop import source_review
+            journal = Journal(root/'model-http', http_cap)
+            def observer(phase, record, token=None):
+                if phase == 'reserve' and sum(load(p).get('status') != 'received'
+                        for p in (root/'model-http').glob('*.json')) >= failure_cap:
+                    raise RuntimeError('Shared model failure allowance exhausted')
+                return journal(phase, record, token)
+            status, steps = source_review.run(task, root, http_cap=http_cap,
+                observer=observer, call=ask_model, deadline=deadline)
         elif execute and http_cap and failure_cap:
             packet = reading_packet(task, consistency_review=consistency_review)
             save(root/'reading-packet.json', packet)

@@ -168,7 +168,8 @@ class PostSupplementTests(unittest.TestCase):
                     self.assertTrue(previous['feedback']['unacknowledged_delivered_materials'])
                 return answer
             with patch.dict('os.environ',{'OPENROUTER_API_KEY':'test'}),patch.object(post,'ask_model',side_effect=reply):
-                child,report=post.run(self.original,Path(tmp)/'review',http_cap=2)
+                child,report=post.run(self.original,Path(tmp)/'review',http_cap=2,
+                                      consistency_review=True)
             self.assertEqual(len(seen),2)
             self.assertEqual(report['status'],'reviewed')
             self.assertEqual(report['usage']['totals']['http_attempts'],2)

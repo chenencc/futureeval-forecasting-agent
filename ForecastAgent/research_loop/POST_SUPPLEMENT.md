@@ -6,6 +6,19 @@ production workers keep their pinned policies and code identity.
 
 ## Flow
 
+For opt-in `material_gap_dispatch_v1` inputs, ordinary final review uses the
+native source-isolated dispatcher. Each pending exact URL gets one local
+inspection and at most one proposal per round. The schema permits only that
+material and its delivered reference IDs; the program binds the current revision
+and material hash. Other-source observations cannot be rebound or retired.
+Deferred or rejected sources stay pending while the next source gets its turn.
+Every physical attempt uses the existing shared journal and failure/wall caps;
+there is no per-source budget reset. Capture histories remain immutable. Exact
+request packets, proposals, bindings and client clocks are saved by material ID.
+Special consistency and independent-reading experiments retain their explicitly
+selected protocols. Processing receipts do not certify full reading, source
+meaning, causal correctness or target evidence sufficiency.
+
 1. Freeze the input, code, model routing and cumulative budget.
 2. Reserve two existing model decisions and HTTP slots, 180 seconds of wall time,
    and the final one of three map revisions before acquisition.

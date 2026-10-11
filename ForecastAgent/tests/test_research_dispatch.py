@@ -278,12 +278,19 @@ class DispatchTests(unittest.TestCase):
             def model(messages, api_key, **kwargs):
                 count.append(1)
                 if len(count) == 1:
-                    return control.fake_model(messages, api_key, **kwargs)
+                    data = json.loads(messages[1]['content'])
+                    projected = copy.deepcopy(data)
+                    projected['expected_revision'] = 0
+                    reply = control.fake_model([messages[0], {'role': 'user',
+                        'content': json.dumps(projected)}], api_key, **kwargs)
+                    args = json.loads(reply['tool_calls'][0]['function']['arguments'])
+                    args.pop('expected_revision'); args.pop('material_sha256')
+                    args['nodes'][0]['stage_basis'] = ''
+                    reply['tool_calls'][0]['function']['arguments'] = json.dumps(args)
+                    return reply
                 data = json.loads(messages[1]['content']); reading = data['reading']
                 span = next(s for s in reading['evidence'] if s['url'] == url)
-                args = {'expected_revision': data['expected_revision'],
-                    'material_sha256': reading['material_sha256'],
-                    'revision_kind': 'interpretation_correction', 'update_mode': 'merge',
+                args = {'revision_kind': 'interpretation_correction', 'update_mode': 'merge',
                     'nodes': [], 'relations': [], 'material_requests': [], 'retired_node_ids': [],
                     'supporting_path': '', 'alternative_path': '', 'revision_reason': 'Disposed of unrelated source.',
                     'material_reviews': [{'material_id': span['material_id'], 'disposition': 'irrelevant',
