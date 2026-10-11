@@ -98,6 +98,19 @@ def decode(response, question, spec):
     return payload(question, raw)
 
 
+def forecast_result(response, question, spec):
+    """Use the binary head or typed distribution without losing a received reply."""
+    from ForecastAgent.research_loop import distribution
+    from ForecastAgent.analysis.distributions import probability
+    if (spec is None) != (question['question_type'] == 'binary'):
+        raise ValueError('Forecast type and distribution registry disagree')
+    result = decode(response, question, spec)
+    details = ({'raw_probability_yes': probability(response['answers']['event_yes']['noul']),
+                'clipped_probability_yes': result['probability_yes'], 'payload_format_valid': True}
+               if spec is None else distribution.forecast(response, spec))
+    return {'payload': result, 'distribution': details}
+
+
 def timed_call(call, state, folder, heads):
     """Keep a research-only client clock without altering the release provider.
 

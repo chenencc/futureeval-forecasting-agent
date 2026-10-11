@@ -298,7 +298,7 @@
     "ForecastAgent/research_loop/reference_map_trial.py": "81a3b35fab50c0015b649e31d18a50623be34861437617fef3c3b2489ad96125",
     "ForecastAgent/research_loop/regression.py": "2c8bedd9ac4fcf955bbc2c198a90583de98c4700ea1f0de2b1a5ad9d519f88ea",
     "ForecastAgent/research_loop/RELEASE_EVALUATION.md": "8c703f43db72998091f57076a3ace4f0e8e1526729ac6e5dd224e9df8dd23024",
-    "ForecastAgent/research_loop/release_paired_trial.py": "30c210ac9c6ff8214642fc18a0756503bb98c32c9829fca3114e591d7c59eb75",
+    "ForecastAgent/research_loop/release_paired_trial.py": "3e7f83e9821ce978e5bc6b0435884ffb238d9ab22e6975aa995994ed2bf8e5cd",
     "ForecastAgent/research_loop/repair_trial.py": "a4f82a88a6e771023749b803dd6978a43532bfd55110cfab43ed3452b9a69170",
     "ForecastAgent/research_loop/replay_validation.py": "526ccf6956a364f993357207a8930f76660ea70f1e781f6b87f42064276fe4cc",
     "ForecastAgent/research_loop/runtime.py": "32ffeeda9d41417ecb33b772ebd687129ebf8581c25e4503db8fa2656f14e6eb",
