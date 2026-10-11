@@ -111,6 +111,46 @@ class ScheduledIsolationTests(unittest.TestCase):
                     dispatch.bind_arguments(t, 'update_research_state', args, tools, choice)
                 self.assertEqual(digest(t.bundle), before)
 
+    def test_long_operational_reason_survives_without_rewriting_factual_arguments(self):
+        with tempfile.TemporaryDirectory() as root:
+            t,choice,args,tools=self.prepare(root)
+            args['revision_reason']='Retain the exact source and document the operational review. '*12
+            submitted=copy.deepcopy(args);pages=copy.deepcopy(t.bundle['pages']);budget=t.budget()
+            result,proof=self.run_update(t,choice,args,tools)
+            preserved=proof['separate_operational_explanation']
+            self.assertEqual(preserved['model_text'],submitted['revision_reason'])
+            self.assertEqual(preserved['model_text_sha256'],digest(submitted['revision_reason']))
+            self.assertFalse(preserved['factual_claims_applied'])
+            self.assertEqual(len(result['gap_feedback']['accepted_reviews']),1)
+            self.assertEqual(args,submitted);self.assertEqual(t.bundle['pages'],pages);self.assertEqual(t.budget(),budget)
+            self.assertFalse(proof['factual_arguments_rewritten'])
+
+    def test_short_reason_is_unchanged_and_bad_types_or_oversize_still_fail(self):
+        with tempfile.TemporaryDirectory() as root:
+            t,choice,args,tools=self.prepare(root)
+            bound,_,proof=dispatch.bind_arguments(t,'update_research_state',args,tools,choice)
+            self.assertEqual(bound['revision_reason'],args['revision_reason'])
+            self.assertIsNone(proof['separate_operational_explanation'])
+            before=digest(t.bundle)
+            for value in (None,17,' '*500,'x'*2001):
+                bad={**args,'revision_reason':value}
+                with self.subTest(value_type=type(value).__name__),self.assertRaises(ValueError):
+                    dispatch.bind_arguments(t,'update_research_state',bad,tools,choice)
+                self.assertEqual(digest(t.bundle),before)
+
+    def test_long_reason_never_bypasses_receipt_frame_or_lifetime_caps(self):
+        for mutation in ('receipt','frame','cap'):
+            with tempfile.TemporaryDirectory() as root:
+                t,choice,args,tools=self.prepare(root)
+                args['revision_reason']='Explain the source review independently of facts. '*12
+                if mutation=='receipt':args['material_reviews'][0]['evidence_ids']=['R_invented']
+                elif mutation=='frame':args['expected_revision']=choice['revision']
+                else:args['nodes']*=13
+                before=digest(t.bundle)
+                with self.subTest(mutation=mutation),self.assertRaises(ValueError):
+                    dispatch.bind_arguments(t,'update_research_state',args,tools,choice)
+                self.assertEqual(digest(t.bundle),before)
+
 
 if __name__ == '__main__':
     unittest.main()

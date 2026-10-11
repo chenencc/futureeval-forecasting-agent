@@ -490,7 +490,13 @@ def bind_arguments(task, name, args, tools, choice):
         isolated_sections = ('nodes', 'relations', 'material_requests')
         for section in isolated_sections:
             envelope['properties'][section]['items'] = {}
+        # Revision prose is operational metadata, not a source finding. Retain
+        # an overlong explanation separately rather than rejecting intact facts
+        # or silently clipping the model's text. All other envelope checks stay.
+        envelope['properties']['revision_reason']['maxLength'] = 2000
         check_schema(args, envelope)
+        if not args['revision_reason'].strip():
+            raise ValueError('Revision explanation must be nonempty')
         current = {n['id']: n for n in (task.bundle['research_loop'].get('current') or {}).get('nodes', [])}
         protected = set(scope['protected_observation_node_ids'])
         if protected & set(args.get('retired_node_ids', [])):
@@ -504,17 +510,28 @@ def bind_arguments(task, name, args, tools, choice):
                 raise ValueError('Use a distinct observation ID; scheduled review cannot rebind another source')
         bound = {**copy.deepcopy(args), 'expected_revision': choice['revision'],
                  'material_sha256': choice['material_sha256']}
+        explanation = None
+        reason_limit = entry['function']['parameters']['properties']['revision_reason']['maxLength']
+        if len(bound['revision_reason']) > reason_limit:
+            from ForecastAgent.analysis.pilot import digest
+            reason = bound['revision_reason']
+            explanation = {'field':'revision_reason','model_text':reason,
+                'model_text_sha256':digest(reason),'native_max_chars':reason_limit,
+                'policy':'separate_operational_explanation_v1','factual_claims_applied':False}
+            bound['revision_reason'] = ('Source-review explanation retained separately, SHA256=' +
+                digest(reason) + '. Evaluate applied edits from source-bound nodes and material receipts.')
         native = copy.deepcopy(restricted)
         schema = next(t['function']['parameters'] for t in native if t['function']['name'] == name)
         schema['properties'].update(
             expected_revision={'type': 'integer', 'enum': [choice['revision']]},
             material_sha256={'type': 'string', 'enum': [choice['material_sha256']], 'maxLength': 64})
         schema['required'] += ['expected_revision', 'material_sha256']
-        return bound, native, {'policy': 'exact_scheduled_material_review_v3',
+        return bound, native, {'policy': 'exact_scheduled_material_review_v4',
             **scope, 'arguments_rewritten': True, 'factual_arguments_rewritten': False,
             'native_isolation_sections': list(isolated_sections),
             'scheduled_receipt_validated_atomically': True,
             'program_bound_fields': {k: bound[k] for k in ('expected_revision', 'material_sha256')},
+            'separate_operational_explanation': explanation,
             'meaning_verified': False}
     if not choice or choice['phase'] not in {'capture_discovery', 'capture_frontier'} or name != 'read_sources':
         return args, tools, None

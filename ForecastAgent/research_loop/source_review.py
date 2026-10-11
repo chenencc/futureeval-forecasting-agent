@@ -104,6 +104,8 @@ def messages(task, reading, choice, *, prior_readings=None, navigation=None, sou
         'instruction': 'One source-specific material_review; no search, capture or score.'}
     if target_logic.enabled(task.bundle):
         packet['targets'] = target_logic.targets(task.bundle)
+    if predictive_focus.enabled(task.bundle):
+        packet['current_interpretation_review_signals'] = predictive_focus.brief(task.bundle)
     if source_view:
         packet['saved_source_window'] = source_view
     if navigation:

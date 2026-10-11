@@ -779,6 +779,23 @@ Each request preserves `source-window.json` and the selected-delivery binding
 receipt. Processing acknowledgment, reading coverage and semantic truth are
 separate states.
 
+Scheduled review keeps operational revision explanations separate from source
+facts. A received `revision_reason` of 301-2,000 characters is preserved in the
+binding proof with its full text and hash; the native revision stores a neutral
+pointer within its existing 300-character presentation cap. Short explanations
+are unchanged. Wrong types, blank explanations, larger strings, stale frames,
+wrong receipts and array caps still fail. Nodes, original references, source
+judgments and factual relationships are not rewritten by this projection.
+
+Interpretation audits distinguish numerical literals found in selected originals,
+immutable rules, both, or neither. Rule-only values in an observation are review
+signals: a target threshold or historical cohort in the rules does not establish
+that a current page observed it. The model receives these signals and guidance to
+bind concrete rows, names and dated scope. A legitimate comparison can trigger
+the same signal, so the program retains the original evidence and does not
+certify or reject semantic meaning automatically. Local replay must compare the
+same received arguments, reading window and map frame before another model trial.
+
 The scheduled tool omits `expected_revision` and `material_sha256` from model
 arguments. After verifying that the scheduled material and map revision are still
 current, the program binds these two execution fields literally and records them.

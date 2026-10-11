@@ -134,5 +134,40 @@ class PredictiveFocusTests(unittest.TestCase):
         n['availability']='future_event';self.assertFalse(focus.network_candidate(b,n))
 
 
+    def test_rule_threshold_and_date_are_distinct_from_an_observed_source_fact(self):
+        b,_=fixture()
+        b['request']['resolution_criteria']='Resolve using the 18-member cohort as of July 20, 2026.'
+        node={'id':'roster','kind':'observation','interpretation':'The source lists 18 members as of July 20, 2026.',
+            'evidence_ids':['R_header'],'bindings':[{'text':'Browse the current list of office holders below.'}]}
+        originals=copy.deepcopy(b['pages']);report=focus.audit(b,[node],[])
+        risk=report['node_review_signals'][0]
+        self.assertIn('rule_only_literal_in_observation_requires_role_review',risk['signals'])
+        self.assertEqual({r['literal']:r['origin'] for r in risk['numeric_literal_origins']},
+                         {'18':'rule_only','20':'rule_only','2026':'rule_only'})
+        self.assertEqual(risk['unanchored_numeric_literals'],[])
+        self.assertEqual(b['pages'],originals);self.assertFalse(report['originals_rejected_by_risk_signals'])
+
+    def test_literal_origins_report_source_rule_both_and_neither_without_truth_claims(self):
+        b,_=fixture();b['request'].update(question='Target 5 or 9.',resolution_criteria='',fine_print='')
+        node={'id':'measurement','kind':'observation','interpretation':'Observed 4 compared with 5; 9 or 77 remains uncertain.',
+              'evidence_ids':['R_measurement'],'bindings':[{'text':'Measured value 4; earlier benchmark 5.'}]}
+        report=focus.audit(b,[node],[]);risk=report['node_review_signals'][0]
+        self.assertEqual({r['literal']:r['origin'] for r in risk['numeric_literal_origins']},
+                         {'4':'selected_original','5':'both','9':'rule_only','77':'neither'})
+        self.assertEqual(risk['unanchored_numeric_literals'],['77'])
+        self.assertFalse(report['meaning_verified'])
+        self.assertFalse(any(r['meaning_verified'] for r in risk['numeric_literal_origins']))
+
+    def test_legitimate_target_comparison_is_advisory_and_model_gets_rule_origin(self):
+        b,_=fixture();b['request'].update(question='Will the metric exceed 8?',resolution_criteria='',fine_print='')
+        b.setdefault('research_loop',{})['current']={'nodes':[{'id':'metric','kind':'observation',
+            'interpretation':'Observed 6 is below the target threshold of 8.',
+            'bindings':[{'text':'Metric measured at 6.'}],'evidence_ids':['R_metric']}],'material_requests':[]}
+        brief=focus.brief(b)
+        self.assertEqual(brief['review_signals'][0]['rule_only_literals'],['8'])
+        self.assertTrue(brief['signals_are_advisory'])
+        self.assertIn('legitimate comparisons',focus.GUIDE.lower())
+
+
 if __name__ == '__main__':
     unittest.main()

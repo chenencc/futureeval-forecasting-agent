@@ -21,6 +21,16 @@ date/window/metric in delivered text is a scope limitation, not proof of absence
 Interpretation risk signals check syntax/support anchors only. Neither a clean
 signal nor an accepted ID certifies meaning. Recheck the bound ORIGINALS before
 asserting intention, nonoccurrence, actual-vs-guidance, or an exact target value.
+Rule-defined numbers, dates and cohorts describe what must be forecast; they do
+not prove a source observation. Interpret each observation using its SELECTED
+originals only. Other delivered rows may guide reference selection, but uncited
+facts cannot be attributed to a selected heading. Bind concrete measurement,
+name and date rows together; a directory heading does not establish membership
+or a historical snapshot. An undated current listing is not a dated historical
+cohort. If rules supply a threshold/date, explain it as target context, and keep
+the source's actual measurement/date separate or unknown. Review signals listing
+rule-only literals expose that distinction; legitimate comparisons can trigger
+them, so they do not automatically reject evidence or certify a mistake.
 '''
 STATES = ('saved_unread', 'obtainable', 'future_unknown')
 PURPOSES = ('definition', 'baseline', 'history', 'indicator', 'counterevidence', 'future_outcome')
@@ -99,12 +109,22 @@ def audit(bundle, nodes=None, requests=None):
             flags.append('negative_or_absence_inference_requires_scope_review')
         if re.search(r'\b(?:intends?|intention|plans? to|decided to)\b', explanation, re.I):
             flags.append('intent_or_stage_inference_requires_original_review')
-        numbers = sorted({x for x in re.findall(r'(?<![\w])\d+(?:[.,]\d+)*(?:%|\b)', explanation)
-                          if not re.search(r'(?<![\w])' + re.escape(x) + r'(?![\w])', original + '\n' + rules)})
+        origins = []
+        for literal in sorted(set(re.findall(r'(?<![\w])\d+(?:[.,]\d+)*(?:%|\b)',explanation))):
+            pattern = r'(?<![\w])' + re.escape(literal) + r'(?![\w])'
+            in_original = bool(re.search(pattern,original))
+            in_rules = bool(re.search(pattern,rules))
+            origins.append({'literal':literal,'in_selected_originals':in_original,'in_rules':in_rules,
+                'origin':'both' if in_original and in_rules else 'selected_original' if in_original
+                    else 'rule_only' if in_rules else 'neither','meaning_verified':False})
+        numbers = [o['literal'] for o in origins if o['origin']=='neither']
         if numbers:
             flags.append('numeric_literal_not_in_selected_originals_or_rules')
+        if n['kind']=='observation' and any(o['origin']=='rule_only' for o in origins):
+            flags.append('rule_only_literal_in_observation_requires_role_review')
         risks.append({'node_id':n['id'], 'selected_original_ids':n.get('evidence_ids', []),
                       'signals':flags, 'unanchored_numeric_literals':numbers,
+                      'numeric_literal_origins':origins,
                       'meaning_verified':False, 'review_required':bool(flags)})
     gaps = []
     for r in requests:
@@ -122,6 +142,8 @@ def brief(bundle, nodes=None, requests=None):
     """Keep full diagnostics in the journal, without crowding out original text."""
     report = audit(bundle, nodes, requests)
     return {'policy':POLICY, 'review_signals':[
-        {'node_id':r['node_id'], 'signals':r['signals']} for r in report['node_review_signals'] if r['review_required']],
+        {'node_id':r['node_id'], 'signals':r['signals'],
+         'rule_only_literals':[o['literal'] for o in r['numeric_literal_origins'] if o['origin']=='rule_only']}
+        for r in report['node_review_signals'] if r['review_required']],
         'invalid_request_count':sum(r['state']=='invalid_declaration' for r in report['material_requests']),
         'meaning_verified':False, 'signals_are_advisory':True}
