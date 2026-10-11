@@ -40,7 +40,26 @@ def originals(cards):
     return list(result.values())
 
 
-def tool(sources):
+def tool(sources, *, flat=False):
+    if type(flat) is not bool:
+        raise ValueError('Flat source field mode must be boolean')
+    if flat:
+        text = lambda maximum: {'type': 'string', 'maxLength': maximum}
+        ident = {'type': 'string', 'enum': [s['evidence_id'] for s in sources]}
+        field = {'type': 'object', 'additionalProperties': False,
+            'properties': {'reference_id': ident, 'kind': {'type': 'string', 'enum': list(KINDS)},
+                'coverage': {'type': 'string', 'enum': list(COVERAGE)},
+                'quote': text(1200), 'value': text(200)},
+            'required': ['reference_id', 'kind', 'coverage', 'quote', 'value']}
+        gap = {'type': 'object', 'additionalProperties': False,
+            'properties': {'reference_id': copy.deepcopy(ident), 'note': text(180)},
+            'required': ['reference_id', 'note']}
+        return {'type': 'function', 'function': {'name': NAME,
+            'description': 'Select a flat list of useful exact source fields; no per-fragment coverage quota.',
+            'parameters': {'type': 'object', 'additionalProperties': False,
+                'properties': {'fields': {'type': 'array', 'maxItems': 48, 'items': field},
+                    'unknowns': {'type': 'array', 'maxItems': 8, 'items': gap}},
+                'required': ['fields', 'unknowns']}}}
     text = lambda limit: {'type': 'string', 'maxLength': limit}
     fact = {'type': 'object', 'properties': {
         'kind': {'type': 'string', 'enum': list(KINDS)},
@@ -61,13 +80,25 @@ def tool(sources):
             'required': ['sources'], 'additionalProperties': False}}}
 
 
-def messages(question, as_of, sources, *, original_only=False):
+def messages(question, as_of, sources, *, original_only=False, flat=False):
     if type(original_only) is not bool:
         raise ValueError('Original-only source reading must be boolean')
+    if type(flat) is not bool:
+        raise ValueError('Flat source field mode must be boolean')
     payload = {
         'question': question, 'as_of_utc': as_of, 'originals': sources,
         'scope': 'Only delivered text. No previous annotations, graph or resolved labels.'}
     system = SYSTEM
+    if flat:
+        system += ('\nReturn a FLAT fields array and unknowns array. Each field selects one '
+            'reference_id with kind, coverage, exact quote and literal value. Do NOT '
+            'create a sources wrapper or one entry per reference. There is no requirement '
+            'to fill every fragment. Up to 48 useful fields across the WHOLE packet; '
+            'omit navigation and repeated wording. The value is a nonempty exact substring '
+            'of its own quote, not an inferred date or normalized number. Preserve '
+            'necessary entity/date/unit qualifiers in the quote. Unknowns are bounded '
+            'source-local missing associations, not a mandatory checklist. Prefer '
+            'concise literal records when complete; keep ambiguity explicit.\n')
     if original_only:
         payload.pop('question'); payload.pop('as_of_utc')
         system += ('\nIndependent source phase: question, rules, clocks and old graph are '
@@ -154,10 +185,60 @@ def bind(sources, answer):
         'meaning_verified': False, 'target_effects_generated': False, 'material_receipts_granted': False}
 
 
-def registry(sources, answer):
+def _flat_bind(sources, answer):
+    """Reuse the exact field binder without repeated source-envelope obligations."""
+    schema = tool(sources, flat=True)['function']['parameters']
+    loose = copy.deepcopy(schema)
+    loose['properties']['fields']['items'] = {}
+    loose['properties']['unknowns']['items'] = {}
+    check_schema(answer, loose)
+    known = {s['evidence_id']: s for s in sources}
+    if len(known) != len(sources):
+        raise ValueError('Duplicate original reference identity')
+    rows, rejected, unknowns = {}, [], []
+    for index, field in enumerate(answer['fields']):
+        try:
+            check_schema(field, schema['properties']['fields']['items'])
+            # Coverage remains a field-scope hint, not a whole-source receipt.
+            # Its existing literal proof uses the unmodified value, never a
+            # shortened or manufactured quote.
+            candidate = {'reference_id': field['reference_id'], 'coverage': field['coverage'],
+                'coverage_quote': field['value'], 'facts': [{k: field[k] for k in ('kind', 'quote', 'value')}],
+                'unknowns': []}
+            result = bind([known[field['reference_id']]], {'sources': [candidate]})
+            if result['rejected_sources'] or not result['sources'][0]['facts']:
+                raise ValueError(str(result['rejected_sources'] or result['sources'][0]['rejected_facts']))
+            bound = result['sources'][0]['facts'][0]
+            bound.update(fact_index=index, coverage_hypothesis=field['coverage'])
+            row = rows.setdefault(field['reference_id'], {'reference_id': field['reference_id'],
+                'facts': [], 'rejected_facts': [], 'unknowns': [], 'coverage_hypotheses': [],
+                'coverage_verified': False, 'meaning_verified': False})
+            row['facts'].append(bound)
+            if field['coverage'] not in row['coverage_hypotheses']:
+                row['coverage_hypotheses'].append(field['coverage'])
+        except (ValueError, KeyError, TypeError) as exc:
+            rejected.append({'field_index': index, 'error': str(exc), 'meaning_verified': False})
+    for index, proposed in enumerate(answer['unknowns']):
+        try:
+            check_schema(proposed, schema['properties']['unknowns']['items'])
+            if not proposed['note'].strip():
+                raise ValueError('An unknown needs an explicit source-local note')
+            unknowns.append(copy.deepcopy(proposed))
+        except (ValueError, KeyError, TypeError) as exc:
+            rejected.append({'unknown_index': index, 'error': str(exc), 'meaning_verified': False})
+    return {'sources': list(rows.values()), 'rejected_sources': [], 'rejected_fields': rejected,
+        'unprocessed_reference_ids': [i for i in known if i not in rows], 'unknowns': unknowns,
+        'original_text_sha256': {i: hashlib.sha256(s['text'].encode()).hexdigest() for i,s in known.items()},
+        'scope': 'Selected field scopes only; unselected fragments remain unprocessed.',
+        'meaning_verified': False, 'target_effects_generated': False, 'material_receipts_granted': False}
+
+
+def registry(sources, answer, *, flat=False):
     """Freeze every accepted literal field; aliases and role hints stay explicit."""
     from ForecastAgent.analysis.pilot import digest
-    reading = bind(sources, answer)
+    if type(flat) is not bool:
+        raise ValueError('Flat source field mode must be boolean')
+    reading = _flat_bind(sources, answer) if flat else bind(sources, answer)
     facts = {}
     for source in reading['sources']:
         for fact in source['facts']:
@@ -174,6 +255,10 @@ def registry(sources, answer):
                     'canonical_reference_id': proof['reference_id'], 'meaning_verified': False,
                     'role_verified': False}
             row = facts[ident]
+            if flat:
+                coverage = row.setdefault('coverage_hypotheses', [])
+                if fact['coverage_hypothesis'] not in coverage:
+                    coverage.append(fact['coverage_hypothesis'])
             if fact['kind'] not in row['role_hypotheses']:
                 row['role_hypotheses'].append(fact['kind'])
             if proof not in row['bindings']:
@@ -185,6 +270,8 @@ def registry(sources, answer):
         'reading': reading, 'facts': list(facts.values()),
         'source_field_coverage_complete': False, 'meaning_verified': False,
         'unknowns_are_model_hypotheses': True}
+    if flat:
+        result['extraction_contract'] = 'flat_fields_v1'
     result['registry_sha256'] = digest(result)
     return result
 
@@ -193,7 +280,10 @@ def verify_registry(packet):
     """Rebind saved literals and compare the complete frozen registry."""
     if not isinstance(packet, dict):
         raise ValueError('Expected an immutable source field registry')
-    expected = registry(packet['originals'], packet['received_proposal'])
+    contract = packet.get('extraction_contract')
+    if contract not in (None, 'flat_fields_v1'):
+        raise ValueError('Unknown source field extraction contract')
+    expected = registry(packet['originals'], packet['received_proposal'], flat=contract == 'flat_fields_v1')
     if packet != expected:
         raise ValueError('Immutable source field registry changed')
     return expected

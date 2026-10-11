@@ -955,3 +955,15 @@ and target interpretations are archived separately from the compact graph. Nativ
 acceptance is structural provenance, not semantic closure or forecast improvement.
 The adapter is development-only and does not alter scheduled production.
 
+For larger delivered reference sets, `source_facets.tool/messages(..., flat=True)`
+offers one flat field list, bounded to 48 fields across the complete packet. It
+removes the repeated per-reference coverage/facts/unknowns envelope that encouraged
+one observed Super response to exhaust 6,000 output tokens without a tool call.
+This is an output contract change; all supplied originals remain unchanged.
+`registry(..., flat=True)` reuses the same exact quote/value, navigation and caption
+guards and isolates invalid fields. Every submitted index, field-scope coverage
+hypothesis and unknown stays in the frozen record. No compulsory coverage quota,
+whole-source reading receipt or factual truth credit is introduced. Legacy source
+record mode stays the default. A finish_reason=length reply without a declared tool
+call remains a failed stage; its reasoning text is never mined for factual output.
+

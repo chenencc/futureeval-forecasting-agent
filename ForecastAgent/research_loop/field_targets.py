@@ -82,6 +82,7 @@ def messages(bundle, packet):
     fields = [{k: copy.deepcopy(f[k]) for k in
                ('fact_id', 'quote', 'value', 'role_hypotheses', 'canonical_reference_id', 'role_verified', 'meaning_verified')}
               | {'binding_reference_ids': [b['reference_id'] for b in f['bindings']],
+                 **({'coverage_hypotheses': copy.deepcopy(f['coverage_hypotheses'])} if 'coverage_hypotheses' in f else {}),
                  'literal_location_ambiguous': any(b['location_ambiguous'] for b in f['bindings'])}
               for f in packet['facts']]
     return [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': json.dumps({

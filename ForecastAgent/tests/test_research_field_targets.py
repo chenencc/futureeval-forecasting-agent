@@ -43,6 +43,45 @@ class FieldTargetTests(unittest.TestCase):
         self.assertFalse(audit['probabilities_computed'])
         self.assertEqual((b, frozen, answer), before)
 
+    def test_flat_source_selection_keeps_multiple_fields_without_per_reference_envelopes(self):
+        b, mt, frozen, answer = self.sample()
+        ref = frozen['originals'][0]['evidence_id']
+        raw = {'fields': [{**f, 'reference_id': ref, 'coverage': 'content_excerpt'}
+                         for f in frozen['received_proposal']['sources'][0]['facts']], 'unknowns': []}
+        packet = sf.registry(frozen['originals'], raw, flat=True)
+        self.assertEqual(len(packet['facts']), 3)
+        self.assertEqual(sf.verify_registry(packet), packet)
+        self.assertEqual(packet['extraction_contract'], 'flat_fields_v1')
+        self.assertEqual(packet['facts'][0]['coverage_hypotheses'], ['content_excerpt'])
+        schema = sf.tool(frozen['originals'], flat=True)['function']['parameters']
+        self.assertNotIn('sources', schema['properties'])
+        self.assertEqual(schema['properties']['fields']['maxItems'], 48)
+        message = sf.messages(None, None, frozen['originals'], original_only=True, flat=True)
+        self.assertIn('no requirement to fill every fragment', message[0]['content'])
+        self.assertNotIn('question', json.loads(message[1]['content']))
+
+    def test_flat_invalid_quote_unknown_reference_and_caption_status_are_isolated(self):
+        b, mt, frozen, answer = self.sample()
+        ref = frozen['originals'][0]['evidence_id'];quote='Revenue was 24 billion dollars.'
+        raw = {'fields': [
+            {'reference_id': ref, 'kind': 'measurement', 'coverage': 'content_excerpt', 'quote': quote, 'value': '30'},
+            {'reference_id': ref, 'kind': 'measurement', 'coverage': 'content_excerpt', 'quote': quote, 'value': '24'},
+            {'reference_id': ref, 'kind': 'event_status', 'coverage': 'caption_text', 'quote': quote, 'value': '24'}],
+            'unknowns': [{'reference_id': 'R_not_delivered', 'note': 'A nonexistent source.'}]}
+        packet = sf.registry(frozen['originals'], raw, flat=True)
+        self.assertEqual(len(packet['facts']), 1)
+        self.assertEqual(len(packet['reading']['rejected_fields']), 3)
+        self.assertEqual(packet['facts'][0]['submitted_field_indices'][0]['fact_index'], 1)
+        self.assertFalse(packet['reading']['material_receipts_granted'])
+
+    def test_flat_reference_coverage_remains_partial_not_a_reading_receipt(self):
+        b, mt, frozen, answer = self.sample()
+        packet = sf.registry(frozen['originals'], {'fields': [], 'unknowns': []}, flat=True)
+        self.assertEqual(packet['facts'], [])
+        self.assertEqual(packet['reading']['unprocessed_reference_ids'], [frozen['originals'][0]['evidence_id']])
+        self.assertFalse(packet['source_field_coverage_complete'])
+        self.assertFalse(packet['reading']['meaning_verified'])
+
     def test_registry_role_disagreement_preserved_for_identical_literal(self):
         b, mt, frozen, answer = self.sample()
         proposal = copy.deepcopy(frozen['received_proposal'])
