@@ -250,3 +250,20 @@ original consumption remains cumulative. Coverage counts only the named nodes.
 Source-local readings cannot certify cross-source latestness: their request states
 that coverage is limited to supplied originals. Format success is not a semantic
 repair or a forecast accuracy result. These options remain development-only.
+
+## Comparative original review
+
+`comparative_review=True, consistency_review=True` uses one request to compare all
+observation scopes in the delivered packet. The model sees immutable rules, clock,
+target conditions, original spans and an observation/reference registry. All old
+interpretations and link reasons are hidden. Different captured versions remain
+distinct. Comparison coverage is limited to the supplied set, not the full archive.
+
+Each returned observation can select only its own original/context references.
+Other originals support comparisons but cannot be silently attributed to a local
+source. Invalid or duplicated entries are isolated; valid siblings merge through
+the ordinary runtime. Missing and invalid observations stay unreviewed. Coverage
+counts only the exact annotations actually applied, not merely proposed drafts.
+No source receipts, searches, probabilities or outcome resolution are granted.
+This mode consumes the existing journal and one map revision and cannot combine
+with the isolated-node or shared first-reading modes. It is off by default.

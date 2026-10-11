@@ -336,7 +336,7 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None, comparative_review=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
@@ -351,6 +351,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         raise ValueError('One optional annotation-format retry requires isolated node review')
     if annotation_repair_seeds is not None and (not node_by_node or not isinstance(annotation_repair_seeds,dict) or not annotation_repair_seeds):
         raise ValueError('Repair-only seeds require a nonempty isolated-node draft mapping')
+    if type(comparative_review) is not bool or (comparative_review and (not consistency_review or source_first or node_by_node or annotation_repair_seeds is not None)):
+        raise ValueError('Comparative review requires independent consistency mode')
     if node_by_node and (not consistency_review or source_first):
         raise ValueError('Isolated node review requires consistency review without a shared first reading')
     if node_by_node:
@@ -373,6 +375,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 'blind_node_read': blind_node_read,
                 'node_format_retries': node_format_retries,
                 'annotation_repair_seeds': copy.deepcopy(annotation_repair_seeds),
+                'comparative_review': comparative_review,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -418,12 +421,12 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             packet = reading_packet(task, consistency_review=consistency_review)
             save(root/'reading-packet.json', packet)
             from ForecastAgent.research_loop import node_reconcile
-            node_cards = node_reconcile.cards(task.bundle, packet) if node_by_node else []
+            node_cards = node_reconcile.cards(task.bundle, packet) if node_by_node or comparative_review else []
             if annotation_repair_seeds is not None:
                 if set(annotation_repair_seeds)-{c['node_id'] for c in node_cards}:
                     raise ValueError('Repair seed refers to an unknown observation')
                 node_cards = [c for c in node_cards if c['node_id'] in annotation_repair_seeds]
-            if node_by_node:
+            if node_by_node or comparative_review:
                 save(root/'node-review-cards.json', node_cards)
             journal = Journal(root/'model-http', http_cap)
             def observer(phase, record, token=None):
@@ -498,6 +501,13 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         if steps else None)}, ensure_ascii=False)}]
                 map_tool = tools[0]
                 forced_tool = 'update_research_state'
+                if comparative_review:
+                    from ForecastAgent.research_loop import comparative_review as comparison
+                    if not node_cards:
+                        status='no_observations_to_compare';break
+                    messages=comparison.messages(task.bundle,node_cards)
+                    tools=[comparison.tool(node_cards,map_tool)]
+                    forced_tool=comparison.NAME
                 if node_by_node:
                     card = node_cards[len(steps)]
                     if not card['selectable_reference_ids']:
@@ -527,6 +537,13 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         raise ValueError('Exactly one declared map update is required')
                     args = json.loads(calls[0]['function']['arguments'])
                     node_audit = None
+                    comparison_audit = None
+                    if comparative_review:
+                        args,comparison_audit=comparison.proposal(task.bundle,packet,node_cards,args,map_tool)
+                        save(root/'comparative-review-audit.json',comparison_audit)
+                        if args is None:
+                            steps.append({'accepted':False,'comparative_review':comparison_audit})
+                            status='comparative_annotations_rejected';break
                     if node_by_node:
                         answer = args
                         if seed is not None:
@@ -564,6 +581,12 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     outcome = runtime.execute(task, 'update_research_state', args)
                     steps.append({'accepted': True, 'outcome': outcome,
                                   'feedback':review_feedback(task, outcome, packet)})
+                    if comparative_review:
+                        comparison_audit=comparison.applied(task.bundle,args,comparison_audit)
+                        steps[-1]['comparative_review']=comparison_audit
+                        save(root/'comparative-review-audit.json',comparison_audit)
+                        status='comparative_reviewed' if not comparison_audit['unreviewed_node_ids'] else 'partial_comparative_review'
+                        break
                     if node_by_node:
                         steps[-1]['node_review'] = node_audit
                         save(root/'steps.json', steps)
@@ -614,6 +637,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'blind_node_read_requested': blind_node_read,
             'node_format_retries_requested': node_format_retries,
             'annotation_repair_only_requested': annotation_repair_seeds is not None,
+            'comparative_review_requested': comparative_review,
             'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
@@ -625,6 +649,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'historical_ledgers_preserved': True, 'original_pages_preserved': True,
             'new_search_calls': 0, 'new_fetch_calls': 0, 'scores_generated': False, 'submitted': False}
         from ForecastAgent.research_loop import dispatch
+        if comparative_review and (root/'comparative-review-audit.json').exists():
+            report['comparative_review']=load(root/'comparative-review-audit.json')
         if node_by_node:
             all_ids = [n['id'] for n in (bundle['research_loop'].get('current') or {}).get('nodes', [])
                        if n['kind'] == 'observation' and (annotation_repair_seeds is None or n['id'] in annotation_repair_seeds)]
