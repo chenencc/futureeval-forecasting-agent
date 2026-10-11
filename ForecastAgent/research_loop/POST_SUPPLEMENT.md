@@ -289,3 +289,23 @@ Extraction receipts and graph-review receipts must both count toward the registe
 experiment and historical allowances. This opt-in makes no new source receipts,
 searches, probability calls or production changes. Prospective predictive quality
 and free-generation semantics require separate real-material evaluation.
+
+## Literal fragment selection (development experiment)
+
+`fragment_selection=True` with comparative review performs one selection/relevance
+request without a separate extraction call. Program code partitions the delivered
+original text into stable fragments and retains every character, including row
+boundaries and whitespace. Oversized units are marked partial; partition boundaries
+are not semantic completeness claims. Selection IDs include source/version/text
+identity. A model may choose only its own observation's fragments and at most three
+original references. The primary fragment becomes the observation annotation
+verbatim; generated date/value/quote/summary fields are unavailable.
+
+Target-link explanations and field-role labels remain provisional. Context/date/
+reporting-only selections cannot carry directional event effects. A repair clears
+the old event time and stage labels to unknown rather than inheriting stale claims.
+Original facts remain in their raw text. Invalid selections stay unreviewed; this
+feature neither certifies roles nor silently resolves an outcome. It is off by
+default, uses the existing request/revision journals, and cannot combine with the
+separate source-facet extraction object. Predictive value versus direct original
+reading is an independent gate; literal identity alone is not improvement.

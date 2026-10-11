@@ -336,7 +336,7 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None, comparative_review=False, comparative_source_facets=None):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None, comparative_review=False, comparative_source_facets=None, fragment_selection=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
@@ -355,6 +355,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         raise ValueError('Comparative review requires independent consistency mode')
     if comparative_source_facets is not None and (not comparative_review or not isinstance(comparative_source_facets,dict)):
         raise ValueError('Source facets require comparative review and a frozen raw extraction object')
+    if type(fragment_selection) is not bool or (fragment_selection and (not comparative_review or comparative_source_facets is not None)):
+        raise ValueError('Literal fragment selection requires independent comparative review without a facet extraction stage')
     if node_by_node and (not consistency_review or source_first):
         raise ValueError('Isolated node review requires consistency review without a shared first reading')
     if node_by_node:
@@ -379,6 +381,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 'annotation_repair_seeds': copy.deepcopy(annotation_repair_seeds),
                 'comparative_review': comparative_review,
                 'comparative_source_facets': copy.deepcopy(comparative_source_facets),
+                'fragment_selection':fragment_selection,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -511,6 +514,11 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     messages=comparison.messages(task.bundle,node_cards,comparative_source_facets)
                     tools=[comparison.tool(node_cards,map_tool)]
                     forced_tool=comparison.NAME
+                    if fragment_selection:
+                        from ForecastAgent.research_loop import fragment_review
+                        messages=fragment_review.messages(task.bundle,node_cards)
+                        tools=[fragment_review.tool(node_cards,map_tool)]
+                        forced_tool=fragment_review.NAME
                 if node_by_node:
                     card = node_cards[len(steps)]
                     if not card['selectable_reference_ids']:
@@ -542,7 +550,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     node_audit = None
                     comparison_audit = None
                     if comparative_review:
-                        args,comparison_audit=comparison.proposal(task.bundle,packet,node_cards,args,map_tool,comparative_source_facets)
+                        if fragment_selection:
+                            args,comparison_audit=fragment_review.proposal(task.bundle,packet,node_cards,args,map_tool)
+                        else:
+                            args,comparison_audit=comparison.proposal(task.bundle,packet,node_cards,args,map_tool,comparative_source_facets)
                         save(root/'comparative-review-audit.json',comparison_audit)
                         if args is None:
                             steps.append({'accepted':False,'comparative_review':comparison_audit})
@@ -642,6 +653,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'annotation_repair_only_requested': annotation_repair_seeds is not None,
             'comparative_review_requested': comparative_review,
             'comparative_source_facets_requested': comparative_source_facets is not None,
+            'fragment_selection_requested':fragment_selection,
             'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
