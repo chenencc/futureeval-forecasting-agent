@@ -74,3 +74,26 @@ declared verification allowance. They do not reopen prior collection tasks or re
 their native budgets. They test the reading/update interface, not fresh acquisition,
 causal truth or forecast quality. Paired scoring inputs must retain identical original
 coverage; forecasts and submissions require separate execution gates.
+
+## Bounded context and explicit processing feedback
+
+The local review packet preserves its original fair body/row allocation and adds
+at most twelve literal section/table-header context references within 6,000
+characters. Companions come from the same saved source and keep exact coordinates.
+They are navigation hints, not proof of date, metric, authority or settlement
+status. Selecting a quantitative row without its available local context produces
+an advisory retry item; no node is rejected or automatically given context.
+
+Model-facing material descriptors retain exact source/body/scope identity and
+inspected IDs, plus a count of accessible references. The complete undisplayed
+reference directory stays local. Removing its repeated ID list does not reduce
+retained originals or grant reading credit for undisplayed text.
+
+Retry feedback separates actual graph additions/changes from accepted source
+reviews. It identifies unacknowledged delivered material and source-bound nodes,
+so the next bounded reply can supply justified material_reviews or defer unfinished
+scope. It never creates receipts automatically. The complete response/acceptance
+journal remains on disk; the next model request receives compact actionable
+feedback instead of another copy of the full previous outcome. Existing HTTP,
+failure, revision and no-processing-progress limits still apply. Offline packet
+size reductions are not actual token savings or evidence of better forecasts.

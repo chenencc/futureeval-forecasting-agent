@@ -195,19 +195,107 @@ def reading_packet(task):
     task.bundle['research_acquisition']['inspected_references'] = [
         {k: s[k] for k in ('evidence_id', 'url', 'body_sha256', 'start', 'end')}
         for s in evidence]
-    task.bundle['research_acquisition']['inspected_context_references'] = []
+    context_evidence, context_ids = [], {}
+    by_url = {}
+    for span in material['spans'].values():
+        by_url.setdefault(span['url'], []).append(span)
+    delivered_ids = {s['evidence_id'] for s in evidence}
+    for span in evidence:
+        companions = reading_context(by_url[span['url']], span)
+        ids = []
+        for other in companions:
+            ident = other['evidence_id']
+            if ident not in delivered_ids:
+                if len(context_evidence) >= 12 or sum(len(s['text']) for s in context_evidence) + len(other['text']) > 6000:
+                    continue
+                context_evidence.append({**copy.deepcopy(other), 'material_id': span['material_id']})
+                delivered_ids.add(ident)
+            ids.append(ident)
+        context_ids[span['evidence_id']] = ids
+    task.bundle['research_acquisition']['inspected_context_references'] = [
+        {k:s[k] for k in ('evidence_id', 'url', 'body_sha256', 'start', 'end')}
+        for s in context_evidence]
     task.save()
+    projected_materials = []
+    for m in gap_feedback.materials(task, material).values():
+        if any(s['url'] == m['url'] for s in evidence):
+            projected_materials.append({k:copy.deepcopy(m[k]) for k in
+                ('material_id','url','body_sha256','scope_sha256','capture_time',
+                 'inspected_reference_ids','bound_observation_node_ids')})
+            projected_materials[-1].update(accessible_reference_count=len(m['reference_ids']),
+                scope='Delivered excerpts only; omitted IDs are not selectable or credited as read.')
     return {'material_sha256': material['material_sha256'], 'evidence': evidence,
+            'context_evidence': context_evidence, 'context_reference_ids': context_ids,
+            'processing_instruction':'Select section/header context IDs with quantitative rows. '
+                'Do not label a generic price row as settlement or borrow a date from another source. '
+                'Return material_reviews for delivered sources: incorporated/conflict requires retained '
+                'source-bound nodes; deferred preserves unfinished scope. No receipt means pending, not reviewed.',
             'selection_policy': 'source_round_robin_body_or_table_row_with_header_v2',
             'identifier_registry': gap_feedback.identifiers(task, gap_feedback.materials(task, material)),
-            'delivered_materials': [m for m in gap_feedback.materials(task, material).values()
-                                    if any(s['url'] == m['url'] for s in evidence)],
+            'delivered_materials': projected_materials,
             'undelivered_materials': deferred,
             'reading_coverage': [{'url': m['url'], 'material_id': m['material_id'],
                 'accessible_spans': len(m['reference_ids']),
                 'delivered_spans': sum(s['url'] == m['url'] for s in evidence),
                 'full_read_claimed': False} for m in pending],
             'scope': 'Exact bounded saved excerpts; not full-page reading.'}
+
+
+def reading_context(spans, selected):
+    """Offer literal section/header context, never infer a row's metric or date."""
+    prior = sorted((s for s in spans if s['end'] <= selected['start']), key=lambda s:s['start'])
+    result = []
+    heading = next((s for s in reversed(prior) if re.fullmatch(r'\s*#{1,6}\s+[^\n]+\s*', s['text'])), None)
+    if heading is not None:
+        result.append(heading)
+    if selected['text'].strip().startswith('|'):
+        for s in reversed(prior):
+            value = s['text'].strip()
+            if not value.startswith('|') or not value.endswith('|') or '\n' in value:
+                break
+            cells = [c.strip() for c in value[1:-1].split('|')]
+            if cells and not any(re.search(r'\d', c) for c in cells) and not all(re.fullmatch(r'[:\s-]+', c) for c in cells):
+                result.append(s)
+                break
+    return list({s['evidence_id']:s for s in result}.values())
+
+
+def review_feedback(task, outcome, packet):
+    """Separate applied edits from unfinished source processing; no auto receipts."""
+    gap = outcome.get('gap_feedback') or {}
+    delta = gap.get('actual_graph_delta') or {}
+    changed = bool(any(delta.get(k) for k in ('added_node_ids','changed_node_ids','retired_node_ids',
+        'added_relation_count','removed_relation_count','material_requests_changed')))
+    pending = {m['material_id']:m for m in gap_feedback.pending(task)}
+    inventory = gap_feedback.materials(task)
+    unresolved = []
+    for source in packet['delivered_materials']:
+        ident = source['material_id']
+        if ident in pending:
+            current = inventory.get(ident, source)
+            unresolved.append({k:current.get(k, []) for k in
+                ('material_id','url','inspected_reference_ids','bound_observation_node_ids')})
+    row_ids = {s['evidence_id'] for s in packet['evidence'] if s['text'].strip().startswith('|')}
+    unselected_context = []
+    for node in (task.bundle['research_loop'].get('current') or {}).get('nodes', []):
+        selected = set(node.get('evidence_ids', []))
+        for ident in selected & row_ids:
+            missing = [i for i in packet.get('context_reference_ids', {}).get(ident, []) if i not in selected]
+            if missing:
+                unselected_context.append({'node_id':node['id'], 'row_reference_id':ident,
+                    'available_context_reference_ids':missing,
+                    'scope':'Unselected local section/header, not a semantic error verdict.'})
+    return {'graph_changed':changed, 'graph_delta':delta,
+        'accepted_material_review_count':len(gap.get('accepted_reviews') or []),
+        'rejected_material_reviews':gap.get('rejected_reviews') or [],
+        'unacknowledged_delivered_materials':unresolved,
+        'unselected_row_context':unselected_context,
+        'instruction':'Graph edits and source dispositions are separate. Preserve useful nodes. '
+            'For delivered material, supply material_reviews using its exact M ID and inspected R IDs. '
+            'Retained source-bound nodes permit incorporated/conflict only with a justified scope. '
+            'Use deferred when unfinished; never invent full reading, dates or source authority. '
+            'Select supplied context_reference_ids with a row before asserting date, metric or status. '
+            'An empty review list leaves processing pending; do not merely repeat unchanged nodes.'}
 
 
 def prompt_map(task):
@@ -318,7 +406,9 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     'question': {k: task.bundle['request'].get(k, '') for k in state.RULE_FIELDS},
                     'expected_revision': task.bundle['research_loop']['revision'],
                     'current_map': prompt_map(task), 'reading': packet,
-                    'previous_attempt': steps[-1] if steps else None}, ensure_ascii=False)}]
+                    'previous_attempt': ({'accepted':steps[-1]['accepted'],
+                        'feedback':steps[-1].get('feedback'), 'error':steps[-1].get('error')}
+                        if steps else None)}, ensure_ascii=False)}]
                 try:
                     message = ask_model(messages, os.environ['OPENROUTER_API_KEY'], tools=tools,
                         forced_tool='update_research_state', observer=observer,
@@ -331,7 +421,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     args = json.loads(calls[0]['function']['arguments'])
                     before_pending = {m['material_id'] for m in gap_feedback.pending(task)}
                     outcome = runtime.execute(task, 'update_research_state', args)
-                    steps.append({'accepted': True, 'outcome': outcome})
+                    steps.append({'accepted': True, 'outcome': outcome,
+                                  'feedback':review_feedback(task, outcome, packet)})
                     status = 'reviewed' if not gap_feedback.pending(task) else 'partial_review'
                     from ForecastAgent.research_loop import dispatch
                     if not dispatch.enabled(task.bundle) or not gap_feedback.pending(task):

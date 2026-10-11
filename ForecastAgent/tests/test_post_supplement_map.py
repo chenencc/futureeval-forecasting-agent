@@ -16,6 +16,75 @@ from ForecastAgent.acquisition import pipeline
 
 
 class PostSupplementTests(unittest.TestCase):
+    def test_next_request_explains_missing_receipts_without_replaying_full_outcome(self):
+        from ForecastAgent.research_loop import dispatch
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(Path(tmp)/'original')
+            t.bundle['request'][dispatch.FIELD]=dispatch.POLICY
+            t.bundle['request'][dispatch.LIMIT_FIELD]={
+                'map_updates':3,'post_review_http':2,'post_review_revisions':1,'initial_http':8}
+            t.bundle['request_hash']=hashlib.sha256(json.dumps(t.bundle['request'],sort_keys=True).encode()).hexdigest()
+            self.original=copy.deepcopy(t.bundle)
+            seen=[]
+            def reply(messages,key,**kwargs):
+                data=json.loads(messages[1]['content']);seen.append(data)
+                answer=self.fake_model(messages,key,**kwargs)
+                if len(seen)==1:
+                    p=json.loads(answer['tool_calls'][0]['function']['arguments'])
+                    p['material_reviews']=[]
+                    answer['tool_calls'][0]['function']['arguments']=json.dumps(p)
+                else:
+                    previous=data['previous_attempt']
+                    self.assertNotIn('outcome',previous)
+                    self.assertTrue(previous['feedback']['graph_changed'])
+                    self.assertEqual(previous['feedback']['accepted_material_review_count'],0)
+                    self.assertTrue(previous['feedback']['unacknowledged_delivered_materials'])
+                return answer
+            with patch.dict('os.environ',{'OPENROUTER_API_KEY':'test'}),patch.object(post,'ask_model',side_effect=reply):
+                child,report=post.run(self.original,Path(tmp)/'review',http_cap=2)
+            self.assertEqual(len(seen),2)
+            self.assertEqual(report['status'],'reviewed')
+            self.assertEqual(report['usage']['totals']['http_attempts'],2)
+            for key in post.PRESERVED:self.assertEqual(child.get(key),self.original.get(key))
+
+    def test_context_is_literal_local_section_not_another_source_or_read_credit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp); url='https://example.org/quotes'
+            body='# Main quote\n\n95.82 at 03:05\n\n### Related contracts\n\n| Contract | Last price |\n|---|---|\n| Example Dec 2026 | 95.77 |\n'
+            t.bundle['pages']={url:{'content':body}}
+            packet=post.reading_packet(t)
+            row=next(s for s in packet['evidence'] if '95.77' in s['text'])
+            ids=packet['context_reference_ids'][row['evidence_id']]
+            all_spans={s['evidence_id']:s for s in packet['evidence']+packet['context_evidence']}
+            self.assertEqual({all_spans[i]['text'] for i in ids},
+                {'### Related contracts\n','| Contract | Last price |\n'})
+            for s in packet['context_evidence']:
+                self.assertEqual(s['text'],body[s['start']:s['end']])
+                self.assertEqual(s['url'],url)
+            material=packet['delivered_materials'][0]
+            self.assertNotIn('reference_ids',material)
+            self.assertGreaterEqual(material['accessible_reference_count'],len(material['inspected_reference_ids']))
+            self.assertFalse(packet['reading_coverage'][0]['full_read_claimed'])
+            self.assertEqual(t.bundle['pages'][url]['content'],body)
+            t.bundle['research_loop']['current']={'nodes':[{'id':'price','kind':'observation',
+                'evidence_ids':[row['evidence_id']], 'bindings':[]}]}
+            feedback=post.review_feedback(t,{},packet)
+            self.assertEqual(feedback['unselected_row_context'][0]['node_id'],'price')
+            self.assertEqual(set(feedback['unselected_row_context'][0]['available_context_reference_ids']),set(ids))
+
+    def test_feedback_distinguishes_graph_edit_from_missing_receipts_without_acknowledging(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(tmp);packet=post.reading_packet(t)
+            before=copy.deepcopy(t.bundle)
+            result=post.review_feedback(t,{'gap_feedback':{
+                'actual_graph_delta':{'added_node_ids':['new-observation']},
+                'accepted_reviews':[],'rejected_reviews':[]}},packet)
+            self.assertTrue(result['graph_changed'])
+            self.assertEqual(result['accepted_material_review_count'],0)
+            self.assertTrue(result['unacknowledged_delivered_materials'])
+            self.assertIn('do not merely repeat',result['instruction'])
+            self.assertEqual(t.bundle,before)
+
     def fake_model(self, messages, api_key, **kwargs):
         data = json.loads(messages[1]['content'])
         packet = data['reading']
