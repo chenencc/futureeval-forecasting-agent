@@ -336,7 +336,7 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False, node_by_node=False, blind_node_read=False, node_format_retries=0, annotation_repair_seeds=None):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
@@ -347,6 +347,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         raise ValueError('node_by_node must be boolean')
     if type(blind_node_read) is not bool or (blind_node_read and not node_by_node):
         raise ValueError('Blind node reading requires isolated node review')
+    if type(node_format_retries) is not int or node_format_retries not in (0,1) or (node_format_retries and not node_by_node):
+        raise ValueError('One optional annotation-format retry requires isolated node review')
+    if annotation_repair_seeds is not None and (not node_by_node or not isinstance(annotation_repair_seeds,dict) or not annotation_repair_seeds):
+        raise ValueError('Repair-only seeds require a nonempty isolated-node draft mapping')
     if node_by_node and (not consistency_review or source_first):
         raise ValueError('Isolated node review requires consistency review without a shared first reading')
     if node_by_node:
@@ -367,6 +371,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 'source_first': source_first,
                 'node_by_node': node_by_node,
                 'blind_node_read': blind_node_read,
+                'node_format_retries': node_format_retries,
+                'annotation_repair_seeds': copy.deepcopy(annotation_repair_seeds),
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -413,6 +419,10 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             save(root/'reading-packet.json', packet)
             from ForecastAgent.research_loop import node_reconcile
             node_cards = node_reconcile.cards(task.bundle, packet) if node_by_node else []
+            if annotation_repair_seeds is not None:
+                if set(annotation_repair_seeds)-{c['node_id'] for c in node_cards}:
+                    raise ValueError('Repair seed refers to an unknown observation')
+                node_cards = [c for c in node_cards if c['node_id'] in annotation_repair_seeds]
             if node_by_node:
                 save(root/'node-review-cards.json', node_cards)
             journal = Journal(root/'model-http', http_cap)
@@ -497,7 +507,13 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         save(root/'steps.json', steps)
                         status = 'partial_node_review'
                         continue
-                    messages = node_reconcile.messages(task.bundle, card, blind=blind_node_read)
+                    seed = annotation_repair_seeds.get(card['node_id']) if annotation_repair_seeds is not None else None
+                    feedback = node_reconcile.format_feedback(task.bundle,card,seed,map_tool,blind=blind_node_read) if seed is not None else None
+                    if seed is not None and feedback is None:
+                        steps.append({'accepted':False,'node_review':{'node_id':card['node_id'],
+                            'status':'rejected','meaning_verified':False},'error':'Seed is not an identified annotation-format failure.'})
+                        save(root/'steps.json',steps); status='proposal_rejected'; continue
+                    messages = node_reconcile.messages(task.bundle, card, blind=blind_node_read,format_feedback=feedback)
                     tools = [node_reconcile.tool(card, map_tool, blind=blind_node_read)]
                     forced_tool = node_reconcile.NAME
                 try:
@@ -512,7 +528,33 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                     args = json.loads(calls[0]['function']['arguments'])
                     node_audit = None
                     if node_by_node:
-                        args, node_audit = node_reconcile.proposal(task.bundle, packet, card, args, map_tool, blind=blind_node_read)
+                        answer = args
+                        if seed is not None:
+                            node_reconcile.verify_repair_core(seed,answer)
+                        repaired = seed is not None
+                        try:
+                            args, node_audit = node_reconcile.proposal(task.bundle, packet, card, answer, map_tool, blind=blind_node_read)
+                        except ValueError:
+                            feedback = node_reconcile.format_feedback(task.bundle,card,answer,map_tool,blind=blind_node_read)
+                            if (not node_format_retries or repaired or feedback is None
+                                    or len(list((root/'model-http').glob('*.json'))) >= http_cap
+                                    or deadline is not None and time.monotonic() >= deadline):
+                                raise
+                            save(root/('format-repair-input-'+str(len(steps)+1)+'.json'),feedback)
+                            repaired_message = ask_model(node_reconcile.messages(task.bundle,card,blind=blind_node_read,format_feedback=feedback),
+                                os.environ['OPENROUTER_API_KEY'],tools=tools,forced_tool=forced_tool,observer=observer,
+                                deadline=min(deadline or time.monotonic()+180,time.monotonic()+180),
+                                **fusion.model_options(task,'update_research_state'))
+                            save(root/('format-repair-output-'+str(len(steps)+1)+'.json'),repaired_message)
+                            repairs = repaired_message.get('tool_calls') or []
+                            if len(repairs)!=1 or repairs[0]['function']['name']!=forced_tool:
+                                raise ValueError('Exactly one annotation repair call required')
+                            corrected=json.loads(repairs[0]['function']['arguments'])
+                            node_reconcile.verify_repair_core(answer,corrected)
+                            args,node_audit=node_reconcile.proposal(task.bundle,packet,card,corrected,map_tool,blind=blind_node_read)
+                            repaired=True
+                        if node_audit is not None:
+                            node_audit['annotation_format_repair_used']=repaired
                         if args is None:
                             steps.append({'accepted': False, 'node_review': node_audit})
                             save(root/'steps.json', steps)
@@ -570,6 +612,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
             'source_first_requested': source_first,
             'node_by_node_requested': node_by_node,
             'blind_node_read_requested': blind_node_read,
+            'node_format_retries_requested': node_format_retries,
+            'annotation_repair_only_requested': annotation_repair_seeds is not None,
             'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
@@ -583,7 +627,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         from ForecastAgent.research_loop import dispatch
         if node_by_node:
             all_ids = [n['id'] for n in (bundle['research_loop'].get('current') or {}).get('nodes', [])
-                       if n['kind'] == 'observation']
+                       if n['kind'] == 'observation' and (annotation_repair_seeds is None or n['id'] in annotation_repair_seeds)]
             reviewed = [s['node_review']['node_id'] for s in steps
                         if s.get('accepted') and s.get('node_review', {}).get('status') == 'model_reviewed']
             report['node_review_coverage'] = {'requested_node_ids': all_ids,

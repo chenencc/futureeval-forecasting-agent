@@ -19,6 +19,9 @@ entire website or future reporting. Preserve literal numeric baselines and units
 A historical measurement can directly answer a historical research need while
 remaining baseline/indicator evidence for an unknown future forecast target.
 Select only supplied reference IDs. No other node evidence is available.
+Describe measurements available in these originals. Do not claim they are the
+latest across the archive or market: this request cannot compare other sources.
+Missing future reporting is unknown, not absence as of a future deadline.
 Keep interpretation<=240, limitation<=180, link reasons<=240, review_reason<=240
 CHARACTERS. Write short annotations, with uncertainty in limitation. Returned
 annotations are provisional model interpretations, not verified truth.
@@ -81,15 +84,81 @@ def tool(card, map_tool, *, blind=False):
             'required': list(properties), 'additionalProperties': False}}}
 
 
-def messages(bundle, card, *, blind=False):
+def messages(bundle, card, *, blind=False, format_feedback=None):
     targets = target_logic.targets(bundle) if target_logic.enabled(bundle) else []
     supplied = ({k: copy.deepcopy(card[k]) for k in ('node_id', 'own_reference_ids',
         'selectable_reference_ids', 'missing_own_reference_ids', 'originals', 'scope')}
         if blind else card)
-    return [{'role': 'system', 'content': BLIND_SYSTEM if blind else SYSTEM}, {'role': 'user', 'content': json.dumps({
+    payload = {
         'question': {k: bundle['request'].get(k, '') for k in state.RULE_FIELDS},
         'as_of_utc': bundle['request'].get('as_of_utc'),
-        'target_conditions': targets, 'observation_to_review': supplied}, ensure_ascii=False)}]
+        'target_conditions': targets, 'observation_to_review': supplied,
+        'scope_limits': {'coverage': 'supplied_originals_only', 'cross_source_latestness_verified': False}}
+    if format_feedback is not None:
+        payload['annotation_format_repair'] = copy.deepcopy(format_feedback)
+    return [{'role': 'system', 'content': BLIND_SYSTEM if blind else SYSTEM},
+        {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)}]
+
+
+def format_feedback(bundle, card, answer, map_tool, *, blind=False):
+    """Only well-identified annotation drafts qualify for a bounded repair call."""
+    schema = tool(card, map_tool, blind=blind)['function']['parameters']
+    if not isinstance(answer, dict) or set(answer) != set(schema['required']):
+        return None
+    selected = answer.get('evidence_ids')
+    if answer.get('node_id') != card['node_id'] or not isinstance(selected, list) or not selected:
+        return None
+    if any(not isinstance(i,str) or i not in card['selectable_reference_ids'] for i in selected) or len(set(selected))!=len(selected):
+        return None
+    loose = copy.deepcopy(schema)
+    editable = ('interpretation','limitation','applicability','review_reason')
+    for field in editable:
+        if not isinstance(answer[field],str):
+            return None
+        loose['properties'][field] = {'type':'string'}
+    links = answer.get('target_links')
+    if not isinstance(links,list):
+        return None
+    known_targets = {t['id'] for t in target_logic.targets(bundle)} if target_logic.enabled(bundle) else set()
+    if any(not isinstance(link,dict) or link.get('target_id') not in known_targets for link in links):
+        return None
+    link_schema = loose['properties']['target_links']['items']
+    for field in ('role','effect','reason'):
+        link_schema['properties'][field] = {'type':'string'}
+    try:
+        check_schema(answer,loose)
+    except (ValueError,KeyError,TypeError):
+        return None
+    errors=[]
+    def examine(value,rule,path):
+        try:
+            check_schema(value,rule,path)
+        except (ValueError,KeyError,TypeError) as exc:
+            errors.append({'field':path,'error':str(exc),'characters':len(value),
+                'max_characters':rule.get('maxLength'),'allowed_values':rule.get('enum')})
+    for field in editable:
+        examine(answer[field],schema['properties'][field],field)
+    for position,link in enumerate(links):
+        for field in ('role','effect','reason'):
+            examine(link[field],schema['properties']['target_links']['items']['properties'][field],
+                'target_links.'+str(position)+'.'+field)
+    if not errors:
+        return None
+    return {'draft':copy.deepcopy(answer),'errors':errors,
+        'instruction':'Return a full corrected call within declared limits. No text clipping or invented facts. '
+            'Keep node_id, evidence_ids and ordered target_ids EXACTLY unchanged. '
+            'Repair annotation format using the same originals; uncertainty must remain explicit.',
+        'semantic_correctness_verified':False}
+
+
+def verify_repair_core(draft,answer):
+    """Annotation recovery must not silently change references or target identity."""
+    for field in ('node_id','evidence_ids'):
+        if draft.get(field)!=answer.get(field):
+            raise ValueError('Annotation repair changed frozen '+field)
+    targets=lambda item:[link.get('target_id') for link in item.get('target_links',[])]
+    if targets(draft)!=targets(answer):
+        raise ValueError('Annotation repair changed frozen target IDs')
 
 
 def proposal(bundle, packet, card, answer, map_tool, *, blind=False):

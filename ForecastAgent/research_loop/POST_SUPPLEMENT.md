@@ -231,3 +231,22 @@ otherwise valid annotations. Neither a field delta nor a correction label proves
 semantic improvement. Invalid references and oversized annotations remain rejected
 and preserved; originals are not clipped or silently repaired. Both experimental
 modes retain the same source scope and native budgets, and remain off by default.
+
+## Bounded annotation format recovery
+
+`node_format_retries=1` allows at most one corrective request after a node draft
+fails a declared annotation length or enum constraint. It consumes the same HTTP
+journal, failure allowance and deadline; there is no hidden allowance or retry on
+re-entry. The first raw output, exact character counts, declared allowed values and
+the second raw output remain saved. Unknown reference or target IDs, malformed
+identity and evidence changes do not qualify for formatting recovery. No text is
+clipped, and the model must retain node ID, ordered reference IDs and target IDs.
+If repair fails, the old node remains unreviewed with the error recorded.
+
+`annotation_repair_seeds` can explicitly name saved rejected drafts for a new,
+registered repair-only experiment. Each named node receives one new request; valid
+siblings are not run again. The seeds are frozen in the experiment identity and
+original consumption remains cumulative. Coverage counts only the named nodes.
+Source-local readings cannot certify cross-source latestness: their request states
+that coverage is limited to supplied originals. Format success is not a semantic
+repair or a forecast accuracy result. These options remain development-only.
