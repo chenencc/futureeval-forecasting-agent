@@ -336,11 +336,13 @@ def prompt_map(task):
             'handles and the identifier registry control new observations and receipts.'}
 
 
-def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False):
+def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=True, deadline=None, consistency_review=False, source_first=False):
     """Derivative review only. Re-entry cannot silently renew failed calls."""
     validate(bundle['request'])
     if type(consistency_review) is not bool:
         raise ValueError('consistency_review must be boolean')
+    if type(source_first) is not bool:
+        raise ValueError('source_first must be boolean')
     if not state.enabled(bundle) or not gap_feedback.enabled(bundle):
         raise ValueError('Saved-material review requires an enabled native map')
     if type(http_cap) is not int or not 0 <= http_cap <= reserve_http(bundle['request']):
@@ -352,6 +354,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
     source_hash = digest(bundle)
     identity = {'policy': POLICY, 'parent_bundle_sha256': source_hash, 'http_cap': http_cap,
                 'consistency_review': consistency_review,
+                'source_first': source_first,
                 'failure_cap': failure_cap,
                 'model': configured_model(), 'module_sha256': hashlib.sha256(
                     Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
@@ -387,6 +390,7 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         records = sorted((root/'model-http').glob('*.json'))
         status = 'prepared'
         steps = []
+        source_reading = None
         # A crash after reservation/response requires review, never another dispatch.
         if records:
             status = 'interrupted_receipt_requires_review'
@@ -403,7 +407,29 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 return journal(phase, record, token)
             status = 'no_readable_pending_material'
             no_progress = 0
-            while packet['evidence'] and len(list((root/'model-http').glob('*.json'))) < http_cap:
+            if source_first and packet['evidence']:
+                from ForecastAgent.research_loop import original_scope
+                try:
+                    message = ask_model(original_scope.messages(task.bundle,packet),
+                        os.environ['OPENROUTER_API_KEY'],tools=[original_scope.TOOL],
+                        forced_tool=original_scope.NAME,observer=observer,
+                        deadline=min(deadline or time.monotonic()+180,time.monotonic()+180),
+                        **fusion.model_options(task,'update_research_state'))
+                    save(root/'original-scope-proposal.json',message)
+                    calls=message.get('tool_calls') or []
+                    if len(calls)!=1 or calls[0]['function']['name']!=original_scope.NAME:
+                        raise ValueError('Exactly one original-scope tool call required')
+                    source_reading=original_scope.bind(json.loads(calls[0]['function']['arguments']),packet)
+                    save(root/'original-scope-reading.json',source_reading)
+                    status='source_reading_complete' if source_reading['facts'] else 'source_reading_rejected'
+                except (ValueError,KeyError,TypeError) as exc:
+                    status='source_reading_rejected'
+                    save(root/'original-scope-error.json',{'error':str(exc)[:1000]})
+                except Exception as exc:
+                    status='provider_or_budget_failure'
+                    save(root/'original-scope-error.json',{'error_type':type(exc).__name__})
+            while (packet['evidence'] and (not source_first or source_reading and source_reading['facts'])
+                    and len(list((root/'model-http').glob('*.json'))) < http_cap):
                 if deadline is not None and time.monotonic() >= deadline:
                     status = 'wall_time_exhausted'
                     break
@@ -426,6 +452,11 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                 from ForecastAgent.research_loop import predictive_focus
                 from ForecastAgent.research_loop import node_review
                 target_payload['existing_node_scope_review'] = node_review.brief(task.bundle)
+                if source_reading is not None:
+                    from ForecastAgent.research_loop.original_scope import for_review
+                    target_payload['independent_original_scope'] = for_review(source_reading)
+                    review_system += '\nCompare the independent reading against current nodes and each link. '
+                    review_system += 'Both readings are provisional; resolve differences using their bound originals, not majority or prior-map authority.\n'
                 if predictive_focus.enabled(task.bundle):
                     target_payload['interpretation_scope_audit'] = predictive_focus.brief(task.bundle)
                 messages = [{'role': 'system', 'content': review_system}, {'role': 'user', 'content': json.dumps({
@@ -486,6 +517,8 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
         from ForecastAgent.research_loop.live_trial import usage
         report = {'status': status, 'initial_revision': bundle['research_loop']['revision'],
             'consistency_review_requested': consistency_review,
+            'source_first_requested': source_first,
+            'independent_original_scope': source_reading,
             'interpretation_correctness_verified': False,
             'final_revision': task.bundle['research_loop']['revision'], 'steps': steps,
             'pending_materials': gap_feedback.pending(task), 'map_audit': state.audit(task.bundle),

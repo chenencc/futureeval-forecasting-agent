@@ -169,3 +169,25 @@ time to event time, broaden issuer/geographic scope, or label a historical basel
 as direct evidence of an unknown future realization. When combining observations,
 retain the inference as an explicit hypothesis. Programs bind originals and report
 scope; they do not infer semantic truth or automatically retire valid observations.
+
+## Experimental original-first review
+
+`source_first=True` adds an independent original-only reading before a graph update.
+The first request whitelists the immutable question, clock and delivered original
+spans/context. It excludes old graph nodes, interpretations, links, processing
+receipts and node-review cards. The model selects source-local reference IDs and
+provisional date/entity roles. Unknown or cross-source IDs are isolated; valid
+siblings remain available. Binding verifies original identity, not semantic truth.
+
+Both calls share the same existing model HTTP/failure journal and deadline. No
+additional allowance is granted. With only one request available the stage can
+finish original reading without updating the map. Its status is
+`source_reading_complete`, not a completed graph review. Invalid or failed initial
+reading is preserved and does not silently dispatch another call. Interrupted
+receipts retain the existing review-required recovery rule.
+
+The second request receives a compact provisional reading with the same original
+R IDs. Full bound text remains in the local audit; it is not duplicated in the
+second request. Both old and independent interpretations remain unverified and
+must be reconciled against their originals. This option is experimental and off by
+default; offline tests do not establish better semantic or forecasting performance.

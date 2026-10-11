@@ -16,6 +16,60 @@ from ForecastAgent.acquisition import pipeline
 
 
 class PostSupplementTests(unittest.TestCase):
+    def test_source_first_spends_existing_two_http_cap_and_hides_old_map_first(self):
+        from ForecastAgent.research_loop import original_scope
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(Path(tmp)/'original');initial(t)
+            self.original=copy.deepcopy(t.bundle)
+            seen=[]
+            def model(messages,key,**kwargs):
+                data=json.loads(messages[1]['content']);seen.append(data)
+                if kwargs['forced_tool']==original_scope.NAME:
+                    self.assertNotIn('current_map',data)
+                    self.assertNotIn('existing_node_reading_scope',data['reading'])
+                    span=data['reading']['evidence'][0]
+                    observer=kwargs['observer'];record={'status':'reserved','request':{'model':'test'}}
+                    token=observer('reserve',record)
+                    record.update(status='received',http_status=200,response={'usage':{'total_tokens':10}})
+                    observer('complete',record,token)
+                    return {'tool_calls':[{'function':{'name':original_scope.NAME,'arguments':json.dumps({'facts':[{
+                        'reference_ids':[span['evidence_id']],'date_role':'unknown',
+                        'entity_role':'unknown','note':'Original context remains uncertain.'}]})}}]}
+                self.assertIn('independent_original_scope',data)
+                self.assertNotIn('text',data['independent_original_scope']['facts'][0]['bindings'][0])
+                return self.fake_model(messages,key,**kwargs)
+            with patch.dict('os.environ',{'OPENROUTER_API_KEY':'test'}),patch.object(post,'ask_model',side_effect=model) as calls:
+                child,report=post.run(self.original,Path(tmp)/'review',source_first=True,
+                    consistency_review=True,http_cap=2)
+                again,cached=post.run(self.original,Path(tmp)/'review',source_first=True,
+                    consistency_review=True,http_cap=2)
+            self.assertEqual(calls.call_count,2)
+            self.assertEqual(report['usage']['totals']['http_attempts'],2)
+            self.assertEqual(report['usage']['totals']['known_total_tokens'],110)
+            self.assertEqual(report,cached)
+            self.assertEqual(child,again)
+            for key in post.PRESERVED:self.assertEqual(child.get(key),self.original.get(key))
+
+    def test_one_http_source_first_never_grants_an_extra_map_call(self):
+        from ForecastAgent.research_loop import original_scope
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(Path(tmp)/'original')
+            def model(messages,key,**kwargs):
+                self.assertEqual(kwargs['forced_tool'],original_scope.NAME)
+                observer=kwargs['observer'];record={'status':'reserved','request':{'model':'test'}}
+                token=observer('reserve',record)
+                record.update(status='received',http_status=200,response={'usage':{'total_tokens':10}})
+                observer('complete',record,token)
+                data=json.loads(messages[1]['content']);span=data['reading']['evidence'][0]
+                return {'tool_calls':[{'function':{'name':original_scope.NAME,'arguments':json.dumps({'facts':[{
+                    'reference_ids':[span['evidence_id']],'date_role':'unknown','entity_role':'unknown','note':'Unknown.'}]})}}]}
+            with patch.dict('os.environ',{'OPENROUTER_API_KEY':'test'}),patch.object(post,'ask_model',side_effect=model) as calls:
+                child,report=post.run(t.bundle,Path(tmp)/'review',source_first=True,http_cap=1)
+            self.assertEqual(calls.call_count,1)
+            self.assertEqual(report['status'],'source_reading_complete')
+            self.assertEqual(child['research_loop']['revision'],t.bundle['research_loop']['revision'])
+            self.assertEqual(report['usage']['totals']['http_attempts'],1)
+
     def test_processed_material_can_be_revisited_without_network_or_capture_reset(self):
         with tempfile.TemporaryDirectory() as tmp:
             t = task(Path(tmp)/'original')
