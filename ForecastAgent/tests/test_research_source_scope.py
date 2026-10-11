@@ -77,7 +77,7 @@ class SourceScopeTests(unittest.TestCase):
         states = []; raw = bundle()
         sideband = {'schema': source_scope.VERSION, 'sources': [{'raw_qualifier': 'Previous event'}]}
         fixture = pair_fixture.ReleasePairTests()
-        def attach(bundle, original):
+        def attach(bundle, original, **kwargs):
             return {**copy.deepcopy(original), 'source_scope_context': copy.deepcopy(sideband)}, {'sideband_present': True}
         with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'OPENROUTER_API_KEY': 'offline'}), \
                 patch.object(source_scope, 'attach', side_effect=attach), \
@@ -88,6 +88,32 @@ class SourceScopeTests(unittest.TestCase):
         self.assertEqual(states[0], {k: v for k, v in states[1].items() if k != 'research_map'})
         self.assertTrue(result['stages'][0]['source_context_audit']['sideband_present'])
         self.assertEqual(result['original']['probability_yes'], .3)
+
+    def test_model_context_keeps_qualifiers_and_archives_coordinate_proofs(self):
+        page = snapshot('<section><h2>Previous quarter</h2><a href="/reports/2025"><p>Revenue 24 billion.</p></a></section>')
+        common = {'sources': [{'source_id': 'a', 'url': page['url']}],
+            'evidence': [{'source_id': 'a', 'text': 'Revenue 24 billion.'}]}
+        state, audit = source_scope.attach({'pages': {page['url']: page}}, common, byte_cap=1800)
+        visible = state['source_scope_context']['sources'][0]['contexts'][0]
+        self.assertEqual(visible['href_attributes'], ['/reports/2025'])
+        self.assertEqual(visible['headings'][0]['text'], 'Previous quarter')
+        self.assertNotIn('xpath', visible['headings'][0])
+        self.assertTrue(audit['bound_contexts'][0]['contexts'][0]['ancestors'][0]['xpath'])
+        import json
+        self.assertLessEqual(len(json.dumps(state['source_scope_context']).encode()), 1800)
+
+    def test_first_stage_context_respects_native_request_cap_without_removing_originals(self):
+        from ForecastAgent.analysis import mercury_evidence_chain as chain
+        original = {'evidence': [{'text': 'preserved'}]}
+        seen = []
+        def bounded(bundle, state, **kwargs):
+            seen.append(kwargs['byte_cap'])
+            return copy.deepcopy(state), {'sideband_present': False}
+        with patch.object(source_scope, 'attach', side_effect=bounded), \
+                patch.object(chain, 'request_bytes', return_value=chain.FIRST_BYTES-100):
+            result, _ = trial.contextual_original({}, original, {})
+        self.assertEqual(seen, [68])
+        self.assertEqual(result, original)
 
 
 if __name__ == '__main__':

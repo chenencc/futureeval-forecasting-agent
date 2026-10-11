@@ -142,3 +142,7 @@ event page. It does not infer results, dates, source reliability or applicabilit
 Unsupported/corrupt originals and truncated contexts remain explicit. No original
 text is deleted to fit context. The frozen identity records this changed reading
 scope: these inputs are not the unaugmented production release reading input.
+The compact v2 sideband keeps literal headings/links and matching text samples in
+provider input. Full XPath and responsive-layout occurrence proofs remain in local
+audits. Packing uses the native first/second request's residual byte allowance;
+coordinate bookkeeping cannot crowd out the graph or remove original evidence.

@@ -6,7 +6,7 @@ import re
 from ForecastAgent.analysis.pilot import digest
 from ForecastAgent.readers.material_structure import html_tree, source_sections, observable_url
 
-VERSION = 'saved_html_scope_v1'
+VERSION = 'saved_html_scope_v2'
 EXCLUDED = {'navigation', 'footer', 'copyright', 'header', 'aside'}
 BYTE_CAP = 10000
 
@@ -80,10 +80,31 @@ def scopes(snapshot, selected_text):
         'network_calls': 0, 'truth_verified': False}
 
 
-def attach(bundle, original):
+INSTRUCTION = 'Literal local DOM headings/links around matching saved text; not verified target or event labels. A page can embed other periods/events. Recheck embedded results against local headings/links. Repeated matches remain ambiguous. A page URL does not identify every embedded result.'
+
+
+def compact(context):
+    """Keep literal qualifiers; archive long coordinate proofs outside model input."""
+    return {'scope_id': context['scope_id'],
+        'headings': [{k: v for k, v in h.items() if k != 'xpath'} for a in context['ancestors'] for h in a['headings']],
+        'href_attributes': [a['href_attribute'] for a in context['ancestors'] if a['href_attribute']],
+        'matched_texts': [{k: v for k, v in row.items() if k in ('text', 'truncated')} for row in context['matched_texts']],
+        'sample_truncated': context['sample_truncated'],
+        'repeated_scope': len(context['scope_occurrences']) > 1,
+        'scope_occurrences_truncated': context['scope_occurrences_truncated']}
+
+
+def envelope(entries):
+    return {'schema': VERSION, 'sources': entries, 'instruction': INSTRUCTION}
+
+
+def attach(bundle, original, *, byte_cap=None):
     """Same bounded context sideband for both arms; never replace source originals."""
     enriched = copy.deepcopy(original)
-    entries, skipped = [], []
+    byte_cap = BYTE_CAP if byte_cap is None else byte_cap
+    if type(byte_cap) is not int or not 0 <= byte_cap <= BYTE_CAP:
+        raise ValueError('Source context must use a bounded residual byte cap')
+    entries, skipped, bindings = [], [], []
     sources = {s['source_id']: s for s in original['sources']}
     groups = {}
     for row in original['evidence']:
@@ -101,21 +122,26 @@ def attach(bundle, original):
             continue
         selected = []
         for context in observed['contexts']:
-            entry = {**observed, 'contexts': selected+[context]}
+            entry = {'source_url': observed['source_url'], 'source_sha256': observed['source_sha256'],
+                'structure_truncated': observed['structure_truncated'],
+                'context_truncated': True, 'truth_verified': False,
+                'contexts': [compact(c) for c in selected+[context]]}
             candidate = entries+[entry]
-            if len(json.dumps(candidate, ensure_ascii=False).encode()) > BYTE_CAP:
+            if len(json.dumps(envelope(candidate)).encode()) > byte_cap:
                 break
             selected.append(context)
         if selected:
-            entries.append({**observed, 'contexts': selected,
+            entries.append({**entry, 'contexts': [compact(c) for c in selected],
                 'context_truncated': len(selected) != len(observed['contexts'])})
+            bindings.append({'source_url': observed['source_url'], 'source_sha256': observed['source_sha256'],
+                'contexts': selected})
         elif observed['contexts']:
             skipped.append({'url': url, 'reason': 'context_byte_cap'})
     if entries:
-        enriched['source_scope_context'] = {'schema': VERSION, 'sources': entries,
-            'instruction': 'These are literal DOM headings and links around matching saved source text, not verified event or target labels. A page may embed other periods or events. Check each quoted result against its local heading/link before treating it as a target realization. Repeated matches are ambiguous. Never treat a page URL alone as proof that every embedded result belongs to that page event.'}
+        enriched['source_scope_context'] = envelope(entries)
     if any(enriched[k] != value for k, value in original.items()):
         raise ValueError('Source context changed common original evidence')
     return enriched, {'schema': VERSION, 'sources': len(entries), 'skipped': skipped,
         'sideband_present': bool(entries), 'sideband_sha256': digest(enriched.get('source_scope_context')),
+        'bound_contexts': bindings, 'byte_cap': byte_cap,
         'network_calls': 0, 'new_page_bytes': 0, 'semantic_truth_verified': False}

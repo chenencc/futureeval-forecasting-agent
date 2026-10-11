@@ -79,9 +79,11 @@ def mapped_state(bundle, original, heads):
     return mapped, audit
 
 
-def contextual_original(bundle, original, heads):
-    enriched, audit = source_scope.attach(bundle, original)
-    if chain.request_bytes(enriched, heads) > chain.SECOND_BYTES:
+def contextual_original(bundle, original, heads, *, stage='first'):
+    cap = chain.FIRST_BYTES if stage == 'first' else chain.SECOND_BYTES
+    residual = min(source_scope.BYTE_CAP, max(0, cap-chain.request_bytes(original, heads)-32))
+    enriched, audit = source_scope.attach(bundle, original, byte_cap=residual)
+    if chain.request_bytes(enriched, heads) > cap:
         return copy.deepcopy(original), {**audit, 'sideband_present': False, 'omitted': 'shared_request_cap'}
     return enriched, audit
 
@@ -108,7 +110,7 @@ def paired_release(bundle, mapped_bundle, folder, *, mapped_first=False, source_
             raise ValueError('Unexpected or duplicate release stage')
         context_audit = None
         if source_context:
-            original, context_audit = contextual_original(bundle, original, heads)
+            original, context_audit = contextual_original(bundle, original, heads, stage=stage)
         enriched, audit = mapped_state(mapped_bundle, original, heads)
         independent = 'research_map' in enriched
         replies = {}; mapped_error = None
