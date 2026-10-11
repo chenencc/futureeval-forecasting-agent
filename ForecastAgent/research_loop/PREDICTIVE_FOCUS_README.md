@@ -44,7 +44,28 @@ receive identical originals, scoring heads, and Mercury configuration.
 
 ## Validation
 
-On 2026-10-11, 260 focused offline tests passed with zero socket attempts. This proves
+On 2026-10-11, 261 focused offline tests passed with zero socket attempts. This proves
 interface and routing behavior, not forecasting improvement. Replay of archived
 model outputs does not measure the effects of a new prompt. Unresolved prospective
 forecasts are retained for later evaluation and are never submitted by the pilot.
+
+The live pilot at commit `182273e` completed three unresolved questions after an
+initial five-case pilot was stopped on a prompt-phase defect. The two attempted
+initial cases were not retried. Three untouched cases kept their frozen inputs and
+limits. Actual collection receipts record 47 Super HTTP attempts, 512354 known
+tokens, two Tavily basic searches and three Exa searches. Six Mercury HTTP attempts
+completed three paired forecasts. Provider-reported `total_tokens` is missing on
+all six Mercury receipts; input plus output totals 54902 tokens.
+
+No graph was delivered in any paired scoring arm: exact bound ranges were absent
+from the common source selection, including a deduplicated dashboard URL. Original
+text was not expanded after seeing predictions. These are direct-text fallback
+pairs, not evidence of a map benefit. Navigation-only dashboard bodies, a tide
+page with different interval/units, and dated CPI material do not establish the
+future target. No forecast-quality claim is supported before independent outcomes.
+
+Post-pilot recovery guidance now pins the current update cursor and removes the
+old copied-quote recovery instruction from the reference interface. A rejected
+revision is never silently rebased. This correction passed offline regression;
+its live effect remains unmeasured. Saved scopes and scoring selections remain
+auditable and immutable. The pilot is not a production promotion gate pass.

@@ -94,6 +94,10 @@ work. Unread/omitted text is not absent evidence. A receipt covers only the deli
 source scope. Explain actual changes in revision_reason. No pending receipts does
 not mean sufficient evidence. Parse arrays as JSON arrays; no encoded strings.
 Decoded views use their named coordinate space and provenance, not raw byte offsets.
+Copy expected_revision and material_sha256 from the CURRENT update_cursor when
+supplied, otherwise from the current request/schema. expected_revision is the
+existing revision, not the next revision. Historical tool arguments are not a
+current cursor. A rejected update does not advance it; never increment it yourself.
 '''
 
 

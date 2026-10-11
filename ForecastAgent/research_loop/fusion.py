@@ -421,6 +421,14 @@ def map_feedback(task, result=None, error=None):
         'retained_prior_nodes_after_rejected_replacement':report.get('retained_prior_nodes_after_rejected_replacement',[]),
         'error':str(error)[:1400] if error else None,'requires_local_read':retry_read,
         'instruction':'Read substantive saved text with url/query. Correct the quote and reference together; do not resend a rejected paraphrase.' if retry_read else 'Accepted source bindings remain provisional.'}
+    from ForecastAgent.research_loop import reference_map
+    if reference_map.enabled(task.bundle):
+        feedback['instruction'] = (
+            'Use the current update_cursor/schema, not the next or last submitted revision. '
+            'Select delivered original R IDs; the program binds their complete text. '
+            'Correct rejected source/target/receipt fields independently; inspect saved '
+            'material only when new reading is needed. No copied quote or guessed offset.'
+            if retry_read else 'Accepted original bindings remain provisional; meaning is unverified.')
     ledger['last_map_feedback']=feedback
     if retry_read:
         ledger.pop('cycle_inspected_material',None);ledger.pop('bootstrap_inspected_material',None)

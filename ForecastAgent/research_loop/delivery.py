@@ -101,6 +101,10 @@ def context(task, *, forced=None, maximum=28000):
     from ForecastAgent.research_loop import reference_map
     if reference_map.enabled(b):
         system = reference_map.prompt(operational, bundle=b, phase='acquisition')
+        from ForecastAgent.research_loop import state
+        current_state = state.view(b, task.cutoff)
+        payload['update_cursor'] = {k: current_state[k] for k in ('revision', 'material_sha256')}
+        payload['update_cursor']['expected_revision'] = payload['update_cursor'].pop('revision')
         payload['current_nodes'] = [reference_map.input_node(n) for n in current.get('nodes', [])]
         payload['instruction'] = 'Select supplied original IDs; program binds complete originals. Explain scope separately. Unread material is not missing evidence. No new quota.'
         from ForecastAgent.research_loop import predictive_focus

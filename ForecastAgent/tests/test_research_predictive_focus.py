@@ -2,6 +2,7 @@
 import copy
 import tempfile
 import unittest
+import json
 
 from ForecastAgent.research_loop import predictive_focus as focus, reference_map as refs
 from ForecastAgent.research_loop import runtime, delivery, dispatch, state, fusion
@@ -20,6 +21,28 @@ def need(state_name='obtainable', purpose='baseline'):
 
 
 class PredictiveFocusTests(unittest.TestCase):
+    def test_reference_recovery_pins_current_cursor_without_rebasing_rejected_update(self):
+        with tempfile.TemporaryDirectory() as root:
+            t=fresh(root); t.bundle['request'].update({refs.FIELD:refs.POLICY, focus.FIELD:focus.POLICY})
+            t.execute('inspect_research_state', {'url':'https://example.org/report','limit':3}, 'test')
+            p=proposal(t.bundle); p.update(update_mode='merge',material_reviews=[])
+            t.execute('update_research_state',p,'test')
+            revision=t.bundle['research_loop']['revision']
+            bad=copy.deepcopy(p); bad['expected_revision']=revision+1
+            with self.assertRaises(ValueError) as error:
+                t.execute('update_research_state',bad,'test')
+            self.assertEqual(t.bundle['research_loop']['revision'],revision)
+            self.assertEqual(bad['expected_revision'],revision+1)
+            fusion.map_feedback(t,error=error.exception)
+            feedback=t.bundle['research_acquisition']['last_map_feedback']
+            self.assertNotIn('Correct the quote',feedback['instruction'])
+            self.assertIn('current update_cursor',feedback['instruction'])
+            messages=delivery.context(t)
+            payload=json.loads(messages[1]['content'])
+            self.assertEqual(payload['update_cursor']['expected_revision'],revision)
+            self.assertEqual(payload['update_cursor']['material_sha256'],state.catalog(t.bundle,t.cutoff)['material_sha256'])
+            self.assertIn('not the next revision',messages[0]['content'])
+
     def test_reference_prompts_have_one_contract_and_keep_operational_guards(self):
         with tempfile.TemporaryDirectory() as root:
             t = fresh(root)
