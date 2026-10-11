@@ -16,6 +16,35 @@ from ForecastAgent.acquisition import pipeline
 
 
 class PostSupplementTests(unittest.TestCase):
+    def test_valid_empty_reading_never_claims_a_rejection_or_spends_a_graph_call(self):
+        from ForecastAgent.research_loop import original_scope
+        with tempfile.TemporaryDirectory() as tmp:
+            t=task(Path(tmp)/'original');initial(t)
+            frozen=copy.deepcopy(t.bundle)
+            def model(messages,key,**kwargs):
+                self.assertEqual(kwargs['forced_tool'],original_scope.NAME)
+                data=json.loads(messages[1]['content'])
+                source=data['reading']['source_groups'][0]
+                observer=kwargs['observer'];record={'status':'reserved','request':{'model':'test'}}
+                token=observer('reserve',record)
+                record.update(status='received',http_status=200,response={'usage':{'total_tokens':10}})
+                observer('complete',record,token)
+                return {'tool_calls':[{'function':{'name':original_scope.NAME,'arguments':json.dumps({
+                    'facts':[], 'gaps':[{'source_ids':[source['source_id']],
+                        'kind':'insufficient_context', 'note':'No useful observation in supplied excerpts.'}]})}}]}
+            with patch.dict('os.environ',{'OPENROUTER_API_KEY':'test'}),patch.object(post,'ask_model',side_effect=model) as calls:
+                child,report=post.run(frozen,Path(tmp)/'review',source_first=True,
+                    consistency_review=True,http_cap=2)
+                again,cached=post.run(frozen,Path(tmp)/'review',source_first=True,
+                    consistency_review=True,http_cap=2)
+            self.assertEqual(calls.call_count,1)
+            self.assertEqual(report['status'],'source_reading_empty')
+            self.assertEqual(report,cached)
+            self.assertEqual(child,again)
+            self.assertEqual(child['research_loop']['current'],frozen['research_loop']['current'])
+            self.assertEqual(report['usage']['totals']['http_attempts'],1)
+            for key in post.PRESERVED:self.assertEqual(child.get(key),frozen.get(key))
+
     def test_source_first_spends_existing_two_http_cap_and_hides_old_map_first(self):
         from ForecastAgent.research_loop import original_scope
         with tempfile.TemporaryDirectory() as tmp:

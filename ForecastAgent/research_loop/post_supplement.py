@@ -421,7 +421,9 @@ def run(bundle, directory, *, http_cap=RESERVE, failure_cap=RESERVE, execute=Tru
                         raise ValueError('Exactly one original-scope tool call required')
                     source_reading=original_scope.bind(json.loads(calls[0]['function']['arguments']),packet)
                     save(root/'original-scope-reading.json',source_reading)
-                    status='source_reading_complete' if source_reading['facts'] else 'source_reading_rejected'
+                    status=('source_reading_complete' if source_reading['facts'] else
+                        'source_reading_rejected' if source_reading['rejected'] or source_reading['rejected_gaps']
+                        else 'source_reading_empty')
                 except (ValueError,KeyError,TypeError) as exc:
                     status='source_reading_rejected'
                     save(root/'original-scope-error.json',{'error':str(exc)[:1000]})

@@ -27,6 +27,8 @@ class OriginalScopeTests(unittest.TestCase):
         self.assertNotIn('existing_node_reading_scope',data['reading'])
         self.assertNotIn('identifier_registry',data['reading'])
         self.assertEqual(data['reading']['evidence'],packet()['evidence'])
+        self.assertEqual(len(data['reading']['source_groups']),2)
+        self.assertIn('do not answer the question',data['task'])
 
     def test_valid_originals_bound_but_date_and_entity_roles_unverified(self):
         reading=scope.bind({'facts':[fact()]},packet())
@@ -50,6 +52,40 @@ class OriginalScopeTests(unittest.TestCase):
 
     def test_unbounded_container_is_rejected(self):
         with self.assertRaises(ValueError):scope.bind({'facts':[fact()]*9},packet())
+
+    def test_empty_facts_are_valid_and_packet_gaps_are_not_observations(self):
+        source=scope.source_groups(packet())[0]
+        gap={'source_ids':[source['source_id']], 'kind':'future_unpublished',
+            'note':'Supplied material does not contain the future event outcome.'}
+        reading=scope.bind({'facts':[], 'gaps':[gap]},packet())
+        self.assertEqual(reading['facts'],[])
+        self.assertEqual(reading['rejected'],[])
+        self.assertFalse(reading['gaps'][0]['provides_fact_evidence'])
+        self.assertEqual(reading['gaps'][0]['source_bindings'][0],source)
+        self.assertFalse(reading['gaps'][0]['interpretation_verified'])
+
+    def test_same_url_different_capture_versions_cannot_be_one_fact(self):
+        data=packet()
+        data['context_evidence'][0]['url']=data['evidence'][0]['url']
+        combined=fact();combined['reference_ids']=['Ra','Rb']
+        reading=scope.bind({'facts':[combined,fact()], 'gaps':[]},data)
+        self.assertEqual(len(scope.source_groups(data)),2)
+        self.assertEqual(len(reading['facts']),1)
+        self.assertEqual(len(reading['rejected']),1)
+
+    def test_unknown_gap_sources_do_not_discard_valid_source_facts(self):
+        gap={'source_ids':['not-delivered'], 'kind':'insufficient_context', 'note':'Unknown context.'}
+        reading=scope.bind({'facts':[fact()], 'gaps':[gap]},packet())
+        self.assertEqual(len(reading['facts']),1)
+        self.assertEqual(reading['gaps'],[])
+        self.assertEqual(len(reading['rejected_gaps']),1)
+
+    def test_long_facts_are_preserved_as_rejections_never_clipped(self):
+        long=fact();long['note']='x'*241
+        reading=scope.bind({'facts':[long], 'gaps':[]},packet())
+        self.assertEqual(reading['facts'],[])
+        self.assertEqual(len(reading['rejected']),1)
+        self.assertEqual(long['note'],'x'*241)
 
 
 if __name__=='__main__':unittest.main()

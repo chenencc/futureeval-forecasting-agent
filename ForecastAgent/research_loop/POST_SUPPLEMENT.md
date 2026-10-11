@@ -179,12 +179,25 @@ receipts and node-review cards. The model selects source-local reference IDs and
 provisional date/entity roles. Unknown or cross-source IDs are isolated; valid
 siblings remain available. Binding verifies original identity, not semantic truth.
 
+The current `independent_original_scope_v2` contract separates `facts` from `gaps`.
+Both arrays can be empty. A previous-date metric or earlier event is still a useful
+observation when the future realization is unknown. Gap interpretations cite the
+supplied source groups and remain limited to the delivered excerpts; they provide
+no fact evidence. Source groups identify URL plus captured body hash, so one fact
+cannot mix different versions of the same page. Invalid gap siblings are isolated
+without dropping valid facts. Archived facts-only v1 proposals remain readable.
+No oversized note is clipped and no rejected cross-source fact is automatically
+split or relabeled as valid evidence.
+
 Both calls share the same existing model HTTP/failure journal and deadline. No
 additional allowance is granted. With only one request available the stage can
 finish original reading without updating the map. Its status is
 `source_reading_complete`, not a completed graph review. Invalid or failed initial
 reading is preserved and does not silently dispatch another call. Interrupted
 receipts retain the existing review-required recovery rule.
+An accepted zero-fact reading is `source_reading_empty`, distinct from
+`source_reading_rejected`; neither status dispatches an extra graph request. A
+missing future result is not a negative outcome or a reason to renew capture budgets.
 
 The second request receives a compact provisional reading with the same original
 R IDs. Full bound text remains in the local audit; it is not duplicated in the
