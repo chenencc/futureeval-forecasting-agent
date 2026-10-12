@@ -86,6 +86,18 @@ class Selection(unittest.TestCase):
         enroll(ledger, self.cfg, CLOCK); self.assertFalse(ledger['tasks'])
         market['last_quote']['received_at'] = CLOCK
         enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 1)
+    def test_wide_spread_book_reaches_enrollment(self):
+        ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
+                  'identity': {'policy_sha256': digest(self.cfg)}}
+        ingest(ledger, 'polymarket', [raw_poly()], self.cfg, CLOCK)
+        market = next(iter(ledger['markets'].values()))
+        market['last_quote'] = quote('polymarket',
+            {'bids': [{'price': .02, 'size': 32}], 'asks': [{'price': .99, 'size': 100}]},
+            self.cfg, {'received_at': CLOCK})
+        enroll(ledger, self.cfg, CLOCK)
+        frozen = next(iter(ledger['tasks'].values()))['market']['last_quote']
+        self.assertEqual(frozen['quality_flags'], ['wide_spread'])
+        self.assertAlmostEqual(frozen['midpoint'], .505)
     def test_large_cohort_quote_turns_prioritize_due_labels_and_reserve_new_entries(self):
         ledger = {'markets': {}, 'tasks': {}}
         worker = {'tasks': {}}
@@ -159,9 +171,21 @@ class Books(unittest.TestCase):
         raw = {'bids': [{'price': .4, 'size': 0}], 'asks': [{'price': .45, 'size': 50}]}
         self.assertEqual(quote('polymarket', raw, self.cfg, self.meta)['status'], 'missing_depth')
     def test_shell_wide_shallow_crossed(self):
-        for bid, ask, size, status in [(.1, .9, 100, 'wide_spread'), (.45, .5, 1, 'shallow_book'), (.6, .5, 50, 'crossed_book')]:
+        for bid, ask, size, status in [(.45, .5, 1, 'shallow_book'), (.6, .5, 50, 'crossed_book')]:
             q = quote('polymarket', {'bids': [{'price': bid, 'size': size}], 'asks': [{'price': ask, 'size': size}]}, self.cfg, self.meta)
             self.assertEqual(q['status'], status); self.assertIsNone(q['midpoint'])
+    def test_wide_spread_is_research_usable_with_explicit_quality(self):
+        raw = {'bids': [{'price': '.02', 'size': '32'}],
+               'asks': [{'price': '.99', 'size': '100'}]}
+        q = quote('polymarket', raw, self.cfg, self.meta)
+        self.assertEqual(q['status'], 'usable')
+        self.assertEqual(q['quality_flags'], ['wide_spread'])
+        self.assertAlmostEqual(q['midpoint'], .505)
+        self.assertFalse(q['midpoint_is_executable_price'])
+        strict = quote('polymarket', raw, self.cfg | {'allow_wide_spread': False}, self.meta)
+        self.assertEqual(strict['status'], 'wide_spread'); self.assertIsNone(strict['midpoint'])
+        raw['bids'][0]['size'] = '1'
+        self.assertEqual(quote('polymarket', raw, self.cfg, self.meta)['status'], 'shallow_book')
 
 
 class Labels(unittest.TestCase):
@@ -180,12 +204,21 @@ class Labels(unittest.TestCase):
         market = {'rule_drift_seen_at': '2026-10-14T00:00:00Z'}
         self.assertEqual(label(self.task, market, [], '2026-10-15T00:01:00Z', self.cfg)['72']['status'], 'rules_changed')
     def test_not_due(self): self.assertEqual(label(self.task, {}, [], CLOCK, self.cfg), {})
+    def test_wide_spread_label_preserves_quality_and_observed_midpoint(self):
+        q = quote('polymarket', {'bids': [{'price': .02, 'size': 100}],
+                  'asks': [{'price': .99, 'size': 100}]}, self.cfg,
+                  {'received_at': '2026-10-14T23:55:00Z'})
+        result = label(self.task, {}, [q], '2026-10-15T00:01:00Z', self.cfg)['72']
+        self.assertEqual(result['status'], 'quoted')
+        self.assertAlmostEqual(result['label'], .505)
+        self.assertEqual(result['quote']['quality_flags'], ['wide_spread'])
 
 
 class Persistence(unittest.TestCase):
     def test_authorized_policy_migration_preserves_tasks_and_failed_reservations(self):
         cfg = policy()
         legacy = dict(cfg)
+        legacy.pop('allow_wide_spread')
         legacy.pop('enrollment_day_timezone'); legacy.pop('maximum_new_tasks_per_day')
         legacy.update(maximum_active_families=3, maximum_new_tasks_per_utc_day=3)
         self.assertEqual(digest(legacy), '642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df')
@@ -203,6 +236,19 @@ class Persistence(unittest.TestCase):
             # Increasing a provider budget is outside this authorized migration.
             with self.assertRaises(ValueError):
                 state(root, 'worker', cfg | {'maximum_worker_model_attempts_per_task': 61})
+    def test_wide_spread_policy_migration_preserves_daily_admissions_and_reservations(self):
+        cfg = policy(); old = dict(cfg); old.pop('allow_wide_spread')
+        self.assertEqual(digest(old), '31ef70793256bce9ca689e0d51911e05fe8288fa1aedffd8661487c81d423825')
+        with tempfile.TemporaryDirectory() as root:
+            ledger = state(root, 'monitor', old)
+            ledger['tasks']['old'] = {'enrolled_at': CLOCK, 'status': 'queued'}
+            ledger['enrollment_daily'] = {'2026-10-12': 1}
+            ledger['provider_reservations'] = [{'status': 'failed', 'kind': 'model'}]
+            write(Path(root) / 'state.json', ledger)
+            migrated = state(root, 'monitor', cfg)
+            for field in ('tasks', 'enrollment_daily', 'provider_reservations'):
+                self.assertEqual(migrated[field], ledger[field])
+            self.assertFalse(migrated['policy_migrations'][0]['budget_reset'])
     def test_artifact_redirect_drops_github_token_and_rejects_untrusted_host(self):
         from urllib.request import Request
         request = Request('https://api.github.com/repos/example/repo/actions/artifacts/1/zip',

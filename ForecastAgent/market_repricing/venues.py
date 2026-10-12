@@ -194,14 +194,17 @@ def quote(venue, raw, cfg, metadata):
     bid_size = sum(s for p, s in bids if p == bid)
     ask_size = sum(s for p, s in asks if p == ask)
     spread = ask - bid
+    quality_flags = ['wide_spread'] if spread > cfg['maximum_spread'] + 1e-9 else []
     status = 'usable'
     if spread < 0:
         status = 'crossed_book'
-    elif spread > cfg['maximum_spread'] + 1e-9:
+    elif quality_flags and not cfg.get('allow_wide_spread', False):
         status = 'wide_spread'
     elif min(bid_size, ask_size) < cfg['minimum_top_size']:
         status = 'shallow_book'
-    return {**metadata, 'status': status, 'yes_bid': bid, 'yes_ask': ask,
+    return {**metadata, 'status': status, 'quality_flags': quality_flags,
+            'research_only': True, 'midpoint_is_executable_price': False,
+            'yes_bid': bid, 'yes_ask': ask,
             'yes_bid_size': bid_size, 'yes_ask_size': ask_size, 'spread': spread,
             'yes_bids_top10': [{'price': p, 'size': sum(s for q, s in bids if q == p)}
                                for p in sorted({p for p, s in bids if s > 0}, reverse=True)[:10]],
