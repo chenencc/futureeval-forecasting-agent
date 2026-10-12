@@ -47,8 +47,9 @@ def discover_events(http, venue, cfg, clock):
             excluded_tags.append(tag['id']); pages.append(receipt)
     for index in range(cfg['maximum_discovery_pages_per_venue']):
         if venue == 'polymarket':
+            page_size = 20
             response, receipt = http.get(GAMMA + 'events', {'closed': 'false', 'active': 'true',
-                'order': 'createdAt', 'ascending': 'false', 'limit': 100, 'offset': index * 100,
+                'order': 'createdAt', 'ascending': 'false', 'limit': page_size, 'offset': index * page_size,
                 'end_date_min': close_min.isoformat(), 'exclude_tag_id': excluded_tags})
             events, next_cursor = response, None
         else:
@@ -71,7 +72,7 @@ def discover_events(http, venue, cfg, clock):
                 else:
                     market['category'] = event.get('category')
                 rows.append(market)
-        complete = venue == 'polymarket' and len(events) < 100 or venue == 'kalshi' and not next_cursor
+        complete = venue == 'polymarket' and len(events) < page_size or venue == 'kalshi' and not next_cursor
         if complete:
             return rows, {'complete': True, 'pages': pages, 'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat()}
         cursor = next_cursor
@@ -173,7 +174,20 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         # Prioritize enrolled contracts; newest launches cannot starve labels.
         selected = {k for k in ledger['tasks']}
         candidates = [k for k, m in ledger['markets'].items() if m['selection']['status'] in {'candidate', 'waiting_market', 'waiting_rules'}]
-        priority = list(sorted(selected)) + [k for k in sorted(candidates, key=lambda k: ledger['markets'][k].get('created_at') or '', reverse=True) if k not in selected]
+        # Try one representative per family before any second threshold. A large
+        # new event must not consume the entire quote budget and starve others.
+        groups = {}
+        for key in candidates:
+            if key not in selected:
+                groups.setdefault(ledger['markets'][key]['family'], []).append(key)
+        def rank(key):
+            m = ledger['markets'][key]
+            return (bool(m.get('last_quote')), -float(m.get('discovery_volume_hint') or 0),
+                    -float(m.get('discovery_liquidity_hint') or 0), key)
+        groups = {family: sorted(keys, key=rank) for family, keys in groups.items()}
+        rounds = [keys[i] for i in range(max((len(g) for g in groups.values()), default=0))
+                  for family, keys in sorted(groups.items()) if i < len(keys)]
+        priority = list(sorted(selected)) + rounds
         for index, key in enumerate(priority[:cfg['maximum_quote_requests_per_dispatch']]):
             market = ledger['markets'][key]
             if index < cfg['maximum_metadata_refresh_per_dispatch'] and key in selected:

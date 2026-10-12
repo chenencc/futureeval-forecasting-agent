@@ -35,6 +35,12 @@ jobs:
         run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
       - name: Run research monitor
         run: python -m ForecastAgent.market_repricing monitor --root snapshots/market-monitor --worker snapshots/market-worker
+      - name: Seal interrupted monitor state
+        if: always()
+        run: |
+          if [ -f snapshots/market-monitor/state.json ]; then
+            python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-monitor')"
+          fi
       - name: Publish independent monitor checkpoint
         if: always()
         uses: actions/upload-artifact@v4

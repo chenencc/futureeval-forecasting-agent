@@ -44,6 +44,8 @@ def normalize(venue, raw):
                 'tradable': bool(raw.get('active') and not raw.get('closed') and not raw.get('archived') and raw.get('enableOrderBook') and raw.get('acceptingOrders')),
                 'disputed': 'disputed' in str(raw.get('umaResolutionStatuses', '')).lower(),
                 'terminal_result': None,
+                'discovery_liquidity_hint': raw.get('liquidityNum') or raw.get('liquidity') or 0,
+                'discovery_volume_hint': raw.get('volumeNum') or raw.get('volume') or 0,
                 'screen_text': ' '.join([str(raw.get('question', '')), rule, str(event.get('title', '')), str(raw.get('tags', [])), str(event.get('tags', [])), str(raw.get('sportsMarketType', ''))])}
     if venue != 'kalshi':
         raise ValueError('Unsupported venue')
@@ -59,6 +61,8 @@ def normalize(venue, raw):
             'binary': raw.get('market_type') == 'binary', 'yes_token': None,
             'tradable': raw.get('status') in {'open', 'active'}, 'disputed': False,
             'terminal_result': raw.get('result') if raw.get('result') in {'yes', 'no'} else None,
+            'discovery_liquidity_hint': raw.get('open_interest_fp') or 0,
+            'discovery_volume_hint': raw.get('volume_fp') or 0,
             'screen_text': ' '.join(str(raw.get(k) or '') for k in ('ticker', 'event_ticker', 'title', 'subtitle', 'yes_sub_title', 'rules_primary', 'rules_secondary', 'category'))}
 
 
@@ -87,6 +91,8 @@ def screen(market, clock, cfg):
         return {**result, 'status': 'waiting_rules', 'reason': 'close_hint_missing'}
     if remaining < cfg['minimum_close_buffer_hours']:
         return {**result, 'status': 'short_resolution_cohort', 'reason': 'insufficient_repricing_window'}
+    if remaining > cfg['maximum_close_horizon_days'] * 24:
+        return {**result, 'status': 'waiting_catalyst', 'reason': 'distant_event_outside_initial_pilot_window'}
     if not market['tradable']:
         return {**result, 'status': 'waiting_market', 'reason': 'not_orderable'}
     return {**result, 'status': 'candidate', 'reason': 'event_domain_prescreen_only'}

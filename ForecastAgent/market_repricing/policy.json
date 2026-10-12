@@ -6,6 +6,7 @@
   "maximum_spread": 0.08,
   "minimum_top_size": 20,
   "minimum_close_buffer_hours": 192,
+  "maximum_close_horizon_days": 90,
   "maximum_active_families": 30,
   "maximum_new_tasks_per_utc_day": 5,
   "maximum_executions_per_task": 3,

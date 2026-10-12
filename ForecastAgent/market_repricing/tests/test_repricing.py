@@ -52,6 +52,7 @@ class Selection(unittest.TestCase):
     def test_rules_required(self): self.assertEqual(screen(self.m | {'rules': ''}, CLOCK, self.cfg)['status'], 'waiting_rules')
     def test_unknown_domain_not_force_filled(self): self.assertEqual(screen(self.m | {'screen_text': 'unknown new question'}, CLOCK, self.cfg)['status'], 'waiting_relevance')
     def test_short_resolution_separate(self): self.assertEqual(screen(self.m | {'close_at': '2026-10-13T00:00:00Z'}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
+    def test_distant_catalyst_waits(self): self.assertEqual(screen(self.m | {'close_at': '2028-11-07T00:00:00Z'}, CLOCK, self.cfg)['status'], 'waiting_catalyst')
     def test_unopened_waits(self): self.assertEqual(screen(self.m | {'tradable': False}, CLOCK, self.cfg)['status'], 'waiting_market')
     def test_catalyst_not_invented(self): self.assertEqual(screen(self.m, CLOCK, self.cfg)['catalyst_status'], 'plausible_unconfirmed')
     def test_family_daily_dedup(self):

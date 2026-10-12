@@ -75,6 +75,12 @@ jobs:
             python -m ForecastAgent.market_repricing evaluate --root snapshots/market-monitor --worker snapshots/market-worker --output snapshots/market-worker/evaluation.json
             python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
           fi
+      - name: Seal interrupted worker state
+        if: always()
+        run: |
+          if [ -f snapshots/market-worker/state.json ]; then
+            python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
+          fi
       - name: Publish independent worker checkpoint
         if: always()
         uses: actions/upload-artifact@v4

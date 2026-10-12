@@ -92,6 +92,11 @@ platform hint, not an inferred authoritative event deadline. A domain match
 records `plausible_unconfirmed`; it never creates a fictitious confirmed
 catalyst or date. Unknown relevance remains in a waiting pool.
 
+The initial pilot uses a platform close hint 8 to 90 days away. Very distant
+events wait for a nearer catalyst rather than consuming the quote or model
+budget. Quote discovery visits one representative per event family before
+additional thresholds; volume/depth hints are ranking only, not labels.
+
 The first pilot admits at most 30 venue event families total, at most 5 per UTC
 day, and at most 5 per worker dispatch. There is no automatic budget renewal
 or endless replenishment of terminal tasks. Excluded crypto includes companies,
