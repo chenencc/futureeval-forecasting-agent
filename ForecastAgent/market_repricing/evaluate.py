@@ -21,7 +21,8 @@ def run(monitor_root, worker_root, output):
         for h in cfg['horizons_hours']:
             label = labels.get(str(h), {'status': 'not_due_or_unobserved'})
             row = {'key': key, 'family': task['market']['family'], 'horizon_hours': h,
-                   'task_status': task['status'], 'label_status': label['status'], 'arms': {}}
+                   'task_status': task['status'], 'label_status': label['status'], 'arms': {},
+                   'map_delivered': bool(forecast and forecast.get('pair_audit', {}).get('map_delivered'))}
             if forecast and forecast.get('timely') and label['status'] == 'quoted':
                 target, base = label['label'], forecast['baseline'][str(h)]
                 row.update(target=target, baseline=base, baseline_error=base-target)
@@ -36,13 +37,14 @@ def run(monitor_root, worker_root, output):
     for h in cfg['horizons_hours']:
         pool = [r for r in rows if r['horizon_hours'] == h]
         names = cfg['analysis_arms']
-        paired = [r for r in pool if all(n in r['arms'] for n in names)]
+        paired = [r for r in pool if r['map_delivered'] and all(n in r['arms'] for n in names)]
         metrics = {}
         for name in ['no_change'] + names:
             errors = [r['baseline_error'] if name == 'no_change' else r['arms'][name]['error'] for r in paired]
             metrics[name] = {'paired_n': len(errors), 'mae': sum(abs(x) for x in errors)/len(errors) if errors else None,
                              'rmse': math.sqrt(sum(x*x for x in errors)/len(errors)) if errors else None}
         summary[str(h)] = {'label_status_distribution': dict(Counter(r['label_status'] for r in pool)),
+                            'map_unavailable_count': sum(not r['map_delivered'] for r in pool),
                             'independent_event_families': len({r['family'] for r in paired}), 'paired_metrics': metrics}
     result = {'protocol': 'market-repricing-evaluation-v1', 'rows': rows, 'summary': summary,
               'selection_and_missing_labels_retained': True, 'eventual_event_brier_is_separate': True,

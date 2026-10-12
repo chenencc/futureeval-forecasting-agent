@@ -59,6 +59,9 @@ is the added field in B. Development projection binds quotes, reference IDs,
 source scope and unknown predicates. Unsupported or oversized maps become an
 explicit original-only fallback, never a fabricated map. Such cases are not
 successful map-vs-original comparisons.
+When no accepted map is deliverable, B is `not_comparable` and consumes no
+additional scoring request. The available A forecast is retained; map-contrast
+metrics exclude these cases and report the missing-map count explicitly.
 
 Each arm has one lifetime Mercury request. Failed journals remain saved. The
 new price adapter does not silently route through Release or invent a price.

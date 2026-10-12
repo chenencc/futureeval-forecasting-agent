@@ -102,6 +102,11 @@ def run(bundle, market, anchor, root, cfg):
             raise ValueError('Unsupported development analysis arm')
         folder = root / arm
         write(folder / 'state.json', states[arm])
+        if arm == 'mapped' and not audit['map_delivered']:
+            arms[arm] = {'status': 'not_comparable', 'reason': 'accepted_map_unavailable',
+                         'map_delivered': False, 'new_model_requests': 0}
+            write(folder / 'result.json', arms[arm])
+            continue
         try:
             response = decision_http.call(states[arm], folder / 'decision', heads, required_questions=heads)
             value = {'status': 'completed', 'price_means': {str(h): mean(response['answers']['price_' + str(h)]) for h in cfg['horizons_hours']},

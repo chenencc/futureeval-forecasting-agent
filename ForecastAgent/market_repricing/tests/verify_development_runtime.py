@@ -44,12 +44,12 @@ class DevelopmentRuntime(unittest.TestCase):
             with patch.object(decision_http, 'call', side_effect=decision):
                 result = run(bundle, market, anchor, Path(root), policy())
                 again = run(bundle, market, anchor, Path(root), policy())
-            self.assertEqual(len(seen), 2)
+            self.assertEqual(len(seen), 1)
             self.assertEqual(result['status'], 'completed')
             self.assertEqual(result['arms']['original']['price_means']['72'], .6)
             self.assertEqual(result, again)
-            self.assertEqual(seen[0]['evidence'], seen[1]['evidence'])
             self.assertFalse(result['pair_audit']['map_delivered'])
+            self.assertEqual(result['arms']['mapped']['status'], 'not_comparable')
             self.assertEqual(set(result['arms']), {'original', 'mapped'})
             for span in seen[0]['evidence']:
                 self.assertEqual(text[span['start']:span['end']], span['text'])
@@ -93,6 +93,26 @@ class DevelopmentRuntime(unittest.TestCase):
         self.assertEqual(states['original']['evidence'], states['mapped']['evidence'])
         self.assertEqual(states['original']['sources'], states['mapped']['sources'])
         self.assertEqual(set(registry), {'event_yes', 'price_72', 'price_168'})
+        from ForecastAgent.market_repricing.forecast import run
+        from ForecastAgent.research_loop import decision_http
+        market = self.bundle()[0]
+        calls = []
+        def score(state, folder, heads, **kwargs):
+            calls.append(state)
+            return {'model': 'inception/mercury-decide:free', 'answers': {
+                'event_yes': {'type': 'noul', 'noul': .5},
+                **{k: {'type': 'choice', 'choice': 'p10', 'confidence': 1,
+                       'probabilities': {v: 1 if v == 'p10' else 0 for v in heads[k]['criteria']}}
+                   for k in ('price_72', 'price_168')}}}
+        with tempfile.TemporaryDirectory() as root, patch.object(decision_http, 'call', side_effect=score):
+            result = run(child, market, anchor, Path(root), policy())
+            replay = run(child, market, anchor, Path(root), policy())
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn('research_map', calls[0])
+        self.assertIn('research_map', calls[1])
+        self.assertEqual(calls[0]['evidence'], calls[1]['evidence'])
+        self.assertEqual(result, replay)
+        self.assertTrue(result['arms']['mapped']['map_delivered'])
 
 
 if __name__ == '__main__': unittest.main()
