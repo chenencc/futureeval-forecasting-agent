@@ -129,7 +129,8 @@ class PublicHTTP:
             return parsed, {'receipt': path.name, 'response_sha256': receipt['response_sha256'],
                                          'received_at': receipt['received_at']}
         except Exception as exc:
-            receipt.update(status='failed', error_type=type(exc).__name__, http_status=getattr(exc, 'code', None))
+            receipt.update(status='failed', error_type=type(exc).__name__, error_detail=str(exc)[:240],
+                           http_status=getattr(exc, 'code', None))
             raise RuntimeError('Public endpoint failure: ' + type(exc).__name__) from exc
         finally:
             write(path, receipt)

@@ -1,5 +1,6 @@
 """Bounded discovery, durable waiting pool, quote snapshots and delayed labels."""
 from collections import Counter
+import copy
 from datetime import timedelta
 from pathlib import Path
 
@@ -110,7 +111,7 @@ def enroll(ledger, cfg, clock):
             continue
         key = market['key']
         # One immutable representative per venue event family. No cross-venue title matching.
-        ledger['tasks'][key] = {'key': key, 'market': market.copy(), 'enrolled_at': clock,
+        ledger['tasks'][key] = {'key': key, 'market': copy.deepcopy(market), 'enrolled_at': clock,
                                 'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256']}
         families.add(market['family'])
         count += 1
@@ -173,6 +174,8 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             raise ValueError('Worker and monitor policy mismatch')
         # Prioritize enrolled contracts; newest launches cannot starve labels.
         selected = {k for k in ledger['tasks']}
+        for market in ledger['markets'].values():
+            market['selection'] = screen(market, clock, cfg)
         candidates = [k for k, m in ledger['markets'].items() if m['selection']['status'] in {'candidate', 'waiting_market', 'waiting_rules'}]
         # Try one representative per family before any second threshold. A large
         # new event must not consume the entire quote budget and starve others.
@@ -190,14 +193,17 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         priority = list(sorted(selected)) + rounds
         for index, key in enumerate(priority[:cfg['maximum_quote_requests_per_dispatch']]):
             market = ledger['markets'][key]
-            if index < cfg['maximum_metadata_refresh_per_dispatch'] and key in selected:
+            if index < cfg['maximum_metadata_refresh_per_dispatch']:
                 try:
                     current, receipt = refresh(http, market)
                     market.update(current, metadata_refreshed_at=receipt['received_at'])
                     market['selection'] = screen(market, clock, cfg)
+                    market['metadata_versions'].append({'sha256': receipt['response_sha256'],
+                        'seen_at': receipt['received_at'], 'rules_sha256': current['rules_sha256'],
+                        'source': 'detail_refresh'})
                     if current.get('terminal_result'):
                         market.setdefault('terminal_seen_at', receipt['received_at'])
-                    if current['rules_sha256'] != ledger['tasks'][key]['market']['rules_sha256']:
+                    if key in selected and current['rules_sha256'] != ledger['tasks'][key]['market']['rules_sha256']:
                         market['rule_drift'] = True
                         market.setdefault('rule_drift_seen_at', receipt['received_at'])
                 except Exception as exc:

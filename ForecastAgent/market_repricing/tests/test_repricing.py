@@ -61,6 +61,9 @@ class Selection(unittest.TestCase):
         for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable'}
         enroll(ledger, self.cfg, CLOCK); enroll(ledger, self.cfg, CLOCK)
         self.assertEqual(len(ledger['tasks']), 1); self.assertEqual(ledger['daily']['2026-10-12'], 1)
+        before = digest(ledger['tasks'])
+        for market in ledger['markets'].values(): market['metadata_versions'].append({'new': 'metadata'})
+        self.assertEqual(digest(ledger['tasks']), before)
     def test_daily_and_campaign_caps(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]} for i in range(10)], self.cfg, CLOCK)

@@ -80,9 +80,12 @@ def request_for(market):
 def acquire(task, folder):
     from ForecastAgent.releases import v1_0_5 as release
     source = folder / 'analysis-input.json'
+    marker = folder / 'material-integrity.json'
     if source.exists():
-        if digest(read(source)) != task.get('bundle_sha256'):
+        expected = task.get('bundle_sha256') or (read(marker).get('bundle_sha256') if marker.exists() else None)
+        if digest(read(source)) != expected:
             raise ValueError('Frozen original research material changed')
+        task['bundle_sha256'] = expected
         return read(source)
     request_path = folder / 'collection-request.json'
     request = read(request_path) if request_path.exists() else request_for(task['market'])
@@ -91,6 +94,7 @@ def acquire(task, folder):
     if not adapter.get('release_acquisition'):
         raise RuntimeError('Release acquisition incomplete; native journals retained')
     bundle = release.supplement(adapter, folder, request['id'])
+    write(marker, {'bundle_sha256': digest(bundle), 'release_sha': RELEASE_SHA})
     write(source, bundle)
     task['bundle_sha256'] = digest(bundle)
     task['originals_frozen_at'] = now()
