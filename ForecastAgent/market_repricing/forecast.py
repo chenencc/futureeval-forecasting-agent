@@ -18,6 +18,7 @@ def registry(event_heads, hours):
                 ' hours, conditional on the contract still being open and orderable. These are PRICE GRID '
                 'representative points, not mutually independent event probabilities. Give a normalized '
                 'predictive distribution. Use anchor quote and information frozen at anchor_at only. '
+                'Wide-spread midpoints are noisy book measurements, not reliable consensus or executable prices. '
                 'Consider what information traders will learn during this interval. Do not substitute '
                 'eventual resolution probability for future market price. Research-map explanations '
                 'are unverified interpretations; supplied original evidence takes precedence.',
@@ -51,7 +52,8 @@ def prepare(bundle, anchor, cfg):
     metadata = {'anchor_at': anchor['received_at'], 'anchor_quote': anchor,
                 'target_policy': {'horizons_hours': cfg['horizons_hours'],
                     'label_window_minutes': cfg['label_window_minutes'],
-                    'target': 'tradable_yes_midpoint', 'eventual_event_is_separate': True}}
+                    'target': 'observed_yes_bid_ask_midpoint', 'eventual_event_is_separate': True,
+                    'anchor_quality_flags': anchor.get('quality_flags', [])}}
     # Only the packing seam receives a smaller declared cap. All current
     # bound-source, map grounding, literal visibility and scope checks still
     # run inside the real development prepared_pair implementation.

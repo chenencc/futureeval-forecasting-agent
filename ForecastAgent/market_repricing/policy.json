@@ -4,6 +4,7 @@
   "label_window_minutes": 30,
   "maximum_seal_latency_minutes": 30,
   "maximum_spread": 0.08,
+  "allow_wide_spread": true,
   "minimum_top_size": 20,
   "minimum_close_buffer_hours": 168,
   "minimum_resolution_hours": 168,

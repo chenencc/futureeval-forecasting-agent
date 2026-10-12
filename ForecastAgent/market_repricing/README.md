@@ -119,7 +119,12 @@ companies, ETFs and regulation), sports/esports, social counts and pure price
 wagers. Composite contracts/title conjunctions are conservatively excluded from
 the first single-event pilot. Rejections and shortfalls are retained.
 
-Books require two sides, spread <= 0.08 and top size >= 20 on both sides.
+Books require two sides and top size >= 20 on both sides. Wide spreads no longer
+block admission, forecast anchoring or delayed quote labels. The 0.08 threshold
+is retained only to add `quality_flags=["wide_spread"]`; the observed midpoint
+remains available for research. It is not an executable fill price or a reliable
+market consensus estimate. The scoring inputs and delayed labels retain this
+quality flag alongside both prices and sizes. Crossed books remain invalid.
 Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
@@ -188,8 +193,8 @@ can archive completed Actions artifacts into `E:\metaculus_data`; actual sync
 must complete before claiming local archival. Ninety-day artifact retention and
 a finite pilot are not an unlimited durable cloud database.
 
-The authorized admission-policy migration accepts only the exact previous v2
-policy hash and identical engine/provider budgets. It records old/new identities,
+The authorized admission-policy migrations accept only the exact initial v2 and
+twenty-per-day policy hashes and identical engine/provider budgets. They record old/new identities,
 retains enrolled tasks, legacy daily counts and physical reservations, and never
 resets them. Any unrelated policy or engine drift still fails closed.
 
