@@ -92,6 +92,19 @@ class Selection(unittest.TestCase):
         hint['at'] = '2026-10-18T23:59:59Z'
         self.assertEqual(screen(self.m | {'resolution_hint': hint}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
         self.assertEqual(screen(self.m | {'resolution_hint': {'at': None}}, CLOCK, self.cfg)['status'], 'waiting_rules')
+    def test_title_rule_timezone_binding_uses_platform_year_and_dst(self):
+        rule = 'Resolves Yes if the event occurs before the specified date, 11:59 PM ET. Otherwise No.'
+        for title, close in [('Will an indictment occur by October 31?', '2026-11-01T03:59:00Z'),
+                             ('Will an indictment occur by December 31?', '2027-01-01T04:59:00Z')]:
+            market = normalize('polymarket', raw_poly() | {'question': title, 'description': rule, 'endDate': close})
+            self.assertEqual(market['resolution_hint']['role'], 'bound_title_rule_deadline')
+            self.assertTrue(market['resolution_hint']['title_rule_metadata_agree'])
+        for close in ['2026-11-02T03:59:00Z', '2026-11-01T03:00:00Z']:
+            market = normalize('polymarket', raw_poly() | {'question': 'Will an indictment occur by October 31?', 'description': rule, 'endDate': close})
+            self.assertIsNone(market['resolution_hint']['at'])
+        market = normalize('polymarket', raw_poly() | {'question': 'Will an indictment occur by October 31?',
+                            'description': 'No explicit deadline delegation.', 'endDate': '2026-11-01T03:59:00Z'})
+        self.assertIsNone(market['resolution_hint']['at'])
 
 
 class Books(unittest.TestCase):

@@ -46,6 +46,25 @@ def resolution_hint(venue, raw, rule):
         if close and abs((close - stamp).total_seconds()) <= 36 * 3600:
             matches.append((stamp, match.group()))
     if not matches:
+        # Bind a delegated title deadline to explicit rule time and platform year.
+        delegated = re.search(r'\b(?:specified date|date (?:specified|stated|shown) in (?:the )?title|date in (?:the )?title)\b', rule, re.I)
+        late_et = re.search(r'\b11:59\s*PM\s*ET\b', rule, re.I)
+        title_dates = list(re.finditer(r'\bby\s+(' + '|'.join(months) + r')\s+(\d{1,2})(?:st|nd|rd|th)?\b', str(raw.get('question', '')), re.I))
+        if close and delegated and late_et and len(title_dates) == 1:
+            from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+            try:
+                local = close.astimezone(ZoneInfo('America/New_York'))
+                match = title_dates[0]
+                month = next(i+1 for i, m in enumerate(months) if m.lower() == match[1].lower())
+                if (local.month, local.day, local.hour, local.minute, local.second) == (month, int(match[2]), 23, 59, 0):
+                    return {'at': close.isoformat(), 'role': 'bound_title_rule_deadline',
+                        'source_field': 'question+description+endDate', 'verbatim_date': match.group(),
+                        'verbatim_rule_reference': delegated.group(), 'verbatim_time': late_et.group(),
+                        'year_source': 'platform_endDate_matched_in_rule_timezone',
+                        'timezone': 'America/New_York', 'title_rule_metadata_agree': True,
+                        'can_resolve_early': True, 'guaranteed_minimum_lifetime': False}
+            except ZoneInfoNotFoundError:
+                pass
         return {'at': None, 'role': 'unknown', 'source_field': 'description', 'can_resolve_early': True}
     stamp, quoted = min(matches)
     return {'at': stamp.isoformat(), 'role': 'rule_observation_deadline_day_precision',
