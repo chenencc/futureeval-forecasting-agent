@@ -1,4 +1,4 @@
-"""Read-only release-pinned acquisition and finite resumable research tasks."""
+"""Integrated development acquisition/maps and finite read-only research tasks."""
 import contextlib
 import hashlib
 import os
@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import urllib.request
 
-from . import RELEASE_SHA, SUPER
+from . import ENGINE_SHA, ENGINE_BRANCH, SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write, verify
 from .venues import book, refresh, screen
 
@@ -48,7 +48,7 @@ def provider_budget(root, ledger, key, cfg):
             finally:
                 write(Path(root) / 'state.json', ledger)
         return original(request, *args, **kwargs)
-    # Frozen release providers may have imported urlopen before this context.
+    # Development providers may have imported urlopen before this context.
     for module in list(sys.modules.values()):
         if module and getattr(module, '__name__', '').startswith('ForecastAgent') and getattr(module, 'urlopen', None) is original:
             replaced.append(module); module.urlopen = bounded
@@ -78,7 +78,9 @@ def request_for(market):
 
 
 def acquire(task, folder):
-    from ForecastAgent.releases import v1_0_5 as release
+    from ForecastAgent.intelligence import pipeline
+    from ForecastAgent.intelligence.research_map import enable
+    from ForecastAgent.intelligence.worker import remaining_budget
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
     if source.exists():
@@ -88,13 +90,27 @@ def acquire(task, folder):
         task['bundle_sha256'] = expected
         return read(source)
     request_path = folder / 'collection-request.json'
-    request = read(request_path) if request_path.exists() else request_for(task['market'])
+    request = read(request_path) if request_path.exists() else enable(
+        request_for(task['market']), predictive_focus=True, scoring_delivery=True)
+    request['collection_model'] = SUPER
     write(request_path, request)
-    adapter = release.collect(request, folder / 'retrieval')
-    if not adapter.get('release_acquisition'):
-        raise RuntimeError('Release acquisition incomplete; native journals retained')
-    bundle = release.supplement(adapter, folder, request['id'])
-    write(marker, {'bundle_sha256': digest(bundle), 'release_sha': RELEASE_SHA})
+    directory = folder / 'development-intelligence'
+    # Replays use the same request clock and the development worker's cumulative
+    # decision/failure reservations, not fresh per-dispatch collection allowances.
+    with remaining_budget(directory):
+        result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
+                                  recover_data=True, research_map=True, channel_tools=True)
+    if not (result.get('view') or {}).get('pages'):
+        raise RuntimeError('Development acquisition incomplete or lacks readable originals; journals retained')
+    package = directory / 'final-map-package.json'
+    if not package.exists():
+        package = directory / 'retrieval/development-channels/package.json'
+    bundle = read(package)
+    if str(bundle['request']['id']) != request['id']:
+        raise ValueError('Development material identity mismatch')
+    write(folder / 'intelligence-report.json', result['report'])
+    write(marker, {'bundle_sha256': digest(bundle), 'engine_sha': ENGINE_SHA,
+                   'engine_branch': ENGINE_BRANCH, 'source_package': str(package.relative_to(folder))})
     write(source, bundle)
     task['bundle_sha256'] = digest(bundle)
     task['originals_frozen_at'] = now()
@@ -159,7 +175,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     cfg = cfg or policy()
     verify(monitor_root)
     source = read(monitor_root / 'state.json')
-    if source['identity']['release_sha'] != RELEASE_SHA or source['identity']['policy_sha256'] != digest(cfg):
+    if source['identity']['engine_sha'] != ENGINE_SHA or source['identity']['policy_sha256'] != digest(cfg):
         raise ValueError('Queue pin or policy changed')
     if not verification_only and not 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600:
         raise ValueError('Discovery queue is stale')
@@ -182,7 +198,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                 if ledger['tasks'][key]['executions'] >= cfg['maximum_executions_per_task']:
                     ledger['tasks'][key]['status'] = 'blocked'
                     continue
-                # Frozen release collection itself has finite call/tool/deadline caps.
+                # Development collection has cumulative call/tool/deadline caps.
                 # On Linux, an outer task alarm also bounds non-provider stalls.
                 with task_deadline(cfg['maximum_task_runtime_minutes'] * 60):
                     execute(root, ledger, key, cfg, http, collector, forecaster)
@@ -192,7 +208,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'state_distribution': dict(Counter(t['status'] for t in ledger['tasks'].values())),
                   'physical_model_reservations': sum(r['kind'] == 'model' for r in ledger.get('provider_reservations', [])),
                   'physical_search_reservations': sum(r['kind'] == 'search' for r in ledger.get('provider_reservations', [])),
-                  'release_sha': RELEASE_SHA, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
+                  'engine_sha': ENGINE_SHA, 'engine_branch': ENGINE_BRANCH,
+                  'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
         write(root / 'report.json', report)
         return report
     finally:

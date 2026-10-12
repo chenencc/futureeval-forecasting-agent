@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from . import PROTOCOL, RELEASE_TAG, RELEASE_SHA
+from . import PROTOCOL, ENGINE_BRANCH, ENGINE_SHA
 
 
 def now():
@@ -46,7 +46,8 @@ def policy():
 def state(root, role, configuration):
     path = Path(root) / 'state.json'
     identity = {'protocol': PROTOCOL, 'role': role, 'policy_sha256': digest(configuration),
-                'release_tag': RELEASE_TAG, 'release_sha': RELEASE_SHA}
+                'engine_branch': ENGINE_BRANCH, 'engine_sha': ENGINE_SHA,
+                'development_only': True, 'release_fallback': False}
     if path.exists():
         saved = read(path)
         if saved.get('identity') != identity:

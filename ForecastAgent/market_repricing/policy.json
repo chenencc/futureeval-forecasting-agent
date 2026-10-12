@@ -1,5 +1,5 @@
 {
-  "schema": "market-repricing-policy-v1",
+  "schema": "market-repricing-development-policy-v2",
   "horizons_hours": [72, 168],
   "label_window_minutes": 30,
   "maximum_seal_latency_minutes": 30,
@@ -22,7 +22,7 @@
   "maximum_candidate_age_days": 7,
   "minimum_retry_minutes": 60,
   "flat_band": 0.02,
-  "analysis_arms": ["mercury_original", "super_brief_mercury"],
+  "analysis_arms": ["original", "mapped"],
   "automatic_trading": false,
   "metaculus_submission": false
 }

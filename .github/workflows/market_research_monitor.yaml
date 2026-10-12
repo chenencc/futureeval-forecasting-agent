@@ -45,7 +45,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: market-repricing-monitor-state
+          name: market-repricing-v2-monitor-state
           path: snapshots/market-monitor
           if-no-files-found: error
           retention-days: 90

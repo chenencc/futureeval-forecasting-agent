@@ -11,7 +11,7 @@ on:
         type: boolean
         required: true
         default: true
-        description: Validate queue and release without paid or free model requests
+        description: Validate queue and development engine without model requests
   workflow_run:
     workflows: ['Market repricing research monitor']
     types: [completed]
@@ -47,8 +47,8 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          ref: bf9a425f8425c9a685bd3b24979935b7cfe04981
-          path: .release
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .development
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -59,15 +59,15 @@ jobs:
         run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
       - name: Restore triggering trusted monitor checkpoint
         run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
-      - name: Install pinned release crawler runtime
+      - name: Install development crawler runtime
         run: |
-          python -m pip install -r .release/ForecastAgent/requirements-crawl4ai.txt
+          python -m pip install -r .development/ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
-      - name: Run release-pinned research
+      - name: Run development research
         run: |
           args=()
           if [ "$VERIFY_ONLY" = 'true' ]; then args+=(--verification-only); fi
-          python -m ForecastAgent.market_repricing.runtime --release .release --root snapshots/market-worker --monitor snapshots/market-monitor "${args[@]}"
+          python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor "${args[@]}"
       - name: Evaluate due paired labels
         if: always()
         run: |
@@ -85,7 +85,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: market-repricing-worker-state
+          name: market-repricing-v2-worker-state
           path: snapshots/market-worker
           if-no-files-found: error
           retention-days: 90
@@ -93,6 +93,6 @@ jobs:
         if: always()
         run: |
           if [ -f snapshots/market-worker/report.json ]; then
-            echo '## Release-pinned research only; no orders or submissions' >> "$GITHUB_STEP_SUMMARY"
+            echo '## Development graph research; no orders or submissions' >> "$GITHUB_STEP_SUMMARY"
             cat snapshots/market-worker/report.json >> "$GITHUB_STEP_SUMMARY"
           fi

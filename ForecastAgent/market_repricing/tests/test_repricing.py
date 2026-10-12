@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from ForecastAgent.market_repricing import RELEASE_SHA
+from ForecastAgent.market_repricing import ENGINE_SHA
 from ForecastAgent.market_repricing.common import digest, instant, now, policy, read, seal, state, verify, write
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
 from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, run as monitor_run

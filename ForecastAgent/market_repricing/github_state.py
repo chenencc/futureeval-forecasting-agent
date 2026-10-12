@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 from .common import verify
 
 WORKFLOWS = {'monitor': ('market_research_monitor.yaml', 'Market repricing research monitor', 'Run research monitor'),
-             'worker': ('market_research_worker.yaml', 'Market repricing research worker', 'Run release-pinned research')}
+             'worker': ('market_research_worker.yaml', 'Market repricing research worker', 'Run development research')}
 
 
 def api(path):
@@ -54,9 +54,11 @@ def find(role, branch, exact_run=None):
         if exact_run and run.get('conclusion') != 'success':
             raise ValueError('Explicit discovery source must have completed successfully')
         artifacts = api('/actions/runs/' + str(run['id']) + '/artifacts?per_page=100')['artifacts']
-        matches = [a for a in artifacts if a['name'] == 'market-repricing-' + role + '-state' and not a['expired']]
+        matches = [a for a in artifacts if a['name'] == 'market-repricing-v2-' + role + '-state' and not a['expired']]
         if len(matches) == 1:
             return matches[0]
+        if any(a['name'] == 'market-repricing-' + role + '-state' for a in artifacts):
+            raise ValueError('Legacy Release experiment exists; require explicit campaign migration, not budget reset')
         jobs = api('/actions/runs/' + str(run['id']) + '/jobs?per_page=100')['jobs']
         if exact_run or any(s['name'] == mutation_step and s.get('conclusion') != 'skipped' for j in jobs for s in j.get('steps', [])):
             raise ValueError('Latest mutated research checkpoint is missing; refuse budget reset')

@@ -1,29 +1,33 @@
-# Market repricing research v1
+# Market repricing development pilot v2
 
-This is an independent, read-only sidecar. It does not import the competition
-delivery path, submit forecasts, place orders, or require a trading credential.
+An independent, read-only Polymarket/Kalshi research sidecar. It has no trading
+or Metaculus delivery entry point. Production competition workflows stay separate.
 
-## Frozen runtime
+## Selected engine: latest development, not Release
 
-| Layer | Version |
+| Layer | Implementation |
 | --- | --- |
-| Collection, independent supplement, Crawl4AI | `v1.0.5-recovery.2` |
-| Exact collection source commit | `bf9a425f8425c9a685bd3b24979935b7cfe04981` |
-| Core original-evidence Mercury analysis | Release 1.0.1 |
-| Original context delivery selectors | Release 1.0.4, shipped in Recovery.2 |
+| Engine branch | `codex/official-intelligence-v106` |
+| Exact development snapshot | `c17c1ec4ee3e2458108031a324b45853aa9e7502` |
+| Collection entry | `intelligence.pipeline.collect` |
+| Capabilities | Native channels, Super acquisition/map fusion, predictive focus, reference binding, scoring delivery |
+| Recovery | Independent supplement, data-resource recovery, final-map material processing |
+| Analysis inputs | `intelligence.admission.prepare` and `research_loop.prospective_trial.prepared_pair` |
+| Analysis transport | Development `research_loop.decision_http` |
 | Collection model | `nvidia/nemotron-3-super-120b-a12b:free` |
-| Decision model and endpoint | `inception/mercury-decide:free`, `/api/alpha/decisions` |
-| New research target | `price-grid-v1`, additive adapter, separate from event probability |
+| Decision model | `inception/mercury-decide:free`, `/api/alpha/decisions` |
+| New target adapter | `development-map-price-grid-v2` |
 
-The infrastructure branch is `codex/market-repricing`. Infrastructure `main`
-does not contain the full frozen runtime. The worker checks out the exact release
-commit separately. `runtime.activate` verifies the commit and release manifest,
-then loads every existing dependency from that release. Only this new sidecar
-package is additive. The unfinished research-map branch is not the runtime.
+The sidecar branch is `codex/market-repricing`. Actions checks out the exact
+development snapshot into `.development`. `runtime.activate` verifies the commit,
+tracked-tree cleanliness and implementation identity, then loads every existing
+dependency from that development tree. It does not check out or fall back to a
+Release tag. Historical shared helpers in the development tree retain their
+audited budgets; this reuse does not make the development candidate a Release.
+Update the explicit pin and identity for each new experimental engine.
 
-The original collector requires a numeric question ID. A deterministic internal
-compatibility ID is recorded along with a namespaced venue ID and
-`synthetic_compatibility_id=true`. It is never a Metaculus submission ID.
+Numeric collector IDs are internal compatibility IDs, paired with namespaced
+venue IDs and marked `synthetic_compatibility_id=true`, never submission IDs.
 
 ## Flow
 
@@ -31,14 +35,14 @@ compatibility ID is recorded along with a namespaced venue ID and
 flowchart TD
   P[Polymarket public events and markets] --> M[Independent monitor]
   K[Kalshi public events and markets] --> M
-  M --> S[Exclude crypto, sports, mentions, pure price contracts]
-  S --> W[Waiting pool: rules, tradability, spread, depth]
-  W --> Q[Durable event-family queue]
-  Q --> C[Recovery.2 Super collection]
-  C --> R[Independent supplement and saved original bodies]
-  R --> F[Freeze originals, rules, YES book and anchor clock]
-  F --> A[A: Mercury originals and conditional reread]
-  F --> B[B: one short Super brief, Mercury and conditional reread]
+  M --> S[Event suitability and two-sided book gates]
+  S --> Q[Durable queue and waiting pool]
+  Q --> C[Development Super intelligent collection and maps]
+  C --> R[Independent supplement and data recovery]
+  R --> G[Final map review and material-processing records]
+  G --> F[Body admission, bound originals, frozen rules and anchor quote]
+  F --> A[A: originals to Mercury]
+  F --> B[B: identical originals plus accepted research map to Mercury]
   F --> N[Zero-call no-change price baseline]
   A --> Z[Sealed 72h and 168h price distributions]
   B --> Z
@@ -48,83 +52,74 @@ flowchart TD
   L --> E
 ```
 
-## What the labels mean
+Maps are built during acquisition and final material processing. There is no
+additional independent brief request after collection. Both scoring arms share
+identical admitted original text and the same event/future-price heads; the map
+is the added field in B. Development projection binds quotes, reference IDs,
+source scope and unknown predicates. Unsupported or oversized maps become an
+explicit original-only fallback, never a fabricated map. Such cases are not
+successful map-vs-original comparisons.
 
-Event probability and future market price are distinct. Each Mercury request has
-an eventual-event diagnostic head and **two separate predictive choice heads**.
-The price heads distribute mass over 21 representative prices from 0 to 1 in
-0.05 increments. Their expectation is the forecast midpoint. This finite grid
-is an approximation; it is not a set of independent binary event probabilities.
-Event probabilities retain the release's 0.02–0.98 clip. Price means are not
-silently clipped to that event-probability range.
+Each arm has one lifetime Mercury request. Failed journals remain saved. The
+new price adapter does not silently route through Release or invent a price.
+Missing-arm attrition and original-only availability are explicit.
 
-The target is the observed YES midpoint conditional on continuing tradability.
-Both arms start with identical original spans. A diagnostic reread can add
-different spans per arm. Audits preserve those differences; this is a paired
-pipeline comparison, not a claim that model inputs remained identical after
-rereading. A brief contains source references, not certified facts.
+## Targets and freeze
 
-The anchor is taken **after collection and supplement**, so the collection
-latency does not contaminate a forecast supposedly made before its evidence.
-Seal latency must be at most 30 minutes. Outcomes and later quotes are not
-included in inference. The label uses the latest usable captured quote in the
-30-minute window ending at `anchor+72h` or `anchor+168h`. Later quotes never
-substitute for a missed window. Early resolution, changed rules, missing data
-and late forecasts remain explicit in the denominator/attrition report.
+Event probability and future market price are separate. Mercury receives the
+development event head and predictive choice heads for 72 and 168 hours. Each
+price head distributes mass over 21 representative prices from 0 to 1 in 0.05
+steps. Its expectation is the price forecast, not an independent event probability.
+This grid is an approximation. Event probabilities retain the 0.02–0.98 clip;
+price means do not silently inherit that event-probability clip.
 
-The no-change baseline forecasts the anchor midpoint at both horizons.
-MAE and RMSE compare both arms and the baseline on the same available paired
-questions. Questions are grouped by venue event family; cross-venue title
-similarity does not establish rule equivalence. Market repricing is a research
-target, not a substitute for eventual-event Brier, and not proof of trading alpha.
+The development map describes world events and evidence. The additional price
+heads reason about information traders may absorb during each horizon. Map
+conditions are not automatically market-price distributions or verified causes.
 
-## Discovery and selection
+The anchor is observed after collection and final material processing. Inference
+cannot use later evidence. Seal latency is capped at 30 minutes. A label uses the
+latest usable quote in the 30-minute window ending at `anchor+72h` or
+`anchor+168h`. Later quotes cannot fill a missed window. Early resolution, rule
+changes, missing windows, failed arms and late forecasts remain explicit.
+No-change predicts the anchor midpoint at both horizons. Paired MAE/RMSE compare
+all arms on the same available cases. Eventual Brier and trading PnL are separate;
+no predictive skill is claimed before delayed labels exist.
 
-The bounded newest-market feed is heavily dominated by crypto and sports.
-The primary feed therefore uses event-level discovery and a minimum platform
-close horizon. Polymarket exclusion tags are resolved by slug, not hardcoded
-IDs. Kalshi uses nested events with `min_close_ts`. A bounded newest-market
-overlap also observes newly created children of older events.
+## Selection
 
-Creation date, first seen, first observed tradability, metadata hash versions,
-rules digest and public receipts are retained. A close date is an explicit
-platform hint, not an inferred authoritative event deadline. A domain match
-records `plausible_unconfirmed`; it never creates a fictitious confirmed
-catalyst or date. Unknown relevance remains in a waiting pool.
+Event discovery avoids saturation by crypto and sports launches. Polymarket
+exclusion tags are resolved by slug. Kalshi uses nested events with a minimum
+close time. A bounded newest-market overlap observes new children of old events.
+Page caps retain `complete=false`, not a claim of complete venue coverage.
+Creation date, first seen/tradability, metadata/rules versions and raw receipts
+are saved. A domain match is `plausible_unconfirmed`, not an invented confirmed
+catalyst date. Platform close hints are not authoritative event deadlines.
+Unknown relevance, missing rules and liquidity remain in waiting pools.
 
-The initial pilot uses a platform close hint 8 to 90 days away. Very distant
-events wait for a nearer catalyst rather than consuming the quote or model
-budget. Quote discovery visits one representative per event family before
-additional thresholds; volume/depth hints are ranking only, not labels.
-Composite contracts and conjunctions are excluded from this first single-event
-pilot. This conservative title prescreen can reject legitimate conjunctions;
-they stay recorded rather than being simplified to a different proposition.
+Initial platform close hints must be 8–90 days away. Exclude crypto (including
+companies, ETFs and regulation), sports/esports, social counts and pure price
+wagers. Composite contracts/title conjunctions are conservatively excluded from
+the first single-event pilot. Rejections and shortfalls are retained.
 
-The first pilot admits at most 30 venue event families total, at most 5 per UTC
-day, and at most 5 per worker dispatch. There is no automatic budget renewal
-or endless replenishment of terminal tasks. Excluded crypto includes companies,
-ETFs, regulation and related products. Sports, esports, social counts and pure
-price wagers are also excluded. A shortfall is acceptable.
+Books require two sides, spread <= 0.08 and top size >= 20 on both sides.
+Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
+fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
+cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-Quote gates: both sides, no crossed book, spread <= 0.08, top size >= 20 on
-each side. Polymarket selects the actual YES token even when outcomes are
-reversed. Kalshi fixed-point books provide YES bids and NO bids: YES ask is
-`1-max(NO bids)`, with the corresponding NO quantity. Integer-cent schemas are
-not guessed. Authentication failures remain captured gaps. Displayed market
-prices and last trades do not substitute for these book snapshots.
+At most 30 venue event families enter this finite pilot, five per UTC day and
+five per dispatch. Each family gets a quote turn before additional thresholds.
+Cross-venue title similarity does not establish rule equivalence.
 
 ## Actions, budgets and recovery
 
-- `market_research_monitor.yaml`: public data only, no provider/model secrets.
-- `market_research_worker.yaml`: separate checkpoint, original collector and
-  supplement, original-evidence decisions, no delivery method.
-- `market_repricing_tests.yaml`: offline gates and actual frozen selector integration.
+- `market_research_monitor.yaml`: public discovery/quotes/labels, no model secrets.
+- `market_research_worker.yaml`: selected development collection/maps and scoring.
+- `market_repricing_tests.yaml`: independent offline and actual development gates.
 
-Automatic jobs are gated by repository variable `MARKET_REPRICING_ENABLED=true`.
-The monitor schedule is 15 minutes, offset from the top of the hour. GitHub can
-delay scheduled jobs; missed windows are explicit. An external cron can instead
-dispatch the monitor, with the built-in schedule removed for a single-source
-test. Do not configure both until deduplication and timing have been observed.
+Automatic jobs require `MARKET_REPRICING_ENABLED=true`. Monitor schedule: 15
+minutes. GitHub can delay runs; missed windows stay missing. An external cron
+can dispatch instead, with the built-in schedule removed for a single-source test.
 
 ```text
 POST https://api.github.com/repos/chenencc/futureeval-forecasting-agent/actions/workflows/market_research_monitor.yaml/dispatches
@@ -133,49 +128,36 @@ Content-Type: application/json
 {"ref":"main"}
 ```
 
-The worker consumes the exact monitor run and restores its latest completed
-checkpoint, including failed runs. A missing checkpoint after an attempted
-mutation fails closed. Source repository, workflow, branch, archive members and
-file hashes are checked. Separate role artifacts prevent a monitor and a
-worker from overwriting each other's ledger. Completed/terminal tasks do not
-recollect. Retries wait at least an hour and preserve all release journals;
-three executions maximum. A valid first Mercury result survives reread failure.
+Use OPENROUTER2 only, with no production router-key fallback. Search credential
+names: `TAVILY_KEY1/TAVILY_KEY2`, `EXA_API/EXA_API2`. Development collection retains
+initial lifetime limits of three Tavily basic searches and one Exa search per
+task; capture/Extract/supplement have separate existing limits. Remaining model
+decision/failure reservations are restored across retries. Outer physical limits:
+200 model and 20 search requests per dispatch, 400 model requests per UTC day,
+60 model requests per task. Errors/unknown attempts consume reservations. At
+most three executions, at least an hour between retries; no backend budget reset.
+Linux research tasks have a 20-minute outer deadline.
 
-Research uses **OPENROUTER2 only**; it cannot consume production's primary router
-key by fallback. Search credentials are `TAVILY_KEY1/TAVILY_KEY2` and
-`EXA_API/EXA_API2`. The release's physical search reservations remain unchanged:
-at most three initial Tavily basic searches and one Exa search per task. Extract
-and supplement operations have their own frozen release limits. Outer sidecar
-physical limits add 200 model requests and 20 search requests per dispatch,
-400 model requests per UTC day and 60 model requests per task. Errors and
-unknown outcomes consume reservations. Switching backend or restarting cannot
-erase them. On Linux, each research task also has a 20-minute outer deadline.
+Role-specific v2 artifacts prevent mixing ledgers or resuming the Release pilot.
+Restore checks workflow/repository/branch, archive members and file hashes. A
+missing latest mutated checkpoint fails closed. Terminal tasks do not recollect.
+V1 probes remain historical evidence, not adopted v2 acquisition/analysis results.
 
-Artifacts retain raw compressed content-addressed public responses, HTTP
-reservations, metadata/rules versions, original collection and supplement,
-source hashes and excerpts, analysis requests/responses, anchors, labels and
-gap/status records. Existing `ForecastAgent.local_sync` discovers completed
-Actions artifacts and can import them into `E:\metaculus_data`; the new artifact
-names do not require a new local schema workaround. Sync must actually run
-before claiming local archival. Ninety-day artifact retention and a finite
-30-family pilot are not an unlimited durable cloud database.
+Artifacts preserve compressed raw responses, collector/supplement journals,
+maps/material-processing records, body admission, matched scoring inputs,
+provider requests/responses, anchors, labels and gaps. `ForecastAgent.local_sync`
+can archive completed Actions artifacts into `E:\metaculus_data`; actual sync
+must complete before claiming local archival. Ninety-day artifact retention and
+a finite pilot are not an unlimited durable cloud database.
 
 ## Verification
 
 ```text
 python -m unittest discover -s ForecastAgent/market_repricing/tests -v
-MARKET_RELEASE_DIRECTORY=/path/to/recovery2 python -m ForecastAgent.market_repricing.tests.verify_frozen_runtime -v
-python -m ForecastAgent.market_repricing monitor --root snapshots/market-monitor
-python -m ForecastAgent.market_repricing.runtime --release .release --root snapshots/market-worker --monitor snapshots/market-monitor --verification-only
-python -m ForecastAgent.market_repricing evaluate --root snapshots/market-monitor --worker snapshots/market-worker --output snapshots/market-worker/evaluation.json
+MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_development_runtime -v
+python -m ForecastAgent.market_repricing monitor --root snapshots/market-monitor-v2
+python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker-v2 --monitor snapshots/market-monitor-v2 --verification-only
 ```
 
-Offline fixtures do not prove live crawler, model or Actions operation. Release
-manifest verification proves source identity, not forecasting skill. Public
-probe reports must be inspected before enabling the model worker. Wait for
-actual horizon labels before reporting predictive metrics.
-
-Primary API references:
-[Polymarket events](https://docs.polymarket.com/api-reference/events/list-events),
-[Kalshi events](https://docs.kalshi.com/api-reference/events/get-events),
-[Kalshi public market data](https://docs.kalshi.com/getting_started/quick_start_market_data).
+Credential-free fixtures verify wiring/invariants, not live provider success or
+predictive skill. Enable a bounded model pilot after reviewing real candidates.
