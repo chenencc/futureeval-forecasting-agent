@@ -106,7 +106,11 @@ an old question new. Expected resolution must be at least 168 hours away and
 platform trading close must also leave 168 hours. Kalshi expected expiration is
 recorded separately from order close. Polymarket requires an explicit dated rule
 deadline agreeing with the metadata date; it is a deadline estimate, not a
-guarantee against early settlement. Unknown resolution time waits for rules.
+guarantee against early settlement. A rule-delegated title date can also qualify
+when title month/day, explicit 11:59 PM ET rule time and platform timestamp agree
+in America/New_York. The platform supplies the matched year; DST and year rollover
+are checked. A mismatch or missing explicit delegation remains unknown.
+Unknown resolution time waits for rules.
 The 7-day condition is checked again at the price anchor; creation eligibility
 remains frozen at enrollment, so an hour-long retry does not relabel the question.
 
