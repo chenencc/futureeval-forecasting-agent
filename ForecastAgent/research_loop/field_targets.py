@@ -122,7 +122,8 @@ def messages(bundle, packet, *, qualified=False):
                  **({'coverage_hypotheses': copy.deepcopy(f['coverage_hypotheses'])} if 'coverage_hypotheses' in f else {}),
                  'literal_location_ambiguous': any(b['location_ambiguous'] for b in f['bindings'])}
               for f in packet['facts']]
-    return [{'role': 'system', 'content': SYSTEM + (QUALIFIED_GUIDE if qualified else '')}, {'role': 'user', 'content': json.dumps({
+    from ForecastAgent.research_loop.evidence_policy import GUIDE
+    return [{'role': 'system', 'content': SYSTEM + '\n' + GUIDE + (QUALIFIED_GUIDE if qualified else '')}, {'role': 'user', 'content': json.dumps({
         'question': {k: copy.deepcopy(bundle['request'].get(k)) for k in
             (*state.RULE_FIELDS, 'question_type', 'options', 'scaling', 'as_of_utc')},
         'target_conditions': target_logic.targets(bundle),

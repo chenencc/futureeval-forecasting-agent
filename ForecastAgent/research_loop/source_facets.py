@@ -5,6 +5,7 @@ import json
 from collections import Counter
 
 from ForecastAgent.runtime.contracts import check_schema
+from ForecastAgent.research_loop.evidence_policy import GUIDE
 
 NAME = 'record_source_facets'
 KINDS = ('publication_time', 'event_time', 'issuer', 'reporting_authority',
@@ -88,7 +89,7 @@ def messages(question, as_of, sources, *, original_only=False, flat=False):
     payload = {
         'question': question, 'as_of_utc': as_of, 'originals': sources,
         'scope': 'Only delivered text. No previous annotations, graph or resolved labels.'}
-    system = SYSTEM
+    system = SYSTEM + '\n' + GUIDE
     if question is not None and not original_only:
         system += ('\nQuestion and rules are relevance context only. Prioritize the named '
             'subject, exact metric, unit, stage and period with their original qualifiers. '

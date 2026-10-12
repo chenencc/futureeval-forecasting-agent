@@ -56,7 +56,7 @@ spans. Within each run, direct and brief-assisted scores share the exact selecte
 originals. A change in scores is not evidence of improved calibration; selected
 unresolved cases and single model draws cannot establish predictive superiority.
 
-The opt-in `target-first-brief-paired-v1` experiment separates immutable source
+The development `target-first-brief-paired-v2` experiment separates immutable source
 preservation from visible input selection. It replaces the old selector's
 mandatory passages with target-ranked context. Literal title name hints, metric
 phrases, exact table rows and their local headers guide navigation. Rankings and
@@ -1005,4 +1005,41 @@ quote/value guards. Rules guide which actors/metrics/periods to select, but cann
 become source fields unless their literal support occurs in a selected original.
 Question-aware and original-only selection must be compared on unchanged saved
 source scopes before claiming a recall improvement.
+
+## Capability campaign lessons (2026-10-12)
+
+The Router2 campaign had 413 received model requests, 406 valid jobs, seven
+invalid optional briefs and seven dependent arms held. All 12 original-only
+Mercury forecasts were available. Five actual brief-assisted pairs were complete.
+
+Audit the oracle before changing the agent. The old attendance question asked
+whether the report established attendance while its gold required UNKNOWN as
+event status. NO is a plausible epistemic answer to that wording. Excluding this
+ambiguous family leaves 50/50 correct for both models and both prompts in A.
+This posthoc diagnostic does not establish prompt improvement or independent
+natural-document generalization. A source explaining an unknown status may be
+cited; citing it does not establish event nonoccurrence. The original report and
+its NONE-only labels remain immutable; corrections are append-only audit notes.
+
+New development brief trials default to `--brief-protocol references` under
+`target-first-brief-paired-v2`. The model selects immutable source IDs; the program
+binds originals. It need not reproduce long quotations or full legal rules in
+short commentary fields. Actual JSON values, not schema objects, are required.
+Literal mode remains available explicitly. A changed protocol or prompt refuses
+resume into an old frozen experiment; there is no hidden budget renewal.
+
+If an optional brief fails, both arm orders use the identity-checked original
+decision cache. A valid original forecast is preserved without another identical
+Mercury request, format-repair call, invented replacement score or model switch.
+The fallback is marked `independent_comparison_arm=false`; it never counts as a
+completed brief-assisted pair. No unsupported quotation is clipped or repaired
+to make the brief pass. Source and decision hashes and historical clocks remain
+the authority.
+
+`evidence_policy.py` provides model-neutral event-versus-evidence guidance to
+source reading, target interpretation and brief stages. Final Mercury questions
+and production release code are unchanged. This is engineering integration,
+not a claim that the new prompt or graph improves forecast scores. The seven
+failed cases can be replayed from verified original receipts with zero provider
+requests using `ForecastAgent.evals.audit_campaign`.
 

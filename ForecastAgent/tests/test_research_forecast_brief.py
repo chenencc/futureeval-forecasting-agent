@@ -177,11 +177,11 @@ class ForecastBriefTests(unittest.TestCase):
                 r={'status':'reserved','request':{'model':'mercury'}};t=observer('reserve',r)
                 ans=response(heads);r.update(status='received',response=ans);observer('complete',r,t);return ans
             with patch.object(brief,'ask_model',side_effect=super_call),patch.object(brief.decision_http,'decide',side_effect=mercury_call):
-                first=brief_trial.run([parent],root,execute=True,max_http=3)
+                first=brief_trial.run([parent],root,execute=True,max_http=3,brief_protocol='literal')
             self.assertEqual(first['completed'],1);self.assertEqual(first['new_http'],3)
             with patch.object(brief,'ask_model',side_effect=AssertionError('Unwanted Super HTTP')),patch.object(
                     brief.decision_http,'decide',side_effect=AssertionError('Unwanted Mercury HTTP')):
-                second=brief_trial.run([parent],root,execute=True,max_http=3)
+                second=brief_trial.run([parent],root,execute=True,max_http=3,brief_protocol='literal')
             self.assertEqual(first,second)
             with self.assertRaises(ValueError):brief_trial.run([parent],root,execute=True,max_http=4)
 
@@ -193,10 +193,11 @@ class ForecastBriefTests(unittest.TestCase):
                 ans=response(heads);r.update(status='received',response=ans);observer('complete',r,t);return ans
             with patch.object(brief,'brief_stage',side_effect=ValueError('Malformed brief')),patch.object(
                     brief.decision_http,'decide',side_effect=mercury):
-                r=brief_trial.run([parent],Path(tmp)/'trial',execute=True,max_http=3)
+                r=brief_trial.run([parent],Path(tmp)/'trial',execute=True,max_http=3,brief_protocol='literal')
             self.assertEqual(r['completed'],1);self.assertEqual(r['cases'][0]['brief_status'],'unavailable')
             self.assertFalse(r['cases'][0]['arms']['brief']['brief_delivered'])
-            self.assertEqual(r['new_http'],2)
+            self.assertEqual(r['new_http'],1)
+            self.assertTrue(r['cases'][0]['arms']['brief']['reused_original_response'])
             self.assertEqual(r['paired_completed'],0)
 
 

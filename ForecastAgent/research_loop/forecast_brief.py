@@ -15,6 +15,7 @@ from ForecastAgent.research_loop import decision_http
 from ForecastAgent.research_loop.distribution import forecast
 from ForecastAgent.research_loop.live_trial import SUPER, forecast_summary
 from ForecastAgent.runtime.contracts import check_schema
+from ForecastAgent.research_loop.evidence_policy import GUIDE, FORMAT_GUIDE
 
 PROTOCOL = 'evidence-bound-forecast-brief-v1'
 BRIEF_BYTES = 4200
@@ -67,6 +68,9 @@ low value. No probability, odds, confidence percentage, fixed point forecast or 
 Keep the brief under 4200 UTF-8 JSON bytes. There is no correction call. Original evidence
 will also be supplied to the decision model, which may reject all your interpretations.
 '''
+
+
+SYSTEM += '\n' + GUIDE + '\n' + FORMAT_GUIDE
 
 
 def registry(question):

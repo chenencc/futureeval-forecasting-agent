@@ -9,7 +9,7 @@ from ForecastAgent.releases.context_decisions import select_first
 from ForecastAgent.research_loop import decision, live_trial, target_pack, forecast_brief
 from ForecastAgent.runtime.task_lock import task_lock
 
-PROTOCOL='target-first-brief-paired-v1'
+PROTOCOL='target-first-brief-paired-v2'
 
 
 def receipts(root):
@@ -29,7 +29,7 @@ def coverage(first,second):
         'interpretation':'Packing comparison changes visible spans. Forecast arms share the exact new selected originals.'}
 
 
-def run(parents,root,*,execute=False,max_http=6,brief_protocol='literal',context_protocol='target-v1'):
+def run(parents,root,*,execute=False,max_http=6,brief_protocol='references',context_protocol='target-v1'):
     if not 1<=len(parents)<=5 or type(max_http) is not int or max_http<0:
         raise ValueError('Use 1-5 frozen cases and a nonnegative physical request cap')
     if brief_protocol not in ('literal','references'):
@@ -89,12 +89,19 @@ def run(parents,root,*,execute=False,max_http=6,brief_protocol='literal',context
                             except Exception as exc:
                                 row['brief_status']='unavailable'
                                 row['brief_error']=type(exc).__name__+': '+str(exc)
-                        if not (folder/arm/'decision/response.json').exists() and len(receipts(root))>=max_http:
+                        # A failed optional brief reuses the SAME original-score
+                        # cache; do not buy a second identical Mercury forecast.
+                        score_folder=folder/'direct' if arm=='brief' and accepted is None else folder/arm
+                        cached_original=(score_folder/'decision/response.json').exists()
+                        if not cached_original and len(receipts(root))>=max_http:
                             raise RuntimeError('Preserved experiment HTTP cap exhausted before score')
-                        result=brief_engine.score(bundle['request'],common,heads,spec,folder/arm,accepted)
+                        result=brief_engine.score(bundle['request'],common,heads,spec,score_folder,accepted)
                         row['arms'][arm]={'status':'completed','summary':result['summary'],
                             'brief_delivered':result['forecast_brief_delivered'],
-                            'original_state_sha256':result['original_state_sha256']}
+                            'original_state_sha256':result['original_state_sha256'],
+                            'forecast_origin':'original_only_fallback' if arm=='brief' and accepted is None else arm,
+                            'reused_original_response':arm=='brief' and accepted is None,
+                            'independent_comparison_arm':not (arm=='brief' and accepted is None)}
                     except Exception as exc:
                         row['arms'][arm]={'status':'failed','error':type(exc).__name__+': '+str(exc)}
                 row['forecasts_completed']=all(a['status']=='completed' for a in row['arms'].values())
@@ -127,7 +134,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--parents',type=Path,required=True);p.add_argument('--root',type=Path,required=True)
     p.add_argument('--max-http',type=int,default=6);p.add_argument('--execute',action='store_true')
-    p.add_argument('--brief-protocol',choices=['literal','references'],default='literal')
+    p.add_argument('--brief-protocol',choices=['literal','references'],default='references')
     p.add_argument('--context-protocol',choices=['target-v1','target-v2'],default='target-v1')
     a=p.parse_args();run(load(a.parents),a.root,execute=a.execute,max_http=a.max_http,
         brief_protocol=a.brief_protocol,context_protocol=a.context_protocol)
