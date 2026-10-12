@@ -69,7 +69,7 @@ class Selection(unittest.TestCase):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]} for i in range(10)], self.cfg, CLOCK)
         for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable'}
-        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 5)
+        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 3)
         enroll(ledger, self.cfg | {'maximum_active_families': 6}, '2026-10-13T00:00:00Z'); self.assertEqual(len(ledger['tasks']), 6)
     def test_partial_pagination_not_complete(self):
         cfg = self.cfg | {'maximum_discovery_pages_per_venue': 1}
@@ -79,6 +79,19 @@ class Selection(unittest.TestCase):
         request = request_for(self.m)
         self.assertTrue(request['synthetic_compatibility_id']); self.assertTrue(request['id'].isdigit())
         self.assertEqual(request['market_research_key'], self.m['key'])
+    def test_publication_24h_boundary_and_future_clock(self):
+        for stamp, accepted in [('2026-10-11T00:00:00Z', True), ('2026-10-10T23:59:59Z', False),
+                                ('2026-10-12T00:00:01Z', False)]:
+            self.assertEqual(screen(self.m | {'created_at': stamp}, CLOCK, self.cfg)['status'] == 'candidate', accepted)
+    def test_long_trade_close_not_a_long_resolution(self):
+        hint = {'at': '2026-10-13T00:00:00Z', 'role': 'platform_expected_expiration'}
+        self.assertEqual(screen(self.m | {'resolution_hint': hint}, CLOCK, self.cfg)['reason'], 'expected_resolution_within_seven_days')
+    def test_resolution_seven_day_boundary_and_unknown(self):
+        hint = {'at': '2026-10-19T00:00:00Z', 'role': 'platform_expected_expiration'}
+        self.assertEqual(screen(self.m | {'resolution_hint': hint}, CLOCK, self.cfg)['status'], 'candidate')
+        hint['at'] = '2026-10-18T23:59:59Z'
+        self.assertEqual(screen(self.m | {'resolution_hint': hint}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
+        self.assertEqual(screen(self.m | {'resolution_hint': {'at': None}}, CLOCK, self.cfg)['status'], 'waiting_rules')
 
 
 class Books(unittest.TestCase):

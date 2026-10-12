@@ -1,7 +1,7 @@
 """Explicit venue schemas; displayed prices never substitute for order books."""
 import json
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 
 from .common import digest, instant, number
 
@@ -24,6 +24,36 @@ def array(value):
     return json.loads(value) if isinstance(value, str) else value
 
 
+def resolution_hint(venue, raw, rule):
+    """Preserve expected settlement vs rule deadline; never alias order close."""
+    if venue == 'kalshi':
+        for field in ('expected_expiration_time', 'expiration_time'):
+            if raw.get(field):
+                return {'at': raw[field], 'role': 'platform_expected_expiration', 'source_field': field,
+                        'can_resolve_early': bool(raw.get('can_close_early')),
+                        'guaranteed_minimum_lifetime': False}
+        return {'at': None, 'role': 'unknown', 'can_resolve_early': bool(raw.get('can_close_early'))}
+    months = 'January February March April May June July August September October November December'.split()
+    pattern = r'\b(' + '|'.join(months) + r')\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(20\d{2})\b'
+    close = instant(raw['endDate']) if raw.get('endDate') else None
+    matches = []
+    for match in re.finditer(pattern, rule, re.I):
+        try:
+            stamp = datetime(int(match[3]), next(i+1 for i, m in enumerate(months) if m.lower() == match[1].lower()),
+                             int(match[2]), tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if close and abs((close - stamp).total_seconds()) <= 36 * 3600:
+            matches.append((stamp, match.group()))
+    if not matches:
+        return {'at': None, 'role': 'unknown', 'source_field': 'description', 'can_resolve_early': True}
+    stamp, quoted = min(matches)
+    return {'at': stamp.isoformat(), 'role': 'rule_observation_deadline_day_precision',
+            'source_field': 'description', 'verbatim_date': quoted,
+            'day_precision_policy': 'Conservative UTC day start; no invented hour or timezone',
+            'can_resolve_early': True, 'guaranteed_minimum_lifetime': False}
+
+
 def normalize(venue, raw):
     if venue == 'polymarket':
         ident = str(raw['id'])
@@ -40,6 +70,7 @@ def normalize(venue, raw):
                 'rules': rule, 'rules_sha256': digest(rule), 'rules_sources': sources,
                 'created_at': raw.get('createdAt'), 'close_at': raw.get('endDate'),
                 'close_time_role': 'platform_hint_not_authoritative_event_deadline',
+                'resolution_hint': resolution_hint(venue, raw, rule),
                 'binary': binary, 'yes_token': str(tokens[index]) if binary else None,
                 'composite': raw.get('comboStatus') not in {None, '', 'disabled'} or bool(re.search(r'\band\b', str(raw.get('question', '')), re.I)),
                 'tradable': bool(raw.get('active') and not raw.get('closed') and not raw.get('archived') and raw.get('enableOrderBook') and raw.get('acceptingOrders')),
@@ -59,6 +90,7 @@ def normalize(venue, raw):
             'rules': rule, 'rules_sha256': digest(rule), 'rules_sources': [],
             'created_at': raw.get('created_time'), 'close_at': raw.get('close_time'),
             'close_time_role': 'platform_order_close_not_guaranteed_resolution_time',
+            'resolution_hint': resolution_hint(venue, raw, rule),
             'binary': raw.get('market_type') == 'binary', 'yes_token': None,
             'composite': bool(raw.get('mve_collection_ticker')) or bool(re.search(r'\band\b', str(raw.get('title', '')), re.I)),
             'tradable': raw.get('status') in {'open', 'active'}, 'disputed': False,
@@ -68,7 +100,7 @@ def normalize(venue, raw):
             'screen_text': ' '.join(str(raw.get(k) or '') for k in ('ticker', 'event_ticker', 'title', 'subtitle', 'yes_sub_title', 'rules_primary', 'rules_secondary', 'category'))}
 
 
-def screen(market, clock, cfg):
+def screen(market, clock, cfg, *, check_newness=True):
     text = market['screen_text']
     for pattern, reason in ((CRYPTO, 'crypto_excluded'), (GAMBLING, 'gambling_or_mentions_excluded'), (PRICE_ONLY, 'price_only_excluded')):
         if pattern.search(text):
@@ -79,6 +111,14 @@ def screen(market, clock, cfg):
         return {'status': 'excluded', 'reason': 'composite_contract_outside_single_event_pilot'}
     if not market.get('created_at'):
         return {'status': 'waiting_rules', 'reason': 'creation_time_missing'}
+    try:
+        age = (instant(clock) - instant(market['created_at'])).total_seconds()
+    except ValueError:
+        return {'status': 'waiting_rules', 'reason': 'invalid_creation_time'}
+    if check_newness and not 0 <= age <= cfg['maximum_candidate_age_days'] * 86400:
+        return {'status': 'outside_new_question_window', 'reason': 'not_published_in_last_24_hours',
+                'publication_field': 'createdAt' if market['venue'] == 'polymarket' else 'created_time',
+                'publication_time_role': 'platform_creation_proxy_not_updated_or_first_seen', 'age_seconds': age}
     if not market['rules'].strip():
         return {'status': 'waiting_rules', 'reason': 'exact_rules_missing'}
     if market['disputed']:
@@ -97,6 +137,16 @@ def screen(market, clock, cfg):
         return {**result, 'status': 'short_resolution_cohort', 'reason': 'insufficient_repricing_window'}
     if remaining > cfg['maximum_close_horizon_days'] * 24:
         return {**result, 'status': 'waiting_catalyst', 'reason': 'distant_event_outside_initial_pilot_window'}
+    hint = market.get('resolution_hint') or {}
+    try:
+        resolution_hours = (instant(hint['at']) - instant(clock)).total_seconds() / 3600
+    except (ValueError, KeyError, TypeError):
+        return {**result, 'status': 'waiting_rules', 'reason': 'expected_resolution_time_not_established',
+                'close_time_is_not_resolution_time': True}
+    if resolution_hours < cfg['minimum_resolution_hours']:
+        return {**result, 'status': 'short_resolution_cohort', 'reason': 'expected_resolution_within_seven_days',
+                'expected_resolution_remaining_hours': resolution_hours, 'resolution_hint': hint}
+    result.update(expected_resolution_remaining_hours=resolution_hours, resolution_hint=hint)
     if not market['tradable']:
         return {**result, 'status': 'waiting_market', 'reason': 'not_orderable'}
     return {**result, 'status': 'candidate', 'reason': 'event_domain_prescreen_only'}

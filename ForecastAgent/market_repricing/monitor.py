@@ -233,6 +233,10 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         ledger['heartbeat'] = {'discovery_complete': all(x['complete'] for x in scans.values()),
                                'waiting_or_excluded_distribution': dict(Counter(m['selection']['status'] for m in ledger['markets'].values())),
                                'queued_families': len(ledger['tasks']), 'no_model_calls': True,
+                               'candidate_age_limit_hours': cfg['maximum_candidate_age_days'] * 24,
+                               'minimum_resolution_hours': cfg['minimum_resolution_hours'],
+                               'pilot_family_cap': cfg['maximum_active_families'],
+                               'errors_count': len(errors),
                                'scan_shortfall_visible': True, 'public_http_attempts': http.calls}
         write(root / 'report.json', ledger['heartbeat'])
         return ledger['heartbeat']

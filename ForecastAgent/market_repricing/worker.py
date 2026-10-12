@@ -144,7 +144,7 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
                 if current['rules_sha256'] != task['market']['rules_sha256']:
                     task.update(status='rules_changed', gap='Exact contract rules changed during collection')
                     return
-                if screen(current, now(), cfg)['status'] != 'candidate':
+                if screen(current, now(), cfg, check_newness=False)['status'] != 'candidate':
                     raise RuntimeError('Contract no longer eligible at freeze time')
                 anchor = book(http, current, cfg)
                 if anchor['status'] != 'usable':

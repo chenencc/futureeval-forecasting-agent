@@ -100,7 +100,17 @@ are saved. A domain match is `plausible_unconfirmed`, not an invented confirmed
 catalyst date. Platform close hints are not authoritative event deadlines.
 Unknown relevance, missing rules and liquidity remain in waiting pools.
 
-Initial platform close hints must be 8–90 days away. Exclude crypto (including
+New test questions must have a platform creation timestamp within the rolling
+last 24 hours at enrollment. Updated timestamps and first-seen time cannot make
+an old question new. Expected resolution must be at least 168 hours away and
+platform trading close must also leave 168 hours. Kalshi expected expiration is
+recorded separately from order close. Polymarket requires an explicit dated rule
+deadline agreeing with the metadata date; it is a deadline estimate, not a
+guarantee against early settlement. Unknown resolution time waits for rules.
+The 7-day condition is checked again at the price anchor; creation eligibility
+remains frozen at enrollment, so an hour-long retry does not relabel the question.
+
+Platform close hints must be 7–90 days away. Exclude crypto (including
 companies, ETFs and regulation), sports/esports, social counts and pure price
 wagers. Composite contracts/title conjunctions are conservatively excluded from
 the first single-event pilot. Rejections and shortfalls are retained.
@@ -110,8 +120,8 @@ Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-At most 30 venue event families enter this finite pilot, five per UTC day and
-five per dispatch. Each family gets a quote turn before additional thresholds.
+At most three venue event families enter this finite pilot, three per UTC day
+and three per dispatch. Each family gets a quote turn before additional thresholds.
 Cross-venue title similarity does not establish rule equivalence.
 
 ## Actions, budgets and recovery
@@ -139,7 +149,9 @@ decision/failure reservations are restored across retries. Outer physical limits
 200 model and 20 search requests per dispatch, 400 model requests per UTC day,
 60 model requests per task. Errors/unknown attempts consume reservations. At
 most three executions, at least an hour between retries; no backend budget reset.
-Linux research tasks have a 20-minute outer deadline.
+Linux research tasks have a 45-minute outer deadline, enclosing the development
+collector's own shorter limits. Empty queues and verification-only runs skip the
+browser dependency installation and all model calls.
 
 Role-specific v2 artifacts prevent mixing ledgers or resuming the Release pilot.
 Restore checks workflow/repository/branch, archive members and file hashes. A
