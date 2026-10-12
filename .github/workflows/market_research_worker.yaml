@@ -106,6 +106,7 @@ jobs:
           path: snapshots/market-worker
           if-no-files-found: error
           retention-days: 90
+          include-hidden-files: true
       - name: Write visible research summary
         if: always()
         run: |

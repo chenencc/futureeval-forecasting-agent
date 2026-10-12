@@ -49,6 +49,7 @@ jobs:
           path: snapshots/market-monitor
           if-no-files-found: error
           retention-days: 90
+          include-hidden-files: true
       - name: Write visible health summary
         if: always()
         run: |

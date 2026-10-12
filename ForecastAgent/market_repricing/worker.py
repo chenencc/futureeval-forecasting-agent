@@ -171,7 +171,9 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
 
 
 def run(root, monitor_root, verification_only=False, cfg=None, http=None, collector=acquire, forecaster=None):
-    root, monitor_root = Path(root), Path(monitor_root)
+    # Native capture children change cwd to the pinned engine. Every request,
+    # output and log path passed across that boundary must be absolute.
+    root, monitor_root = Path(root).resolve(), Path(monitor_root).resolve()
     cfg = cfg or policy()
     verify(monitor_root)
     source = state(monitor_root, 'monitor', cfg)

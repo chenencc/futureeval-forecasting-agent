@@ -3,6 +3,8 @@ import argparse
 import io
 import json
 import os
+import hashlib
+import re
 from pathlib import Path
 import stat
 from urllib.parse import urlencode, urlsplit
@@ -10,7 +12,7 @@ from urllib.request import Request, urlopen, HTTPRedirectHandler, build_opener
 import zipfile
 from urllib.error import HTTPError
 
-from .common import verify
+from .common import verify, read, write
 
 WORKFLOWS = {'monitor': ('market_research_monitor.yaml', 'Market repricing research monitor', 'Run research monitor'),
              'worker': ('market_research_worker.yaml', 'Market repricing research worker', 'Run development research')}
@@ -96,7 +98,36 @@ def extract(data, root):
             if not dest.is_relative_to(root):
                 raise ValueError('Unsafe artifact member')
         archive.extractall(root)
+    recover_omitted_mutexes(root)
     verify(root)
+
+
+def recover_omitted_mutexes(root):
+    """Repair only hash-proven constant mutex markers omitted by artifact v4.
+
+    Native task_lock writes exactly b'0' as an OS mutex backing file. This is
+    not an owner record, source, model response or quota. Unknown bytes fail.
+    """
+    root = Path(root).resolve()
+    inventory = read(root / 'inventory.json')
+    zero_hash = hashlib.sha256(b'0').hexdigest()
+    repaired = []
+    for name, expected in inventory['files'].items():
+        path = (root / name).resolve()
+        if path.exists():
+            continue
+        if (not path.is_relative_to(root) or expected != zero_hash or
+            not re.fullmatch(r'tasks/[0-9a-f]{64}/development-intelligence/(?:[^./][^/]*/)*\.lock\.recovery', name)):
+            raise ValueError('Missing checkpoint bytes cannot be recovered: ' + name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'0')
+        repaired.append({'path': name, 'sha256': expected, 'bytes': 1})
+    if repaired:
+        write(root / 'artifact-restore-repairs.json', {
+            'reason': 'Artifact v4 omitted constant native OS mutex markers.',
+            'restored_exact_bytes': repaired, 'original_inventory_unchanged': True,
+            'task_and_provider_records_unchanged': True, 'budget_reset': False})
+    return repaired
 
 
 def restore(role, root, branch, exact_run=None):
