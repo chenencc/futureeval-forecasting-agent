@@ -13,7 +13,7 @@ import zipfile
 from ForecastAgent.market_repricing import ENGINE_SHA
 from ForecastAgent.market_repricing.common import digest, instant, now, policy, read, seal, state, verify, write
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
-from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, run as monitor_run
+from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, quote_turns, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
 from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect
 from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run
@@ -59,18 +59,50 @@ class Selection(unittest.TestCase):
     def test_family_daily_dedup(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         ingest(ledger, 'polymarket', [raw_poly(), raw_poly() | {'id': '124'}], self.cfg, CLOCK)
-        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable'}
+        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable', 'received_at': CLOCK}
         enroll(ledger, self.cfg, CLOCK); enroll(ledger, self.cfg, CLOCK)
-        self.assertEqual(len(ledger['tasks']), 1); self.assertEqual(ledger['daily']['2026-10-12'], 1)
+        self.assertEqual(len(ledger['tasks']), 1); self.assertEqual(ledger['enrollment_daily']['2026-10-12'], 1)
         before = digest(ledger['tasks'])
         for market in ledger['markets'].values(): market['metadata_versions'].append({'new': 'metadata'})
         self.assertEqual(digest(ledger['tasks']), before)
-    def test_daily_and_campaign_caps(self):
+    def test_twenty_per_shanghai_day_without_lifetime_cap(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
-        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]} for i in range(10)], self.cfg, CLOCK)
-        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable'}
-        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 3)
-        enroll(ledger, self.cfg | {'maximum_active_families': 6}, '2026-10-13T00:00:00Z'); self.assertEqual(len(ledger['tasks']), 6)
+        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]} for i in range(50)], self.cfg, CLOCK)
+        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable', 'received_at': CLOCK}
+        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 20)
+        # Local midnight is 16:00 UTC. Failures do not refund admissions.
+        for task in ledger['tasks'].values(): task['status'] = 'blocked'
+        enroll(ledger, self.cfg, '2026-10-12T15:59:59Z'); self.assertEqual(len(ledger['tasks']), 20)
+        for m in ledger['markets'].values(): m['last_quote']['received_at'] = '2026-10-12T16:00:00Z'
+        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 40)
+        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 40)
+        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 20, '2026-10-13': 20})
+    def test_enrollment_requires_quote_from_current_dispatch(self):
+        ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
+                  'identity': {'policy_sha256': digest(self.cfg)}}
+        ingest(ledger, 'polymarket', [raw_poly()], self.cfg, CLOCK)
+        market = next(iter(ledger['markets'].values()))
+        market['last_quote'] = {'status': 'usable', 'received_at': '2026-10-11T23:59:59Z'}
+        enroll(ledger, self.cfg, CLOCK); self.assertFalse(ledger['tasks'])
+        market['last_quote']['received_at'] = CLOCK
+        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 1)
+    def test_large_cohort_quote_turns_prioritize_due_labels_and_reserve_new_entries(self):
+        ledger = {'markets': {}, 'tasks': {}}
+        worker = {'tasks': {}}
+        for index in range(140):
+            key = 'old:' + str(index)
+            ledger['markets'][key] = {'first_seen_at': CLOCK,
+                                     'last_quote': {'received_at': CLOCK}}
+            ledger['tasks'][key] = {}
+            worker['tasks'][key] = {'status': 'queued'}
+        urgent = 'old:139'
+        worker['tasks'][urgent] = {'forecast': {'anchor_at': CLOCK}}
+        new = ['new:' + str(i) for i in range(20)]
+        for key in new: ledger['markets'][key] = {'first_seen_at': CLOCK}
+        turns = quote_turns(ledger, worker, new, self.cfg, '2026-10-14T23:45:00Z')
+        self.assertEqual(turns[0], urgent)
+        self.assertEqual(len(turns), 40); self.assertEqual(len(set(turns)), 40)
+        self.assertEqual(len(set(turns) & set(new)), 20)
     def test_partial_pagination_not_complete(self):
         cfg = self.cfg | {'maximum_discovery_pages_per_venue': 1}
         rows, audit = discover(FakeHTTP([raw_poly()] * 100), 'polymarket', cfg, CLOCK)
@@ -114,6 +146,9 @@ class Books(unittest.TestCase):
                'asks': [{'price': '.7', 'size': '30'}, {'price': '.50', 'size': '30'}]}
         q = quote('polymarket', raw, self.cfg, self.meta)
         self.assertAlmostEqual(q['midpoint'], .475); self.assertEqual(q['status'], 'usable')
+        self.assertEqual(q['yes_bids_top10'], [{'price': .45, 'size': 25}, {'price': .3, 'size': 30}])
+        self.assertEqual(q['yes_asks_top10'], [{'price': .5, 'size': 30}, {'price': .7, 'size': 30}])
+        self.assertEqual(q['received_at'], CLOCK)
     def test_kalshi_complementary_ask_size(self):
         q = quote('kalshi', {'orderbook_fp': {'yes_dollars': [['.45', '30']], 'no_dollars': [['.50', '23']]}}, self.cfg, self.meta)
         self.assertAlmostEqual(q['midpoint'], .475); self.assertEqual(q['yes_ask_size'], 23)
@@ -148,6 +183,26 @@ class Labels(unittest.TestCase):
 
 
 class Persistence(unittest.TestCase):
+    def test_authorized_policy_migration_preserves_tasks_and_failed_reservations(self):
+        cfg = policy()
+        legacy = dict(cfg)
+        legacy.pop('enrollment_day_timezone'); legacy.pop('maximum_new_tasks_per_day')
+        legacy.update(maximum_active_families=3, maximum_new_tasks_per_utc_day=3)
+        self.assertEqual(digest(legacy), '642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df')
+        with tempfile.TemporaryDirectory() as root:
+            ledger = state(root, 'worker', legacy)
+            ledger['tasks']['old'] = {'executions': 2, 'status': 'retry_wait'}
+            ledger['provider_reservations'] = [{'status': 'failed', 'kind': 'model'}]
+            ledger['daily'] = {'2026-10-12': 3}
+            write(Path(root) / 'state.json', ledger)
+            migrated = state(root, 'worker', cfg)
+            for name in ('tasks', 'provider_reservations', 'daily'):
+                self.assertEqual(migrated[name], ledger[name])
+            self.assertFalse(migrated['policy_migrations'][0]['budget_reset'])
+            self.assertEqual(migrated['identity']['policy_sha256'], digest(cfg))
+            # Increasing a provider budget is outside this authorized migration.
+            with self.assertRaises(ValueError):
+                state(root, 'worker', cfg | {'maximum_worker_model_attempts_per_task': 61})
     def test_artifact_redirect_drops_github_token_and_rejects_untrusted_host(self):
         from urllib.request import Request
         request = Request('https://api.github.com/repos/example/repo/actions/artifacts/1/zip',
@@ -242,11 +297,15 @@ class Persistence(unittest.TestCase):
             write(monitor/'state.json', source); seal(monitor)
             report = run(worker, monitor, verification_only=True)
             self.assertEqual(report['state_distribution'], {'queued': 1})
+            entry = worker / 'tasks' / digest(m['key']) / 'entry-quote.json'
+            before = entry.read_bytes()
+            self.assertEqual(read(entry)['source_task_sha256'], digest(source['tasks'][m['key']]))
             saved = read(worker/'state.json'); saved['tasks'][m['key']]['status'] = 'completed'
             write(worker/'state.json', saved); seal(worker)
             def fail(*unused): raise AssertionError('Completed task should not collect again')
             run(worker, monitor, collector=fail, forecaster=fail)
             self.assertEqual(read(worker/'state.json')['tasks'][m['key']]['executions'], 0)
+            self.assertEqual(entry.read_bytes(), before)
 
 
 if __name__ == '__main__': unittest.main()

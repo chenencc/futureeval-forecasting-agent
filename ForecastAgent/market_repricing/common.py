@@ -51,7 +51,22 @@ def state(root, role, configuration):
     if path.exists():
         saved = read(path)
         if saved.get('identity') != identity:
-            raise ValueError('State identity changed; explicit migration is required')
+            # Only the explicitly authorized 3-total/UTC -> 20-per-Shanghai-day
+            # admission change is migratable. Engine and provider caps stay exact.
+            legacy = dict(configuration)
+            legacy.pop('enrollment_day_timezone', None)
+            legacy.pop('maximum_new_tasks_per_day', None)
+            legacy.update(maximum_active_families=3, maximum_new_tasks_per_utc_day=3)
+            previous = identity | {'policy_sha256': digest(legacy)}
+            authorized = digest(legacy) == '642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df'
+            if not authorized or saved.get('identity') != previous or configuration.get('maximum_new_tasks_per_day') != 20 or configuration.get('enrollment_day_timezone') != 'Asia/Shanghai':
+                raise ValueError('State identity changed; explicit migration is required')
+            saved.setdefault('policy_migrations', []).append({
+                'at': now(), 'from_identity': previous, 'to_identity': identity,
+                'reason': 'User authorized at most 20 new families per Asia/Shanghai day.',
+                'existing_tasks_unchanged': True, 'provider_reservations_unchanged': True,
+                'legacy_daily_counts_retained': True, 'budget_reset': False})
+            saved['identity'] = identity
         return saved
     if Path(root).exists() and any(Path(root).iterdir()):
         raise ValueError('Files without a ledger; refuse bootstrap and budget reset')
