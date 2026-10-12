@@ -174,7 +174,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     root, monitor_root = Path(root), Path(monitor_root)
     cfg = cfg or policy()
     verify(monitor_root)
-    source = read(monitor_root / 'state.json')
+    source = state(monitor_root, 'monitor', cfg)
     if source['identity']['engine_sha'] != ENGINE_SHA or source['identity']['policy_sha256'] != digest(cfg):
         raise ValueError('Queue pin or policy changed')
     if not verification_only and not 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600:
@@ -183,9 +183,18 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     for key, task in source['tasks'].items():
         if key not in ledger['tasks']:
             ledger['tasks'][key] = {'key': key, 'market': task['market'], 'status': 'queued',
-                                    'executions': 0, 'source_task_sha256': digest(task)}
+                                    'executions': 0, 'enrolled_at': task.get('enrolled_at'),
+                                    'source_task_sha256': digest(task)}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
+        entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
+                 'role': 'immutable_enrollment_quote_not_forecast_anchor',
+                 'rules_sha256': task['market']['rules_sha256'],
+                 'quote': task['market'].get('last_quote'), 'source_task_sha256': digest(task)}
+        entry_path = root / 'tasks' / digest(key) / 'entry-quote.json'
+        if entry_path.exists() and read(entry_path) != entry:
+            raise ValueError('Frozen enrollment quote changed')
+        write(entry_path, entry)
     write(root / 'state.json', ledger)
     processed = []
     try:

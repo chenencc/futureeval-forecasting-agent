@@ -124,9 +124,28 @@ Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-At most three venue event families enter this finite pilot, three per UTC day
-and three per dispatch. Each family gets a quote turn before additional thresholds.
+At most 20 new venue event families enter per Asia/Shanghai calendar day, counted
+from immutable enrollment timestamps. Failed tasks consume the same daily slot;
+retries do not count as new tasks. The initial three-family lifetime cap is removed.
+Workers retain batches of at most three tasks per dispatch and their existing
+provider budgets. Twenty admissions do not guarantee 20 completed analyses that
+day when provider budgets or service availability limit throughput.
+Each family gets a quote turn before additional thresholds.
 Cross-venue title similarity does not establish rule equivalence.
+
+Admission freezes the then-current quote inside the immutable queued market.
+Only a usable quote received during that monitor dispatch can admit a new task;
+an older successful book is not reused as a current price.
+The worker also writes `tasks/<hash>/entry-quote.json` before model work and
+preserves a separate post-acquisition `anchor.json`. Both include observation time,
+YES best bid/ask, size, spread, midpoint, ten visible levels per side, and original
+book provenance. The original full Polymarket response and returned Kalshi depth
+are retained in compressed HTTP objects; Kalshi collection requests ten levels.
+Admission and forecast anchors must not be conflated.
+Due 72h/168h label windows have priority over routine quote turns. Remaining
+quote capacity is shared between new candidates and active cohorts; active
+cohorts rotate by oldest observation. Labels are evaluated for every frozen
+forecast even after its active quote window ends. Missed quotes remain explicit.
 
 ## Actions, budgets and recovery
 
@@ -168,6 +187,11 @@ provider requests/responses, anchors, labels and gaps. `ForecastAgent.local_sync
 can archive completed Actions artifacts into `E:\metaculus_data`; actual sync
 must complete before claiming local archival. Ninety-day artifact retention and
 a finite pilot are not an unlimited durable cloud database.
+
+The authorized admission-policy migration accepts only the exact previous v2
+policy hash and identical engine/provider budgets. It records old/new identities,
+retains enrolled tasks, legacy daily counts and physical reservations, and never
+resets them. Any unrelated policy or engine drift still fails closed.
 
 ## Verification
 

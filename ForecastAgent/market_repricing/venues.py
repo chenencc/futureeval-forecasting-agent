@@ -203,6 +203,12 @@ def quote(venue, raw, cfg, metadata):
         status = 'shallow_book'
     return {**metadata, 'status': status, 'yes_bid': bid, 'yes_ask': ask,
             'yes_bid_size': bid_size, 'yes_ask_size': ask_size, 'spread': spread,
+            'yes_bids_top10': [{'price': p, 'size': sum(s for q, s in bids if q == p)}
+                               for p in sorted({p for p, s in bids if s > 0}, reverse=True)[:10]],
+            'yes_asks_top10': [{'price': p, 'size': sum(s for q, s in asks if q == p)}
+                               for p in sorted({p for p, s in asks if s > 0})[:10]],
+            'visible_bid_levels': len({p for p, s in bids if s > 0}),
+            'visible_ask_levels': len({p for p, s in asks if s > 0}),
             'midpoint': (bid + ask) / 2 if status == 'usable' else None,
             'price_unit': 'USD_per_1_USD_binary_contract', 'raw_book_sha256': digest(raw)}
 

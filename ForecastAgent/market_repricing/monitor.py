@@ -3,6 +3,7 @@ from collections import Counter
 import copy
 from datetime import timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write
 from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen
@@ -98,14 +99,22 @@ def ingest(ledger, venue, rows, cfg, clock):
 
 
 def enroll(ledger, cfg, clock):
-    date = instant(clock).date().isoformat()
-    count = ledger['daily'].setdefault(date, 0)
+    zone = ZoneInfo(cfg['enrollment_day_timezone'])
+    date = instant(clock).astimezone(zone).date().isoformat()
+    # Recompute from immutable enrollment receipts, including migrated tasks.
+    # Failed/blocked tasks still consume the day admission allowance.
+    count = sum(instant(t['enrolled_at']).astimezone(zone).date().isoformat() == date
+                for t in ledger['tasks'].values())
     families = {t['market']['family'] for t in ledger['tasks'].values()}
     ordered = sorted(ledger['markets'].values(), key=lambda m: m.get('created_at') or m['first_seen_at'], reverse=True)
     for market in ordered:
-        if count >= cfg['maximum_new_tasks_per_utc_day'] or len(families) >= cfg['maximum_active_families']:
+        if count >= cfg['maximum_new_tasks_per_day']:
             break
         if market['selection']['status'] != 'candidate' or (market.get('last_quote') or {}).get('status') != 'usable':
+            continue
+        observed = market['last_quote'].get('received_at')
+        if not observed or not instant(ledger.get('last_attempt_at', clock)) <= instant(observed) <= instant(clock):
+            # An old usable book cannot masquerade as the admission-time price.
             continue
         if market['family'] in families:
             continue
@@ -115,7 +124,41 @@ def enroll(ledger, cfg, clock):
                                 'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256']}
         families.add(market['family'])
         count += 1
-    ledger['daily'][date] = count
+    ledger.setdefault('enrollment_daily', {})[date] = count
+
+
+def quote_turns(ledger, worker, candidates, cfg, clock):
+    """Due label windows first, then fair turns for active tasks and new families."""
+    current = instant(clock)
+    urgent, active = [], []
+    for key in ledger['tasks']:
+        task = worker.get('tasks', {}).get(key, {})
+        frozen = task.get('forecast')
+        if frozen:
+            targets = [instant(frozen['anchor_at']) + timedelta(hours=h) for h in cfg['horizons_hours']]
+            if any(t - timedelta(minutes=cfg['label_window_minutes']) <= current <= t for t in targets):
+                urgent.append(key)
+            elif current <= max(targets):
+                active.append(key)
+        elif task.get('status', 'queued') in {'queued', 'running', 'retry_wait'}:
+            active.append(key)
+    def age(key):
+        market = ledger['markets'][key]
+        return ((market.get('last_quote') or {}).get('received_at') or market['first_seen_at'], key)
+    active.sort(key=age)
+    urgent.sort(key=age)
+    cap = cfg['maximum_quote_requests_per_dispatch']
+    turns = urgent[:cap]
+    # Reserve half of remaining turns for new families; neither class starves.
+    left = cap - len(turns)
+    turns.extend(candidates[:(left + 1) // 2])
+    turns.extend(active[:cap - len(turns)])
+    for key in candidates + active:
+        if len(turns) >= cap:
+            break
+        if key not in turns:
+            turns.append(key)
+    return turns
 
 
 def label(task, market, quotes, clock, cfg):
@@ -177,7 +220,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             observed_times.extend(p['received_at'] for p in scan.get('pages', []))
             observed_times.extend(p['received_at'] for p in scan.get('new_market_overlap', {}).get('pages', []))
         clock = max(observed_times, key=instant)
-        worker = read(Path(worker_root) / 'state.json') if worker_root and (Path(worker_root) / 'state.json').exists() else {'tasks': {}}
+        worker = state(worker_root, 'worker', cfg) if worker_root and (Path(worker_root) / 'state.json').exists() else {'tasks': {}}
         if worker.get('identity') and worker['identity']['policy_sha256'] != ledger['identity']['policy_sha256']:
             raise ValueError('Worker and monitor policy mismatch')
         # Prioritize enrolled contracts; newest launches cannot starve labels.
@@ -198,8 +241,8 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         groups = {family: sorted(keys, key=rank) for family, keys in groups.items()}
         rounds = [keys[i] for i in range(max((len(g) for g in groups.values()), default=0))
                   for family, keys in sorted(groups.items()) if i < len(keys)]
-        priority = list(sorted(selected)) + rounds
-        for index, key in enumerate(priority[:cfg['maximum_quote_requests_per_dispatch']]):
+        priority = quote_turns(ledger, worker, rounds, cfg, clock)
+        for index, key in enumerate(priority):
             market = ledger['markets'][key]
             if index < cfg['maximum_metadata_refresh_per_dispatch']:
                 try:
@@ -231,9 +274,14 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             quotes_path = root / 'quotes' / (digest(key) + '.json')
             quotes = read(quotes_path) if quotes_path.exists() else []
             quotes.append(q); write(quotes_path, quotes)
-            if key in worker['tasks'] and worker['tasks'][key].get('forecast'):
-                labels = label(worker['tasks'][key], market, quotes, clock, cfg)
-                write(root / 'labels' / (digest(key) + '.json'), labels)
+        # Evaluate every sealed forecast even after its last quote turn. Missing
+        # windows must be recorded rather than silently omitting terminal labels.
+        for key, task in worker['tasks'].items():
+            if task.get('forecast') and key in ledger['markets']:
+                quotes_path = root / 'quotes' / (digest(key) + '.json')
+                quotes = read(quotes_path) if quotes_path.exists() else []
+                write(root / 'labels' / (digest(key) + '.json'),
+                      label(task, ledger['markets'][key], quotes, clock, cfg))
         for market in ledger['markets'].values():
             market['selection'] = screen(market, clock, cfg)
         enroll(ledger, cfg, clock)
@@ -247,7 +295,9 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                                'queued_families': len(ledger['tasks']), 'no_model_calls': True,
                                'candidate_age_limit_hours': cfg['maximum_candidate_age_days'] * 24,
                                'minimum_resolution_hours': cfg['minimum_resolution_hours'],
-                               'pilot_family_cap': cfg['maximum_active_families'],
+                               'maximum_new_families_per_day': cfg['maximum_new_tasks_per_day'],
+                               'enrollment_day_timezone': cfg['enrollment_day_timezone'],
+                               'enrollment_daily': ledger['enrollment_daily'],
                                'errors_count': len(errors),
                                'scan_shortfall_visible': True, 'public_http_attempts': http.calls}
         write(root / 'report.json', ledger['heartbeat'])
