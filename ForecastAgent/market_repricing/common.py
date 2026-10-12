@@ -1,0 +1,137 @@
+"""Atomic, content-addressed research state and bounded public transports."""
+import hashlib
+import gzip
+import json
+import math
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+from . import PROTOCOL, ENGINE_BRANCH, ENGINE_SHA
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def instant(value):
+    result = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    if result.tzinfo is None:
+        raise ValueError('Timezone is required')
+    return result.astimezone(timezone.utc)
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding='utf-8'))
+
+
+def write(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(path.suffix + '.tmp')
+    temp.write_text(json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False), encoding='utf-8')
+    os.replace(temp, path)
+
+
+def policy():
+    return read(Path(__file__).with_name('policy.json'))
+
+
+def state(root, role, configuration):
+    path = Path(root) / 'state.json'
+    identity = {'protocol': PROTOCOL, 'role': role, 'policy_sha256': digest(configuration),
+                'engine_branch': ENGINE_BRANCH, 'engine_sha': ENGINE_SHA,
+                'development_only': True, 'release_fallback': False}
+    if path.exists():
+        saved = read(path)
+        if saved.get('identity') != identity:
+            raise ValueError('State identity changed; explicit migration is required')
+        return saved
+    if Path(root).exists() and any(Path(root).iterdir()):
+        raise ValueError('Files without a ledger; refuse bootstrap and budget reset')
+    return {'identity': identity, 'created_at': now(), 'markets': {}, 'tasks': {}, 'daily': {}}
+
+
+def seal(root):
+    root = Path(root)
+    files = {}
+    for path in sorted(root.rglob('*')):
+        if path.is_symlink():
+            raise ValueError('Symlink in research state')
+        if path.is_file() and path.name != 'inventory.json' and not path.name.endswith('.tmp'):
+            files[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    write(root / 'inventory.json', {'schema': PROTOCOL, 'files': files})
+
+
+def verify(root):
+    root = Path(root)
+    inventory = read(root / 'inventory.json')
+    if inventory.get('schema') != PROTOCOL or 'state.json' not in inventory['files']:
+        raise ValueError('Research inventory is missing its ledger')
+    for name, expected in inventory['files'].items():
+        path = (root / name).resolve()
+        if not path.is_relative_to(root.resolve()) or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise ValueError('Research checkpoint integrity failure: ' + name)
+    return len(inventory['files'])
+
+
+def number(value):
+    if isinstance(value, bool):
+        raise ValueError('Boolean is not a numeric quote')
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError('Nonfinite number')
+    return result
+
+
+class PublicHTTP:
+    """No implicit retry. Save reservations and bounded response bytes."""
+    HOSTS = ('https://gamma-api.polymarket.com/', 'https://clob.polymarket.com/',
+             'https://external-api.kalshi.com/trade-api/v2/')
+
+    def __init__(self, root, cap=100):
+        self.root = Path(root)
+        self.cap = cap
+        self.calls = 0
+
+    def get(self, base, params=None):
+        if not any(base.startswith(host) for host in self.HOSTS):
+            raise ValueError('Unexpected public market endpoint')
+        if self.calls >= self.cap:
+            raise RuntimeError('Public HTTP dispatch cap exhausted')
+        self.calls += 1
+        url = base + ('?' + urlencode(params, doseq=True) if params else '')
+        receipt = {'url': url, 'reserved_at': now(), 'status': 'reserved'}
+        ident = digest([url, receipt['reserved_at'], self.calls])
+        path = self.root / (ident + '.json')
+        write(path, receipt)
+        try:
+            # Redirects must stay within the public endpoint allowlist.
+            with urlopen(Request(url, headers={'User-Agent': 'ForecastAgent repricing research/1.0'}), timeout=30) as response:
+                if not any(response.geturl().startswith(host) for host in self.HOSTS):
+                    raise ValueError('Unexpected endpoint redirect')
+                raw = response.read(8 * 1024 * 1024 + 1)
+                if len(raw) > 8 * 1024 * 1024:
+                    raise ValueError('Market response exceeds byte limit')
+                receipt.update(http_status=response.status, response_sha256=hashlib.sha256(raw).hexdigest(),
+                               status='received', received_at=now())
+                parsed = json.loads(raw)
+                object_path = self.root / 'objects' / (receipt['response_sha256'] + '.json.gz')
+                if not object_path.exists():
+                    object_path.parent.mkdir(parents=True, exist_ok=True)
+                    object_path.write_bytes(gzip.compress(raw, mtime=0))
+                receipt['response_object'] = 'objects/' + object_path.name
+            return parsed, {'receipt': path.name, 'response_sha256': receipt['response_sha256'],
+                                         'received_at': receipt['received_at']}
+        except Exception as exc:
+            receipt.update(status='failed', error_type=type(exc).__name__, error_detail=str(exc)[:240],
+                           http_status=getattr(exc, 'code', None))
+            raise RuntimeError('Public endpoint failure: ' + type(exc).__name__) from exc
+        finally:
+            write(path, receipt)

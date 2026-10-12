@@ -1,0 +1,115 @@
+name: Market repricing research worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      monitor_run_id:
+        required: true
+        type: string
+        description: Exact trusted monitor artifact run
+      verification_only:
+        type: boolean
+        required: true
+        default: true
+        description: Validate queue and development engine without model requests
+  workflow_run:
+    workflows: ['Market repricing research monitor']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: market-repricing-worker-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  research:
+    if: (github.event_name == 'workflow_dispatch' && (inputs.verification_only || vars.MARKET_REPRICING_ENABLED == 'true')) || (github.event_name == 'workflow_run' && vars.MARKET_REPRICING_ENABLED == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
+      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY2 }}
+      EXA_API_KEY: ${{ secrets.EXA_API }}
+      EXA_API_KEY2: ${{ secrets.EXA_API2 }}
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL_FALLBACK_SUPER: '0'
+      SOURCE_RUN: ${{ inputs.monitor_run_id || github.event.workflow_run.id }}
+      VERIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .development
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run independent sidecar regression gates
+        run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Restore exact worker checkpoint
+        run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
+      - name: Restore triggering trusted monitor checkpoint
+        run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
+      - name: Verify queue before installing model and browser dependencies
+        id: inventory
+        run: |
+          python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor --verification-only
+          python - <<'PY'
+          import os
+          from ForecastAgent.market_repricing.common import read, instant, now, policy
+          state = read('snapshots/market-worker/state.json')
+          cap = policy()['maximum_executions_per_task']
+          pending = any(t['status'] in {'queued','retry_wait','running'} and t['executions'] < cap and
+              (not t.get('retry_at') or instant(t['retry_at']) <= instant(now())) for t in state['tasks'].values())
+          ready = pending and os.environ['VERIFY_ONLY'] != 'true'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
+              output.write('ready='+str(ready).lower()+'\n')
+          PY
+      - name: Install development crawler runtime
+        if: steps.inventory.outputs.ready == 'true'
+        run: |
+          python -m pip install -r .development/ForecastAgent/requirements-crawl4ai.txt
+          python -m playwright install --with-deps chromium
+      - name: Run development research
+        if: steps.inventory.outputs.ready == 'true'
+        run: |
+          args=()
+          if [ "$VERIFY_ONLY" = 'true' ]; then args+=(--verification-only); fi
+          python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor "${args[@]}"
+      - name: Evaluate due paired labels
+        if: always()
+        run: |
+          if [ -f snapshots/market-worker/state.json ] && [ -f snapshots/market-monitor/state.json ]; then
+            python -m ForecastAgent.market_repricing evaluate --root snapshots/market-monitor --worker snapshots/market-worker --output snapshots/market-worker/evaluation.json
+            python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
+          fi
+      - name: Seal interrupted worker state
+        if: always()
+        run: |
+          if [ -f snapshots/market-worker/state.json ]; then
+            python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
+          fi
+      - name: Publish independent worker checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-repricing-v2-worker-state
+          path: snapshots/market-worker
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write visible research summary
+        if: always()
+        run: |
+          if [ -f snapshots/market-worker/report.json ]; then
+            echo '## Development graph research; no orders or submissions' >> "$GITHUB_STEP_SUMMARY"
+            cat snapshots/market-worker/report.json >> "$GITHUB_STEP_SUMMARY"
+          fi
