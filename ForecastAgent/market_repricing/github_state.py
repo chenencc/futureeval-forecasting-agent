@@ -5,8 +5,8 @@ import json
 import os
 from pathlib import Path
 import stat
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode, urlsplit
+from urllib.request import Request, urlopen, HTTPRedirectHandler, build_opener
 import zipfile
 from urllib.error import HTTPError
 
@@ -14,6 +14,20 @@ from .common import verify
 
 WORKFLOWS = {'monitor': ('market_research_monitor.yaml', 'Market repricing research monitor', 'Run research monitor'),
              'worker': ('market_research_worker.yaml', 'Market repricing research worker', 'Run development research')}
+
+
+class ArtifactRedirect(HTTPRedirectHandler):
+    """Signed storage URLs authenticate themselves; never forward the API token."""
+    def redirect_request(self, request, response, code, message, headers, new_url):
+        target = urlsplit(new_url)
+        host = (target.hostname or '').lower()
+        allowed = host == 'api.github.com' or host.endswith('.blob.core.windows.net') or host.endswith('.actions.githubusercontent.com')
+        if target.scheme != 'https' or target.username or target.password or not allowed:
+            raise ValueError('Unexpected artifact redirect host')
+        redirected = super().redirect_request(request, response, code, message, headers, new_url)
+        if target.netloc != urlsplit(request.full_url).netloc:
+            redirected.remove_header('Authorization')
+        return redirected
 
 
 def api(path):
@@ -92,7 +106,7 @@ def restore(role, root, branch, exact_run=None):
     request = Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] +
                       '/actions/artifacts/' + str(artifact['id']) + '/zip',
                       headers={'Authorization': 'Bearer ' + os.environ['GH_STATE_TOKEN'], 'Accept': 'application/vnd.github+json'})
-    with urlopen(request, timeout=120) as response:
+    with build_opener(ArtifactRedirect()).open(request, timeout=120) as response:
         data = response.read(1024 ** 3 + 1)
     if len(data) > 1024 ** 3:
         raise ValueError('Compressed artifact exceeds bound')

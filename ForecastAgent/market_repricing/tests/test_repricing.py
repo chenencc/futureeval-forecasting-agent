@@ -15,7 +15,7 @@ from ForecastAgent.market_repricing.common import digest, instant, now, policy, 
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
 from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
-from ForecastAgent.market_repricing.github_state import extract, find
+from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect
 from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run
 
 
@@ -135,6 +135,18 @@ class Labels(unittest.TestCase):
 
 
 class Persistence(unittest.TestCase):
+    def test_artifact_redirect_drops_github_token_and_rejects_untrusted_host(self):
+        from urllib.request import Request
+        request = Request('https://api.github.com/repos/example/repo/actions/artifacts/1/zip',
+                          headers={'Authorization': 'Bearer fixture-only', 'Accept': 'application/vnd.github+json'})
+        redirect = ArtifactRedirect()
+        response = redirect.redirect_request(request, None, 302, 'Found', {},
+            'https://productionresults.blob.core.windows.net/path?sig=fixture')
+        self.assertIsNone(response.get_header('Authorization'))
+        same = redirect.redirect_request(request, None, 302, 'Found', {}, 'https://api.github.com/another-path')
+        self.assertEqual(same.get_header('Authorization'), 'Bearer fixture-only')
+        with self.assertRaises(ValueError):
+            redirect.redirect_request(request, None, 302, 'Found', {}, 'https://untrusted.example/file')
     def test_monitor_replay_preserves_enrolled_snapshot(self):
         class MarketHTTP:
             calls = 0
