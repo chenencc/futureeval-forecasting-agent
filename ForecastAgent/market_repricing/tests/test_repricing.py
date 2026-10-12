@@ -15,7 +15,7 @@ from ForecastAgent.market_repricing.common import digest, instant, now, policy, 
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
 from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, quote_turns, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
-from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect
+from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect, recover_omitted_mutexes
 from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run
 
 
@@ -215,6 +215,43 @@ class Labels(unittest.TestCase):
 
 
 class Persistence(unittest.TestCase):
+    def test_only_exact_omitted_mutex_bytes_can_be_recovered(self):
+        with tempfile.TemporaryDirectory() as root:
+            ledger = state(root, 'worker', policy())
+            write(Path(root) / 'state.json', ledger)
+            marker = Path(root) / 'tasks' / ('a' * 64) / 'development-intelligence' / '.lock.recovery'
+            marker.parent.mkdir(parents=True); marker.write_bytes(b'0')
+            seal(root); original_inventory = (Path(root) / 'inventory.json').read_bytes()
+            marker.unlink()
+            repaired = recover_omitted_mutexes(root)
+            self.assertEqual(len(repaired), 1); self.assertEqual(marker.read_bytes(), b'0')
+            self.assertEqual((Path(root) / 'inventory.json').read_bytes(), original_inventory)
+            verify(root)
+            (Path(root) / 'state.json').unlink()
+            with self.assertRaises(ValueError): recover_omitted_mutexes(root)
+        with tempfile.TemporaryDirectory() as root:
+            ledger = state(root, 'worker', policy()); write(Path(root) / 'state.json', ledger)
+            marker = Path(root) / 'tasks' / ('a' * 64) / 'development-intelligence' / '.lock.recovery'
+            marker.parent.mkdir(parents=True); marker.write_bytes(b'unknown')
+            seal(root); marker.unlink()
+            with self.assertRaises(ValueError): recover_omitted_mutexes(root)
+    def test_relative_worker_root_is_absolute_at_collector_boundary(self):
+        with tempfile.TemporaryDirectory() as root:
+            source = state(Path(root) / 'monitor', 'monitor', policy())
+            source['last_attempt_at'] = now(); m = normalize('polymarket', raw_poly())
+            source['tasks'][m['key']] = {'key': m['key'], 'market': m, 'status': 'queued'}
+            write(Path(root) / 'monitor' / 'state.json', source); seal(Path(root) / 'monitor')
+            seen = []
+            def collect(task, folder):
+                seen.append(folder.is_absolute())
+                raise RuntimeError('Fixture stops before networking')
+            previous = Path.cwd()
+            try:
+                os.chdir(root)
+                run('worker', 'monitor', collector=collect)
+            finally:
+                os.chdir(previous)
+            self.assertEqual(seen, [True])
     def test_authorized_policy_migration_preserves_tasks_and_failed_reservations(self):
         cfg = policy()
         legacy = dict(cfg)

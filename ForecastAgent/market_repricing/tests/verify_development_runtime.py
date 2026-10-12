@@ -1,5 +1,6 @@
 """Exercise selected development acquisition/maps with zero provider requests."""
 import os
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -25,6 +26,19 @@ class DevelopmentRuntime(unittest.TestCase):
                   'body_diagnostics': {'usable_text': True}, 'retrieved_at_utc': now()}},
                   'gaps': [{'code': 'future_decision_unknown'}]}
         return market, text, bundle
+
+    def test_native_capture_child_reads_absolute_request_from_engine_cwd(self):
+        from ForecastAgent.supplement.transport import capture
+        with tempfile.TemporaryDirectory() as root:
+            folder = Path(root).resolve() / 'capture'
+            script = ('import json,sys; from pathlib import Path; '
+                      'request=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")); '
+                      'Path(sys.argv[2]).write_text(json.dumps({"request":request,"ok":True,'
+                      '"page":{"content":"Fixture child read the saved request; no network request occurred."}}),encoding="utf-8")')
+            page = capture('http', 'https://example.org/no-network-fixture', folder,
+                _command=[sys.executable, '-c', script, str(folder / 'request.json'), str(folder / 'result.json')])
+            self.assertIn('Fixture child', page['content'])
+            self.assertEqual(page['supplement_transport_boundary']['status'], 'completed')
 
     def test_development_common_originals_and_market_heads(self):
         from ForecastAgent.market_repricing.forecast import run

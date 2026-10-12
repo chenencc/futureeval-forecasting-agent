@@ -186,6 +186,14 @@ Restore checks workflow/repository/branch, archive members and file hashes. A
 missing latest mutated checkpoint fails closed. Terminal tasks do not recollect.
 V1 probes remain historical evidence, not adopted v2 acquisition/analysis results.
 
+Worker state roots are resolved before native collection. Supplemental children
+run from the pinned engine checkout, so request/output paths must be absolute.
+Role artifacts include hidden files. A prior artifact that omitted native
+`.lock.recovery` markers may restore only that known one-byte `0` payload when
+its exact SHA-256 matches the original inventory. Original inventories/ZIPs,
+provider journals and task counters remain unchanged. Every other missing file
+or unknown mutex payload fails integrity checks; repairs receive a separate audit.
+
 Artifacts preserve compressed raw responses, collector/supplement journals,
 maps/material-processing records, body admission, matched scoring inputs,
 provider requests/responses, anchors, labels and gaps. `ForecastAgent.local_sync`
