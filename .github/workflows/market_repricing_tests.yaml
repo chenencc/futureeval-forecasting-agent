@@ -1,0 +1,29 @@
+name: Market repricing offline and frozen-release gates
+on:
+  push:
+    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_*']
+  pull_request:
+    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_*']
+permissions:
+  contents: read
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: bf9a425f8425c9a685bd3b24979935b7cfe04981
+          path: .release
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Offline sidecar gates
+        run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Immutable release runtime integration
+        env:
+          MARKET_RELEASE_DIRECTORY: ${{ github.workspace }}/.release
+        run: python -m ForecastAgent.market_repricing.tests.verify_frozen_runtime -v

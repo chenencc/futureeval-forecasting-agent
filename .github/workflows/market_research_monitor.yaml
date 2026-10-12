@@ -1,0 +1,52 @@
+name: Market repricing research monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: market-repricing-monitor-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    if: github.event_name == 'workflow_dispatch' || vars.MARKET_REPRICING_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run independent sidecar regression gates
+        run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Restore exact monitor checkpoint
+        run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME"
+      - name: Restore latest completed worker for labels
+        run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
+      - name: Run research monitor
+        run: python -m ForecastAgent.market_repricing monitor --root snapshots/market-monitor --worker snapshots/market-worker
+      - name: Publish independent monitor checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-repricing-monitor-state
+          path: snapshots/market-monitor
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write visible health summary
+        if: always()
+        run: |
+          if [ -f snapshots/market-monitor/report.json ]; then
+            echo '## Read-only market discovery and quote health' >> "$GITHUB_STEP_SUMMARY"
+            cat snapshots/market-monitor/report.json >> "$GITHUB_STEP_SUMMARY"
+          fi
