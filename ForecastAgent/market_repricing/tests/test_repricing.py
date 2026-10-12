@@ -160,6 +160,23 @@ class Persistence(unittest.TestCase):
             monitor_run(root, http=MarketHTTP(), clock=CLOCK)
             self.assertEqual(digest(read(Path(root)/'state.json')['tasks']), before)
             self.assertGreater(verify(root), 0)
+    def test_published_during_scan_is_not_a_future_question(self):
+        class DuringScan:
+            calls = 0
+            def get(self, url, params=None):
+                self.calls += 1
+                meta = {'received_at': '2026-10-12T00:00:30Z', 'receipt': 'fixture', 'response_sha256': 'raw'}
+                raw = raw_poly() | {'createdAt': '2026-10-12T00:00:10Z'}
+                if '/tags/slug/' in url: return {'slug': url.rsplit('/', 1)[1], 'id': '1'}, meta
+                if 'gamma-api' in url and url.endswith('/events'): return [{'id': 'event1', 'title': 'Fed', 'markets': [raw]}], meta
+                if 'gamma-api' in url and url.endswith('/markets'): return [raw], meta
+                if 'gamma-api' in url and '/markets/' in url: return raw, meta
+                if 'clob' in url: return {'asset_id': 'yes_asset', 'bids': [{'price': '.43', 'size': '50'}], 'asks': [{'price': '.47', 'size': '50'}]}, meta
+                return {'events': [], 'markets': []}, meta
+        with tempfile.TemporaryDirectory() as root:
+            result = monitor_run(root, http=DuringScan(), clock=CLOCK)
+            self.assertEqual(result['queued_families'], 1)
+            self.assertEqual(read(Path(root)/'state.json')['enrollment_cutoff_utc'], '2026-10-12T00:00:30Z')
     def test_integrity_and_policy_drift(self):
         with tempfile.TemporaryDirectory() as root:
             ledger = state(root, 'monitor', policy()); write(Path(root)/'state.json', ledger); seal(root)

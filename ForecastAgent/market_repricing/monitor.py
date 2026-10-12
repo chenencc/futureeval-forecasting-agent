@@ -169,6 +169,14 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             except Exception as exc:
                 scans[venue] = {'complete': False, 'error_type': type(exc).__name__}
                 errors.append({'venue': venue, 'stage': 'discovery', 'error': str(exc)})
+        # A question can be published DURING a multi-page scan. Enrollment uses
+        # actual observation time, not the earlier scan-start clock; otherwise
+        # genuinely new questions appear to have impossible future timestamps.
+        observed_times = [clock]
+        for scan in scans.values():
+            observed_times.extend(p['received_at'] for p in scan.get('pages', []))
+            observed_times.extend(p['received_at'] for p in scan.get('new_market_overlap', {}).get('pages', []))
+        clock = max(observed_times, key=instant)
         worker = read(Path(worker_root) / 'state.json') if worker_root and (Path(worker_root) / 'state.json').exists() else {'tasks': {}}
         if worker.get('identity') and worker['identity']['policy_sha256'] != ledger['identity']['policy_sha256']:
             raise ValueError('Worker and monitor policy mismatch')
@@ -197,7 +205,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                 try:
                     current, receipt = refresh(http, market)
                     market.update(current, metadata_refreshed_at=receipt['received_at'])
-                    market['selection'] = screen(market, clock, cfg)
+                    market['selection'] = screen(market, receipt['received_at'], cfg)
                     market['metadata_versions'].append({'sha256': receipt['response_sha256'],
                         'seen_at': receipt['received_at'], 'rules_sha256': current['rules_sha256'],
                         'source': 'detail_refresh'})
@@ -212,6 +220,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                 q = book(http, market, cfg)
             except Exception as exc:
                 q = {'status': 'fetch_failed', 'received_at': now(), 'error': str(exc), 'midpoint': None}
+            clock = max((clock, q['received_at']), key=instant)
             if not market['tradable'] and q.get('status') == 'usable':
                 q.update(status='not_orderable', midpoint=None)
             if market.get('rule_drift'):
@@ -225,7 +234,10 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             if key in worker['tasks'] and worker['tasks'][key].get('forecast'):
                 labels = label(worker['tasks'][key], market, quotes, clock, cfg)
                 write(root / 'labels' / (digest(key) + '.json'), labels)
+        for market in ledger['markets'].values():
+            market['selection'] = screen(market, clock, cfg)
         enroll(ledger, cfg, clock)
+        ledger['enrollment_cutoff_utc'] = clock
         ledger['last_scan'] = scans
         ledger['errors'] = errors
         if all(x['complete'] for x in scans.values()) and not errors:
