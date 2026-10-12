@@ -41,6 +41,7 @@ def normalize(venue, raw):
                 'created_at': raw.get('createdAt'), 'close_at': raw.get('endDate'),
                 'close_time_role': 'platform_hint_not_authoritative_event_deadline',
                 'binary': binary, 'yes_token': str(tokens[index]) if binary else None,
+                'composite': raw.get('comboStatus') not in {None, '', 'disabled'} or bool(re.search(r'\band\b', str(raw.get('question', '')), re.I)),
                 'tradable': bool(raw.get('active') and not raw.get('closed') and not raw.get('archived') and raw.get('enableOrderBook') and raw.get('acceptingOrders')),
                 'disputed': 'disputed' in str(raw.get('umaResolutionStatuses', '')).lower(),
                 'terminal_result': None,
@@ -59,6 +60,7 @@ def normalize(venue, raw):
             'created_at': raw.get('created_time'), 'close_at': raw.get('close_time'),
             'close_time_role': 'platform_order_close_not_guaranteed_resolution_time',
             'binary': raw.get('market_type') == 'binary', 'yes_token': None,
+            'composite': bool(raw.get('mve_collection_ticker')) or bool(re.search(r'\band\b', str(raw.get('title', '')), re.I)),
             'tradable': raw.get('status') in {'open', 'active'}, 'disputed': False,
             'terminal_result': raw.get('result') if raw.get('result') in {'yes', 'no'} else None,
             'discovery_liquidity_hint': raw.get('open_interest_fp') or 0,
@@ -73,6 +75,8 @@ def screen(market, clock, cfg):
             return {'status': 'excluded', 'reason': reason}
     if not market['binary']:
         return {'status': 'excluded', 'reason': 'binary_contract_required_for_quote_v1'}
+    if market.get('composite'):
+        return {'status': 'excluded', 'reason': 'composite_contract_outside_single_event_pilot'}
     if not market.get('created_at'):
         return {'status': 'waiting_rules', 'reason': 'creation_time_missing'}
     if not market['rules'].strip():

@@ -13,7 +13,7 @@ import zipfile
 from ForecastAgent.market_repricing import RELEASE_SHA
 from ForecastAgent.market_repricing.common import digest, instant, now, policy, read, seal, state, verify, write
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
-from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label
+from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
 from ForecastAgent.market_repricing.github_state import extract, find
 from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run
@@ -50,6 +50,7 @@ class Selection(unittest.TestCase):
         for title in ['NFL finals', 'soccer match', 'esports vote', 'president mentions', 'NBA game']:
             self.assertEqual(screen(self.m | {'screen_text': title}, CLOCK, self.cfg)['status'], 'excluded')
     def test_rules_required(self): self.assertEqual(screen(self.m | {'rules': ''}, CLOCK, self.cfg)['status'], 'waiting_rules')
+    def test_composite_not_silently_single_event(self): self.assertEqual(screen(self.m | {'composite': True}, CLOCK, self.cfg)['status'], 'excluded')
     def test_unknown_domain_not_force_filled(self): self.assertEqual(screen(self.m | {'screen_text': 'unknown new question'}, CLOCK, self.cfg)['status'], 'waiting_relevance')
     def test_short_resolution_separate(self): self.assertEqual(screen(self.m | {'close_at': '2026-10-13T00:00:00Z'}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
     def test_distant_catalyst_waits(self): self.assertEqual(screen(self.m | {'close_at': '2028-11-07T00:00:00Z'}, CLOCK, self.cfg)['status'], 'waiting_catalyst')
@@ -121,6 +122,31 @@ class Labels(unittest.TestCase):
 
 
 class Persistence(unittest.TestCase):
+    def test_monitor_replay_preserves_enrolled_snapshot(self):
+        class MarketHTTP:
+            calls = 0
+            def get(self, url, params=None):
+                self.calls += 1
+                meta = {'received_at': CLOCK, 'receipt': 'fixture', 'response_sha256': 'raw-fixture'}
+                if '/tags/slug/' in url:
+                    return {'slug': url.rsplit('/', 1)[1], 'id': '1'}, meta
+                if 'gamma-api' in url and url.endswith('/events'):
+                    return [{'id': 'event1', 'title': 'Fed December meeting', 'markets': [raw_poly()]}], meta
+                if 'gamma-api' in url and url.endswith('/markets'):
+                    return [raw_poly()], meta
+                if 'gamma-api' in url and '/markets/' in url:
+                    return raw_poly(), meta
+                if 'clob' in url:
+                    return {'asset_id': 'yes_asset', 'bids': [{'price': '.43', 'size': '50'}],
+                            'asks': [{'price': '.47', 'size': '50'}]}, meta
+                return {'events': [], 'markets': []}, meta
+        with tempfile.TemporaryDirectory() as root:
+            report = monitor_run(root, http=MarketHTTP(), clock=CLOCK)
+            before = digest(read(Path(root)/'state.json')['tasks'])
+            self.assertEqual(report['queued_families'], 1)
+            monitor_run(root, http=MarketHTTP(), clock=CLOCK)
+            self.assertEqual(digest(read(Path(root)/'state.json')['tasks']), before)
+            self.assertGreater(verify(root), 0)
     def test_integrity_and_policy_drift(self):
         with tempfile.TemporaryDirectory() as root:
             ledger = state(root, 'monitor', policy()); write(Path(root)/'state.json', ledger); seal(root)

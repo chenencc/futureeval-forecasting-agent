@@ -96,6 +96,9 @@ The initial pilot uses a platform close hint 8 to 90 days away. Very distant
 events wait for a nearer catalyst rather than consuming the quote or model
 budget. Quote discovery visits one representative per event family before
 additional thresholds; volume/depth hints are ranking only, not labels.
+Composite contracts and conjunctions are excluded from this first single-event
+pilot. This conservative title prescreen can reject legitimate conjunctions;
+they stay recorded rather than being simplified to a different proposition.
 
 The first pilot admits at most 30 venue event families total, at most 5 per UTC
 day, and at most 5 per worker dispatch. There is no automatic budget renewal
