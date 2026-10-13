@@ -185,6 +185,29 @@ jobs:
             snapshots/monitor/*/*.json
           if-no-files-found: error
           retention-days: 7
+      - name: Build lightweight local synchronization catalog
+        id: local_catalog
+        if: always() && hashFiles('snapshots/monitor/state.json') != ''
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import os
+          from ForecastAgent.infrastructure.local_sync_export import export
+          export([
+              ('futureeval-monitor-state', 'snapshots/monitor', ['state.json', 'retrieval/**/*']),
+              ('futureeval-monitor-health', 'snapshots/monitor', ['monitor-health.json']),
+              ('futureeval-questions-' + os.environ['GITHUB_RUN_ID'], 'snapshots/monitor', ['*/*.json']),
+          ], 'snapshots/local-catalog', 'official-monitor')
+          PY
+      - name: Publish lightweight local synchronization catalog
+        if: always() && steps.local_catalog.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-local-catalog-v1-official-monitor
+          path: snapshots/local-catalog/
+          retention-days: 90
+          if-no-files-found: error
       - name: Rotate superseded monitor state and health
         if: success()
         uses: actions/github-script@v7

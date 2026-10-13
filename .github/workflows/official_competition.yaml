@@ -220,6 +220,7 @@ jobs:
           retention-days: 90
       - name: Emergency full recovery if storage export failed
         if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/official/campaign.json') != ''
+        id: emergency
         uses: actions/upload-artifact@v4
         with:
           name: futureeval-official-state
@@ -235,6 +236,27 @@ jobs:
           path: snapshots/storage-export/checkpoint/campaign.json
           if-no-files-found: error
           retention-days: 90
+      - name: Build lightweight local synchronization catalog
+        id: local_catalog
+        if: always() && (steps.checkpoint.outcome == 'success' || steps.emergency.outcome == 'success')
+        continue-on-error: true
+        env:
+          SPLIT_CHECKPOINT: ${{ steps.checkpoint.outcome == 'success' }}
+        run: |
+          if [ "$SPLIT_CHECKPOINT" = 'true' ]; then
+            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/storage-export/checkpoint --source futureeval-official-evidence-${{ github.run_id }}=snapshots/storage-export/evidence --output snapshots/local-catalog
+          else
+            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/official --output snapshots/local-catalog
+          fi
+      - name: Publish lightweight local synchronization catalog
+        if: always() && steps.local_catalog.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-local-catalog-v1-official-worker
+          path: snapshots/local-catalog/
+          retention-days: 90
+          if-no-files-found: error
       - name: Rotate superseded recovery checkpoints
         if: always() && steps.checkpoint.outcome == 'success'
         uses: actions/github-script@v7

@@ -6,6 +6,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $RepositoryPath
+$env:PYTHONPATH = $RepositoryPath
 New-Item -ItemType Directory -Force -Path (Join-Path $DataRoot 'logs') | Out-Null
 $logPath = Join-Path $DataRoot 'logs\sync.log'
 if ((Test-Path -LiteralPath $logPath) -and (Get-Item -LiteralPath $logPath).Length -gt 10485760) {
