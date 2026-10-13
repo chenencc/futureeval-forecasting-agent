@@ -213,7 +213,7 @@ Content-Type: application/json
 ```
 
 Use OPENROUTER2 only, with no production router-key fallback. Search credential
-names: `TAVILY_KEY1/TAVILY_KEY2`, `EXA_API/EXA_API2`. Development collection retains
+names: `TAVILY_KEY3/TAVILY_KEY4`, `EXA_API/EXA_API2`. Development collection retains
 initial lifetime limits of three Tavily basic searches and one Exa search per
 task; capture/Extract/supplement have separate existing limits. Remaining model
 decision/failure reservations are restored across retries. Outer physical limits:
@@ -446,3 +446,22 @@ predictive skill. Enable a bounded model pilot after reviewing real candidates.
 
 See [OFFICIAL_MAP.md](OFFICIAL_MAP.md) for the independent third analysis arm
 using pinned Metaculus map-research tools on exactly matched original evidence.
+
+## Market-v0.3.1 Tavily credentials
+
+The market worker maps `TAVILY_KEY3` to `TAVILY_API_KEY` and `TAVILY_KEY4`
+to `TAVILY_API_KEY2`. The market-only adapter reuses the existing credential
+router without changing the pinned collector or the competition credentials.
+Both Search and Basic Extract support explicit HTTP432/433 quota failover.
+Each logical request uses at most two physical attempts. Generic rate limits,
+authentication errors, service failures and unknown outcomes do not switch.
+
+Route cooldowns and default promotions persist under
+`snapshots/market-worker/provider-transport/tavily/`. Exhausted keys are skipped;
+four successful alternate requests promote the working key to the default.
+If that key later exhausts and the other has recovered, reverse failover works
+through the same rule. If both remain exhausted, fail fast and retain the gap.
+All actual Search/Extract attempts re-enter the worker's physical budget ledger,
+including failed primary attempts. Native per-task search reservations remain
+unchanged; changing credentials does not reset any budget. The worker report
+records only secret names and configuration presence, never credential values.

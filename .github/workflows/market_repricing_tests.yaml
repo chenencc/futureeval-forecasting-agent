@@ -29,6 +29,8 @@ jobs:
         run: MARKET_PIPELINE_SHA="$(git rev-parse HEAD)" python -m ForecastAgent.market_repricing.deployment
       - name: Offline sidecar gates
         run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Shared credential router quota and reverse-failover gates
+        run: python -m unittest ForecastAgent.infrastructure.test_provider_failover -v
       - name: Development collection and graph scoring integration
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development

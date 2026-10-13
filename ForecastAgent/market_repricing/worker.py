@@ -23,7 +23,8 @@ def provider_budget(root, ledger, key, cfg):
     def bounded(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
         model = url.startswith('https://openrouter.ai/api/')
-        search = url.startswith('https://api.tavily.com/search') or url.startswith('https://api.exa.ai/search')
+        search = any(url.startswith(endpoint) for endpoint in (
+            'https://api.tavily.com/search', 'https://api.tavily.com/extract', 'https://api.exa.ai/search'))
         if model or search:
             records = ledger.setdefault('provider_reservations', [])
             date, run_id = instant(now()).date().isoformat(), os.environ.get('GITHUB_RUN_ID', 'local')
@@ -48,11 +49,13 @@ def provider_budget(root, ledger, key, cfg):
             finally:
                 write(Path(root) / 'state.json', ledger)
         return original(request, *args, **kwargs)
+    from .search_credentials import transport
+    routed = transport(bounded, root, ProviderCap)
     # Development providers may have imported urlopen before this context.
     for module in list(sys.modules.values()):
         if module and getattr(module, '__name__', '').startswith('ForecastAgent') and getattr(module, 'urlopen', None) is original:
-            replaced.append(module); module.urlopen = bounded
-    urllib.request.urlopen = bounded
+            replaced.append(module); module.urlopen = routed
+    urllib.request.urlopen = routed
     try:
         yield
     finally:
@@ -60,7 +63,7 @@ def provider_budget(root, ledger, key, cfg):
         for module in replaced:
             module.urlopen = original
         for module in list(sys.modules.values()):
-            if module and getattr(module, '__name__', '').startswith('ForecastAgent') and getattr(module, 'urlopen', None) is bounded:
+            if module and getattr(module, '__name__', '').startswith('ForecastAgent') and getattr(module, 'urlopen', None) is routed:
                 module.urlopen = original
 
 
@@ -438,6 +441,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
         from .deployment import task_release
         report.update(task_release())
+        from .search_credentials import configured
+        report['tavily_credentials'] = configured()
         write(root / 'report.json', report)
         return report
     finally:

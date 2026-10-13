@@ -145,5 +145,32 @@ class OfficialRuntime(unittest.TestCase):
             self.assertEqual(forecast_policy(saved, cfg)['analysis_arms'], ['original', 'mapped', 'official_map'])
             self.assertEqual(saved['executions'], 0)
 
+    def test_native_search_inherits_tavily_routing_and_one_logical_search(self):
+        import io
+        import json
+        import sys
+        import urllib.request
+        from urllib.error import HTTPError
+        from ForecastAgent.market_repricing.worker import provider_budget
+        from ForecastAgent.market_repricing.tests.test_search_credentials import Response, ENV
+        # Exercise the pinned provider imported after transport installation.
+        sys.modules.pop('ForecastAgent.providers.tavily_search', None)
+        sent=[]
+        def send(request, **kwargs):
+            sent.append(request)
+            if len(sent)==1:
+                raise HTTPError(request.full_url,432,'Plan limit',{},io.BytesIO(b'{}'))
+            return Response(json.dumps({'results':[],'usage':{'credits':1}}).encode())
+        ledger={'provider_reservations':[]}
+        with tempfile.TemporaryDirectory() as root,patch.dict(os.environ,ENV),patch('urllib.request.urlopen',side_effect=send):
+            with provider_budget(root,ledger,'native-task',policy()):
+                from ForecastAgent.providers.tavily_search import search_batch
+                result=search_batch('Federal Reserve December decision',ENV['TAVILY_API_KEY'])
+        self.assertEqual(result['usage']['credits'],1)
+        self.assertEqual(len(ledger['provider_reservations']),2)
+        self.assertEqual(sent[0].data,sent[1].data)
+        self.assertEqual(json.loads(sent[1].data)['search_depth'],'basic')
+        self.assertEqual(sent[1].get_header('Authorization'),'Bearer '+ENV['TAVILY_API_KEY2'])
+
 
 if __name__ == '__main__': unittest.main()
