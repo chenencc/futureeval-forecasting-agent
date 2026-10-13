@@ -4,7 +4,7 @@ import hashlib
 import re
 from contextlib import contextmanager
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from .common import digest, now, read, write
 from .materials import market_host, quality, SOCIAL_HOSTS
@@ -14,7 +14,7 @@ HTTP_CAP, BROWSER_CAP = 4, 2
 
 
 def policy_identity():
-    files = ('evidence_capture.py', 'materials.py')
+    files = ('evidence_capture.py', 'materials.py', 'source_profile.py')
     return {'version': VERSION, 'initial_capture_budget': 'existing_native_fetch_attempts',
             'supplement_http_cap': HTTP_CAP, 'supplement_browser_cap': BROWSER_CAP,
             'tavily_basic_cap': 3, 'exa_cap': 1,
@@ -32,6 +32,12 @@ def allowed_url(url):
         return False
 
 
+def comparison_key(url):
+    """Scope lookup only. Never rewrite a capture URL or its query parameters."""
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip('/') or '/', parts.query, ''))
+
+
 def candidates(bundle):
     """Roles are navigation hints; they never certify relevance or truth."""
     request = bundle.get('request', {})
@@ -41,7 +47,7 @@ def candidates(bundle):
     terms = set(re.findall(r'\b[a-z0-9]{3,}\b', request.get('question', '').lower())) - {
         'will', 'the', 'before', 'after', '2026', '2027', 'with', 'any', 'first'}
     sources = {}
-    def add(item, role=None, need_ids=()):
+    def add(item, role=None, need_ids=(), query=None):
         if not isinstance(item, dict):
             return
         url = item.get('url', '')
@@ -56,10 +62,25 @@ def candidates(bundle):
             roles.add('official_domain_hint')
         if role:
             roles.add('search_' + role)
-        score = 100 * (url in named) + 12 * official + 3 * match - 12 * social
+        # Authority without a literal target match is not a reason to occupy all slots.
+        score = 100 * (url in named) + (8 if official and match else 1 if official else 0) + 3 * match - 12 * social
+        if item.get('origin') == 'observed_document_detail':
+            score += 15
+            roles.add('observed_document_detail')
+            if item.get('parent_url') in named:
+                score += 25
+                roles.add('rules_source_detail')
         row = sources.setdefault(url, {'url': url, 'title': item.get('title', ''), 'host': host,
-            'roles': [], 'need_ids': [], 'priority': score, 'publication_hint': item.get('published_date') or item.get('publishedDate'),
+            'roles': [], 'need_ids': [], 'search_queries': [], 'priority': score, 'publication_hint': item.get('published_date') or item.get('publishedDate'),
             'relevance_verified': False})
+        if not row['title'] and item.get('title'):
+            row['title'] = item['title']
+        if query and query not in row['search_queries']:
+            row['search_queries'].append(query)
+        for field in ('origin', 'depth', 'parent_url', 'parent_source_sha256', 'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute',
+                      'automatic_capture_eligible', 'automatic_capture_block_reason'):
+            if field in item:
+                row[field] = item[field]
         row['roles'] = sorted(set(row['roles']) | roles)
         row['need_ids'] = sorted(set(row['need_ids']) | set(need_ids) | set(item.get('need_ids', [])))
         row['priority'] = max(row['priority'], score)
@@ -68,9 +89,30 @@ def candidates(bundle):
         add(item)
     for batch in bundle.get('searches', []) + bundle.get('exa_searches', []):
         for item in batch.get('results', []):
-            add(item, batch.get('search_role'), batch.get('need_ids', []))
+            add(item, batch.get('search_role'), batch.get('need_ids', []), batch.get('query'))
     for url in named:
         add({'url': url})
+    for _ in range(3):
+        for row in sources.values():
+            if row.get('origin') == 'page_link' and row.get('parent_url') in sources:
+                row['depth'] = sources[row['parent_url']].get('depth', 0) + 1
+                row['automatic_capture_eligible'] = row['depth'] <= 1
+    from .source_profile import observed_details, applicability
+    # Only one local link layer. Every child keeps the exact original destination.
+    for url, page in bundle.get('pages', {}).items():
+        keys = {comparison_key(value) for value in (url, page.get('url'), page.get('final_url')) if value}
+        variants = [lead for lead in sources.values() if comparison_key(lead['url']) in keys]
+        parent = copy.deepcopy(max(variants, key=lambda lead: (bool(lead['search_queries']), bool(lead['title'])), default={}))
+        if variants:
+            parent['search_queries'] = sorted({query for lead in variants for query in lead['search_queries']})
+            parent['need_ids'] = sorted({need for lead in variants for need in lead['need_ids']})
+        if parent.get('depth', 0) >= 1 or parent.get('origin') in {'page_link', 'observed_document_detail'}:
+            continue
+        scope = applicability(page, url, parent, request)
+        for item in observed_details(page, url):
+            if scope.get('automatic_followup_requires_scope_review'):
+                item.update(automatic_capture_eligible=False, automatic_capture_block_reason='parent_source_scope_requires_review')
+            add(item, need_ids=parent.get('need_ids', []))
     # Spread ordinary slots across publishers; designated originals remain first.
     ranked = sorted(sources.values(), key=lambda row: (-row['priority'], row['url']))
     primary, first, rest, hosts = [], [], [], set()
@@ -82,6 +124,24 @@ def candidates(bundle):
         else:
             rest.append(row)
     return primary + first + rest
+
+
+def select_candidates(leads, *, limit, previous=()):
+    """Distribute finite reads across needs and publishers without certifying them."""
+    if not 0 <= limit <= 8:
+        raise ValueError('Selection must fit the existing eight native slots')
+    chosen, remaining = [], list(leads)
+    used_hosts = {r.get('host') or urlsplit(r.get('url', '')).hostname for r in previous}
+    used_needs = {n for r in previous for n in r.get('need_ids', [])}
+    while remaining and len(chosen) < limit:
+        def rank(row):
+            mandatory = 'rules_designated' in row['roles']
+            fresh_need = bool(set(row.get('need_ids', [])) - used_needs)
+            return (not mandatory, not fresh_need, row['host'] in used_hosts, -row['priority'], row['url'])
+        row = min(remaining, key=rank)
+        remaining.remove(row); chosen.append(row)
+        used_hosts.add(row['host']); used_needs.update(row.get('need_ids', []))
+    return chosen
 
 
 def packet(bundle, directory, reason):
@@ -163,6 +223,7 @@ def verify_packet(path):
 
 
 def checklist(bundle, leads, records=()):
+    from .source_profile import applicability
     pages = bundle.get('pages', {})
     attempted = {r.get('url') for r in bundle.get('fetch_attempts', [])} | {r.get('url') for r in records}
     rows = []
@@ -170,12 +231,15 @@ def checklist(bundle, leads, records=()):
         page = pages.get(lead['url'])
         if page is None:
             # Native keys are canonical; original URL spelling remains in the page.
-            page = next((p for p in pages.values() if p.get('url') == lead['url']), None)
+            page = next((p for key, p in pages.items() if comparison_key(lead['url']) in {
+                comparison_key(value) for value in (key, p.get('url'), p.get('final_url')) if value}), None)
         diagnostic = quality(page, lead['url']) if page else None
+        scope = applicability(page, lead['url'], lead, bundle.get('request', {})) if page else None
         rows.append(lead | {'capture_status': 'body_saved' if diagnostic and diagnostic['usable_text'] and diagnostic.get('qualifies_full_body', True) else
             'contextual_lead_saved' if diagnostic and diagnostic['usable_text'] else
             'lead_or_blocked_saved' if page else 'attempted_unavailable' if lead['url'] in attempted else 'unattempted',
-            'body_state': diagnostic['state'] if diagnostic else None})
+            'body_state': diagnostic['state'] if diagnostic else None,
+            'source_applicability': scope, 'target_coverage_verified': False})
     missing = [r['url'] for r in rows if 'rules_designated' in r['roles'] and r['capture_status'] != 'body_saved']
     role_rows = {role: {'available_urls': len(selected := [r for r in rows if role in r['roles']]),
                        'attempted_urls': sum(r['capture_status'] != 'unattempted' for r in selected),
@@ -189,6 +253,7 @@ def checklist(bundle, leads, records=()):
     return {'sources': rows, 'rules_designated_gaps': missing,
             'role_coverage': role_rows, 'planned_needs': need_rows,
             'unattempted_sources': [r['url'] for r in rows if r['capture_status'] == 'unattempted'],
+            'source_scope_review_urls': [r['url'] for r in rows if (r.get('source_applicability') or {}).get('scope_review_required')],
             'readability_and_roles_are_not_truth': True, 'complete_recall_claimed': False}
 
 
@@ -197,21 +262,34 @@ def eager(task):
     if task.cutoff or task.bundle.get('mode') != 'live' or task.bundle.get('result') or task.bundle.get('plan') is None:
         return
     from ForecastAgent.tavily_research import canonical_url
-    leads = candidates(task.bundle)
-    for lead in leads:
-        if 'rules_designated' in lead['roles']:
-            task.bundle.setdefault('source_leads', {}).setdefault(canonical_url(lead['url']), {
-                'url': lead['url'], 'origin': 'question_resolution_metadata',
-                'source_request_sha256': digest(task.bundle['request'])})
-    attempted = {canonical_url(r.get('url', '')) for r in task.bundle.get('fetch_attempts', [])}
-    selected = [r for r in leads if canonical_url(r['url']) not in attempted and
-                canonical_url(r['url']) not in task.bundle.get('pages', {})]
-    selected = selected[:min(4, task.budget()['page_fetch_remaining'])]
-    event = {'at': now(), 'urls': [row['url'] for row in selected], 'outcomes': [],
+    selected = []
+    event = {'at': now(), 'urls': [], 'outcomes': [],
              'native_fetch_cap_unchanged': True, 'model_requests': 0, 'search_requests': 0}
     task.bundle.setdefault('market_capture', {}).setdefault('eager_events', []).append(event)
     task.save()
-    for row in selected:
+    while len(selected) < 4 and task.budget()['page_fetch_remaining'] > 0:
+        leads = candidates(task.bundle)
+        for lead in leads:
+            if 'rules_designated' in lead['roles'] or lead.get('origin') == 'observed_document_detail':
+                origin = 'question_resolution_metadata' if 'rules_designated' in lead['roles'] else 'observed_document_detail'
+                saved = task.bundle.setdefault('source_leads', {}).setdefault(canonical_url(lead['url']), {
+                    **lead, 'origin': origin, 'source_request_sha256': digest(task.bundle['request'])})
+                if origin == 'observed_document_detail':
+                    binding = {k: lead[k] for k in ('parent_url', 'parent_source_sha256',
+                        'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute')}
+                    history = saved.setdefault('observed_document_bindings', [])
+                    if binding not in history:
+                        history.append(binding)
+                    # Native page_link identity remains; stronger literal provenance is additive.
+                    saved.update(binding, depth=1, automatic_capture_origin=origin)
+        attempted = {canonical_url(r.get('url', '')) for r in task.bundle.get('fetch_attempts', [])}
+        attempted.update(canonical_url(row['url']) for row in selected)
+        available = [r for r in leads if r.get('automatic_capture_eligible', True) and canonical_url(r['url']) not in attempted and
+                     canonical_url(r['url']) not in task.bundle.get('pages', {})]
+        choice = select_candidates(available, limit=1, previous=selected)
+        if not choice:
+            break
+        row = choice[0]; selected.append(row); event['urls'].append(row['url'])
         try:
             # This private handler still validates catalog URLs, reserves before
             # HTTP, preserves byte/parser failures and invokes the public-address guard.
@@ -221,7 +299,7 @@ def eager(task):
             event['outcomes'].append({'url': row['url'], 'status': 'failed', 'error_type': type(exc).__name__})
         finally:
             task.save()  # Native failures and preflight errors both remain visible.
-    task.bundle.setdefault('market_capture', {})['checklist'] = checklist(task.bundle, leads)
+    task.bundle.setdefault('market_capture', {})['checklist'] = checklist(task.bundle, candidates(task.bundle))
     if event['outcomes']:
         task.bundle.setdefault('control', {})['read_after_discovery'] = len(task.bundle.get('searches', [])) + len(task.bundle.get('exa_searches', []))
         event['read_gate_scope'] = 'capture_attempts_only_not_model_comprehension'
@@ -297,26 +375,43 @@ def recover(bundle, directory, capture=None):
     # Keep the native pre-supplement snapshot separate from this later stage.
     packet(bundle, root / 'packets', 'pre_independent_supplement')
     for method, cap in (('http', HTTP_CAP), ('browser', BROWSER_CAP)):
-        for lead in leads:
-            url = lead['url']
-            page = child.get('pages', {}).get(url)
-            if page and quality(page, url)['usable_text']:
-                continue
-            if any(r['url'] == url and r['method'] == method for r in rows):
-                continue
-            if sum(r['method'] == method for r in rows) >= cap:
+        while sum(r['method'] == method for r in rows) < cap:
+            leads = candidates(child)
+            available = []
+            for lead in leads:
+                if not lead.get('automatic_capture_eligible', True):
+                    continue
+                url = lead['url']
+                page = child.get('pages', {}).get(url)
+                if page:
+                    diagnostic = quality(page, url)
+                    if diagnostic['usable_text'] and (method == 'http' or diagnostic.get('qualifies_full_body', True)):
+                        continue
+                    if diagnostic.get('source_profile', {}).get('role') == 'document_catalog':
+                        continue
+                if any(r['url'] == url and r['method'] == method for r in rows):
+                    continue
+                if method == 'http' and any(r.get('url') == url for r in bundle.get('fetch_attempts', [])):
+                    continue
+                if method == 'browser':
+                    previous = [r for r in rows if r['url'] == url and r['method'] == 'http']
+                    native = [r for r in bundle.get('fetch_attempts', []) if r.get('url') == url]
+                    if not previous and not native:
+                        continue
+                    if urlsplit(url).path.lower().endswith(('.pdf', '.csv', '.json', '.zip', '.xlsx')):
+                        continue
+                available.append(lead)
+            selection = select_candidates(available, limit=1, previous=rows)
+            if not selection:
                 break
-            if method == 'http' and any(r.get('url') == url for r in bundle.get('fetch_attempts', [])):
-                continue  # An initial HTTP attempt cannot be renewed as supplement HTTP.
-            if method == 'browser':
-                previous = [r for r in rows if r['url'] == url and r['method'] == 'http']
-                native = [r for r in bundle.get('fetch_attempts', []) if r.get('url') == url]
-                if not previous and not native:
-                    continue
-                if urlsplit(url).path.lower().endswith(('.pdf', '.csv', '.json', '.zip', '.xlsx')):
-                    continue
+            lead = selection[0]
+            url = lead['url']
             index = len(rows) + 1
-            row = {'method': method, 'url': url, 'roles': lead['roles'], 'reserved_at': now(), 'status': 'reserved_unknown'}
+            row = {'method': method, 'url': url, 'host': lead['host'], 'need_ids': lead['need_ids'],
+                   'roles': lead['roles'], 'reserved_at': now(), 'status': 'reserved_unknown'}
+            if lead.get('origin') == 'observed_document_detail':
+                row['observed_detail_provenance'] = {k: lead[k] for k in (
+                    'parent_url', 'parent_source_sha256', 'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute')}
             rows.append(row); write(root / 'captures.json', rows)
             try:
                 page = capture(method, url, root / ('capture-' + str(index)), timeout_seconds=60,
@@ -331,7 +426,7 @@ def recover(bundle, directory, capture=None):
                 row.update(status='failed', error_type=type(exc).__name__)
             finally:
                 write(root / 'captures.json', rows)
-    status = checklist(child, leads, rows)
+    status = checklist(child, candidates(child), rows)
     child.setdefault('gaps', []).extend({'code': 'important_source_unavailable', 'url': url} for url in status['rules_designated_gaps'])
     child['market_capture'] = {'version': VERSION, 'checklist': status, 'supplemented_at': now(), 'parent_sha256': digest(bundle)}
     packet(child, root / 'packets', 'after_independent_supplement')

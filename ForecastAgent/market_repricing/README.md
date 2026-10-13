@@ -302,6 +302,39 @@ sources could have been captured at the old market opening time.
 
 ## Verification
 
+### Source scope and observed document frontier
+
+`source_profile.py` reuses the pinned engine's saved-byte structure reader. It
+adds no search, model, browser or HTTP request. Full page originals, capture
+times and raw hashes remain unchanged. Profiles expose source-bound headings,
+markup roles, explicit date hints and literal query/title overlap. Neither a
+publisher domain nor a token match verifies entity, event stage, period or truth.
+
+Navigation-only short shells do not count as originals. Article previews and
+document catalogs remain useful context without counting as full documents.
+Unknown markup, long video descriptions, historical baselines, dated numeric
+notices and tables are preserved. A publisher's erroneous header wrapper cannot
+discard a long original merely because the markup reader calls it navigation.
+Formatting control characters do not manufacture substantive paragraphs.
+
+Document links come from actual saved anchor attributes, with exact URL/query,
+XPath, parent raw hash and capture time. At most eight detail leads per parent
+are projected, and automatic following has one link layer. Unsupported formats
+remain explicit discovery leads; they do not receive an automatic network call.
+Query text that occurs only outside source headings raises a review signal.
+When multiple query words occur outside headings but none in headings, automatic
+detail following waits for source-scope review. This does not reject the original
+or establish that the topic is absent; translation and legitimate title/body
+differences remain unverified.
+
+Finite capture selection distributes slots across declared needs and publishers;
+an official host without a target-title match does not receive blanket priority.
+The native eight-fetch and independent four-HTTP/two-browser ledgers remain the
+limits. Observed details use those existing reservations. Search stays basic,
+with lifetime caps of three Tavily attempts and one Exa attempt per task.
+Old closed packets and recovery identities cannot resume under changed source
+code without an explicit migration. Source profiles do not make them new data.
+
 ## Legacy original-body repair and result coverage
 
 The development reader is `read_sources`. The sidecar reinforces this tool

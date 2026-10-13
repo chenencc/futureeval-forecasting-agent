@@ -54,6 +54,15 @@ def quality(page, url):
                               original_lead_preserved=True)
     if not restricted and market_host(url):
         diagnostic.update(state='market_rules_or_signal_not_external_event_evidence', usable_text=False)
+    if diagnostic['usable_text']:
+        from .source_profile import catalog_role
+        source = catalog_role(page, url)
+        diagnostic['source_profile'] = source
+        if source.get('usable_text') is False:
+            diagnostic.update(state=source['role'], usable_text=False, qualifies_full_body=False)
+        elif source.get('qualifies_full_body') is False:
+            diagnostic.update(state=source['role'] + '_lead_only', qualifies_full_body=False,
+                              admission_role='contextual_lead', original_lead_preserved=True)
     diagnostic.setdefault('qualifies_full_body', diagnostic['usable_text'])
     return diagnostic
 
