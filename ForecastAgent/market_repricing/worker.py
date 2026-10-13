@@ -270,9 +270,19 @@ def baseline_result(anchor, cfg, reason, audit):
 def pending_keys(ledger):
     due = [k for k, t in ledger['tasks'].items() if t['status'] in {'queued', 'retry_wait', 'running'} and
            (not t.get('retry_at') or instant(t['retry_at']) <= instant(now()))]
-    # Rotate by last actual attempt, so a retry cannot monopolize every batch.
-    return sorted(due, key=lambda k: (ledger['tasks'][k].get('last_attempt_at', ''),
-                                    ledger['tasks'][k].get('enrolled_at') or '', k))
+    # Legacy checkpoints have execution counts but no last-attempt field.
+    # Interleave two untouched tasks and one oldest retry; neither class starves.
+    order = lambda k: (ledger['tasks'][k].get('last_attempt_at', ''),
+                        ledger['tasks'][k].get('enrolled_at') or '', k)
+    fresh = sorted((k for k in due if not ledger['tasks'][k].get('executions', 0)), key=order)
+    retries = sorted((k for k in due if ledger['tasks'][k].get('executions', 0)), key=order)
+    if not fresh or not retries:
+        return fresh + retries
+    result = []
+    while fresh or retries:
+        result.extend(fresh[:2]); del fresh[:2]
+        result.extend(retries[:1]); del retries[:1]
+    return result
 
 
 def quarantine_invalid_results(root, ledger):
