@@ -243,6 +243,13 @@ def import_nested(root,archive,repo,run_id,artifact_id,name):
                            artifact_id=artifact_id + ':campaign', name=name + ':campaign',nested=True)
 
 
+class GitHubReadError(RuntimeError):
+    def __init__(self, status=None):
+        self.status = status
+        super().__init__('GitHub read request failed' + (' with HTTP ' + str(status) if status else '') +
+                         '; check artifact availability or account access')
+
+
 class GitHub:
     """Use the authorized gh session, keeping signed storage credentials in memory."""
     def __init__(self, executable=None):
@@ -257,7 +264,9 @@ class GitHub:
     def api(self, endpoint):
         result = subprocess.run([self.executable, 'api', endpoint], capture_output=True, timeout=60)
         if result.returncode:
-            raise RuntimeError('GitHub read request failed; check login, permissions and rate limits')
+            import re
+            match = re.search(r'HTTP\s+(\d{3})', result.stderr.decode('utf-8', errors='replace'))
+            raise GitHubReadError(int(match[1]) if match else None)
         return json.loads(result.stdout)
 
     def download(self, repo, ident, target):

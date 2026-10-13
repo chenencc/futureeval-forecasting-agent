@@ -356,3 +356,34 @@ class IncrementalTests(TestCase):
             with local_sync.connect(temp / 'local') as db:
                 with self.assertRaises(ValueError):
                     import_catalog(temp / 'local', db, client, REPO, client.metadata['2'], TrafficBudget(temp / 'local', 100000))
+
+    def test_superseded_health_is_retired_before_future_retry_deadline(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            with local_sync.connect(root) as db:
+                for ident, run_id, status in [('1', '100', 'failed'), ('2', '101', 'imported')]:
+                    db.execute('INSERT INTO artifacts VALUES(?,?,?,?,?,?,?,?)', (REPO, ident, run_id, 'futureeval-monitor-health', status, None, None, None))
+                    db.execute('INSERT INTO run_observations VALUES(?,?,?,?)', (REPO, run_id, '2099', json.dumps({
+                        'head_branch': 'main', 'head_repository': {'full_name': REPO},
+                        'path': '.github/workflows/run_bot_on_tournament.yaml'})))
+                db.execute('INSERT INTO retries VALUES(?,?,?,?)', (REPO, '1', 3, '2099-01-01'))
+                report = execute(root, db, object(), REPO, TrafficBudget(root, 1), maximum=0)
+                self.assertEqual(db.execute('SELECT status FROM artifacts WHERE artifact_id="1"').fetchone()[0], 'checkpoint_remote_only')
+                self.assertEqual(report['failed'], 0)
+
+    def test_deleted_artifact_is_a_gap_when_run_listing_proves_absence(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            class Gone:
+                def api(self, endpoint):
+                    if '/actions/artifacts/' in endpoint:
+                        raise local_sync.GitHubReadError(404)
+                    return {'artifacts': []}
+            with local_sync.connect(root) as db:
+                db.execute('INSERT INTO artifacts VALUES(?,?,?,?,?,?,?,?)', (REPO, '1', '100', 'futureeval-questions-100', 'pending', None, None, None))
+                db.execute('INSERT INTO run_observations VALUES(?,?,?,?)', (REPO, '100', '2099', json.dumps({
+                    'head_branch': 'main', 'head_repository': {'full_name': REPO},
+                    'path': '.github/workflows/run_bot_on_tournament.yaml'})))
+                report = execute(root, db, Gone(), REPO, TrafficBudget(root, 1))
+                self.assertEqual(db.execute('SELECT status FROM artifacts').fetchone()[0], 'expired')
+                self.assertEqual(report['failed'], 0)

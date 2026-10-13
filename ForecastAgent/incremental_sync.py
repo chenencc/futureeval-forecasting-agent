@@ -13,6 +13,7 @@ LEGACY_CHECKPOINTS = {'market-repricing-v2-worker-state', 'market-repricing-v2-m
                       'futureeval-official-state', 'futureeval-monitor-state'}
 LIVE_WORKFLOWS = {'market_research_worker.yaml', 'market_research_monitor.yaml',
                   'official_competition.yaml', 'run_bot_on_tournament.yaml'}
+RECOVERY_HEADS = LEGACY_CHECKPOINTS | {'futureeval-monitor-health', 'futureeval-official-control'}
 
 
 def automatic(name):
@@ -250,8 +251,25 @@ def trusted_run(db, repo, run_id):
 
 
 def execute(root, db, client, repo, budget, maximum=20, *, discovery_failures=0):
-    from ForecastAgent.local_sync import utc
+    from ForecastAgent.local_sync import utc, GitHubReadError
     imported, failures, deferred, reports, errors = 0, discovery_failures, 0, [], []
+    # Retire superseded heads before retry-deadline filtering. Otherwise old
+    # deleted health/control artifacts keep consuming metadata requests forever.
+    heads = db.execute('SELECT artifact_id,run_id,name,status FROM artifacts WHERE repo=?', (repo,)).fetchall()
+    trust = {}
+    def trusted(run_id):
+        if run_id not in trust:
+            trust[run_id] = trusted_run(db, repo, run_id)
+        return trust[run_id]
+    latest = {}
+    for _, run_id, name, status in heads:
+        if name in RECOVERY_HEADS and status != 'expired' and trusted(run_id):
+            latest[name] = max(latest.get(name, 0), int(run_id))
+    for ident, run_id, name, status in heads:
+        if name in RECOVERY_HEADS and status in {'pending', 'failed', 'transfer_wait'} and int(run_id) < latest.get(name, 0):
+            db.execute('UPDATE artifacts SET status="checkpoint_remote_only" WHERE repo=? AND artifact_id=?', (repo, ident))
+            deferred += 1
+    db.commit()
     rows = db.execute('SELECT a.artifact_id,a.run_id,a.name FROM artifacts a LEFT JOIN retries r '
         'ON a.repo=r.repo AND a.artifact_id=r.artifact_id WHERE a.repo=? AND a.status IN ("pending","failed","transfer_wait") '
         'AND (r.next_retry_at IS NULL OR r.next_retry_at<=?) '
@@ -262,16 +280,14 @@ def execute(root, db, client, repo, budget, maximum=20, *, discovery_failures=0)
         current = db.execute('SELECT status FROM artifacts WHERE repo=? AND artifact_id=?', (repo, ident)).fetchone()
         if current[0] in {'imported', 'files_imported'}:
             continue
-        if not automatic(name) or not trusted_run(db, repo, run_id):
+        if not automatic(name) or not trusted(run_id):
             db.execute('UPDATE artifacts SET status="remote_only" WHERE repo=? AND artifact_id=?', (repo, ident))
             deferred += 1
             continue
         # Only the newest unimported legacy recovery checkpoint is needed. Every
         # published catalog remains independently eligible, including catch-up.
         if name in LEGACY_CHECKPOINTS:
-            newer = db.execute('SELECT 1 FROM artifacts WHERE repo=? AND name=? AND status!="expired" AND CAST(run_id AS INTEGER)>? LIMIT 1',
-                               (repo, name, int(run_id))).fetchone()
-            if newer or name in seen:
+            if int(run_id) < latest.get(name, 0) or name in seen:
                 db.execute('UPDATE artifacts SET status="checkpoint_remote_only" WHERE repo=? AND artifact_id=?', (repo, ident))
                 deferred += 1
                 continue
@@ -296,6 +312,18 @@ def execute(root, db, client, repo, budget, maximum=20, *, discovery_failures=0)
             deferred += 1
             break
         except Exception as exc:
+            if isinstance(exc, GitHubReadError) and exc.status == 404:
+                try:
+                    listed = client.api(f'repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100')['artifacts']
+                    gone = not any(str(item['id']) == ident for item in listed)
+                except Exception:
+                    gone = False
+                if gone:
+                    db.execute('UPDATE artifacts SET status="expired",error="Source artifact no longer listed" '
+                               'WHERE repo=? AND artifact_id=?', (repo, ident))
+                    db.execute('DELETE FROM retries WHERE repo=? AND artifact_id=?', (repo, ident))
+                    deferred += 1
+                    continue
             failures += 1
             errors.append({'artifact_id': ident, 'name': name, 'error_type': type(exc).__name__,
                            'error_detail': str(exc)[:240]})
