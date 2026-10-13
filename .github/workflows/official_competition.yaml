@@ -244,9 +244,9 @@ jobs:
           SPLIT_CHECKPOINT: ${{ steps.checkpoint.outcome == 'success' }}
         run: |
           if [ "$SPLIT_CHECKPOINT" = 'true' ]; then
-            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/storage-export/checkpoint --source futureeval-official-evidence-${{ github.run_id }}=snapshots/storage-export/evidence --output snapshots/local-catalog
+            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/storage-export/checkpoint --source futureeval-official-evidence-${{ github.run_id }}=snapshots/storage-export/evidence --source-id futureeval-official-state=${{ steps.checkpoint.outputs.artifact-id }} --source-id futureeval-official-evidence-${{ github.run_id }}=${{ steps.evidence.outputs.artifact-id }} --output snapshots/local-catalog
           else
-            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/official --output snapshots/local-catalog
+            python .infrastructure/ForecastAgent/infrastructure/local_sync_export.py --stream official-worker --source futureeval-official-state=snapshots/official --source-id futureeval-official-state=${{ steps.emergency.outputs.artifact-id }} --output snapshots/local-catalog
           fi
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'

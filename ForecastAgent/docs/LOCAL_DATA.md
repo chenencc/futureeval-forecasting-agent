@@ -93,6 +93,11 @@ lists exact artifact-relative file paths, sizes and SHA-256 hashes. It includes 
 small summary with forecast heads, anchor prices, lifecycle and missing states;
 full reasoning and original evidence stay in the referenced recovery/evidence
 artifacts. Forecast code, provider quotas and cloud recovery are unchanged.
+Small mutable top-level JSON originals are also embedded with their exact hashes
+and original artifact IDs. This preserves state versions across checkpoint
+rotation. Changed evidence is imported before checkpoints; known original bytes
+can be linked even if the old recovery ZIP was deleted. Unknown expired originals
+remain failures, never synthesized files or completed imports.
 
 The desktop reads catalogs first, reuses known local hashes, and reads only
 missing ZIP members through exact HTTP ranges. Selected bytes pass ZIP CRC and
@@ -134,6 +139,17 @@ and research budgets. Small catalogs have priority over body transfer. Configure
 Payload savings must be measured with `payload_bytes_received_this_sync` against
 the actual compressed source ZIP sizes. Expanded file sizes and local cache reads
 are different quantities. No savings percentage is inferred solely from file counts.
+
+For existing analysis tools that expect a directory, restore a verified local
+view directly from the object store. This performs zero network requests and
+refuses incomplete artifacts or overwriting changed research files:
+
+```powershell
+python -m ForecastAgent.local_sync materialize --artifact-id 123456 --output E:\metaculus_data\research_views\run-123
+```
+
+The `.local-import.json` receipt records source run, artifact ID and byte
+verification. A restored view is not a newly downloaded original ZIP.
 
 Useful SQL:
 

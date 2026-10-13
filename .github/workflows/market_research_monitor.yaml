@@ -55,7 +55,7 @@ jobs:
         id: local_catalog
         if: always() && steps.checkpoint.outcome == 'success'
         continue-on-error: true
-        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-monitor --source market-repricing-v2-monitor-state=snapshots/market-monitor --output snapshots/local-catalog
+        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-monitor --source market-repricing-v2-monitor-state=snapshots/market-monitor --source-id market-repricing-v2-monitor-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'
         continue-on-error: true

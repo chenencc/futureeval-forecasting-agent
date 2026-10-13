@@ -196,7 +196,8 @@ class IncrementalTests(TestCase):
                 (source / name).write_bytes(data)
             export([('market-repricing-v2-worker-state', source, None)], temp / 'catalog', 'market-worker', run_id='100', repo=REPO)
             client = Client(zip_bytes(temp, 'source', files))
-            catalog_data = zip_bytes(temp, 'catalog', {p.name: p.read_bytes() for p in (temp / 'catalog').iterdir()})
+            catalog_data = zip_bytes(temp, 'catalog', {p.relative_to(temp / 'catalog').as_posix(): p.read_bytes()
+                for p in (temp / 'catalog').rglob('*') if p.is_file()})
             client.data['2'] = catalog_data
             client.metadata['2'] = {'id': 2, 'name': PREFIX + 'market-worker', 'size_in_bytes': len(catalog_data),
                 'digest': 'sha256:' + hashlib.sha256(catalog_data).hexdigest(), 'expired': False, 'workflow_run': {'id': 100}}
@@ -286,3 +287,72 @@ class IncrementalTests(TestCase):
             for value in (-1, True, 1.5):
                 with self.assertRaises(ValueError):
                     TrafficBudget(directory, value)
+
+    def test_offline_research_view_preserves_bytes_without_download(self):
+        with TemporaryDirectory() as directory:
+            temp = Path(directory)
+            root = temp / 'local'
+            data = {'tasks/123/analysis.json': b'{"status":"saved"}', 'raw.bin': b'original'}
+            archive = temp / 'original.zip'
+            archive.write_bytes(zip_bytes(temp, 'source', data))
+            local_sync.import_zip(root, archive, artifact_id='1', run_id='100')
+            report = local_sync.materialize(root, '1', temp / 'view')
+            self.assertEqual(report['network_requests'], 0)
+            for name, expected_bytes in data.items():
+                self.assertEqual((temp / 'view' / name).read_bytes(), expected_bytes)
+            (temp / 'view/raw.bin').write_bytes(b'modified')
+            with self.assertRaises(ValueError):
+                local_sync.materialize(root, '1', temp / 'view')
+
+    def test_partial_or_protected_view_is_rejected(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            with local_sync.connect(root) as db:
+                db.execute('INSERT INTO artifacts VALUES(?,?,?,?,?,?,?,?)', (REPO, '1', '100', 'partial', 'transfer_wait', None, None, None))
+            with self.assertRaises(ValueError):
+                local_sync.materialize(root, '1', root / 'view')
+            with self.assertRaises(ValueError):
+                local_sync.materialize(root, '1', root / 'blobs/view')
+
+    def test_rotated_source_is_complete_only_when_all_original_bytes_exist(self):
+        with TemporaryDirectory() as directory:
+            temp = Path(directory)
+            source = temp / 'source'
+            source.mkdir()
+            files = {'state.json': b'{"tasks":{}}', 'body.bin': b'old immutable original'}
+            for name, data in files.items():
+                (source / name).write_bytes(data)
+            export([('market-repricing-v2-worker-state', source, None)], temp / 'catalog', 'market-worker',
+                   run_id='100', repo=REPO, source_ids={'market-repricing-v2-worker-state': '1'})
+            catalog_bytes = zip_bytes(temp, 'catalog-source', {p.relative_to(temp / 'catalog').as_posix(): p.read_bytes()
+                for p in (temp / 'catalog').rglob('*') if p.is_file()})
+            client = Client(catalog_bytes, name=PREFIX + 'market-worker', ident=2)
+            root = temp / 'complete'
+            local_sync.blob(root, files['body.bin'])
+            with local_sync.connect(root) as db:
+                report = import_catalog(root, db, client, REPO, client.metadata['2'], TrafficBudget(root, 100000))
+                self.assertFalse(report['catalog_sources'][0]['source_zip_opened'])
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM files WHERE artifact_id="1"').fetchone()[0], 2)
+            incomplete = temp / 'incomplete'
+            with local_sync.connect(incomplete) as db:
+                with self.assertRaises(RuntimeError):
+                    import_catalog(incomplete, db, client, REPO, client.metadata['2'], TrafficBudget(incomplete, 100000))
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM artifacts WHERE status="files_imported"').fetchone()[0], 0)
+
+    def test_declared_source_id_mismatch_is_rejected(self):
+        with TemporaryDirectory() as directory:
+            temp = Path(directory)
+            source = temp / 'source'
+            source.mkdir()
+            (source / 'state.json').write_bytes(b'{}')
+            export([('market-repricing-v2-worker-state', source, None)], temp / 'catalog', 'market-worker',
+                   run_id='100', repo=REPO, source_ids={'market-repricing-v2-worker-state': '9'})
+            client = Client(zip_bytes(temp, 'source', {'state.json': b'{}'}))
+            data = zip_bytes(temp, 'catalog-source', {p.relative_to(temp / 'catalog').as_posix(): p.read_bytes()
+                for p in (temp / 'catalog').rglob('*') if p.is_file()})
+            client.data['2'] = data
+            client.metadata['2'] = {'id': 2, 'name': PREFIX + 'market-worker', 'size_in_bytes': len(data),
+                'digest': 'sha256:catalog', 'expired': False, 'workflow_run': {'id': 100}}
+            with local_sync.connect(temp / 'local') as db:
+                with self.assertRaises(ValueError):
+                    import_catalog(temp / 'local', db, client, REPO, client.metadata['2'], TrafficBudget(temp / 'local', 100000))

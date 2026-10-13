@@ -154,11 +154,22 @@ def import_catalog(root, db, client, repo, metadata, budget):
     """Read lightweight heads first, then independently import all missing bytes."""
     from ForecastAgent.local_sync import add_records, blob, utc
     ident, run_id = str(metadata['id']), str(metadata['workflow_run']['id'])
+    embedded = {}
     with client.open_zip(root, repo, metadata, budget) as archive:
-        if set(archive.members) != {'sync-manifest.json', 'summary.json'}:
-            raise ValueError('Unexpected lightweight catalog members')
         data = archive.read('sync-manifest.json', maximum=16 * 1024 * 1024)
         catalog = json.loads(data)
+        declarations = catalog.get('embedded', {})
+        if (not isinstance(declarations, dict) or any(not re.fullmatch('[0-9a-f]{64}', digest) or
+                name != 'embedded/' + digest + '.json' for digest, name in declarations.items()) or
+                set(archive.members) != {'sync-manifest.json', 'summary.json'} | set(declarations.values())):
+            raise ValueError('Unexpected lightweight catalog members')
+        if sum(archive.members[name].file_size for name in declarations.values()) > 8 * 1024 ** 2:
+            raise ValueError('Embedded control originals exceed bounds')
+        for digest, path in declarations.items():
+            content = archive.read(path, maximum=4 * 1024 ** 2)
+            if hashlib.sha256(content).hexdigest() != digest:
+                raise ValueError('Embedded control original failed its catalog hash')
+            embedded[path] = content
         summary_data = archive.read('summary.json', maximum=2 * 1024 * 1024)
     if (catalog.get('schema') != SCHEMA or catalog.get('repo') != repo or catalog.get('run_id') != run_id or
             catalog.get('stream') not in STREAMS or metadata['name'] != PREFIX + catalog['stream']):
@@ -166,7 +177,7 @@ def import_catalog(root, db, client, repo, metadata, budget):
     summary = json.loads(summary_data)
     if summary.get('run_id') != run_id or summary.get('stream') != catalog['stream']:
         raise ValueError('Summary and catalog identities differ')
-    for path, content in [('sync-manifest.json', data), ('summary.json', summary_data)]:
+    for path, content in [('sync-manifest.json', data), ('summary.json', summary_data), *embedded.items()]:
         digest = blob(root, content)
         db.execute('INSERT OR REPLACE INTO files VALUES(?,?,?,?,?)', (repo, ident, path, digest, len(content)))
         add_records(db, repo, ident, path, content, digest)
@@ -181,13 +192,24 @@ def import_catalog(root, db, client, repo, metadata, budget):
     if not names or len(set(names)) != len(names):
         raise ValueError('Catalog contains duplicate or empty source declarations')
     reports = []
-    for source in catalog['sources']:
+    # Official changed-evidence artifacts can also satisfy a rotated checkpoint.
+    for source in sorted(catalog['sources'], key=lambda item: item['artifact_name'] in LEGACY_CHECKPOINTS):
         if source.get('run_id') != run_id:
             raise ValueError('Catalog may not redirect to a different Actions run')
         matches = [item for item in artifacts if item['name'] == source['artifact_name']]
-        if len(matches) != 1:
-            raise RuntimeError('Catalog source is missing or expired: ' + source['artifact_name'])
         declared = validate_expected(source['files'])
+        declared_id = source.get('artifact_id')
+        if declared_id is not None and not str(declared_id).isdecimal():
+            raise ValueError('Catalog source artifact ID is invalid')
+        if len(matches) != 1:
+            if not matches and declared_id and all_local(root, declared):
+                info = {'id': int(declared_id), 'name': source['artifact_name'], 'size_in_bytes': None,
+                        'workflow_run': {'id': int(run_id)}, 'expired': True}
+                reports.append(import_members(root, db, client, repo, info, budget, source['files']))
+                continue
+            raise RuntimeError('Catalog source is missing or expired with unknown local bytes: ' + source['artifact_name'])
+        if declared_id and str(matches[0]['id']) != str(declared_id):
+            raise ValueError('Catalog and source artifact IDs differ')
         if all_local(root, declared):
             # Exact cached originals can be linked even after the ZIP expires.
             info = dict(matches[0])

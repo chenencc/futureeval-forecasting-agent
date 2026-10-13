@@ -418,12 +418,57 @@ def publish_status(root):
     return report
 
 
+def materialize(root, artifact_id, output, repo=DEFAULT_REPO):
+    """Restore exact local files for research without fetching a source ZIP."""
+    root, output = Path(root).resolve(), Path(output).resolve()
+    protected = [root / name for name in ('archives', 'blobs', 'downloads', 'logs', 'sync-catalogs')]
+    if output == root or root.is_relative_to(output) or any(output == path or output.is_relative_to(path) for path in protected):
+        raise ValueError('Materialized research view must not overwrite the local store')
+    with connect(root) as db:
+        source = db.execute('SELECT run_id,name,status,archive_sha256 FROM artifacts WHERE repo=? AND artifact_id=?',
+                            (repo, str(artifact_id))).fetchone()
+        if not source or source[2] not in {'imported', 'files_imported'}:
+            raise ValueError('Only a complete local artifact can be materialized')
+        files = db.execute('SELECT path,sha256,size_bytes FROM files WHERE repo=? AND artifact_id=? ORDER BY path',
+                           (repo, str(artifact_id))).fetchall()
+    for name, digest, size in files:
+        relative = PurePosixPath(name)
+        if relative.is_absolute() or '..' in relative.parts or ':' in name or '\\' in name or name == '.local-import.json':
+            raise ValueError('Unsafe research-view member')
+        target = (output / name).resolve()
+        if not target.is_relative_to(output):
+            raise ValueError('Research view member escapes its directory')
+        source_file = root / 'blobs' / 'sha256' / digest[:2] / digest
+        data = source_file.read_bytes()
+        if len(data) != size or hashlib.sha256(data).hexdigest() != digest:
+            raise ValueError('Local source content failed its recorded hash')
+        if os.name == 'nt':
+            target = Path('\\\\?\\' + str(target))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            if hashlib.sha256(target.read_bytes()).hexdigest() != digest:
+                raise ValueError('Refuse to overwrite a changed research-view file')
+        else:
+            temporary = target.with_suffix(target.suffix + '.local-tmp')
+            temporary.write_bytes(data)
+            temporary.replace(target)
+    from ForecastAgent.local_transfer import atomic_json
+    receipt = {'schema': 'forecast-local-materialization-v1', 'repo': repo, 'run_id': source[0],
+               'artifact_id': str(artifact_id), 'artifact_name': source[1], 'files': len(files),
+               'original_zip_sha256': source[3], 'files_hash_verified': True,
+               'network_requests': 0, 'generated_at': utc()}
+    atomic_json(output / '.local-import.json', receipt)
+    return receipt
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['init', 'sync', 'import', 'status'])
+    parser.add_argument('action', choices=['init', 'sync', 'import', 'status', 'materialize'])
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT)
     parser.add_argument('--repo', default=DEFAULT_REPO)
     parser.add_argument('--archive', type=Path)
+    parser.add_argument('--artifact-id')
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--run-id', default='local')
     parser.add_argument('--gh-path')
     parser.add_argument('--mode', choices=['incremental', 'full'])
@@ -436,6 +481,11 @@ def main():
         result = sync(args.root, args.repo, mode=args.mode,
                       daily_bytes=None if args.daily_mb is None else args.daily_mb * 1024 ** 2,
                       monthly_bytes=None if args.monthly_mb is None else args.monthly_mb * 1024 ** 2)
+    elif args.action == 'materialize':
+        if not args.artifact_id or not args.output:
+            parser.error('--artifact-id and --output are required')
+        with task_lock(args.root):
+            result = materialize(args.root, args.artifact_id, args.output, args.repo)
     elif args.action == 'import':
         if not args.archive:
             parser.error('--archive is required')

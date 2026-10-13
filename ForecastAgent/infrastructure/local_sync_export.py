@@ -57,7 +57,7 @@ def summary(root):
     return result
 
 
-def export(sources, output, stream, *, run_id=None, repo=None):
+def export(sources, output, stream, *, run_id=None, repo=None, source_ids=None):
     """Catalog exact artifact-relative paths, including hidden original records."""
     if stream not in STREAMS:
         raise ValueError('Unknown local export stream')
@@ -66,7 +66,9 @@ def export(sources, output, stream, *, run_id=None, repo=None):
     if not run_id.isdecimal() or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
         raise ValueError('Exact Actions run and repository identity required')
     output = Path(output).resolve()
-    records, summaries = [], {}
+    records, summaries, embedded = [], {}, {}
+    embedded_bytes = 0
+    source_ids = source_ids or {}
     for artifact_name, folder, patterns in sources:
         root = Path(folder).resolve()
         if output == root or output.is_relative_to(root) or root.is_relative_to(output):
@@ -85,22 +87,41 @@ def export(sources, output, stream, *, run_id=None, repo=None):
                               'size_bytes': path.stat().st_size})
         if not files:
             continue
-        records.append({'artifact_name': artifact_name, 'run_id': run_id, 'files': files})
+        record = {'artifact_name': artifact_name, 'run_id': run_id, 'files': files}
+        if artifact_name in source_ids:
+            if not str(source_ids[artifact_name]).isdecimal():
+                raise ValueError('Invalid source artifact ID')
+            record['artifact_id'] = str(source_ids[artifact_name])
+        records.append(record)
+        # Small mutable control files can outlive a rotated recovery ZIP.
+        # Original bytes and file hashes are preserved, not regenerated JSON.
+        for file in files:
+            if ('/' not in file['path'] and file['path'].endswith('.json') and
+                    file['size_bytes'] <= 4 * 1024 ** 2 and file['sha256'] not in embedded and
+                    embedded_bytes + file['size_bytes'] <= 8 * 1024 ** 2):
+                embedded[file['sha256']] = (root / file['path']).read_bytes()
+                embedded_bytes += file['size_bytes']
         summaries[artifact_name] = summary(root)
     if not records:
         raise ValueError('No local synchronization material to publish')
     output.mkdir(parents=True, exist_ok=True)
     catalog = {'schema': SCHEMA, 'repo': repo, 'run_id': run_id, 'stream': stream,
-               'sources': records, 'all_files_required_for_complete_import': True}
+               'sources': records, 'all_files_required_for_complete_import': True,
+               'embedded': {digest: 'embedded/' + digest + '.json' for digest in embedded}}
     # Formatting and generation time do not affect catalog content identity.
     (output / 'sync-manifest.json').write_text(json.dumps(catalog, sort_keys=True, separators=(',', ':'),
                                                          ensure_ascii=False), encoding='utf-8')
     (output / 'summary.json').write_text(json.dumps({'schema': 'forecast-local-summary-v1',
         'run_id': run_id, 'stream': stream, 'generated_at': datetime.now(timezone.utc).isoformat(),
         'sources': summaries}, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    for digest, data in embedded.items():
+        path = output / 'embedded' / (digest + '.json')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
     return {'artifact_name': PREFIX + stream, 'files': sum(len(source['files']) for source in records),
             'catalog_bytes': (output / 'sync-manifest.json').stat().st_size,
             'summary_bytes': (output / 'summary.json').stat().st_size,
+            'embedded_original_bytes': embedded_bytes,
             'provider_calls': 0, 'budget_reset': False}
 
 
@@ -108,6 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', action='append', required=True, help='ARTIFACT_NAME=DIRECTORY')
     parser.add_argument('--pattern', action='append', help='Optional glob applied to each source root')
+    parser.add_argument('--source-id', action='append', default=[], help='ARTIFACT_NAME=EXACT_ID')
     parser.add_argument('--stream', choices=STREAMS, required=True)
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
@@ -117,7 +139,13 @@ def main():
         if not separator:
             parser.error('--source requires ARTIFACT_NAME=DIRECTORY')
         sources.append((name, folder, args.pattern))
-    print(json.dumps(export(sources, args.output, args.stream)))
+    source_ids = {}
+    for value in args.source_id:
+        name, separator, ident = value.partition('=')
+        if not separator or not ident.isdecimal():
+            parser.error('--source-id requires ARTIFACT_NAME=EXACT_ID')
+        source_ids[name] = ident
+    print(json.dumps(export(sources, args.output, args.stream, source_ids=source_ids)))
 
 
 if __name__ == '__main__':
