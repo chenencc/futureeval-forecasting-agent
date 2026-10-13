@@ -12,6 +12,11 @@ on:
         required: true
         default: true
         description: Validate queue and development engine without model requests
+      not_before:
+        type: string
+        required: false
+        default: ''
+        description: Recorded retry deadline; wait at most fifteen minutes
   workflow_run:
     workflows: ['Market repricing research monitor']
     types: [completed]
@@ -41,6 +46,7 @@ jobs:
       FORECAST_MODEL_FALLBACK_SUPER: '0'
       SOURCE_RUN: ${{ inputs.monitor_run_id || github.event.workflow_run.id }}
       VERIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_only }}
+      RETRY_NOT_BEFORE: ${{ inputs.not_before }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +61,16 @@ jobs:
           python-version: '3.11'
       - name: Run independent sidecar regression gates
         run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Wait within recorded retry deadline without provider calls
+        if: env.RETRY_NOT_BEFORE != '' && env.VERIFY_ONLY != 'true'
+        run: |
+          python - <<'PY'
+          import os, time
+          from ForecastAgent.market_repricing.common import now, instant
+          wait = (instant(os.environ['RETRY_NOT_BEFORE']) - instant(now())).total_seconds()
+          if wait > 86400: raise ValueError('Retry deadline exceeds one day')
+          time.sleep(max(0, min(900, wait)))
+          PY
       - name: Restore exact worker checkpoint
         run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
       - name: Restore triggering trusted monitor checkpoint
@@ -115,5 +131,5 @@ jobs:
             cat snapshots/market-worker/report.json >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Continue remaining enrolled tasks after checkpoint upload
-        if: success() && steps.inventory.outputs.ready == 'true'
+        if: success() && env.VERIFY_ONLY != 'true'
         run: python -m ForecastAgent.market_repricing.continuation --root snapshots/market-worker --monitor-run "$SOURCE_RUN"

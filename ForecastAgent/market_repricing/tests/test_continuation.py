@@ -52,5 +52,21 @@ class Continuation(unittest.TestCase):
                 run(root,'123')
             api.assert_not_called()
 
+    def test_future_retry_remains_scheduled_without_resetting_deadline(self):
+        from datetime import timedelta
+        from ForecastAgent.market_repricing.common import instant
+        with tempfile.TemporaryDirectory() as root:
+            wake=(instant(now())+timedelta(minutes=40)).isoformat()
+            write(Path(root)/'state.json',{'tasks':{'old':{'status':'retry_wait','executions':2,'retry_at':wake}},
+                'provider_reservations':[]})
+            response=MagicMock();response.__enter__.return_value.status=204
+            with patch.dict(os.environ,{'GITHUB_RUN_ID':'10','GITHUB_REPOSITORY':'example/repo','GH_STATE_TOKEN':'fixture'}),patch(
+                'ForecastAgent.market_repricing.continuation.api',return_value={'workflow_runs':[]}),patch(
+                'ForecastAgent.market_repricing.continuation.urlopen',return_value=response) as post:
+                result=run(root,'123')
+            import json
+            self.assertEqual(json.loads(post.call_args.args[0].data)['inputs']['not_before'],wake)
+            self.assertEqual(result['retry_not_before'],wake)
+
 
 if __name__=='__main__': unittest.main()

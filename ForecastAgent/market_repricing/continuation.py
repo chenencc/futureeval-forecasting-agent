@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from .common import now, policy, read, write
+from .common import now, instant, policy, read, write
 from .github_state import api
 from .worker import pending_keys
 
@@ -12,7 +12,9 @@ from .worker import pending_keys
 def run(root, monitor_run, verification_only=False):
     root = Path(root)
     ledger, cfg = read(root / 'state.json'), policy()
-    pending = [k for k in pending_keys(ledger) if ledger['tasks'][k]['executions'] < cfg['maximum_executions_per_task']]
+    pending = [k for k,t in ledger['tasks'].items() if t['status'] in {'queued','running','retry_wait'}
+               and t['executions'] < cfg['maximum_executions_per_task']]
+    due = pending_keys(ledger)
     current = os.environ['GITHUB_RUN_ID']
     day = now()[:10]
     records = ledger.get('provider_reservations', [])
@@ -25,6 +27,12 @@ def run(root, monitor_run, verification_only=False):
     if any(str(r['id']) != current and r['status'] in {'queued', 'in_progress', 'waiting', 'requested', 'pending'} for r in runs):
         return report | {'status': 'another_worker_already_scheduled'}
     payload = {'ref': 'main', 'inputs': {'monitor_run_id': str(monitor_run), 'verification_only': 'false'}}
+    if not due:
+        wake = min((ledger['tasks'][k]['retry_at'] for k in pending), key=instant)
+        # The queued worker waits at most fifteen minutes per dispatch. This
+        # closes a recorded retry deadline even when native schedules are late.
+        payload['inputs']['not_before'] = wake
+        report['retry_not_before'] = wake
     request = Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] +
         '/actions/workflows/market_research_worker.yaml/dispatches',
         data=json.dumps(payload).encode(), method='POST', headers={
