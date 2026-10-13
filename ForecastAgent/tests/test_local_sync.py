@@ -115,11 +115,11 @@ class LocalSyncTests(TestCase):
                         raise RuntimeError('Temporary download failure')
                     make_archive(target, {'state.json': '{"seen_question_ids":[123]}'})
             client = Client()
-            self.assertEqual(sync(root, client=client)['failed'], 1)
+            self.assertEqual(sync(root, client=client, mode='full')['failed'], 1)
             client.failed = False
             with connect(root) as db:
                 db.execute('UPDATE retries SET next_retry_at="2000-01-01T00:00:00+00:00"')
-            self.assertEqual(sync(root, client=client)['imported'], 1)
-            self.assertEqual(sync(root, client=client)['imported'], 0)
+            self.assertEqual(sync(root, client=client, mode='full')['imported'], 1)
+            self.assertEqual(sync(root, client=client, mode='full')['imported'], 0)
             self.assertEqual(client.downloads, 2)
             self.assertEqual(status(root)['artifact_states'], {'imported': 1})

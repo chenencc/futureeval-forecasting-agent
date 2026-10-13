@@ -116,6 +116,7 @@ jobs:
           fi
       - name: Publish independent worker checkpoint
         if: always()
+        id: checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: market-repricing-v2-worker-state
@@ -123,6 +124,20 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           include-hidden-files: true
+      - name: Build lightweight local synchronization catalog
+        id: local_catalog
+        if: always() && steps.checkpoint.outcome == 'success'
+        continue-on-error: true
+        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-worker --source market-repricing-v2-worker-state=snapshots/market-worker --source-id market-repricing-v2-worker-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
+      - name: Publish lightweight local synchronization catalog
+        if: always() && steps.local_catalog.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-local-catalog-v1-market-worker
+          path: snapshots/local-catalog/
+          retention-days: 90
+          if-no-files-found: error
       - name: Write visible research summary
         if: always()
         run: |

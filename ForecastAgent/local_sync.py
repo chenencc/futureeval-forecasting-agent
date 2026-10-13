@@ -77,6 +77,8 @@ def connect(root):
         CREATE TABLE IF NOT EXISTS sync_events(at TEXT, status TEXT, detail TEXT);
         CREATE TABLE IF NOT EXISTS retries(repo TEXT,artifact_id TEXT,attempts INTEGER,next_retry_at TEXT,
             PRIMARY KEY(repo,artifact_id));
+        CREATE TABLE IF NOT EXISTS transfer_imports(repo TEXT,artifact_id TEXT,at TEXT,status TEXT,detail TEXT,
+            PRIMARY KEY(repo,artifact_id));
     ''')
     db.commit()
     return db
@@ -241,8 +243,15 @@ def import_nested(root,archive,repo,run_id,artifact_id,name):
                            artifact_id=artifact_id + ':campaign', name=name + ':campaign',nested=True)
 
 
+class GitHubReadError(RuntimeError):
+    def __init__(self, status=None):
+        self.status = status
+        super().__init__('GitHub read request failed' + (' with HTTP ' + str(status) if status else '') +
+                         '; check artifact availability or account access')
+
+
 class GitHub:
-    """Use standard gh authentication without extracting stored credentials."""
+    """Use the authorized gh session, keeping signed storage credentials in memory."""
     def __init__(self, executable=None):
         self.executable = executable or os.environ.get('FORECAST_GH_PATH') or shutil.which('gh')
         if not self.executable:
@@ -255,18 +264,38 @@ class GitHub:
     def api(self, endpoint):
         result = subprocess.run([self.executable, 'api', endpoint], capture_output=True, timeout=60)
         if result.returncode:
-            raise RuntimeError('GitHub read request failed; check login, permissions and rate limits')
+            import re
+            match = re.search(r'HTTP\s+(\d{3})', result.stderr.decode('utf-8', errors='replace'))
+            raise GitHubReadError(int(match[1]) if match else None)
         return json.loads(result.stdout)
 
     def download(self, repo, ident, target):
-        with open(target, 'wb') as output:
-            result = subprocess.run([self.executable, 'api', f'repos/{repo}/actions/artifacts/{ident}/zip'],
-                                    stdout=output, stderr=subprocess.PIPE, timeout=300)
-        if result.returncode:
-            raise RuntimeError('Artifact download failed; check expiry and Actions read access')
+        from ForecastAgent.local_transfer import RangeFile, SignedRanges, TrafficBudget, MAX_RANGE
+        info = self.api(f'repos/{repo}/actions/artifacts/{ident}')
+        root = getattr(self, 'transfer_root', Path(target).parent)
+        budget = getattr(self, 'traffic_budget', None) or TrafficBudget(root, 100 * 1024 ** 2, 2048 * 1024 ** 2)
+        reader = RangeFile(Path(root) / 'downloads' / str(ident), info,
+                           SignedRanges(self.executable, repo, ident, info, budget), budget)
+        temporary = Path(target).with_suffix('.part')
+        with temporary.open('wb') as output:
+            while reader.tell() < reader.size:
+                output.write(reader.read(MAX_RANGE))
+        with zipfile.ZipFile(temporary) as archive:
+            if archive.testzip():
+                raise ValueError('Downloaded ZIP CRC validation failed')
+        digest = info.get('digest')
+        if digest and digest != 'sha256:' + hashlib.sha256(temporary.read_bytes()).hexdigest():
+            raise ValueError('Downloaded artifact digest differs from GitHub metadata')
+        temporary.replace(target)
+
+    def open_zip(self, root, repo, metadata, budget):
+        from ForecastAgent.local_transfer import ArtifactZip, RangeFile, SignedRanges
+        return ArtifactZip(RangeFile(Path(root) / 'downloads' / str(metadata['id']), metadata,
+            SignedRanges(self.executable, repo, metadata['id'], metadata, budget), budget))
 
 
-def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20):
+def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20, *, mode=None,
+         daily_bytes=None, monthly_bytes=None):
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     with task_lock(root):
@@ -274,6 +303,17 @@ def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20):
         imported = failures = 0
         try:
             client = client or GitHub()
+            policy_path = root / 'sync-policy.json'
+            policy = json.loads(policy_path.read_text(encoding='utf-8-sig')) if policy_path.exists() else {}
+            mode = mode or policy.get('mode', 'incremental')
+            if mode not in {'incremental', 'full'}:
+                raise ValueError('Unknown local synchronization mode')
+            from ForecastAgent.local_transfer import TrafficBudget, TransferDeferred
+            traffic = TrafficBudget(root,
+                daily_bytes if daily_bytes is not None else policy.get('daily_payload_limit_bytes', 100 * 1024 ** 2),
+                monthly_bytes if monthly_bytes is not None else policy.get('monthly_payload_limit_bytes', 2048 * 1024 ** 2))
+            if isinstance(client, GitHub):
+                client.transfer_root, client.traffic_budget = root, traffic
             marker_key = 'last_discovery:' + repo
             marker = db.execute('SELECT value FROM metadata WHERE key=?', (marker_key,)).fetchone()
             since = (datetime.fromisoformat(marker[0]) - timedelta(days=1)) if marker else datetime.now(timezone.utc) - timedelta(days=90)
@@ -319,11 +359,16 @@ def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20):
                 except Exception:
                     failures += 1
                     break
+            if mode == 'incremental':
+                from ForecastAgent.incremental_sync import execute
+                return execute(root, db, client, repo, traffic, max_downloads, discovery_failures=failures)
             todo = db.execute('SELECT a.artifact_id,a.run_id,a.name FROM artifacts a LEFT JOIN retries r '
-                'ON a.repo=r.repo AND a.artifact_id=r.artifact_id WHERE a.repo=? AND a.status IN ("pending","failed") '
+                'ON a.repo=r.repo AND a.artifact_id=r.artifact_id WHERE a.repo=? AND a.status IN '
+                '("pending","failed","transfer_wait","remote_only","checkpoint_remote_only","files_imported") '
                 'AND (r.next_retry_at IS NULL OR r.next_retry_at<=?) '
                 'ORDER BY CASE a.status WHEN "pending" THEN 0 ELSE 1 END,CAST(a.run_id AS INTEGER) DESC,a.artifact_id LIMIT ?',
                 (repo, utc(), max_downloads)).fetchall()
+            waiting = False
             for ident, run_id, name in todo:
                 try:
                     with tempfile.TemporaryDirectory(dir=root) as staging:
@@ -333,6 +378,11 @@ def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20):
                     imported += 1
                     db.execute('DELETE FROM retries WHERE repo=? AND artifact_id=?',(repo,ident))
                     db.commit()
+                except TransferDeferred:
+                    db.execute('UPDATE artifacts SET status="transfer_wait",error="Local transfer limit; ranges retained" WHERE repo=? AND artifact_id=?', (repo, ident))
+                    db.commit()
+                    waiting = True
+                    break
                 except Exception as exc:
                     failures += 1
                     db.execute('UPDATE artifacts SET status="failed",error=? WHERE repo=? AND artifact_id=?',
@@ -342,7 +392,7 @@ def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20):
                     next_at = (datetime.now(timezone.utc) + timedelta(minutes=min(1440,15 * 2 ** min(count-1,7)))).isoformat()
                     db.execute('INSERT OR REPLACE INTO retries VALUES(?,?,?,?)',(repo,ident,count,next_at))
                     db.commit()
-            state = 'partial' if failures else 'success'
+            state = 'partial' if failures else 'transfer_wait' if waiting else 'success'
             db.execute('INSERT INTO sync_events VALUES(?,?,?)', (utc(), state, json.dumps({'imported': imported, 'failed': failures})))
             db.commit()
             return {'status': state, 'imported': imported, 'failed': failures}
@@ -366,6 +416,10 @@ def status(root):
 
 def publish_status(root):
     report = {'schema':'forecast_local_status_v1','generated_at_utc':utc(),**status(root)}
+    transfer = Path(root) / 'transfer-status.json'
+    if transfer.exists():
+        latest = json.loads(transfer.read_text(encoding='utf-8'))
+        report['transfer'] = {key: latest.get(key) for key in ('mode', 'status', 'traffic', 'deferred')}
     path=Path(root)/'status.json'
     temporary=path.with_suffix('.tmp')
     temporary.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -373,19 +427,74 @@ def publish_status(root):
     return report
 
 
+def materialize(root, artifact_id, output, repo=DEFAULT_REPO):
+    """Restore exact local files for research without fetching a source ZIP."""
+    root, output = Path(root).resolve(), Path(output).resolve()
+    protected = [root / name for name in ('archives', 'blobs', 'downloads', 'logs', 'sync-catalogs')]
+    if output == root or root.is_relative_to(output) or any(output == path or output.is_relative_to(path) for path in protected):
+        raise ValueError('Materialized research view must not overwrite the local store')
+    with connect(root) as db:
+        source = db.execute('SELECT run_id,name,status,archive_sha256 FROM artifacts WHERE repo=? AND artifact_id=?',
+                            (repo, str(artifact_id))).fetchone()
+        if not source or source[2] not in {'imported', 'files_imported'}:
+            raise ValueError('Only a complete local artifact can be materialized')
+        files = db.execute('SELECT path,sha256,size_bytes FROM files WHERE repo=? AND artifact_id=? ORDER BY path',
+                           (repo, str(artifact_id))).fetchall()
+    for name, digest, size in files:
+        relative = PurePosixPath(name)
+        if relative.is_absolute() or '..' in relative.parts or ':' in name or '\\' in name or name == '.local-import.json':
+            raise ValueError('Unsafe research-view member')
+        target = (output / name).resolve()
+        if not target.is_relative_to(output):
+            raise ValueError('Research view member escapes its directory')
+        source_file = root / 'blobs' / 'sha256' / digest[:2] / digest
+        data = source_file.read_bytes()
+        if len(data) != size or hashlib.sha256(data).hexdigest() != digest:
+            raise ValueError('Local source content failed its recorded hash')
+        if os.name == 'nt':
+            target = Path('\\\\?\\' + str(target))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            if hashlib.sha256(target.read_bytes()).hexdigest() != digest:
+                raise ValueError('Refuse to overwrite a changed research-view file')
+        else:
+            temporary = target.with_suffix(target.suffix + '.local-tmp')
+            temporary.write_bytes(data)
+            temporary.replace(target)
+    from ForecastAgent.local_transfer import atomic_json
+    receipt = {'schema': 'forecast-local-materialization-v1', 'repo': repo, 'run_id': source[0],
+               'artifact_id': str(artifact_id), 'artifact_name': source[1], 'files': len(files),
+               'original_zip_sha256': source[3], 'files_hash_verified': True,
+               'network_requests': 0, 'generated_at': utc()}
+    atomic_json(output / '.local-import.json', receipt)
+    return receipt
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['init', 'sync', 'import', 'status'])
+    parser.add_argument('action', choices=['init', 'sync', 'import', 'status', 'materialize'])
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT)
     parser.add_argument('--repo', default=DEFAULT_REPO)
     parser.add_argument('--archive', type=Path)
+    parser.add_argument('--artifact-id')
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--run-id', default='local')
     parser.add_argument('--gh-path')
+    parser.add_argument('--mode', choices=['incremental', 'full'])
+    parser.add_argument('--daily-mb', type=int, help='Artifact payload limit per local day; 0 disables')
+    parser.add_argument('--monthly-mb', type=int, help='Artifact payload limit per local month; 0 disables')
     args = parser.parse_args()
     if args.gh_path:
         os.environ['FORECAST_GH_PATH'] = args.gh_path
     if args.action == 'sync':
-        result = sync(args.root, args.repo)
+        result = sync(args.root, args.repo, mode=args.mode,
+                      daily_bytes=None if args.daily_mb is None else args.daily_mb * 1024 ** 2,
+                      monthly_bytes=None if args.monthly_mb is None else args.monthly_mb * 1024 ** 2)
+    elif args.action == 'materialize':
+        if not args.artifact_id or not args.output:
+            parser.error('--artifact-id and --output are required')
+        with task_lock(args.root):
+            result = materialize(args.root, args.artifact_id, args.output, args.repo)
     elif args.action == 'import':
         if not args.archive:
             parser.error('--archive is required')

@@ -1,0 +1,48 @@
+name: Incremental local archive gates
+on:
+  push:
+    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', '.github/workflows/local_sync_tests.yaml']
+  pull_request:
+    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', '.github/workflows/local_sync_tests.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify incremental transfer, hidden launch and original import compatibility
+        run: python -m unittest ForecastAgent.tests.test_local_sync ForecastAgent.tests.test_incremental_sync -v
+      - name: Build isolated artifact transport rehearsal
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          python - <<'PY'
+          import json, random
+          from pathlib import Path
+          from ForecastAgent.infrastructure.local_sync_export import export
+          root = Path('snapshots/transport-source')
+          root.mkdir(parents=True)
+          (root / 'body.bin').write_bytes(random.Random(20261013).randbytes(2 * 1024 * 1024))
+          (root / 'state.json').write_text(json.dumps({'tasks': {}, 'scope': 'Offline transfer fixture only'}))
+          export([('bandwidth-rehearsal-source', root, None)], 'snapshots/transport-catalog', 'market-worker')
+          PY
+      - name: Publish isolated transport source
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandwidth-rehearsal-source
+          path: snapshots/transport-source/
+          retention-days: 3
+      - name: Publish isolated transport catalog
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-local-catalog-v1-market-worker
+          path: snapshots/transport-catalog/
+          retention-days: 3
