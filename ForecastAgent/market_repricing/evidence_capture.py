@@ -238,7 +238,7 @@ def capture_adapter():
     original = Task._execute
     original_validate = retrieval.validate
     def validate(task, name, args, tools=None):
-        if task.bundle.get('request', {}).get('market_acquisition_policy') == VERSION and tools:
+        if task.bundle.get('request', {}).get('market_acquisition_policy') == VERSION and tools and isinstance(args, dict):
             offered = {t['function']['name']: t for t in tools}
             if name == 'fetch_page' and 'read_sources' in offered:
                 # Compatibility only when the equivalent reading capability is offered.

@@ -111,6 +111,7 @@ class CaptureRuntime(unittest.TestCase):
             with capture_adapter():
                 retrieval.validate(task, 'fetch_page', {'url': 'https://example.org/a'}, tools=tools)
                 with self.assertRaises(ValueError): retrieval.validate(task, 'fetch_page', {'url': 'https://unknown.org/a'}, tools=tools)
+                with self.assertRaises(ValueError): retrieval.validate(task, 'fetch_page', [], tools=tools)
                 with self.assertRaises(ValueError): retrieval.validate(task, 'fetch_page', {'url': 'https://example.org/a'}, tools=[get('list_sources').definition])
 
     def test_local_limit_normalization_preserves_declared_range(self):

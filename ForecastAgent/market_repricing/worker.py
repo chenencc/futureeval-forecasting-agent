@@ -164,10 +164,13 @@ def repair_materials(task, folder, bundle):
         return bundle
     root = folder / ('evidence-capture-v2' if new_capture else 'body-recovery-v1')
     if new_capture:
-        from .evidence_capture import recover
+        from .evidence_capture import recover, verify_packet
         intake = list(folder.glob('development-intelligence/**/market-intake/first-packet.json'))
+        for path in intake:
+            verify_packet(path)
         # Preserve the early search-time packet independently of later native supplements.
         write(root / 'intake-link.json', {'initial_packet_paths': [str(p.relative_to(folder)) for p in intake],
+            'initial_packet_sha256': [digest(read(p)) for p in intake],
             'early_intake_available': bool(intake), 'raw_parent_sha256': digest(bundle)})
     child, report = recover(bundle, root)
     view, audit = prepare(child)
