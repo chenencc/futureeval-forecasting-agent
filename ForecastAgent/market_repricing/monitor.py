@@ -129,10 +129,11 @@ def enroll(ledger, cfg, clock):
             continue
         key = market['key']
         # One immutable representative per venue event family. No cross-venue title matching.
+        from .deployment import task_release
         ledger['tasks'][key] = {'key': key, 'market': copy.deepcopy(market), 'enrolled_at': clock,
                                 'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256'],
                                 'price_schedule': creation_schedule({'market': market}),
-                                'acquisition_policy': 'market-evidence-capture-v2'}
+                                'acquisition_policy': 'market-evidence-capture-v2', **task_release()}
         families.add(market['family'])
         count += 1
     ledger.setdefault('enrollment_daily', {})[date] = count

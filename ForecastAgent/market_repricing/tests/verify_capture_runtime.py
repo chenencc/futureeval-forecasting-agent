@@ -153,6 +153,52 @@ class CaptureRuntime(unittest.TestCase):
             again = repair_materials(task, Path(root), bundle)
             self.assertEqual(digest(again), before)
 
+    def test_observed_detail_uses_native_slots_and_preserves_signed_query(self):
+        parent = 'https://example.org/notice'
+        detail = 'https://example.org/decision.pdf?edition=2026&signature=keep'
+        with tempfile.TemporaryDirectory() as root:
+            task = self.task(root)
+            task.bundle['searches'] = [{'need_ids': ['N1'], 'results': [{'url': parent, 'title': 'Tax notice'}]}]
+            def page(url, **kwargs):
+                raw = (('<html><main><p>The current tax notice links its original decision.</p>'
+                        '<a href="' + detail + '">Decision</a></main></html>') if url == parent else
+                       '<html><main><p>The dated decision maintains the tax rate.</p></main></html>').encode()
+                return {'url': url, 'final_url': url, 'content': raw.decode(), 'content_type': 'text/html',
+                        'sha256': hashlib.sha256(raw).hexdigest(), 'raw_response_base64': base64.b64encode(raw).decode(),
+                        'retrieved_at_utc': now(), 'links': [detail] if url == parent else []}
+            with self.transport(), patch('ForecastAgent.runtime.retrieval.fetch_public_page', side_effect=page):
+                # The optional native structure reader is tested separately when installed.
+                from ForecastAgent.market_repricing import source_profile
+                with patch.object(source_profile, 'observed_details', side_effect=lambda p, u: [
+                        {'url': detail, 'title': 'Decision', 'origin': 'observed_document_detail', 'depth': 1,
+                         'parent_url': parent, 'parent_source_sha256': p['sha256'],
+                         'parent_retrieved_at_utc': p['retrieved_at_utc'], 'observed_xpath': '/html/main/a',
+                         'observed_attribute': 'href'}] if u == parent else []):
+                    eager(task)
+            self.assertEqual([row['url'] for row in task.bundle['fetch_attempts']], [parent, detail])
+            self.assertEqual(task.budget()['page_fetch_remaining'], 6)
+            self.assertEqual(task.bundle['source_leads'][detail]['parent_source_sha256'], task.bundle['pages'][parent]['sha256'])
+            self.assertEqual(len(task.bundle['market_capture']['eager_events'][0]['outcomes']), 2)
+
+    def test_actual_saved_dom_links_keep_base_query_and_private_url_guard(self):
+        from ForecastAgent.market_repricing.source_profile import observed_details
+        raw = (b'<html><head><base href="https://cdn.example.org/resources/"></head><body><main>'
+               b'<a href="decision.pdf?signature=exact&amp;edition=2026">Decision</a>'
+               b'<a href="template.docx">Template</a>'
+               b'<a href="http://127.0.0.1/private.pdf">Private</a></main>'
+               b'<footer><a href="tax.pdf">Publisher tax strategy</a></footer></body></html>')
+        sha = hashlib.sha256(raw).hexdigest()
+        page = {'url': 'https://example.org/notice', 'content_type': 'text/html', 'sha256': sha,
+                'raw_response_base64': base64.b64encode(raw).decode(), 'retrieved_at_utc': now()}
+        observed = observed_details(page, page['url'])
+        decision = next(row for row in observed if row['url'].startswith('https://cdn.example.org/resources/decision.pdf'))
+        self.assertEqual(decision['url'], 'https://cdn.example.org/resources/decision.pdf?signature=exact&edition=2026')
+        self.assertEqual(decision['parent_source_sha256'], sha)
+        self.assertTrue(decision['automatic_capture_eligible'])
+        self.assertFalse(next(row for row in observed if row['url'].endswith('template.docx'))['automatic_capture_eligible'])
+        self.assertFalse(next(row for row in observed if row['url'].endswith('tax.pdf'))['automatic_capture_eligible'])
+        self.assertFalse(any('127.0.0.1' in row['url'] for row in observed))
+
 
 if __name__ == '__main__':
     unittest.main()
