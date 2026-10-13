@@ -1,9 +1,9 @@
 name: Market repricing research monitor
 
 on:
+  # An external cron-job.org job dispatches this workflow on main.
+  # Keep the workflow enabled; only its built-in schedule is removed.
   workflow_dispatch:
-  schedule:
-    - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: read
