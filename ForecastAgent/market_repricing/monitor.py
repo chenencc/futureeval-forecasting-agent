@@ -279,6 +279,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             market = ledger['markets'][key]
             try:
                 current, receipt = refresh(http, market)
+                clock = max((clock, receipt['received_at']), key=instant)
                 if key in selected and current.get('created_at') != ledger['tasks'][key]['market']['created_at']:
                     market['creation_time_drift'] = {'seen_at': receipt['received_at'],
                         'original': ledger['tasks'][key]['market']['created_at'], 'refreshed': current.get('created_at')}
@@ -299,6 +300,8 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                     if resolution_attempts < cfg['maximum_resolution_requests_per_dispatch']:
                         resolution_attempts += 1
                         final = final_resolution(http, market)
+                        if final.get('observed_at'):
+                            clock = max((clock, final['observed_at']), key=instant)
                     else:
                         final = {'status': 'resolution_check_deferred', 'result': None,
                                  'observed_at': receipt['received_at']}
