@@ -335,6 +335,34 @@ with lifetime caps of three Tavily attempts and one Exa attempt per task.
 Old closed packets and recovery identities cannot resume under changed source
 code without an explicit migration. Source profiles do not make them new data.
 
+## Independent production version control
+
+`market-v0.2.1` is the market source-scope release. Both market workflows check
+out the exact 40-character commit from the repository variable
+`MARKET_REPRICING_SHA`. A missing, mutable or mismatching pin fails before any
+provider request. GitHub's workflow run head describes the controller on `main`;
+`deployment-runtime.json` records the actual selected implementation commit.
+The native acquisition/graph/scoring engine remains pinned at `c17c1ec`.
+
+| System | Implementation selector | State and delivery |
+| --- | --- | --- |
+| Prediction-market research | `MARKET_REPRICING_SHA`, full immutable commit; market release tag for discovery | Market monitor/worker artifacts and market price labels; no orders or Metaculus submissions |
+| Metaculus competition | `v1.0.5-recovery.2` in `official_competition.yaml` | Official campaign, accepted platform receipts and independent release runtime record |
+
+Promote or roll back the market only after its pending queue is empty. Active
+tasks with a different frozen commit or capture fingerprint block a cross-version
+resume; promotion does not clear their reservations or rewrite their materials.
+New admissions retain `pipeline_version` and `pipeline_commit` in their immutable
+enrollment record. Completed and baseline-only cases retain their old forecasts,
+quotes, evidence clocks, provider reservations and statuses. A new source reader
+may add an audit of an old empty body; it does not reopen that case automatically.
+Release changes are recorded outside task state in `deployments/<commit>.json`.
+
+To update only prediction markets, validate the candidate and its pending queue,
+then set `MARKET_REPRICING_SHA` to that tested commit. Do not move an existing tag
+or change the official competition workflow. Changing `main` or the Metaculus
+release does not change this market implementation pin.
+
 ## Legacy original-body repair and result coverage
 
 The development reader is `read_sources`. The sidecar reinforces this tool
@@ -351,9 +379,10 @@ Country-access interstitials and prediction-market rules/prices are excluded
 from external event evidence. Readability does not establish relevance or truth.
 Recovered originals can receive at most two remaining native Super review calls;
 an unavailable or rejected map still allows original-only Mercury scoring.
-Historical scores built solely from excluded pages are quarantined with their
-original results intact and receive a versioned analysis stage and fresh anchor.
-Evaluation checks the label belongs to that exact anchor.
+Historical scores built solely from excluded pages receive an independent audit
+with their original results intact. Only an explicitly requested legacy repair
+may quarantine and reopen such a score. Evaluation checks the label belongs to
+the exact original forecast anchor.
 
 Insufficient evidence or unusable model output produces an explicit
 `baseline_only` market no-change control, with no event probability and no model

@@ -94,7 +94,7 @@ class DevelopmentRuntime(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);folder=root/'tasks'/digest(market['key'])
             write(folder/'analysis-input.json',bundle)
-            quarantine_invalid_results(root,ledger)
+            quarantine_invalid_results(root,ledger,reopen=True)
             task=ledger['tasks'][market['key']]
             self.assertEqual(task['executions'],1)
             self.assertEqual(task['status'],'retry_wait')

@@ -354,7 +354,7 @@ def pending_keys(ledger):
     return result
 
 
-def quarantine_invalid_results(root, ledger):
+def quarantine_invalid_results(root, ledger, reopen=False):
     from .materials import prepare
     for key, task in ledger['tasks'].items():
         if task['status'] != 'completed' or task.get('analysis_stage'): continue
@@ -363,11 +363,17 @@ def quarantine_invalid_results(root, ledger):
         if not source.exists(): continue
         view, audit = prepare(read(source))
         if view['pages']: continue
-        write(folder / 'invalid-result-quarantine.json', {'reason': 'no_external_original_bodies',
-            'original_forecast': task.get('forecast'), 'body_audit': audit,
-            'quarantined_at': now(), 'budget_reset': False})
-        task.update(status='retry_wait', retry_at=None, analysis_stage='analysis-recovered-v1',
-                    historical_forecast=task.pop('forecast', None), evidence_status='invalid_original_quarantined')
+        audit_path = folder / 'invalid-result-quarantine.json'
+        if reopen or not audit_path.exists():
+            write(audit_path, {'reason': 'no_external_original_bodies',
+                'original_forecast': task.get('forecast'), 'body_audit': audit,
+                'quarantined_at': now(), 'budget_reset': False,
+                'terminal_result_preserved': not reopen})
+        # A new reader must not retroactively renew a terminal forecast's budget.
+        # Explicit legacy repair callers may opt in; normal dispatches only audit.
+        if reopen:
+            task.update(status='retry_wait', retry_at=None, analysis_stage='analysis-recovered-v1',
+                        historical_forecast=task.pop('forecast', None), evidence_status='invalid_original_quarantined')
 
 
 def run(root, monitor_root, verification_only=False, cfg=None, http=None, collector=acquire, forecaster=None):
@@ -391,7 +397,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                                     'executions': 0, 'enrolled_at': task.get('enrolled_at'),
                                     'source_task_sha256': digest(task),
                                     **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
-                                    **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {})}
+                                    **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {}),
+                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit') if field in task}}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
@@ -427,6 +434,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'engine_sha': ENGINE_SHA, 'engine_branch': ENGINE_BRANCH,
                   'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
         report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
+        from .deployment import task_release
+        report.update(task_release())
         write(root / 'report.json', report)
         return report
     finally:

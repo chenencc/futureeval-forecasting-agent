@@ -47,9 +47,11 @@ jobs:
       SOURCE_RUN: ${{ inputs.monitor_run_id || github.event.workflow_run.id }}
       VERIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_only }}
       RETRY_NOT_BEFORE: ${{ inputs.not_before }}
+      MARKET_PIPELINE_SHA: ${{ vars.MARKET_REPRICING_SHA }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ vars.MARKET_REPRICING_SHA }}
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
@@ -59,6 +61,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verify independent immutable market release
+        run: python -m ForecastAgent.market_repricing.deployment
       - name: Run independent sidecar regression gates
         run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
       - name: Wait within recorded retry deadline without provider calls
@@ -75,6 +79,8 @@ jobs:
         run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
       - name: Restore triggering trusted monitor checkpoint
         run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
+      - name: Validate pending market version compatibility
+        run: python -m ForecastAgent.market_repricing.deployment --worker-root snapshots/market-worker --monitor-root snapshots/market-monitor
       - name: Verify queue before installing model and browser dependencies
         id: inventory
         run: |
@@ -112,6 +118,7 @@ jobs:
         if: always()
         run: |
           if [ -f snapshots/market-worker/state.json ]; then
+            python -m ForecastAgent.market_repricing.deployment --record-root snapshots/market-worker
             python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
           fi
       - name: Publish independent worker checkpoint
