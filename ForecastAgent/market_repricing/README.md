@@ -335,7 +335,35 @@ with lifetime caps of three Tavily attempts and one Exa attempt per task.
 Old closed packets and recovery identities cannot resume under changed source
 code without an explicit migration. Source profiles do not make them new data.
 
-## Independent production version control
+## Later material, map and forecast vintages
+
+`material_revisions` stores later material/map/forecast versions separately from
+closed production tasks. Each version binds original material hashes, graph
+hashes, model receipts, quote anchor, actual seal time and market-created 1/3/7-day
+targets. New source capture time must not exceed that version's material clock.
+A pending or unchanged old graph is explicit; graph construction and actual
+graph delivery to a scoring model are separate states.
+
+The bounded local `revision_worker` reuses saved originals, calls Super for map
+review and Mercury for original/map scores, and retains cumulative provider
+reservations. A one-pass source-first graph repair may use the exact already
+scored original text. Its reused original response is not a new model request or
+an independent forecast. Every repair remains a separate version and budget
+record. This local update does not move either production implementation pin.
+
+`revision_metrics` joins the latest version index to SHA-verified local monitor
+`tracking.json` objects. It does not contact providers or download artifacts.
+Late forecasts, quotes outside the target window, mismatched origins/targets and
+unqualified observational quotes stay excluded. Missing labels produce null
+metrics, never invented zero errors. Market repricing errors are distinct from
+event Brier and trading profit. The existing hidden local synchronization task can
+run this reader after import; no additional timer or visible shell is required.
+
+```text
+python -m ForecastAgent.market_repricing.revision_metrics --root E:/metaculus_data
+```
+
+## Independent production release selector
 
 `market-v0.2.1` is the market source-scope release. Both market workflows check
 out the exact 40-character commit from the repository variable

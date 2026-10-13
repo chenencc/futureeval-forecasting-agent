@@ -47,7 +47,9 @@ def forecast_eligibility(forecast, horizon, label):
         return 'forecast_after_target'
     if not forecast.get('timely') or not forecast.get('eligible_for_model_metrics', True):
         return 'forecast_not_metric_eligible'
-    if label.get('target_at') is None or instant(label['target_at']) != instant(target):
+    if label.get('target_at') is None:
+        return label.get('status', 'label_not_observed')
+    if instant(label['target_at']) != instant(target):
         return 'label_target_mismatch'
     if label.get('status') != 'quoted':
         return label.get('status', 'label_not_observed')
