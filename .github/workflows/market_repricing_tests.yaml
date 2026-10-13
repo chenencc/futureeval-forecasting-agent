@@ -27,3 +27,7 @@ jobs:
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
         run: python -m ForecastAgent.market_repricing.tests.verify_development_runtime -v
+      - name: Eager capture and immutable evidence packet integration
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.market_repricing.tests.verify_capture_runtime -v

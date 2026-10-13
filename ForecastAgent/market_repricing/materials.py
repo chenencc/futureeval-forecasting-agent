@@ -11,6 +11,7 @@ VERSION = 'external-original-recovery-v1'
 # They never renew searches, native captures, model calls, or task executions.
 HTTP_CAP, BROWSER_CAP, TARGET = 4, 2, 2
 MARKET_HOSTS = {'polymarket.com', 'polymarket.us', 'kalshi.com'}
+SOCIAL_HOSTS = {'facebook.com', 'instagram.com', 'youtube.com', 'youtu.be', 'tiktok.com', 'x.com', 'twitter.com'}
 
 
 def market_host(url):
@@ -25,7 +26,11 @@ def quality(page, url):
     # Short first-person access interstitials, not articles discussing restrictions.
     restricted = ('trading is blocked in the united states on' in text or
                   ('not available in your country' in text and len(text) < 1200) or
-                  ('go to polymarket.us' in text and len(text) < 1200))
+                  ('go to polymarket.us' in text and len(text) < 1200) or
+                  (len(text) < 1500 and bool(re.search(
+                      r'(?:the |this )?(?:site|page|service) (?:is )?(?:temporarily )?'
+                      r'(?:inaccessible|unavailable|not available|restricted).{0,80}'
+                      r'(?:your |this )(?:location|country|region)', text))))
     if restricted:
         diagnostic.update(state='geographic_access_interstitial', usable_text=False)
     else:
@@ -36,8 +41,20 @@ def quality(page, url):
         chrome = sum(s in controls or bool(re.fullmatch(r'©?\s*\d{4}\s+\w+(?:\s+\w+)*', s)) for s in lines)
         if len(lines) >= 5 and chrome / len(lines) >= .8 and len(text) < 1500:
             diagnostic.update(state='navigation_or_footer_only', usable_text=False)
+        host = (urlsplit(url).hostname or '').lower()
+        social = any(host == h or host.endswith('.' + h) for h in SOCIAL_HOSTS)
+        if social and len(text) < 1200 and not page.get('rows'):
+            diagnostic.update(state='social_caption_lead_only', qualifies_full_body=False,
+                              admission_role='contextual_lead', original_lead_preserved=True)
+        part = urlsplit(url)
+        index_hint = bool(re.search(r'/(?:search|find|tags?|categories)(?:/|$)', part.path, re.I))
+        prose = any(len(line.split()) >= 20 and bool(re.search(r'[.!?](?:\s|$)', line)) for line in lines)
+        if index_hint and len(lines) >= 8 and len(text) < 2500 and not prose and not page.get('rows'):
+            diagnostic.update(state='source_index_lead_only', usable_text=False,
+                              original_lead_preserved=True)
     if not restricted and market_host(url):
         diagnostic.update(state='market_rules_or_signal_not_external_event_evidence', usable_text=False)
+    diagnostic.setdefault('qualifies_full_body', diagnostic['usable_text'])
     return diagnostic
 
 
@@ -47,6 +64,7 @@ def prepare(bundle):
     rejected = []
     for url, page in list(view.get('pages', {}).items()):
         diagnostic = quality(page, url)
+        view['pages'][url]['body_diagnostics'] = diagnostic
         if not diagnostic['usable_text']:
             del view['pages'][url]
             rejected.append({'url': url, 'body_state': diagnostic['state'],
@@ -56,6 +74,10 @@ def prepare(bundle):
         view[field] = [e for e in view.get(field, []) if e.get('url') in allowed]
     view.setdefault('gaps', []).extend({'code': 'market_body_not_admitted', **r} for r in rejected)
     audit.update(market_body_exclusions=rejected, external_body_count=len(allowed),
+                 external_full_body_count=sum(p['body_diagnostics'].get('qualifies_full_body', True)
+                                              for p in view['pages'].values()),
+                 contextual_lead_urls=[u for u, p in view['pages'].items()
+                                      if p['body_diagnostics'].get('admission_role') == 'contextual_lead'],
                  body_readability_is_not_relevance_or_truth=True)
     return view, audit
 

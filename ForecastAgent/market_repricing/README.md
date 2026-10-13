@@ -248,9 +248,61 @@ The authorized policy migration accepts only the exact deployed admission-policy
 retains enrolled tasks, legacy daily counts and physical reservations, and never
 resets them. Any unrelated policy or engine drift still fails closed.
 
+## New-task evidence capture v2
+
+New monitor admissions declare `acquisition_policy=market-evidence-capture-v2`.
+Existing tasks, sealed forecasts, first packages, retry counters and provider
+reservations keep their original protocol. The engine remains pinned to `c17c1ec`;
+this sidecar adapter does not modify the development checkout or competition
+Release. Mercury price/event heads and analysis routes are unchanged.
+
+Each successful or failed native search boundary preserves its provider record
+and attempts up to four known source URLs before another model turn. These reads
+use the real native fetch implementation, accepted source catalog, public-address
+checks and the existing eight shared fetch reservations. No model or search
+request is added. Exact rules-designated URLs rank first; safe HTTP and HTTPS
+are supported, with publisher diversity for ordinary leads. Search-role and
+need-ID associations are routing hints, never factual verification.
+
+A legacy `fetch_page` model call is compatible only when the equivalent
+`read_sources` capability is offered. Its exact URL still has to be in the saved
+catalog. A local `inspect_research_state.limit` outside its declared bounds is
+clamped with requested/effective values recorded. No network parameter, identity
+or budget is silently changed. Invalid unknown tools and guessed URLs still fail.
+
+Independent supplements retain the existing four HTTP/two browser allowance.
+They attempt important saved leads instead of stopping at two readable pages.
+An attempted native HTTP URL does not gain another HTTP attempt in the supplement;
+permitted browser repair is a separate recorded operation. Designated originals,
+role-level attempts, planned need associations, unavailable sources, unattempted
+URLs and failures are recorded in the capture checklist. Future missing outcomes
+are not evidence of NO. No checklist certifies complete web recall.
+
+Access-denial and navigation/index-only pages remain in the original archive and
+are excluded from substantive bodies. Short social captions remain available as
+contextual leads; they cannot count as full bodies. Short official numeric
+records and dated notices remain readable. `external_body_count` and
+`external_full_body_count` are reported separately.
+
+`market-intake/first-packet.json` freezes the first search-time material with
+content-addressed source/search/failure objects. It is write-once. Later changes
+use `supplements/NNNN.json`, linking the first manifest and listing changed raw
+source versions. Original capture times, parser fields, raw byte checksums and
+actual freeze time are preserved. Diagnostic-only edits reuse the same original
+object. `verify_packet` can validate these records offline without fetching a
+current webpage. Raw capture coverage is explicit when vendor text has no HTML.
+
+After independent supplement and optional existing map review, the derived
+`evidence-capture-v2/analysis-input.json` records its actual reading cutoff. Its
+parent package remains unchanged. Early intake availability, enrollment-to-first
+packet delay, final cutoff, full-body/lead counts and remaining designated-source
+gaps are in `capture_summary` and the lightweight local synchronization catalog.
+An old saved package replay is a routing/admission regression, not proof that new
+sources could have been captured at the old market opening time.
+
 ## Verification
 
-## Original-body repair and result coverage
+## Legacy original-body repair and result coverage
 
 The development reader is `read_sources`. The sidecar reinforces this tool
 schema after search so the agent captures originals before more map planning.
@@ -294,6 +346,7 @@ clears retry deadlines or quotas. This independent wait cannot submit or trade.
 ```text
 python -m unittest discover -s ForecastAgent/market_repricing/tests -v
 MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_development_runtime -v
+MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_capture_runtime -v
 python -m ForecastAgent.market_repricing monitor --root snapshots/market-monitor-v2
 python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker-v2 --monitor snapshots/market-monitor-v2 --verification-only
 ```

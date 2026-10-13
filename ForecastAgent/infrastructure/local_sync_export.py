@@ -36,7 +36,8 @@ def summary(root):
         rows = []
         for ident, task in state.get('tasks', {}).items():
             row = {key: task[key] for key in ('status', 'stage', 'executions', 'enrolled_at',
-                'last_attempt_at', 'retry_at', 'error_type', 'evidence_status', 'analysis_stage', 'price_schedule') if key in task}
+                'last_attempt_at', 'retry_at', 'error_type', 'evidence_status', 'analysis_stage', 'price_schedule',
+                'acquisition_policy', 'capture_summary') if key in task}
             row['id'] = ident
             market = task.get('market', {})
             if market:
