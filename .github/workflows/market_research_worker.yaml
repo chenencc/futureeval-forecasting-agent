@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 concurrency:
   group: market-repricing-worker-${{ github.ref_name }}
@@ -114,3 +114,6 @@ jobs:
             echo '## Development graph research; no orders or submissions' >> "$GITHUB_STEP_SUMMARY"
             cat snapshots/market-worker/report.json >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Continue remaining enrolled tasks after checkpoint upload
+        if: success() && steps.inventory.outputs.ready == 'true'
+        run: python -m ForecastAgent.market_repricing.continuation --root snapshots/market-worker --monitor-run "$SOURCE_RUN"

@@ -83,12 +83,24 @@ def acquire(task, folder):
     from ForecastAgent.intelligence.worker import remaining_budget
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
+    recovered = folder / 'body-recovery-v1' / 'analysis-input.json'
+    if recovered.exists():
+        saved = read(recovered)
+        if digest(saved) != read(recovered.parent / 'analysis-integrity.json')['bundle_sha256']:
+            raise ValueError('Frozen recovered originals changed')
+        task.update(bundle_sha256=digest(saved), analysis_stage='analysis-recovered-v1')
+        return saved
     if source.exists():
         expected = task.get('bundle_sha256') or (read(marker).get('bundle_sha256') if marker.exists() else None)
         if digest(read(source)) != expected:
             raise ValueError('Frozen original research material changed')
         task['bundle_sha256'] = expected
-        return read(source)
+        bundle = read(source)
+        from .materials import prepare
+        view, _ = prepare(bundle)
+        if len(view['pages']) >= 2:
+            return bundle
+        return repair_materials(task, folder, bundle)
     request_path = folder / 'collection-request.json'
     request = read(request_path) if request_path.exists() else enable(
         request_for(task['market']), predictive_focus=True, scoring_delivery=True)
@@ -97,11 +109,20 @@ def acquire(task, folder):
     directory = folder / 'development-intelligence'
     # Replays use the same request clock and the development worker's cumulative
     # decision/failure reservations, not fresh per-dispatch collection allowances.
-    with remaining_budget(directory):
+    # The registered reader in this development engine is read_sources, not
+    # fetch_page. State this explicitly without changing the pinned engine.
+    from ForecastAgent.runtime import guidance
+    from unittest.mock import patch
+    original_guidance = guidance.collection_system
+    def guided(*args, **kwargs):
+        return original_guidance(*args, **kwargs) + (
+            '\nAfter a search returns URLs, call read_sources with exact discovered URLs '
+            'to capture external original bodies before further map planning. fetch_page '
+            'is unavailable. Market pages supply rules/prices, not independent event evidence. '
+            'Use registered tools only; respect each tool schema. Missing reports never prove NO.')
+    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided):
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
                                   recover_data=True, research_map=True, channel_tools=True)
-    if not (result.get('view') or {}).get('pages'):
-        raise RuntimeError('Development acquisition incomplete or lacks readable originals; journals retained')
     package = directory / 'final-map-package.json'
     if not package.exists():
         package = directory / 'retrieval/development-channels/package.json'
@@ -114,7 +135,52 @@ def acquire(task, folder):
     write(source, bundle)
     task['bundle_sha256'] = digest(bundle)
     task['originals_frozen_at'] = now()
-    return bundle
+    return repair_materials(task, folder, bundle)
+
+
+def repair_materials(task, folder, bundle):
+    from .materials import prepare, recover
+    view, audit = prepare(bundle)
+    if len(view['pages']) >= 2:
+        return bundle
+    root = folder / 'body-recovery-v1'
+    child, report = recover(bundle, root)
+    view, audit = prepare(child)
+    reading_input = root / 'reading-input.json'
+    if reading_input.exists():
+        view = read(reading_input)
+    else:
+        # Newly captured material belongs to a new explicit information clock.
+        # The old native request remains in the immutable parent package.
+        import json
+        view['request']['as_of_utc'] = now()
+        view['request_hash'] = hashlib.sha256(json.dumps(view['request'], sort_keys=True).encode()).hexdigest()
+        write(reading_input, view)
+    # Review the repaired external originals only; blocked and market pages
+    # remain in the raw parent and capture archive, outside analysis input.
+    if view['pages']:
+        from ForecastAgent.research_loop import post_supplement
+        from ForecastAgent.intelligence.worker import attempts, POLICY
+        used = attempts(folder / 'development-intelligence')
+        allowance = max(0, min(2, POLICY['model_http'] - used['http']))
+        try:
+            child, review = post_supplement.run(view, root / 'map-review', http_cap=allowance,
+                                               failure_cap=allowance, execute=allowance > 0)
+            write(root / 'map-review-summary.json', review)
+        except Exception as exc:
+            # A map is optional for original-only scoring. Never discard bodies
+            # because graph formatting or the Super service failed.
+            child = view
+            write(root / 'map-review-failure.json', {'error_type': type(exc).__name__,
+                'preserved_originals': True, 'no_retry_or_budget_reset': True})
+    else:
+        child = view
+    write(root / 'analysis-input.json', child)
+    write(root / 'analysis-integrity.json', {'bundle_sha256': digest(child),
+        'raw_parent_sha256': digest(bundle), 'body_recovery_report': report})
+    task.update(bundle_sha256=digest(child), analysis_stage='analysis-recovered-v1',
+                evidence_status='external_originals' if view['pages'] else 'insufficient_evidence')
+    return child
 
 
 def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
@@ -123,20 +189,25 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
     folder = Path(root) / 'tasks' / digest(key)
     folder.mkdir(parents=True, exist_ok=True)
     # Adopt an already sealed result after a process died before updating state.
-    result_path = folder / 'analysis' / 'result.json'
+    result_path = folder / task.get('analysis_stage', 'analysis') / 'result.json'
+    terminal_path = result_path.parent / 'terminal-result.json'
+    if terminal_path.exists():
+        result_path = terminal_path
     if result_path.exists():
         result = read(result_path)
         task.update(status=result['status'], forecast=result)
         return
     task['executions'] = task.get('executions', 0) + 1
     task['status'] = 'running'
+    task['last_attempt_at'] = now()
     write(Path(root) / 'state.json', ledger)
     try:
         with provider_budget(root, ledger, key, cfg):
             bundle = collector(task, folder)
             # Save acquisition identity immediately. Replays cannot renew a search.
             write(Path(root) / 'state.json', ledger)
-            anchor_path = folder / 'anchor.json'
+            stage = folder / task.get('analysis_stage', 'analysis')
+            anchor_path = (stage / 'anchor.json') if task.get('analysis_stage') else folder / 'anchor.json'
             if anchor_path.exists():
                 anchor = read(anchor_path)
             else:
@@ -154,9 +225,19 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
             if (instant(now()) - instant(anchor['received_at'])).total_seconds() > cfg['maximum_seal_latency_minutes'] * 60:
                 task.update(status='expired_anchor', gap='A fresh forecast was not sealed within its preregistered latency')
                 return
+            from .materials import prepare
+            view, body_audit = prepare(bundle)
             if forecaster is None:
                 from .forecast import run as forecaster
-            result = forecaster(bundle, task['market'], anchor, folder / 'analysis', cfg)
+            if not view['pages']:
+                result = baseline_result(anchor, cfg, 'insufficient_external_originals', body_audit)
+                write(stage / 'result.json', result)
+            else:
+                result = forecaster(bundle, task['market'], anchor, stage, cfg)
+                if result['status'] != 'completed':
+                    write(stage / 'attempted-model-result.json', result)
+                    result = baseline_result(anchor, cfg, 'model_did_not_return_valid_score', body_audit)
+                    write(stage / 'terminal-result.json', result)
             task.update(status=result['status'], forecast=result)
     except Exception as exc:
         # Local provider caps and corruption need visible intervention; transport
@@ -164,10 +245,50 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
         retry = task['executions'] < cfg['maximum_executions_per_task'] and not isinstance(exc, (ValueError, ProviderCap))
         task.update(status='retry_wait' if retry else 'blocked', error_type=type(exc).__name__,
                     retry_at=(instant(now()) + timedelta(minutes=cfg['minimum_retry_minutes'])).isoformat() if retry else None)
+        if not retry:
+            terminal = {'status': 'blocked', 'reason': type(exc).__name__, 'sealed_at': now(),
+                'eventual_probability_yes': None, 'price_means': None, 'arms': {},
+                'eligible_for_model_metrics': False, 'preserved_state': True, 'budget_reset': False}
+            write(folder / 'unpriced-terminal-result.json', terminal)
+            task['terminal_result'] = terminal
         write(folder / 'failure.json', {'error_type': type(exc).__name__, 'preserved_state': True,
                                       'executions': task['executions'], 'budget_reset': False})
     finally:
         write(Path(root) / 'state.json', ledger)
+
+
+def baseline_result(anchor, cfg, reason, audit):
+    """A visible market-only control is never a model forecast or event score."""
+    return {'status': 'baseline_only', 'reason': reason, 'anchor_at': anchor['received_at'],
+        'anchor': anchor, 'sealed_at': now(), 'timely': False,
+        'baseline': {str(h): anchor['midpoint'] for h in cfg['horizons_hours']},
+        'arms': {}, 'eventual_probability_yes': None, 'score_source': 'market_no_change_control',
+        'eligible_for_model_metrics': False, 'body_audit': audit,
+        'no_orders_or_platform_forecasts': True, 'development_only': True}
+
+
+def pending_keys(ledger):
+    due = [k for k, t in ledger['tasks'].items() if t['status'] in {'queued', 'retry_wait', 'running'} and
+           (not t.get('retry_at') or instant(t['retry_at']) <= instant(now()))]
+    # Rotate by last actual attempt, so a retry cannot monopolize every batch.
+    return sorted(due, key=lambda k: (ledger['tasks'][k].get('last_attempt_at', ''),
+                                    ledger['tasks'][k].get('enrolled_at') or '', k))
+
+
+def quarantine_invalid_results(root, ledger):
+    from .materials import prepare
+    for key, task in ledger['tasks'].items():
+        if task['status'] != 'completed' or task.get('analysis_stage'): continue
+        folder = root / 'tasks' / digest(key)
+        source = folder / 'analysis-input.json'
+        if not source.exists(): continue
+        view, audit = prepare(read(source))
+        if view['pages']: continue
+        write(folder / 'invalid-result-quarantine.json', {'reason': 'no_external_original_bodies',
+            'original_forecast': task.get('forecast'), 'body_audit': audit,
+            'quarantined_at': now(), 'budget_reset': False})
+        task.update(status='retry_wait', retry_at=None, analysis_stage='analysis-recovered-v1',
+                    historical_forecast=task.pop('forecast', None), evidence_status='invalid_original_quarantined')
 
 
 def run(root, monitor_root, verification_only=False, cfg=None, http=None, collector=acquire, forecaster=None):
@@ -179,9 +300,12 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     source = state(monitor_root, 'monitor', cfg)
     if source['identity']['engine_sha'] != ENGINE_SHA or source['identity']['policy_sha256'] != digest(cfg):
         raise ValueError('Queue pin or policy changed')
-    if not verification_only and not 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600:
-        raise ValueError('Discovery queue is stale')
     ledger = state(root, 'worker', cfg)
+    fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
+    if not verification_only and not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
+        raise ValueError('Stale discovery cannot enroll unseen tasks')
+    # Already enrolled identities can finish from the exact old monitor. Only
+    # their fresh price anchor is renewed, never enrollment, creation, or quota.
     for key, task in source['tasks'].items():
         if key not in ledger['tasks']:
             ledger['tasks'][key] = {'key': key, 'market': task['market'], 'status': 'queued',
@@ -198,12 +322,12 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
             raise ValueError('Frozen enrollment quote changed')
         write(entry_path, entry)
     write(root / 'state.json', ledger)
+    quarantine_invalid_results(root, ledger)
     processed = []
     try:
         if not verification_only:
             # A process timeout leaves a running task; resume its exact saved stage.
-            pending = [k for k, t in ledger['tasks'].items() if t['status'] in {'queued', 'retry_wait', 'running'} and
-                       (not t.get('retry_at') or instant(t['retry_at']) <= instant(now()))]
+            pending = pending_keys(ledger)
             http = http or PublicHTTP(root / 'market-http', 15)
             for key in pending[:cfg['maximum_tasks_per_dispatch']]:
                 if ledger['tasks'][key]['executions'] >= cfg['maximum_executions_per_task']:

@@ -208,6 +208,38 @@ resets them. Any unrelated policy or engine drift still fails closed.
 
 ## Verification
 
+## Original-body repair and result coverage
+
+The development reader is `read_sources`. The sidecar reinforces this tool
+schema after search so the agent captures originals before more map planning.
+Empty native exports are retained and routed to `body-recovery-v1`, rather than
+repeatedly invoking a completed empty collection. This independent repair stage
+uses saved discovery links only: at most four HTTP captures and two Crawl4AI
+browser captures per task, targeting two external readable originals. Every
+attempt, including unknown or failed attempts, is reserved before execution.
+No search, model, native-fetch, or task-execution budget is reset. Repaired
+materials and their information clock are separate from the original archive.
+
+Country-access interstitials and prediction-market rules/prices are excluded
+from external event evidence. Readability does not establish relevance or truth.
+Recovered originals can receive at most two remaining native Super review calls;
+an unavailable or rejected map still allows original-only Mercury scoring.
+Historical scores built solely from excluded pages are quarantined with their
+original results intact and receive a versioned analysis stage and fresh anchor.
+Evaluation checks the label belongs to that exact anchor.
+
+Insufficient evidence or unusable model output produces an explicit
+`baseline_only` market no-change control, with no event probability and no model
+skill eligibility. A missing valid anchor or unrecoverable state produces an
+explicit unpriced terminal receipt. These are coverage outcomes, not successful
+model predictions. They must never be reported as model forecasts.
+
+Batches rotate by last attempt so old retries cannot starve untouched tasks.
+After uploading the exact cumulative checkpoint, the worker dispatches its next
+batch if due tasks and daily allowance remain and no other worker is queued.
+The same concurrency group serializes these dispatches. An old monitor can
+finish already enrolled identities but cannot introduce previously unseen tasks.
+
 ```text
 python -m unittest discover -s ForecastAgent/market_repricing/tests -v
 MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_development_runtime -v

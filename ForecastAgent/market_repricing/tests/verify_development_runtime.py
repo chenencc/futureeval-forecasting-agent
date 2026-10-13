@@ -27,6 +27,78 @@ class DevelopmentRuntime(unittest.TestCase):
                   'gaps': [{'code': 'future_decision_unknown'}]}
         return market, text, bundle
 
+    def test_country_interstitial_never_becomes_event_evidence(self):
+        from ForecastAgent.market_repricing.materials import prepare, quality
+        _, _, bundle = self.bundle()
+        text = ('Trading is blocked in the United States on polymarket.com. '
+                'Switch to polymarket.us to trade prediction markets. ' +
+                'To trade in the US, go to polymarket.us Home Search Breaking More ' * 4)
+        bundle['pages'] = {'https://polymarket.com/event/test': {'content': text}}
+        view, audit = prepare(bundle)
+        self.assertFalse(view['pages'])
+        self.assertEqual(audit['market_body_exclusions'][0]['body_state'], 'geographic_access_interstitial')
+        article = {'content': 'A regulator discussed whether trading was blocked in some countries. '
+                              'This article reports the hearing and explains the proposals. ' * 20}
+        self.assertTrue(quality(article, 'https://example.org/news')['usable_text'])
+
+    def test_zero_bundle_recovers_saved_leads_once_with_durable_failed_attempts(self):
+        from ForecastAgent.market_repricing.materials import recover, prepare
+        _, text, bundle = self.bundle()
+        bundle['pages'] = {}
+        bundle['searches'] = [{'results': [
+            {'url': 'https://polymarket.com/event/test', 'title': 'Market'},
+            {'url': 'https://example.org/a', 'title': 'Federal Reserve'},
+            {'url': 'https://example.org/b', 'title': 'Federal Reserve'},
+            {'url': 'https://example.org/c', 'title': 'Federal Reserve'}]}]
+        original = digest(bundle); calls = []
+        def capture(method, url, root, **kwargs):
+            self.assertTrue(root.is_absolute())
+            calls.append((method,url))
+            if url.endswith('/a'): raise RuntimeError('blocked')
+            return {'content': text + url}
+        with tempfile.TemporaryDirectory() as directory:
+            child, report = recover(bundle, Path(directory), capture)
+            again, replay = recover(bundle, Path(directory), capture)
+            self.assertEqual(child, again); self.assertEqual(report,replay)
+            self.assertEqual(len(calls), 3)
+            self.assertEqual(report['new_searches'], 0)
+            self.assertEqual(report['external_body_count'], 2)
+            self.assertFalse(report['budget_reset'])
+            self.assertEqual(digest(bundle), original)
+            self.assertTrue(any(g['code']=='body_recovery_failed' for g in child['gaps']))
+
+    def test_empty_original_returns_visible_baseline_without_model_inference(self):
+        from ForecastAgent.market_repricing.worker import execute
+        from ForecastAgent.market_repricing.common import write
+        market, _, bundle = self.bundle(); bundle['pages'] = {}
+        ledger = {'tasks': {market['key']: {'market': market, 'executions': 0, 'status': 'queued'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)/'tasks'/digest(market['key'])
+            write(folder/'anchor.json', {'status':'usable','received_at':now(),'midpoint':.45})
+            def score(*args): raise AssertionError('No body must not reach a model')
+            execute(directory,ledger,market['key'],policy(),None,collector=lambda *args:bundle,forecaster=score)
+            result=ledger['tasks'][market['key']]['forecast']
+            self.assertEqual(result['status'],'baseline_only')
+            self.assertIsNone(result['eventual_probability_yes'])
+            self.assertFalse(result['eligible_for_model_metrics'])
+            self.assertEqual(result['baseline']['72'],.45)
+
+    def test_invalid_historical_score_is_quarantined_without_reset(self):
+        from ForecastAgent.market_repricing.worker import quarantine_invalid_results
+        from ForecastAgent.market_repricing.common import write
+        market, _, bundle=self.bundle()
+        bundle['pages']={'https://polymarket.com/event/test':{'content':'Trading is blocked in the United States on polymarket.com.'}}
+        ledger={'tasks':{market['key']:{'market':market,'status':'completed','executions':1,'forecast':{'status':'completed'}}}}
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);folder=root/'tasks'/digest(market['key'])
+            write(folder/'analysis-input.json',bundle)
+            quarantine_invalid_results(root,ledger)
+            task=ledger['tasks'][market['key']]
+            self.assertEqual(task['executions'],1)
+            self.assertEqual(task['status'],'retry_wait')
+            self.assertEqual(task['historical_forecast']['status'],'completed')
+            self.assertTrue((folder/'invalid-result-quarantine.json').exists())
+
     def test_native_capture_child_reads_absolute_request_from_engine_cwd(self):
         from ForecastAgent.supplement.transport import capture
         with tempfile.TemporaryDirectory() as root:

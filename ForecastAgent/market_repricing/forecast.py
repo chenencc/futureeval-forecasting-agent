@@ -37,7 +37,7 @@ def mean(answer):
 
 
 def prepare(bundle, anchor, cfg):
-    from ForecastAgent.intelligence.admission import prepare as admit
+    from .materials import prepare as admit
     from ForecastAgent.research_loop import prospective_trial
     from ForecastAgent.research_loop.forecast_brief import registry as event_registry
     from ForecastAgent.research_loop.target_pack import pack

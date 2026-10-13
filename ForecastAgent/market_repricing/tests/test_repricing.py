@@ -16,7 +16,7 @@ from ForecastAgent.market_repricing.venues import normalize, quote, screen
 from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, quote_turns, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
 from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect, recover_omitted_mutexes
-from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run
+from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run, pending_keys
 
 
 CLOCK = '2026-10-12T00:00:00+00:00'
@@ -39,6 +39,10 @@ class FakeHTTP:
 
 
 class Selection(unittest.TestCase):
+    def test_retries_rotate_behind_unattempted_tasks(self):
+        ledger={'tasks':{'retry':{'status':'retry_wait','retry_at':None,'last_attempt_at':CLOCK},
+                         'new':{'status':'queued'},'done':{'status':'completed'}}}
+        self.assertEqual(pending_keys(ledger),['new','retry'])
     def setUp(self): self.cfg = policy(); self.m = normalize('polymarket', raw_poly())
     def test_reversed_yes_identity(self): self.assertEqual(self.m['yes_token'], 'yes_asset')
     def test_crypto_broad_exclusion(self):
