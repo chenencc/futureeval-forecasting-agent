@@ -234,6 +234,12 @@ skill eligibility. A missing valid anchor or unrecoverable state produces an
 explicit unpriced terminal receipt. These are coverage outcomes, not successful
 model predictions. They must never be reported as model forecasts.
 
+Admission keeps the minimum book-depth rule. If an enrolled contract later has
+a shallow but positive valid two-sided book, its raw best bid/ask can supply an
+explicit observational model anchor. These scores retain `shallow_book` flags
+and are excluded from the preregistered depth-qualified model metrics. They
+never imply executable prices, trade eligibility, or a relaxed admission rule.
+
 Batches rotate by last attempt so old retries cannot starve untouched tasks.
 After uploading the exact cumulative checkpoint, the worker dispatches its next
 batch if due tasks and daily allowance remain and no other worker is queued.
