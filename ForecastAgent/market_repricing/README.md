@@ -443,3 +443,6 @@ python -m ForecastAgent.market_repricing.runtime --engine .development --root sn
 
 Credential-free fixtures verify wiring/invariants, not live provider success or
 predictive skill. Enable a bounded model pilot after reviewing real candidates.
+
+See [OFFICIAL_MAP.md](OFFICIAL_MAP.md) for the independent third analysis arm
+using pinned Metaculus map-research tools on exactly matched original evidence.
