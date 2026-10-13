@@ -64,5 +64,18 @@ class ReferenceMapTests(unittest.TestCase):
             again=construct_reference(common,Path(root)/'third-map',slots,model='test',sender=sender)
             self.assertEqual(again['status'],'failed');self.assertEqual(len(seen),1)
 
+    def test_goal_caption_cannot_redefine_immutable_proposition(self):
+        common,proposal=self.fixture()
+        old=proposal['nodes'][0]['title']; new='Model caption differs from the exact question.'
+        proposal['nodes'][0]['title']=new;proposal['edges'][0]['target']=new
+        result=replay_reference(common,proposal)
+        self.assertEqual(result['status'],'hypothesis_only')
+        goal=next(n for n in result['graph']['nodes'].values() if n.get('is_main'))
+        self.assertEqual(goal['title'],new)
+        self.assertEqual(goal['goal_question_title'],old)
+        self.assertTrue(goal['model_caption_is_not_resolution_rule'])
+        state=project_reference(common,result)
+        self.assertEqual(state['question'],common['question'])
+
 
 if __name__=='__main__':unittest.main()

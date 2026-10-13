@@ -54,6 +54,23 @@ map slot. The third uses an offline reference-only projection of its saved
 complete response, with generated quotations quarantined. No fresh map request
 is granted to that case, which already consumed two map slots.
 
+The goal is bound by the program to immutable `state.question`. A model display
+caption stays separate and cannot redefine the proposition. Source references
+are context pointers, not certificates that a model claim is true. This avoids
+requiring the model to reproduce the target title character for character.
+
+## First pilot receipt
+
+All three cases have original, existing-map and official-reference-map scores.
+Actual new model HTTP requests: **15 total**, including six Super map attempts
+and nine Mercury decision requests. There were six fresh public metadata/book
+GETs and no search or source-fetch calls. The earlier strict rejection records
+remain intact. Two quotes were shallow and are observational samples; one case
+is depth-qualified. All eventual outcomes and future target labels are pending.
+The three cases are an exploratory integration sample, not a held-out skill
+benchmark. The reference-only adaptation was developed after inspecting these
+failures and must be checked on fresh cases before any promotion.
+
 The program binds each citation to the exact visible evidence ID, literal quote,
 source hash and coordinate range. It rejects missing citations, unknown or
 silently dropped edges, cycles, outgoing goal arrows, and necessary/sufficient
@@ -106,6 +123,7 @@ decision heads, so it does not claim to test conditional-probability forecasting
 python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
 python -m unittest ForecastAgent.market_repricing.tests.test_official_map -v
 python -m ForecastAgent.market_repricing.official_map_trial --root /path/to/frozen-trial
+python -m ForecastAgent.market_repricing.official_map_metrics --root /path/to/local-data
 ```
 
 The trial requires an immutable manifest with matched saved states, registry,

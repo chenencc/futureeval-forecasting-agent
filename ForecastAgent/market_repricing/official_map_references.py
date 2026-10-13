@@ -48,7 +48,12 @@ def bind_references(ir,proposal,common,goal):
     errors=[]
     if len(by_title)!=len(proposal.nodes): errors.append('duplicate_node_titles')
     goals=[s for s,n in ir.nodes.items() if n.get('is_main')]
-    if len(goals)!=1 or any(ir.nodes[s]['title']!=goal for s in goals): errors.append('exact_single_goal_required')
+    if len(goals)!=1: errors.append('single_goal_slot_required')
+    for slug in goals:
+        # The immutable question defines the target. A model's display caption
+        # is retained as fallible prose and cannot silently redefine it.
+        ir.nodes[slug].update(goal_question_title=goal,goal_binding='state.question',
+            model_caption_is_not_resolution_rule=True)
     for slug,node in ir.nodes.items():
         bindings=[]
         for handle in by_title[node['title']].reference_ids:
@@ -112,7 +117,8 @@ def replay_reference(common,raw_model_object):
     """Preserve a saved model's descriptions, edges and IDs; discard generated quotes."""
     raw=copy.deepcopy(raw_model_object)
     for node in raw['nodes']:
-        node['reference_ids']=[c['evidence_id'] for c in node.pop('citations',[]) ]
+        if 'citations' in node:
+            node['reference_ids']=[c['evidence_id'] for c in node.pop('citations')]
         node.pop('basis',None)
     for edge in raw['edges']: edge.pop('rule_quote',None)
     proposal=ReferenceMap.model_validate(raw)
@@ -144,6 +150,7 @@ def project_reference(common,result,maximum_bytes=MAP_BYTES):
             'omitted_node_ids':[s for s in ir.nodes if s not in keep],
             'instruction':'Source references bind exact visible context, not proof of any node description. '
                 'Every claim/arrow is an unverified hypothesis. Reject claims inconsistent with originals. '
+                'The immutable state.question defines the goal; a model caption cannot change the proposition. '
                 'Necessary/sufficient labels are NOT enforced logical constraints. Gaps never imply NO. '
                 'Do not multiply edge confidences or node probabilities. Event probability differs from future market price.'}
     for slug in sorted((s for s in paths if s not in goals),key=lambda s:(not ir.nodes[s]['bindings'],paths[s],s)):
