@@ -1,6 +1,10 @@
 {
   "schema": "market-repricing-development-policy-v2",
-  "horizons_hours": [72, 168],
+  "horizons_hours": [
+    24,
+    72,
+    168
+  ],
   "label_window_minutes": 30,
   "maximum_seal_latency_minutes": 30,
   "maximum_spread": 0.08,
@@ -10,7 +14,7 @@
   "minimum_resolution_hours": 168,
   "maximum_close_horizon_days": 90,
   "enrollment_day_timezone": "Asia/Shanghai",
-  "maximum_new_tasks_per_day": 20,
+  "maximum_new_tasks_per_day": 30,
   "maximum_executions_per_task": 3,
   "maximum_tasks_per_dispatch": 3,
   "maximum_discovery_pages_per_venue": 5,
@@ -21,10 +25,17 @@
   "maximum_worker_model_attempts_per_task": 60,
   "maximum_task_runtime_minutes": 45,
   "maximum_worker_search_attempts_per_dispatch": 20,
-  "maximum_candidate_age_days": 1,
   "minimum_retry_minutes": 60,
   "flat_band": 0.02,
-  "analysis_arms": ["original", "mapped"],
+  "analysis_arms": [
+    "original",
+    "mapped"
+  ],
   "automatic_trading": false,
-  "metaculus_submission": false
+  "metaculus_submission": false,
+  "maximum_candidate_age_hours": 2,
+  "price_target_origin": "market_created_at",
+  "maximum_resolution_requests_per_dispatch": 20,
+  "final_refresh_interval_hours": 6,
+  "resolved_recheck_interval_hours": 24
 }

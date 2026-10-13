@@ -87,13 +87,15 @@ def normalize(venue, raw):
                 'family': venue + ':' + str(event.get('id') or ident), 'question': raw.get('question', ''),
                 'url': 'https://polymarket.com/event/' + str(event.get('slug') or raw.get('slug', '')),
                 'rules': rule, 'rules_sha256': digest(rule), 'rules_sources': sources,
-                'created_at': raw.get('createdAt'), 'close_at': raw.get('endDate'),
+                'created_at': raw.get('createdAt'), 'condition_id': raw.get('conditionId'),
+                'yes_outcome_index': index, 'platform_status': 'closed' if raw.get('closed') else 'open', 'close_at': raw.get('endDate'),
                 'close_time_role': 'platform_hint_not_authoritative_event_deadline',
                 'resolution_hint': resolution_hint(venue, raw, rule),
                 'binary': binary, 'yes_token': str(tokens[index]) if binary else None,
                 'composite': raw.get('comboStatus') not in {None, '', 'disabled'} or bool(re.search(r'\band\b', str(raw.get('question', '')), re.I)),
                 'tradable': bool(raw.get('active') and not raw.get('closed') and not raw.get('archived') and raw.get('enableOrderBook') and raw.get('acceptingOrders')),
-                'disputed': 'disputed' in str(raw.get('umaResolutionStatuses', '')).lower(),
+                'disputed': 'disputed' in str(raw.get('umaResolutionStatus', '')).lower() or
+                            'disputed' in str(raw.get('umaResolutionStatuses', '')).lower(),
                 'terminal_result': None,
                 'discovery_liquidity_hint': raw.get('liquidityNum') or raw.get('liquidity') or 0,
                 'discovery_volume_hint': raw.get('volumeNum') or raw.get('volume') or 0,
@@ -113,7 +115,12 @@ def normalize(venue, raw):
             'binary': raw.get('market_type') == 'binary', 'yes_token': None,
             'composite': bool(raw.get('mve_collection_ticker')) or bool(re.search(r'\band\b', str(raw.get('title', '')), re.I)),
             'tradable': raw.get('status') in {'open', 'active'}, 'disputed': False,
-            'terminal_result': raw.get('result') if raw.get('result') in {'yes', 'no'} else None,
+            'terminal_result': raw.get('result') if raw.get('status') == 'settled' and raw.get('result') in {'yes', 'no'} else None,
+            'platform_status': raw.get('status'),
+            'final_observation': {'status': 'resolved' if raw.get('status') == 'settled' and raw.get('result') in {'yes', 'no'} else 'pending_settlement' if raw.get('status') in {'closed', 'determined'} else 'unresolved',
+                'result': raw.get('result') if raw.get('status') == 'settled' and raw.get('result') in {'yes', 'no'} else None,
+                'resolved_at': raw.get('settlement_ts') if raw.get('status') == 'settled' else None,
+                'source': 'kalshi_market_detail', 'platform_status': raw.get('status')},
             'discovery_liquidity_hint': raw.get('open_interest_fp') or 0,
             'discovery_volume_hint': raw.get('volume_fp') or 0,
             'screen_text': ' '.join(str(raw.get(k) or '') for k in ('ticker', 'event_ticker', 'title', 'subtitle', 'yes_sub_title', 'rules_primary', 'rules_secondary', 'category'))}
@@ -134,8 +141,8 @@ def screen(market, clock, cfg, *, check_newness=True):
         age = (instant(clock) - instant(market['created_at'])).total_seconds()
     except ValueError:
         return {'status': 'waiting_rules', 'reason': 'invalid_creation_time'}
-    if check_newness and not 0 <= age <= cfg['maximum_candidate_age_days'] * 86400:
-        return {'status': 'outside_new_question_window', 'reason': 'not_published_in_last_24_hours',
+    if check_newness and not 0 <= age <= cfg['maximum_candidate_age_hours'] * 3600:
+        return {'status': 'outside_new_question_window', 'reason': 'outside_creation_age_limit',
                 'publication_field': 'createdAt' if market['venue'] == 'polymarket' else 'created_time',
                 'publication_time_role': 'platform_creation_proxy_not_updated_or_first_seen', 'age_seconds': age}
     if not market['rules'].strip():
@@ -233,4 +240,34 @@ def refresh(http, market):
         response, receipt = http.get(KALSHI + 'markets/' + market['venue_id'])
         raw = response['market']
     value = normalize(market['venue'], raw)
+    if value.get('final_observation'):
+        value['final_observation'].update(observed_at=receipt['received_at'], receipt=receipt)
     return value, receipt
+
+
+def final_resolution(http, market):
+    """Require an explicit winner, never a last price of zero or one."""
+    if market['venue'] != 'polymarket':
+        return market.get('final_observation') or {'status': 'unresolved', 'result': None}
+    if not market.get('condition_id'):
+        return {'status': 'resolution_identity_missing', 'result': None}
+    raw, receipt = http.get(CLOB + 'markets/' + market['condition_id'])
+    if raw.get('condition_id') != market['condition_id']:
+        raise ValueError('Resolution condition identity mismatch')
+    tokens = raw.get('tokens') or []
+    outcomes = {str(t.get('outcome', '')).lower() for t in tokens}
+    yes = [t for t in tokens if str(t.get('outcome', '')).lower() == 'yes']
+    if (len(tokens) != 2 or outcomes != {'yes', 'no'} or len(yes) != 1 or
+            str(yes[0].get('token_id')) != market['yes_token']):
+        raise ValueError('Resolution YES asset identity mismatch')
+    winners = [t for t in tokens if t.get('winner') is True]
+    resolved = (raw.get('closed') is True and len(winners) == 1 and
+                all(isinstance(t.get('winner'), bool) for t in tokens) and not market.get('disputed'))
+    return {'status': 'resolved' if resolved else 'disputed' if market.get('disputed') else
+            'closed_pending_resolution' if raw.get('closed') else 'unresolved',
+            'result': str(winners[0]['outcome']).lower() if resolved else None,
+            'observed_at': receipt['received_at'], 'resolved_at': None,
+            'time_role': 'first_observed_terminal_not_platform_resolution_time',
+            'source': 'polymarket_clob_explicit_winner', 'receipt': receipt,
+            'condition_id': market['condition_id'], 'winner_tokens': winners,
+            'display_price_not_used_as_outcome': True}

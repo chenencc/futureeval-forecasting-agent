@@ -16,7 +16,7 @@ or Metaculus delivery entry point. Production competition workflows stay separat
 | Analysis transport | Development `research_loop.decision_http` |
 | Collection model | `nvidia/nemotron-3-super-120b-a12b:free` |
 | Decision model | `inception/mercury-decide:free`, `/api/alpha/decisions` |
-| New target adapter | `development-map-price-grid-v2` |
+| New target adapter | `development-map-price-grid-v3` |
 
 The sidecar branch is `codex/market-repricing`. Actions checks out the exact
 development snapshot into `.development`. `runtime.activate` verifies the commit,
@@ -44,7 +44,7 @@ flowchart TD
   F --> A[A: originals to Mercury]
   F --> B[B: identical originals plus accepted research map to Mercury]
   F --> N[Zero-call no-change price baseline]
-  A --> Z[Sealed 72h and 168h price distributions]
+  A --> Z[Sealed creation +24h/+72h/+168h price distributions]
   B --> Z
   N --> Z
   M --> L[Own timestamped quote snapshots]
@@ -70,7 +70,7 @@ Missing-arm attrition and original-only availability are explicit.
 ## Targets and freeze
 
 Event probability and future market price are separate. Mercury receives the
-development event head and predictive choice heads for 72 and 168 hours. Each
+development event head and predictive choice heads for creation +24, +72 and +168 hours. Each
 price head distributes mass over 21 representative prices from 0 to 1 in 0.05
 steps. Its expectation is the price forecast, not an independent event probability.
 This grid is an approximation. Event probabilities retain the 0.02–0.98 clip;
@@ -82,10 +82,9 @@ conditions are not automatically market-price distributions or verified causes.
 
 The anchor is observed after collection and final material processing. Inference
 cannot use later evidence. Seal latency is capped at 30 minutes. A label uses the
-latest usable quote in the 30-minute window ending at `anchor+72h` or
-`anchor+168h`. Later quotes cannot fill a missed window. Early resolution, rule
+latest usable quote in the 30-minute window ending at `market.created_at+24h`, `+72h` or `+168h`. Later quotes cannot fill a missed window. Early resolution, rule
 changes, missing windows, failed arms and late forecasts remain explicit.
-No-change predicts the anchor midpoint at both horizons. Paired MAE/RMSE compare
+No-change predicts the anchor midpoint at each eligible horizon. Already elapsed targets are omitted from model requests; forecasts sealed after a target cannot be evaluated against that target. Paired MAE/RMSE compare
 all arms on the same available cases. Eventual Brier and trading PnL are separate;
 no predictive skill is claimed before delayed labels exist.
 
@@ -101,7 +100,7 @@ catalyst date. Platform close hints are not authoritative event deadlines.
 Unknown relevance, missing rules and liquidity remain in waiting pools.
 
 New test questions must have a platform creation timestamp within the rolling
-last 24 hours at enrollment. Updated timestamps and first-seen time cannot make
+last two hours at enrollment. Updated timestamps and first-seen time cannot make
 an old question new. Expected resolution must be at least 168 hours away and
 platform trading close must also leave 168 hours. Kalshi expected expiration is
 recorded separately from order close. Polymarket requires an explicit dated rule
@@ -129,11 +128,11 @@ Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-At most 20 new venue event families enter per Asia/Shanghai calendar day, counted
+At most 30 new venue event families enter per Asia/Shanghai calendar day, counted
 from immutable enrollment timestamps. Failed tasks consume the same daily slot;
 retries do not count as new tasks. The initial three-family lifetime cap is removed.
 Workers retain batches of at most three tasks per dispatch and their existing
-provider budgets. Twenty admissions do not guarantee 20 completed analyses that
+provider budgets. Thirty admissions do not guarantee 30 completed analyses that
 day when provider budgets or service availability limit throughput.
 Each family gets a quote turn before additional thresholds.
 Cross-venue title similarity does not establish rule equivalence.
@@ -147,10 +146,54 @@ YES best bid/ask, size, spread, midpoint, ten visible levels per side, and origi
 book provenance. The original full Polymarket response and returned Kalshi depth
 are retained in compressed HTTP objects; Kalshi collection requests ten levels.
 Admission and forecast anchors must not be conflated.
-Due 72h/168h label windows have priority over routine quote turns. Remaining
+Due creation +24h/+72h/+168h label windows have priority over routine quote turns. Remaining
 quote capacity is shared between new candidates and active cohorts; active
 cohorts rotate by oldest observation. Labels are evaluated for every frozen
 forecast even after its active quote window ends. Missed quotes remain explicit.
+
+## Creation-based follow-ups and final results
+
+All existing and new enrolled contracts receive a separate `followups/<hash>.json`
+and the small `tracking.json` local-sync projection. The origin is the immutable
+platform market `createdAt` (Polymarket) or `created_time` (Kalshi), not local
+`state.created_at`, first seen, enrollment, or forecast completion. Those fields
+are creation proxies; neither venue provides a universally verified publication
+instant in this contract. New enrollment rechecks the two-hour boundary after
+search and quote requests complete.
+
+Each record freezes target UTC timestamps at creation +24, +72, and +168 hours.
+The latest usable YES bid/ask midpoint in the preceding 30 minutes is retained
+with actual receipt time, spread, depth, raw-response hash and quality flags.
+No later price substitutes for an absent observation. This collection continues
+regardless of whether model analysis completed, failed, or produced only a
+baseline. It makes no new model or search calls.
+
+Historical sealed forecasts retain their anchor +72/+168 targets in `labels/`.
+They are never relabeled as creation-based predictions. New tasks freeze a
+creation-based `price_schedule` at admission and use it in Mercury instructions,
+results and evaluation. Evaluation separates cohorts by origin; scores sealed
+at or after a target are excluded. Old pending tasks retain their old heads.
+
+Metadata/final-result checks continue after day seven. Unresolved tasks become
+due every six hours; confirmed results are rechecked daily for corrections.
+These are due intervals, serviced by the next cronjob/Actions monitor invocation
+within the bounded, fair queue. Each dispatch allows 40 metadata, 40 book and
+20 resolution requests, inside 120 public HTTP attempts. Urgent price windows
+precede routine final checks; a capacity deferral remains explicit.
+
+Polymarket final outcomes require a closed CLOB condition, matching YES token,
+and exactly one explicit winner. Display prices of 0 or 1 are insufficient.
+Closed without a winner, disputes, missing identities and fetch failures remain
+pending/gaps. Kalshi requires `status=settled` and an explicit YES/NO result.
+The platform settlement timestamp is retained when available; Polymarket's
+first observed terminal time is explicitly not an invented resolution time.
+All changed terminal observations and raw receipts are retained. Event Brier
+requires a verified binary result, matching rules and a pre-result forecast;
+price MAE/RMSE remain separate. Nonbinary/unknown settlement cannot become NO.
+
+`tracking.json`, raw captures and follow-up records use the existing incremental
+local sync. Repeated bodies are not downloaded again. The monitor checkpoint
+keeps older tasks after they fall outside the new-admission window.
 
 ## Actions, budgets and recovery
 
@@ -201,8 +244,7 @@ can archive completed Actions artifacts into `E:\metaculus_data`; actual sync
 must complete before claiming local archival. Ninety-day artifact retention and
 a finite pilot are not an unlimited durable cloud database.
 
-The authorized admission-policy migrations accept only the exact initial v2 and
-twenty-per-day policy hashes and identical engine/provider budgets. They record old/new identities,
+The authorized policy migration accepts only the exact deployed admission-policy hashes and identical engine/provider budgets. They record old/new identities,
 retains enrolled tasks, legacy daily counts and physical reservations, and never
 resets them. Any unrelated policy or engine drift still fails closed.
 

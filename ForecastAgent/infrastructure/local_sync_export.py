@@ -24,7 +24,7 @@ def sha(path):
 def summary(root):
     """Keep forecast heads and missing states; omit raw prompts and explanations."""
     result = {}
-    for filename in ('report.json', 'evaluation.json', 'monitor-health.json'):
+    for filename in ('report.json', 'evaluation.json', 'monitor-health.json', 'tracking.json'):
         path = root / filename
         if path.is_file() and path.stat().st_size < 256 * 1024:
             result[filename] = json.loads(path.read_text(encoding='utf-8'))
@@ -36,7 +36,7 @@ def summary(root):
         rows = []
         for ident, task in state.get('tasks', {}).items():
             row = {key: task[key] for key in ('status', 'stage', 'executions', 'enrolled_at',
-                'last_attempt_at', 'retry_at', 'error_type', 'evidence_status', 'analysis_stage') if key in task}
+                'last_attempt_at', 'retry_at', 'error_type', 'evidence_status', 'analysis_stage', 'price_schedule') if key in task}
             row['id'] = ident
             market = task.get('market', {})
             if market:
@@ -45,7 +45,7 @@ def summary(root):
             forecast = task.get('forecast') or {}
             if forecast:
                 row['forecast'] = {key: forecast[key] for key in ('anchor_at', 'sealed_at', 'status',
-                    'timely', 'baseline', 'pair_audit') if key in forecast}
+                    'timely', 'baseline', 'pair_audit', 'price_schedule', 'forecast_before_targets') if key in forecast}
                 row['forecast']['anchor'] = {key: forecast.get('anchor', {})[key] for key in (
                     'received_at', 'status', 'yes_bid', 'yes_ask', 'midpoint', 'spread', 'raw_book_sha256') if key in forecast.get('anchor', {})}
                 row['forecast']['arms'] = {arm: {key: value[key] for key in ('status', 'price_means',

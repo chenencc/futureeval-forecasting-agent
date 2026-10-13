@@ -22,6 +22,15 @@ from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, 
 CLOCK = '2026-10-12T00:00:00+00:00'
 
 
+def previous_policy():
+    cfg = policy()
+    for field in ('maximum_candidate_age_hours', 'price_target_origin',
+                  'maximum_resolution_requests_per_dispatch', 'final_refresh_interval_hours',
+                  'resolved_recheck_interval_hours'):
+        cfg.pop(field)
+    return cfg | {'maximum_candidate_age_days': 1, 'maximum_new_tasks_per_day': 20, 'horizons_hours': [72, 168]}
+
+
 def raw_poly():
     return {'id': '123', 'question': 'Will the Fed cut interest rates at its December meeting?',
             'description': 'Resolves YES if the Federal Reserve lowers the target rate on December 10, 2026. Source: federalreserve.gov.',
@@ -81,18 +90,18 @@ class Selection(unittest.TestCase):
         before = digest(ledger['tasks'])
         for market in ledger['markets'].values(): market['metadata_versions'].append({'new': 'metadata'})
         self.assertEqual(digest(ledger['tasks']), before)
-    def test_twenty_per_shanghai_day_without_lifetime_cap(self):
+    def test_thirty_per_shanghai_day_without_lifetime_cap(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
-        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]} for i in range(50)], self.cfg, CLOCK)
-        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable', 'received_at': CLOCK}
-        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 20)
-        # Local midnight is 16:00 UTC. Failures do not refund admissions.
+        before_midnight = '2026-10-12T15:59:59Z'
+        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'createdAt': before_midnight, 'events': [{'id': str(i)}]} for i in range(70)], self.cfg, before_midnight)
+        for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable', 'received_at': before_midnight}
+        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 30)
         for task in ledger['tasks'].values(): task['status'] = 'blocked'
-        enroll(ledger, self.cfg, '2026-10-12T15:59:59Z'); self.assertEqual(len(ledger['tasks']), 20)
+        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 30)
         for m in ledger['markets'].values(): m['last_quote']['received_at'] = '2026-10-12T16:00:00Z'
-        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 40)
-        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 40)
-        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 20, '2026-10-13': 20})
+        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 60)
+        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 60)
+        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 30, '2026-10-13': 30})
     def test_enrollment_requires_quote_from_current_dispatch(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
                   'identity': {'policy_sha256': digest(self.cfg)}}
@@ -139,8 +148,8 @@ class Selection(unittest.TestCase):
         request = request_for(self.m)
         self.assertTrue(request['synthetic_compatibility_id']); self.assertTrue(request['id'].isdigit())
         self.assertEqual(request['market_research_key'], self.m['key'])
-    def test_publication_24h_boundary_and_future_clock(self):
-        for stamp, accepted in [('2026-10-11T00:00:00Z', True), ('2026-10-10T23:59:59Z', False),
+    def test_creation_two_hour_boundary_and_future_clock(self):
+        for stamp, accepted in [('2026-10-11T22:00:00Z', True), ('2026-10-11T21:59:59Z', False),
                                 ('2026-10-12T00:00:01Z', False)]:
             self.assertEqual(screen(self.m | {'created_at': stamp}, CLOCK, self.cfg)['status'] == 'candidate', accepted)
     def test_long_trade_close_not_a_long_resolution(self):
@@ -270,7 +279,7 @@ class Persistence(unittest.TestCase):
             self.assertEqual(seen, [True])
     def test_authorized_policy_migration_preserves_tasks_and_failed_reservations(self):
         cfg = policy()
-        legacy = dict(cfg)
+        legacy = previous_policy()
         legacy.pop('allow_wide_spread')
         legacy.pop('enrollment_day_timezone'); legacy.pop('maximum_new_tasks_per_day')
         legacy.update(maximum_active_families=3, maximum_new_tasks_per_utc_day=3)
@@ -290,7 +299,7 @@ class Persistence(unittest.TestCase):
             with self.assertRaises(ValueError):
                 state(root, 'worker', cfg | {'maximum_worker_model_attempts_per_task': 61})
     def test_wide_spread_policy_migration_preserves_daily_admissions_and_reservations(self):
-        cfg = policy(); old = dict(cfg); old.pop('allow_wide_spread')
+        cfg = policy(); old = previous_policy(); old.pop('allow_wide_spread')
         self.assertEqual(digest(old), '31ef70793256bce9ca689e0d51911e05fe8288fa1aedffd8661487c81d423825')
         with tempfile.TemporaryDirectory() as root:
             ledger = state(root, 'monitor', old)

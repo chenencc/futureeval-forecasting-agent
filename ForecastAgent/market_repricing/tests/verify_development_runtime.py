@@ -193,15 +193,15 @@ class DevelopmentRuntime(unittest.TestCase):
         _, common, heads, spec, child, audit = inputs()
         child = mapped(child, common)
         anchor = {'status': 'usable', 'received_at': now(), 'midpoint': .45, 'yes_bid': .43, 'yes_ask': .47}
-        states, registry, result = prepare(child, anchor, policy())
+        states, registry, result = prepare(child, anchor, policy(), {'created_at': anchor['received_at']})
         self.assertTrue(result['map_delivered'])
         self.assertTrue(states['mapped']['research_map']['factual_grounding_present'])
         self.assertEqual(states['original']['evidence'], states['mapped']['evidence'])
         self.assertEqual(states['original']['sources'], states['mapped']['sources'])
-        self.assertEqual(set(registry), {'event_yes', 'price_72', 'price_168'})
+        self.assertEqual(set(registry), {'event_yes', 'price_24', 'price_72', 'price_168'})
         from ForecastAgent.market_repricing.forecast import run
         from ForecastAgent.research_loop import decision_http
-        market = self.bundle()[0]
+        market = self.bundle()[0] | {'created_at': anchor['received_at']}
         calls = []
         def score(state, folder, heads, **kwargs):
             calls.append(state)
@@ -209,7 +209,7 @@ class DevelopmentRuntime(unittest.TestCase):
                 'event_yes': {'type': 'noul', 'noul': .5},
                 **{k: {'type': 'choice', 'choice': 'p10', 'confidence': 1,
                        'probabilities': {v: 1 if v == 'p10' else 0 for v in heads[k]['criteria']}}
-                   for k in ('price_72', 'price_168')}}}
+                   for k in ('price_24', 'price_72', 'price_168')}}}
         with tempfile.TemporaryDirectory() as root, patch.object(decision_http, 'call', side_effect=score):
             result = run(child, market, anchor, Path(root), policy())
             replay = run(child, market, anchor, Path(root), policy())
