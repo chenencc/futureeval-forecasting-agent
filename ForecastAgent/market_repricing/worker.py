@@ -186,6 +186,7 @@ def repair_materials(task, folder, bundle):
 def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
     from datetime import timedelta
     task = ledger['tasks'][key]
+    cfg = forecast_policy(task, cfg)
     folder = Path(root) / 'tasks' / digest(key)
     folder.mkdir(parents=True, exist_ok=True)
     # Adopt an already sealed result after a process died before updating state.
@@ -272,9 +273,18 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
         write(Path(root) / 'state.json', ledger)
 
 
+def forecast_policy(task, cfg):
+    # Old enrolled tasks and pending retries keep their frozen forecast protocol.
+    if task.get('price_schedule'):
+        return cfg | {'price_schedule': task['price_schedule']}
+    return cfg | {'horizons_hours': [72, 168], 'price_target_origin': 'forecast_anchor_at'}
+
+
 def baseline_result(anchor, cfg, reason, audit):
     """A visible market-only control is never a model forecast or event score."""
-    return {'status': 'baseline_only', 'reason': reason, 'anchor_at': anchor['received_at'],
+    from .tracking import schedule
+    price_schedule = cfg.get('price_schedule') or schedule(anchor['received_at'], cfg['horizons_hours'], 'forecast_anchor_at')
+    return {'price_schedule': price_schedule, 'status': 'baseline_only', 'reason': reason, 'anchor_at': anchor['received_at'],
         'anchor': anchor, 'sealed_at': now(), 'timely': False,
         'baseline': {str(h): anchor['midpoint'] for h in cfg['horizons_hours']},
         'arms': {}, 'eventual_probability_yes': None, 'score_source': 'market_no_change_control',
@@ -335,7 +345,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         if key not in ledger['tasks']:
             ledger['tasks'][key] = {'key': key, 'market': task['market'], 'status': 'queued',
                                     'executions': 0, 'enrolled_at': task.get('enrolled_at'),
-                                    'source_task_sha256': digest(task)}
+                                    'source_task_sha256': digest(task),
+                                    **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {})}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),

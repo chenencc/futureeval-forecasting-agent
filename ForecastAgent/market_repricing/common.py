@@ -53,24 +53,38 @@ def state(root, role, configuration):
         if saved.get('identity') != identity:
             # Only exact previously deployed admission policies may migrate.
             # Engine, reservations and every provider cap remain unchanged.
-            previous_daily = dict(configuration)
+            admission_previous = dict(configuration)
+            for field in ('maximum_candidate_age_hours', 'price_target_origin',
+                          'maximum_resolution_requests_per_dispatch', 'final_refresh_interval_hours',
+                          'resolved_recheck_interval_hours'):
+                admission_previous.pop(field, None)
+            admission_previous.update(maximum_candidate_age_days=1,
+                                      maximum_new_tasks_per_day=20, horizons_hours=[72, 168])
+            previous_daily = dict(admission_previous)
             previous_daily.pop('allow_wide_spread', None)
             legacy = dict(previous_daily)
             legacy.pop('enrollment_day_timezone', None)
             legacy.pop('maximum_new_tasks_per_day', None)
             legacy.update(maximum_active_families=3, maximum_new_tasks_per_utc_day=3)
-            approved_hashes = {'642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df',
+            approved_hashes = {'315c683957751c19000d0a307a52a4bc664ac682dd07bcdea4413cea578333b9',
+                               '642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df',
                                '31ef70793256bce9ca689e0d51911e05fe8288fa1aedffd8661487c81d423825'}
             previous = next((identity | {'policy_sha256': digest(candidate)}
-                for candidate in (previous_daily, legacy)
+                for candidate in (admission_previous, previous_daily, legacy)
                 if digest(candidate) in approved_hashes and saved.get('identity') == identity | {'policy_sha256': digest(candidate)}), None)
-            if previous is None or configuration.get('maximum_new_tasks_per_day') != 20 or configuration.get('enrollment_day_timezone') != 'Asia/Shanghai' or configuration.get('allow_wide_spread') is not True:
+            expected = {'maximum_new_tasks_per_day': 30, 'maximum_candidate_age_hours': 2,
+                'horizons_hours': [24, 72, 168], 'price_target_origin': 'market_created_at',
+                'maximum_resolution_requests_per_dispatch': 20, 'final_refresh_interval_hours': 6,
+                'resolved_recheck_interval_hours': 24, 'enrollment_day_timezone': 'Asia/Shanghai',
+                'allow_wide_spread': True}
+            if previous is None or any(configuration.get(k) != v for k, v in expected.items()):
                 raise ValueError('State identity changed; explicit migration is required')
             saved.setdefault('policy_migrations', []).append({
                 'at': now(), 'from_identity': previous, 'to_identity': identity,
-                'reason': 'User authorized twenty daily families and wide-spread research books.',
-                'existing_tasks_unchanged': True, 'provider_reservations_unchanged': True,
-                'legacy_daily_counts_retained': True, 'budget_reset': False})
+                'reason': 'User authorized thirty daily families, two-hour admission and creation-based 1/3/7-day observations.',
+                'existing_tasks_unchanged': True, 'legacy_forecast_targets_unchanged': True,
+                'provider_reservations_unchanged': True, 'legacy_daily_counts_retained': True,
+                'budget_reset': False})
             saved['identity'] = identity
         return saved
     if Path(root).exists() and any(Path(root).iterdir()):

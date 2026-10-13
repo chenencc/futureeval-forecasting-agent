@@ -6,12 +6,13 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write
-from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen
+from .tracking import creation_schedule, forecast_schedule, labels, targets_for, final_record
+from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen, final_resolution
 
 
 def discover(http, venue, cfg, clock):
     rows, pages, cursor = [], [], None
-    start = int((instant(clock) - timedelta(days=cfg['maximum_candidate_age_days'])).timestamp())
+    start = int((instant(clock) - timedelta(hours=cfg['maximum_candidate_age_hours'])).timestamp())
     for index in range(cfg['maximum_discovery_pages_per_venue']):
         if venue == 'polymarket':
             raw, receipt = http.get(GAMMA + 'markets', {'closed': 'false', 'order': 'createdAt',
@@ -82,10 +83,14 @@ def discover_events(http, venue, cfg, clock):
                   'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat()}
 
 
+def key_not_enrolled(ledger, market):
+    return market['key'] not in ledger['tasks']
+
+
 def ingest(ledger, venue, rows, cfg, clock):
     for raw in rows:
         market = normalize(venue, raw)
-        if market.get('created_at') and instant(market['created_at']) < instant(clock) - timedelta(days=cfg['maximum_candidate_age_days']):
+        if market.get('created_at') and key_not_enrolled(ledger, market) and instant(market['created_at']) < instant(clock) - timedelta(hours=cfg['maximum_candidate_age_hours']):
             continue
         key = market['key']
         previous = ledger['markets'].get(key, {})
@@ -93,6 +98,9 @@ def ingest(ledger, venue, rows, cfg, clock):
         history = list(previous.get('metadata_versions', []))
         if not history or history[-1]['sha256'] != version:
             history.append({'sha256': version, 'seen_at': clock, 'rules_sha256': market['rules_sha256']})
+        if key in ledger['tasks']:
+            market.pop('terminal_result', None)
+            market.pop('final_observation', None)
         ledger['markets'][key] = {**previous, **market, 'first_seen_at': previous.get('first_seen_at', clock),
                                  'last_seen_at': clock, 'metadata_versions': history,
                                  'selection': screen(market, clock, cfg)}
@@ -110,6 +118,7 @@ def enroll(ledger, cfg, clock):
     for market in ordered:
         if count >= cfg['maximum_new_tasks_per_day']:
             break
+        market['selection'] = screen(market, clock, cfg)
         if market['selection']['status'] != 'candidate' or (market.get('last_quote') or {}).get('status') != 'usable':
             continue
         observed = market['last_quote'].get('received_at')
@@ -121,7 +130,8 @@ def enroll(ledger, cfg, clock):
         key = market['key']
         # One immutable representative per venue event family. No cross-venue title matching.
         ledger['tasks'][key] = {'key': key, 'market': copy.deepcopy(market), 'enrolled_at': clock,
-                                'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256']}
+                                'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256'],
+                                'price_schedule': creation_schedule({'market': market})}
         families.add(market['family'])
         count += 1
     ledger.setdefault('enrollment_daily', {})[date] = count
@@ -133,14 +143,13 @@ def quote_turns(ledger, worker, candidates, cfg, clock):
     urgent, active = [], []
     for key in ledger['tasks']:
         task = worker.get('tasks', {}).get(key, {})
-        frozen = task.get('forecast')
-        if frozen:
-            targets = [instant(frozen['anchor_at']) + timedelta(hours=h) for h in cfg['horizons_hours']]
-            if any(t - timedelta(minutes=cfg['label_window_minutes']) <= current <= t for t in targets):
-                urgent.append(key)
-            elif current <= max(targets):
-                active.append(key)
-        elif task.get('status', 'queued') in {'queued', 'running', 'retry_wait'}:
+        targets = targets_for(ledger['tasks'][key], task)
+        market = ledger['markets'][key]
+        if market.get('terminal_result') or not market.get('tradable', True):
+            continue
+        if any(t - timedelta(minutes=cfg['label_window_minutes']) <= current <= t for t in targets):
+            urgent.append(key)
+        elif targets and current <= max(targets) or task.get('status', 'queued') in {'queued', 'running', 'retry_wait'}:
             active.append(key)
     def age(key):
         market = ledger['markets'][key]
@@ -162,33 +171,54 @@ def quote_turns(ledger, worker, candidates, cfg, clock):
 
 
 def label(task, market, quotes, clock, cfg):
-    frozen = task.get('forecast')
-    if not frozen:
-        return {}
-    result = {}
-    for hours in cfg['horizons_hours']:
-        target = instant(frozen['anchor_at']) + timedelta(hours=hours)
-        if instant(clock) < target:
-            continue
-        window_start = target - timedelta(minutes=cfg['label_window_minutes'])
-        if market.get('rule_drift_seen_at') and instant(market['rule_drift_seen_at']) <= target:
-            result[str(hours)] = {'status': 'rules_changed', 'target_at': target.isoformat(),
-                                  'excluded_from_repricing_mae': True}
-            continue
-        usable = [q for q in quotes if q.get('status') == 'usable' and
-                  window_start <= instant(q['received_at']) <= target]
-        if usable:
-            chosen = max(usable, key=lambda q: q['received_at'])
-            result[str(hours)] = {'status': 'quoted', 'target_at': target.isoformat(), 'quote': chosen,
-                                  'label': chosen['midpoint'], 'window_minutes': cfg['label_window_minutes']}
-        elif market.get('terminal_result') and market.get('terminal_seen_at') and instant(market['terminal_seen_at']) <= target:
-            result[str(hours)] = {'status': 'early_resolution', 'target_at': target.isoformat(),
-                                  'terminal_value': 1 if market['terminal_result'] == 'yes' else 0,
-                                  'excluded_from_repricing_mae': True}
-        else:
-            result[str(hours)] = {'status': 'missing_window_quote', 'target_at': target.isoformat(),
-                                  'excluded_from_repricing_mae': True, 'no_late_quote_substitution': True}
-    return result
+    return labels(forecast_schedule(task['forecast']), market, quotes, clock, cfg) if task.get('forecast') else {}
+
+
+def metadata_turns(ledger, worker, quote_keys, cfg, clock):
+    # Continue settlement polling after the price experiment's last horizon.
+    due = []
+    for key in ledger['tasks']:
+        market = ledger['markets'][key]
+        hours = cfg['resolved_recheck_interval_hours'] if market.get('terminal_result') else cfg['final_refresh_interval_hours']
+        previous = market.get('last_followup_check_at')
+        if not previous or instant(clock) - instant(previous) >= timedelta(hours=hours):
+            due.append(key)
+    due.sort(key=lambda k: (ledger['markets'][k].get('last_followup_check_at', ''), k))
+    # Reserve half the metadata capacity for due final checks, even with new launches.
+    cap = cfg['maximum_metadata_refresh_per_dispatch']
+    keys = [key for key in quote_keys if key in ledger['tasks'] and any(
+        target - timedelta(minutes=cfg['label_window_minutes']) <= instant(clock) <= target
+        for target in targets_for(ledger['tasks'][key], worker.get('tasks', {}).get(key, {})))][:cap]
+    final_slots = (cap - len(keys)) // 2
+    keys.extend([key for key in due if key not in keys and key not in quote_keys][:final_slots])
+    for key in quote_keys + due:
+        if key not in keys and len(keys) < cap:
+            keys.append(key)
+    return keys
+
+
+def save_followups(root, ledger, worker, cfg, clock):
+    ledger.setdefault('followups', {})
+    for key, task in ledger['tasks'].items():
+        market = ledger['markets'][key]
+        path = root / 'quotes' / (digest(key) + '.json')
+        quotes = read(path) if path.exists() else []
+        schedule_ = creation_schedule(task)
+        final = final_record(market, task['market']['rules_sha256'])
+        record = {'key': key, 'schedule': schedule_, 'observed_at': clock,
+            'prices': labels(schedule_, market, quotes, clock, cfg), 'final': final,
+            'last_followup_check_at': market.get('last_followup_check_at'),
+            'collection_independent_of_forecast_status': True,
+            'legacy_forecast_targets_preserved': True}
+        ledger['followups'][key] = record
+        write(root / 'followups' / (digest(key) + '.json'), record)
+        forecast = worker.get('tasks', {}).get(key, {}).get('forecast')
+        if forecast:
+            write(root / 'labels' / (digest(key) + '.json'),
+                  labels(forecast_schedule(forecast), market, quotes, clock, cfg))
+    # A small control record is embedded by the incremental local sync catalog.
+    write(root / 'tracking.json', {'schema': 'market-creation-followups-v1',
+        'observed_at': clock, 'tasks': ledger['followups']})
 
 
 def run(root, worker_root=None, http=None, cfg=None, clock=None):
@@ -242,28 +272,63 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         rounds = [keys[i] for i in range(max((len(g) for g in groups.values()), default=0))
                   for family, keys in sorted(groups.items()) if i < len(keys)]
         priority = quote_turns(ledger, worker, rounds, cfg, clock)
-        for index, key in enumerate(priority):
+        refresh_keys = metadata_turns(ledger, worker, priority, cfg, clock)
+        resolution_attempts = 0
+        refresh_failed = set()
+        for key in refresh_keys:
             market = ledger['markets'][key]
-            if index < cfg['maximum_metadata_refresh_per_dispatch']:
-                try:
-                    current, receipt = refresh(http, market)
-                    market.update(current, metadata_refreshed_at=receipt['received_at'])
-                    market['selection'] = screen(market, receipt['received_at'], cfg)
-                    market['metadata_versions'].append({'sha256': receipt['response_sha256'],
-                        'seen_at': receipt['received_at'], 'rules_sha256': current['rules_sha256'],
-                        'source': 'detail_refresh'})
-                    if current.get('terminal_result'):
-                        market.setdefault('terminal_seen_at', receipt['received_at'])
-                    if key in selected and current['rules_sha256'] != ledger['tasks'][key]['market']['rules_sha256']:
-                        market['rule_drift'] = True
-                        market.setdefault('rule_drift_seen_at', receipt['received_at'])
-                except Exception as exc:
-                    errors.append({'key': key, 'stage': 'metadata_refresh', 'error': str(exc)})
+            try:
+                current, receipt = refresh(http, market)
+                if key in selected and current.get('created_at') != ledger['tasks'][key]['market']['created_at']:
+                    market['creation_time_drift'] = {'seen_at': receipt['received_at'],
+                        'original': ledger['tasks'][key]['market']['created_at'], 'refreshed': current.get('created_at')}
+                if market['venue'] == 'polymarket':
+                    # A metadata response has no explicit winner; only a successful
+                    # resolution response may replace the previous terminal state.
+                    current.pop('terminal_result', None)
+                market.update(current, metadata_refreshed_at=receipt['received_at'])
+                market['selection'] = screen(market, receipt['received_at'], cfg)
+                market['metadata_versions'].append({'sha256': receipt['response_sha256'],
+                    'seen_at': receipt['received_at'], 'rules_sha256': current['rules_sha256'],
+                    'source': 'detail_refresh'})
+                if key in selected and current['rules_sha256'] != ledger['tasks'][key]['market']['rules_sha256']:
+                    market['rule_drift'] = True
+                    market.setdefault('rule_drift_seen_at', receipt['received_at'])
+                final = market.get('final_observation', {})
+                if (key in selected and market['venue'] == 'polymarket' and not market['tradable']):
+                    if resolution_attempts < cfg['maximum_resolution_requests_per_dispatch']:
+                        resolution_attempts += 1
+                        final = final_resolution(http, market)
+                    else:
+                        final = {'status': 'resolution_check_deferred', 'result': None,
+                                 'observed_at': receipt['received_at']}
+                if final:
+                    market['final_observation'] = final
+                    market['terminal_result'] = final.get('result') if final.get('status') == 'resolved' else None
+                    if market['terminal_result']:
+                        market.setdefault('terminal_seen_at', final['observed_at'])
+                    history = market.setdefault('final_versions', [])
+                    value_hash = digest({k: final.get(k) for k in ('status', 'result', 'resolved_at')})
+                    if not history or history[-1]['value_sha256'] != value_hash:
+                        history.append({'value_sha256': value_hash, 'observation': copy.deepcopy(final)})
+                market['last_followup_check_at'] = receipt['received_at']
+            except Exception as exc:
+                refresh_failed.add(key)
+                market['last_followup_attempt_at'] = clock
+                errors.append({'key': key, 'stage': 'metadata_or_resolution_refresh', 'error': str(exc)})
+        for key in priority:
+            market = ledger['markets'][key]
+            if key not in refresh_keys:
+                errors.append({'key': key, 'stage': 'quote_deferred', 'error': 'metadata_capacity_reserved_for_final_followups'})
+                continue
             try:
                 q = book(http, market, cfg)
             except Exception as exc:
                 q = {'status': 'fetch_failed', 'received_at': now(), 'error': str(exc), 'midpoint': None}
             clock = max((clock, q['received_at']), key=instant)
+            q['rules_sha256'] = market['rules_sha256']
+            if key in refresh_failed or key not in refresh_keys:
+                q.update(status='metadata_unverified', midpoint=None)
             if not market['tradable'] and q.get('status') == 'usable':
                 q.update(status='not_orderable', midpoint=None)
             if market.get('rule_drift'):
@@ -274,17 +339,10 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             quotes_path = root / 'quotes' / (digest(key) + '.json')
             quotes = read(quotes_path) if quotes_path.exists() else []
             quotes.append(q); write(quotes_path, quotes)
-        # Evaluate every sealed forecast even after its last quote turn. Missing
-        # windows must be recorded rather than silently omitting terminal labels.
-        for key, task in worker['tasks'].items():
-            if task.get('forecast') and key in ledger['markets']:
-                quotes_path = root / 'quotes' / (digest(key) + '.json')
-                quotes = read(quotes_path) if quotes_path.exists() else []
-                write(root / 'labels' / (digest(key) + '.json'),
-                      label(task, ledger['markets'][key], quotes, clock, cfg))
         for market in ledger['markets'].values():
             market['selection'] = screen(market, clock, cfg)
         enroll(ledger, cfg, clock)
+        save_followups(root, ledger, worker, cfg, clock)
         ledger['enrollment_cutoff_utc'] = clock
         ledger['last_scan'] = scans
         ledger['errors'] = errors
@@ -293,11 +351,14 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         ledger['heartbeat'] = {'discovery_complete': all(x['complete'] for x in scans.values()),
                                'waiting_or_excluded_distribution': dict(Counter(m['selection']['status'] for m in ledger['markets'].values())),
                                'queued_families': len(ledger['tasks']), 'no_model_calls': True,
-                               'candidate_age_limit_hours': cfg['maximum_candidate_age_days'] * 24,
+                               'candidate_age_limit_hours': cfg['maximum_candidate_age_hours'],
                                'minimum_resolution_hours': cfg['minimum_resolution_hours'],
                                'maximum_new_families_per_day': cfg['maximum_new_tasks_per_day'],
                                'enrollment_day_timezone': cfg['enrollment_day_timezone'],
                                'enrollment_daily': ledger['enrollment_daily'],
+                               'price_target_origin': 'market_created_at',
+                               'price_horizons_hours': [24, 72, 168],
+                               'final_status_distribution': dict(Counter(t['final']['status'] for t in ledger['followups'].values())),
                                'errors_count': len(errors),
                                'scan_shortfall_visible': True, 'public_http_attempts': http.calls}
         write(root / 'report.json', ledger['heartbeat'])

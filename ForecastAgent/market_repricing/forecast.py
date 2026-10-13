@@ -4,18 +4,20 @@ import hashlib
 from pathlib import Path
 
 from . import PROTOCOL, ENGINE_BRANCH, ENGINE_SHA
+from .tracking import creation_schedule, schedule
 from .common import digest, instant, now, number, read, write
 
 GRID = [i / 20 for i in range(21)]
 
 
-def registry(event_heads, hours):
+def registry(event_heads, hours, schedule_=None):
     result = copy.deepcopy(event_heads)
     for horizon in hours:
+        timing = ('market_created_at plus ' + str(horizon) + ' hours, at exact UTC target ' + schedule_['targets'][str(horizon)]) if schedule_ and schedule_['origin_role'] == 'market_created_at' else ('anchor_at plus ' + str(horizon) + ' hours')
         result['price_' + str(horizon)] = {
             'type': 'choice',
-            'instructions': 'Predict the YES bid/ask midpoint at anchor_at plus ' + str(horizon) +
-                ' hours, conditional on the contract still being open and orderable. These are PRICE GRID '
+            'instructions': 'Predict the YES bid/ask midpoint at ' + timing +
+                ', conditional on the contract still being open and orderable. These are PRICE GRID '
                 'representative points, not mutually independent event probabilities. Give a normalized '
                 'predictive distribution. Use anchor quote and information frozen at anchor_at only. '
                 'Wide-spread midpoints are noisy book measurements, not reliable consensus or executable prices. '
@@ -36,7 +38,7 @@ def mean(answer):
     return sum(p * number(values['p' + str(i)]) for i, p in enumerate(GRID)) / mass
 
 
-def prepare(bundle, anchor, cfg):
+def prepare(bundle, anchor, cfg, market=None):
     from .materials import prepare as admit
     from ForecastAgent.research_loop import prospective_trial
     from ForecastAgent.research_loop.forecast_brief import registry as event_registry
@@ -48,8 +50,10 @@ def prepare(bundle, anchor, cfg):
     if not view.get('pages'):
         raise ValueError('Development admission found no usable original bodies')
     event_heads, spec = event_registry(bundle['request'])
-    heads = registry(event_heads, cfg['horizons_hours'])
-    metadata = {'anchor_at': anchor['received_at'], 'anchor_quote': anchor,
+    price_schedule = cfg.get('price_schedule') or (creation_schedule({'market': market}) if cfg.get('price_target_origin') == 'market_created_at' else schedule(anchor['received_at'], cfg['horizons_hours'], 'forecast_anchor_at'))
+    future_hours = [h for h in cfg['horizons_hours'] if instant(anchor['received_at']) < instant(price_schedule['targets'][str(h)])]
+    heads = registry(event_heads, future_hours, price_schedule)
+    metadata = {'price_schedule': price_schedule, 'anchor_at': anchor['received_at'], 'anchor_quote': anchor,
                 'target_policy': {'horizons_hours': cfg['horizons_hours'],
                     'label_window_minutes': cfg['label_window_minutes'],
                     'target': 'observed_yes_bid_ask_midpoint', 'eventual_event_is_separate': True,
@@ -82,8 +86,8 @@ def run(bundle, market, anchor, root, cfg):
     from ForecastAgent.research_loop import decision_http
     from ForecastAgent.intelligence.identity import code_identity
     root = Path(root)
-    states, heads, audit = prepare(bundle, anchor, cfg)
-    identity = {'protocol': PROTOCOL, 'target_adapter': 'development-map-price-grid-v2',
+    states, heads, audit = prepare(bundle, anchor, cfg, market)
+    identity = {'protocol': PROTOCOL, 'target_adapter': 'development-map-price-grid-v3',
                 'engine_branch': ENGINE_BRANCH, 'engine_sha': ENGINE_SHA, 'implementation': code_identity(),
                 'adapter_sha256_lf': hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
                 'bundle_sha256': digest(bundle), 'states_sha256': digest(states),
@@ -111,7 +115,7 @@ def run(bundle, market, anchor, root, cfg):
             continue
         try:
             response = decision_http.call(states[arm], folder / 'decision', heads, required_questions=heads)
-            value = {'status': 'completed', 'price_means': {str(h): mean(response['answers']['price_' + str(h)]) for h in cfg['horizons_hours']},
+            value = {'status': 'completed', 'price_means': {str(h): mean(response['answers']['price_' + str(h)]) for h in cfg['horizons_hours'] if 'price_' + str(h) in heads},
                      'eventual_probability_yes': min(.98, max(.02, response['answers']['event_yes']['noul'])),
                      'event_probability_is_not_future_price': True,
                      'map_delivered': arm == 'mapped' and audit['map_delivered'],
@@ -125,7 +129,11 @@ def run(bundle, market, anchor, root, cfg):
     sealed_at = now()
     latency = (instant(sealed_at) - instant(anchor['received_at'])).total_seconds() / 60
     timely = 0 <= latency <= cfg['maximum_seal_latency_minutes']
-    result = {'anchor_at': anchor['received_at'], 'anchor': anchor, 'sealed_at': sealed_at,
+    price_schedule = states['original']['price_schedule']
+    result = {'price_schedule': price_schedule,
+              'omitted_elapsed_price_heads': [h for h in cfg['horizons_hours'] if 'price_' + str(h) not in heads],
+              'forecast_before_targets': {h: instant(sealed_at) < instant(t) for h, t in price_schedule['targets'].items()},
+              'anchor_at': anchor['received_at'], 'anchor': anchor, 'sealed_at': sealed_at,
               'seal_latency_minutes': latency, 'timely': timely,
               'baseline': {str(h): anchor['midpoint'] for h in cfg['horizons_hours']},
               'arms': arms, 'identity': identity, 'pair_audit': audit,
