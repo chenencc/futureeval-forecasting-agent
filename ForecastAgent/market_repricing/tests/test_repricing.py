@@ -40,9 +40,13 @@ class FakeHTTP:
 
 class Selection(unittest.TestCase):
     def test_retries_rotate_behind_unattempted_tasks(self):
-        ledger={'tasks':{'retry':{'status':'retry_wait','retry_at':None,'last_attempt_at':CLOCK},
+        ledger={'tasks':{'retry':{'status':'retry_wait','executions':1,'retry_at':None,'last_attempt_at':CLOCK},
                          'new':{'status':'queued'},'done':{'status':'completed'}}}
         self.assertEqual(pending_keys(ledger),['new','retry'])
+    def test_legacy_retries_cannot_starve_new_work_or_be_starved(self):
+        tasks={'r'+str(i):{'status':'retry_wait','executions':2} for i in range(3)}
+        tasks.update({'n'+str(i):{'status':'queued','executions':0} for i in range(7)})
+        self.assertEqual(pending_keys({'tasks':tasks})[:6],['n0','n1','r0','n2','n3','r1'])
     def setUp(self): self.cfg = policy(); self.m = normalize('polymarket', raw_poly())
     def test_reversed_yes_identity(self): self.assertEqual(self.m['yes_token'], 'yes_asset')
     def test_crypto_broad_exclusion(self):
