@@ -37,8 +37,8 @@ jobs:
     env:
       GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER2 }}
-      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY1 }}
-      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY2 }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY3 }}
+      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY4 }}
       EXA_API_KEY: ${{ secrets.EXA_API }}
       EXA_API_KEY2: ${{ secrets.EXA_API2 }}
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
