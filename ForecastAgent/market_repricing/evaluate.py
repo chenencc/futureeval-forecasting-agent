@@ -7,6 +7,8 @@ from .common import digest, policy, read, write
 
 
 def run(monitor_root, worker_root, output):
+    from datetime import timedelta
+    from .common import instant
     monitor, worker = read(Path(monitor_root) / 'state.json'), read(Path(worker_root) / 'state.json')
     if monitor['identity']['policy_sha256'] != worker['identity']['policy_sha256']:
         raise ValueError('Evaluation policies differ')
@@ -20,10 +22,14 @@ def run(monitor_root, worker_root, output):
         labels = read(labels_path) if labels_path.exists() else {}
         for h in cfg['horizons_hours']:
             label = labels.get(str(h), {'status': 'not_due_or_unobserved'})
+            if forecast and label.get('target_at') and instant(label['target_at']) != instant(forecast['anchor_at']) + timedelta(hours=h):
+                label = {'status': 'label_belongs_to_different_anchor', 'excluded_from_repricing_mae': True}
             row = {'key': key, 'family': task['market']['family'], 'horizon_hours': h,
                    'task_status': task['status'], 'label_status': label['status'], 'arms': {},
                    'map_delivered': bool(forecast and forecast.get('pair_audit', {}).get('map_delivered'))}
-            if forecast and forecast.get('timely') and label['status'] == 'quoted':
+            if (forecast and forecast.get('eligible_for_model_metrics', True) and
+                task.get('evidence_status') != 'invalid_original_quarantined' and
+                forecast.get('timely') and label['status'] == 'quoted'):
                 target, base = label['label'], forecast['baseline'][str(h)]
                 row.update(target=target, baseline=base, baseline_error=base-target)
                 for name, arm in forecast['arms'].items():
