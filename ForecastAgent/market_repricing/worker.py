@@ -83,6 +83,15 @@ def acquire(task, folder):
     from ForecastAgent.intelligence.worker import remaining_budget
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
+    from .evidence_capture import VERSION as capture_version, policy_identity, capture_adapter
+    new_capture = task.get('acquisition_policy') == capture_version
+    final_capture = folder / 'evidence-capture-v2' / 'analysis-input.json'
+    if new_capture and final_capture.exists():
+        saved = read(final_capture)
+        if digest(saved) != read(final_capture.parent / 'analysis-integrity.json')['bundle_sha256']:
+            raise ValueError('Frozen evidence-capture packet changed')
+        task.update(bundle_sha256=digest(saved), analysis_stage='analysis-evidence-v2')
+        return saved
     recovered = folder / 'body-recovery-v1' / 'analysis-input.json'
     if recovered.exists():
         saved = read(recovered)
@@ -98,6 +107,8 @@ def acquire(task, folder):
         bundle = read(source)
         from .materials import prepare
         view, _ = prepare(bundle)
+        if new_capture:
+            return repair_materials(task, folder, bundle)
         if len(view['pages']) >= 2:
             return bundle
         return repair_materials(task, folder, bundle)
@@ -105,6 +116,12 @@ def acquire(task, folder):
     request = read(request_path) if request_path.exists() else enable(
         request_for(task['market']), predictive_focus=True, scoring_delivery=True)
     request['collection_model'] = SUPER
+    if new_capture:
+        expected = policy_identity()
+        if request.get('market_capture_identity') not in (None, expected):
+            raise ValueError('Frozen capture adapter implementation changed')
+        request.update(market_acquisition_policy=capture_version, market_capture_identity=expected,
+                       acquisition_focus='raw_recall')
     write(request_path, request)
     directory = folder / 'development-intelligence'
     # Replays use the same request clock and the development worker's cumulative
@@ -120,7 +137,7 @@ def acquire(task, folder):
             'to capture external original bodies before further map planning. fetch_page '
             'is unavailable. Market pages supply rules/prices, not independent event evidence. '
             'Use registered tools only; respect each tool schema. Missing reports never prove NO.')
-    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided):
+    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided), capture_adapter() if new_capture else contextlib.nullcontext():
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
                                   recover_data=True, research_map=True, channel_tools=True)
     package = directory / 'final-map-package.json'
@@ -141,9 +158,20 @@ def acquire(task, folder):
 def repair_materials(task, folder, bundle):
     from .materials import prepare, recover
     view, audit = prepare(bundle)
-    if len(view['pages']) >= 2:
+    from .evidence_capture import VERSION as capture_version, packet
+    new_capture = task.get('acquisition_policy') == capture_version
+    if not new_capture and len(view['pages']) >= 2:
         return bundle
-    root = folder / 'body-recovery-v1'
+    root = folder / ('evidence-capture-v2' if new_capture else 'body-recovery-v1')
+    if new_capture:
+        from .evidence_capture import recover, verify_packet
+        intake = list(folder.glob('development-intelligence/**/market-intake/first-packet.json'))
+        for path in intake:
+            verify_packet(path)
+        # Preserve the early search-time packet independently of later native supplements.
+        write(root / 'intake-link.json', {'initial_packet_paths': [str(p.relative_to(folder)) for p in intake],
+            'initial_packet_sha256': [digest(read(p)) for p in intake],
+            'early_intake_available': bool(intake), 'raw_parent_sha256': digest(bundle)})
     child, report = recover(bundle, root)
     view, audit = prepare(child)
     reading_input = root / 'reading-input.json'
@@ -178,7 +206,23 @@ def repair_materials(task, folder, bundle):
     write(root / 'analysis-input.json', child)
     write(root / 'analysis-integrity.json', {'bundle_sha256': digest(child),
         'raw_parent_sha256': digest(bundle), 'body_recovery_report': report})
-    task.update(bundle_sha256=digest(child), analysis_stage='analysis-recovered-v1',
+    if new_capture:
+        packet(child, root / 'packets', 'final_pre_forecast_evidence_freeze')
+        from .common import instant
+        first = read(intake[0]) if intake else None
+        captures = [p.get('retrieved_at_utc') for p in child.get('pages', {}).values() if p.get('retrieved_at_utc')]
+        task['capture_summary'] = {'policy': capture_version, 'early_intake_available': bool(first),
+            'first_packet_frozen_at': first.get('frozen_at') if first else None,
+            'final_reading_cutoff_at': view['request']['as_of_utc'],
+            'first_external_capture_at': min(captures, key=instant) if captures else None,
+            'enrollment_to_first_packet_minutes': (instant(first['frozen_at']) - instant(task['enrolled_at'])).total_seconds()/60
+                if first and task.get('enrolled_at') else None,
+            'external_body_count': len(view['pages']),
+            'external_full_body_count': audit.get('external_full_body_count', len(view['pages'])),
+            'rules_designated_gaps': report['checklist']['rules_designated_gaps'],
+            'unattempted_sources': len(report['checklist']['unattempted_sources']),
+            'semantic_completeness_verified': False}
+    task.update(bundle_sha256=digest(child), analysis_stage='analysis-evidence-v2' if new_capture else 'analysis-recovered-v1',
                 evidence_status='external_originals' if view['pages'] else 'insufficient_evidence')
     return child
 
@@ -346,7 +390,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
             ledger['tasks'][key] = {'key': key, 'market': task['market'], 'status': 'queued',
                                     'executions': 0, 'enrolled_at': task.get('enrolled_at'),
                                     'source_task_sha256': digest(task),
-                                    **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {})}
+                                    **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
+                                    **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {})}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
@@ -381,6 +426,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'physical_search_reservations': sum(r['kind'] == 'search' for r in ledger.get('provider_reservations', [])),
                   'engine_sha': ENGINE_SHA, 'engine_branch': ENGINE_BRANCH,
                   'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
+        report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
         write(root / 'report.json', report)
         return report
     finally:
