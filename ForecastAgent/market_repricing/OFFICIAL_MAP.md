@@ -38,6 +38,22 @@ and rules. It sees neither earlier forecasts nor any future outcome labels.
 The official builder proposes sparse factors and direct edges toward one goal.
 Our documented LLM adapter adds citations to its structured-output contract.
 
+The first live three-case pilot exposed model-generated quotation errors and a
+source ID mistaken for a span ID. Its rejected strict maps remain archived.
+The reference-only v2 adapter asks the model for existing span or source handles
+and lets the program bind their exact visible coordinate ranges. It does not
+present a node description as an original quotation or verified observation.
+Source handles bind only the already delivered spans, never hidden page text.
+Every node and arrow remains an unverified hypothesis; necessary/sufficient
+labels do not enforce logical probability constraints. This is a separate
+hypothesis arm, not a relaxation that certifies the failed strict maps.
+
+The follow-up preserves the same three controls and quotes and shares the
+original fifteen-request cap. The first two cases may use their one remaining
+map slot. The third uses an offline reference-only projection of its saved
+complete response, with generated quotations quarantined. No fresh map request
+is granted to that case, which already consumed two map slots.
+
 The program binds each citation to the exact visible evidence ID, literal quote,
 source hash and coordinate range. It rejects missing citations, unknown or
 silently dropped edges, cycles, outgoing goal arrows, and necessary/sufficient
