@@ -245,6 +245,9 @@ After uploading the exact cumulative checkpoint, the worker dispatches its next
 batch if due tasks and daily allowance remain and no other worker is queued.
 The same concurrency group serializes these dispatches. An old monitor can
 finish already enrolled identities but cannot introduce previously unseen tasks.
+If only a recorded future retry remains, the next dispatch waits up to fifteen
+minutes without provider calls and repeats until that exact deadline. It never
+clears retry deadlines or quotas. This independent wait cannot submit or trade.
 
 ```text
 python -m unittest discover -s ForecastAgent/market_repricing/tests -v

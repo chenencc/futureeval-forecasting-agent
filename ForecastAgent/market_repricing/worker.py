@@ -327,7 +327,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         raise ValueError('Queue pin or policy changed')
     ledger = state(root, 'worker', cfg)
     fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
-    if not verification_only and not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
+    if not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
         raise ValueError('Stale discovery cannot enroll unseen tasks')
     # Already enrolled identities can finish from the exact old monitor. Only
     # their fresh price anchor is renewed, never enrollment, creation, or quota.

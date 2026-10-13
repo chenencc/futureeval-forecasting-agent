@@ -47,6 +47,14 @@ class Selection(unittest.TestCase):
         tasks={'r'+str(i):{'status':'retry_wait','executions':2} for i in range(3)}
         tasks.update({'n'+str(i):{'status':'queued','executions':0} for i in range(7)})
         self.assertEqual(pending_keys({'tasks':tasks})[:6],['n0','n1','r0','n2','n3','r1'])
+    def test_verification_cannot_enroll_unseen_stale_discovery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);monitor=root/'monitor';worker=root/'worker'
+            source=state(monitor,'monitor',policy());source['last_attempt_at']=CLOCK
+            source['tasks']={'new':{'market':normalize('polymarket',raw_poly())}}
+            write(monitor/'state.json',source);seal(monitor)
+            with self.assertRaisesRegex(ValueError,'Stale discovery'):
+                run(worker,monitor,verification_only=True)
     def setUp(self): self.cfg = policy(); self.m = normalize('polymarket', raw_poly())
     def test_reversed_yes_identity(self): self.assertEqual(self.m['yes_token'], 'yes_asset')
     def test_crypto_broad_exclusion(self):
