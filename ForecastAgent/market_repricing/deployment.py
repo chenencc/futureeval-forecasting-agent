@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.2.1'
+VERSION = 'market-v0.3.0'
 PENDING = {'queued', 'running', 'retry_wait'}
 
 
@@ -19,7 +19,9 @@ def task_release():
         return {}
     if not re.fullmatch('[0-9a-f]{40}', sha):
         raise ValueError('Market deployment must use an immutable full commit SHA')
-    return {'pipeline_version': VERSION, 'pipeline_commit': sha}
+    from .official_arm import ARMS, VERSION as analysis_version
+    return {'pipeline_version': VERSION, 'pipeline_commit': sha,
+            'analysis_version': analysis_version, 'analysis_arms': list(ARMS)}
 
 
 def verify_checkout(root, expected):
@@ -34,11 +36,13 @@ def verify_checkout(root, expected):
         raise ValueError('Market module is outside the selected deployment checkout')
     from .evidence_capture import policy_identity
     from .common import policy
+    from .official_arm import implementation, ARMS
     return {'schema': 'market-independent-deployment-v1', 'version': VERSION,
             'pipeline_commit': sha, 'engine_sha': ENGINE_SHA,
             'policy_sha256': digest(policy()), 'capture_identity': policy_identity(),
             'version_control': 'MARKET_REPRICING_SHA', 'budget_reset': False,
-            'competition_release_changed': False}
+            'competition_release_changed': False, 'analysis_arms': list(ARMS),
+            'official_map_identity': implementation()}
 
 
 def validate_pending(worker_root, monitor_root, receipt):

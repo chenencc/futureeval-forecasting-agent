@@ -92,6 +92,9 @@ def run(bundle, market, anchor, root, cfg):
                 'adapter_sha256_lf': hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
                 'bundle_sha256': digest(bundle), 'states_sha256': digest(states),
                 'registry_sha256': digest(heads), 'policy_sha256': digest(cfg)}
+    if 'official_map' in cfg['analysis_arms']:
+        from .official_arm import implementation
+        identity['official_map_identity'] = implementation()
     if (root / 'identity.json').exists() and read(root / 'identity.json') != identity:
         raise ValueError('Frozen development market forecast identity changed')
     if (root / 'result.json').exists():
@@ -104,9 +107,35 @@ def run(bundle, market, anchor, root, cfg):
     write(root / 'questions.json', heads)
     arms = {}
     for arm in cfg['analysis_arms']:
-        if arm not in states:
+        if arm not in ('original', 'mapped', 'official_map'):
             raise ValueError('Unsupported development analysis arm')
         folder = root / arm
+        # A restart adopts exact sealed arm results; it never renews inference.
+        if (folder / 'result.json').exists():
+            arms[arm] = read(folder / 'result.json')
+            if arm == 'official_map' and (folder / 'map-audit.json').exists():
+                audit['official_map'] = read(folder / 'map-audit.json')
+            continue
+        if arm == 'official_map':
+            if (instant(now()) - instant(anchor['received_at'])).total_seconds() > cfg['maximum_seal_latency_minutes'] * 60:
+                arms[arm] = {'status': 'not_comparable', 'reason': 'official_map_anchor_deadline', 'map_delivered': False}
+                write(folder / 'result.json', arms[arm])
+                continue
+            try:
+                from .official_arm import build_state
+                official, map_audit = build_state(states['original'], heads, folder)
+                audit['official_map'] = map_audit
+                if official is None:
+                    arms[arm] = map_audit
+                    write(folder / 'result.json', arms[arm])
+                    continue
+                states[arm] = official
+            except Exception as exc:
+                arms[arm] = {'status': 'failed', 'error_type': type(exc).__name__,
+                             'reason': 'official_map_unavailable', 'map_delivered': False,
+                             'original_provider_reservation_preserved': True}
+                write(folder / 'result.json', arms[arm])
+                continue
         write(folder / 'state.json', states[arm])
         if arm == 'mapped' and not audit['map_delivered']:
             arms[arm] = {'status': 'not_comparable', 'reason': 'accepted_map_unavailable',
@@ -114,19 +143,30 @@ def run(bundle, market, anchor, root, cfg):
             write(folder / 'result.json', arms[arm])
             continue
         try:
+            if (instant(now()) - instant(anchor['received_at'])).total_seconds() > cfg['maximum_seal_latency_minutes'] * 60:
+                raise TimeoutError('Frozen forecast anchor deadline exhausted')
             response = decision_http.call(states[arm], folder / 'decision', heads, required_questions=heads)
+            arm_sealed_at = now()
+            arm_latency = (instant(arm_sealed_at) - instant(anchor['received_at'])).total_seconds() / 60
             value = {'status': 'completed', 'price_means': {str(h): mean(response['answers']['price_' + str(h)]) for h in cfg['horizons_hours'] if 'price_' + str(h) in heads},
                      'eventual_probability_yes': min(.98, max(.02, response['answers']['event_yes']['noul'])),
                      'event_probability_is_not_future_price': True,
-                     'map_delivered': arm == 'mapped' and audit['map_delivered'],
-                     'map_status': 'delivered' if arm == 'mapped' and audit['map_delivered'] else 'original_only',
-                     'conditional_reread': False, 'response_sha256': digest(response)}
+                     'map_delivered': bool(states[arm].get('research_map')),
+                     'map_status': 'delivered' if states[arm].get('research_map') else 'original_only',
+                     'conditional_reread': False, 'response_sha256': digest(response),
+                     'state_sha256': digest(states[arm]), 'registry_sha256': digest(heads),
+                     'sealed_at': arm_sealed_at, 'seal_latency_minutes': arm_latency,
+                     'timely': 0 <= arm_latency <= cfg['maximum_seal_latency_minutes']}
             write(folder / 'result.json', value); arms[arm] = value
         except Exception as exc:
             arms[arm] = {'status': 'failed', 'error_type': type(exc).__name__,
                          'original_provider_reservation_preserved': True, 'release_fallback': False}
             write(folder / 'failure.json', arms[arm])
-    sealed_at = now()
+            write(folder / 'result.json', arms[arm])
+    completed_at = now()
+    accepted = [a for a in arms.values() if a['status'] == 'completed' and a.get('timely')]
+    # A slow optional arm must not invalidate already sealed timely controls.
+    sealed_at = min((a['sealed_at'] for a in accepted), key=instant) if accepted else completed_at
     latency = (instant(sealed_at) - instant(anchor['received_at'])).total_seconds() / 60
     timely = 0 <= latency <= cfg['maximum_seal_latency_minutes']
     price_schedule = states['original']['price_schedule']
@@ -134,10 +174,14 @@ def run(bundle, market, anchor, root, cfg):
               'omitted_elapsed_price_heads': [h for h in cfg['horizons_hours'] if 'price_' + str(h) not in heads],
               'forecast_before_targets': {h: instant(sealed_at) < instant(t) for h, t in price_schedule['targets'].items()},
               'anchor_at': anchor['received_at'], 'anchor': anchor, 'sealed_at': sealed_at,
+              'sealed_at_role': 'earliest_timely_arm_seal', 'completed_at': completed_at,
               'seal_latency_minutes': latency, 'timely': timely,
               'baseline': {str(h): anchor['midpoint'] for h in cfg['horizons_hours']},
               'arms': arms, 'identity': identity, 'pair_audit': audit,
               'status': 'completed' if timely and any(a['status'] == 'completed' for a in arms.values()) else 'incomplete',
               'no_orders_or_platform_forecasts': True, 'development_only': True, 'release_fallback': False}
+    from .official_arm import usage
+    result['analysis_usage'] = usage(root)
+    write(root / 'pair-audit.json', audit)
     write(root / 'result.json', result)
     return result

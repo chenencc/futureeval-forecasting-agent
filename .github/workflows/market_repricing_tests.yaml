@@ -37,3 +37,7 @@ jobs:
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
         run: python -m ForecastAgent.market_repricing.tests.verify_capture_runtime -v
+      - name: Production official map and three-arm failure isolation
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.market_repricing.tests.verify_official_runtime -v

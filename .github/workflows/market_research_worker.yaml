@@ -61,6 +61,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install official map core dependencies
+        run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
       - name: Verify independent immutable market release
         run: python -m ForecastAgent.market_repricing.deployment
       - name: Run independent sidecar regression gates

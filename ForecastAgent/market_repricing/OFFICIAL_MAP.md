@@ -134,3 +134,32 @@ The generic trial entry point now uses the reference-only adapter directly;
 the initial strict quotation path remains available for diagnostic replay.
 Adapter hashes are frozen in the trial identity, so old completed attempts
 cannot silently restart under changed code or renew any allowance.
+
+## Production market-v0.3.0
+
+New admissions freeze three analysis arms in their task record. The common
+originals and future-price registry are prepared once. Mercury scores the raw
+control and the existing accepted native map first. Super then builds the
+official reference map using only those same visible originals; Mercury scores
+that third state once. This adds at most two Super map HTTP requests (one formal
+repair) and one Mercury request per new task, within the existing shared worker
+caps. No additional search is performed for this map.
+
+The existing global admission/budget policy hash is unchanged. Older tasks keep
+their frozen two-arm protocol. Completed tasks are never reopened. A rejected
+map is `not_comparable`; an unavailable decision endpoint is `failed`. Neither
+is silently replaced by a copy of the control. Per-arm sealed results and HTTP
+journals survive interruption and are reused without fresh reservations.
+
+Each successful arm records its own seal timestamp, exact delivered-state hash,
+registry hash and latency. A slow optional arm cannot invalidate earlier timely
+controls. Evaluation excludes late arms and separately reports raw/native-map,
+raw/official-map and complete three-arm paired metrics. The task-level
+`sealed_at` is the earliest timely arm seal; `completed_at` is final aggregation.
+The worker provider ledger remains the authority for physical HTTP budgets;
+the analysis usage summary contains local journal reservations and token usage.
+
+Both market workflows install the official core dependencies before their
+regression gates. The external cron-job.org dispatch and monitor-to-worker
+handoff remain unchanged. `MARKET_REPRICING_SHA` selects the independent market
+implementation; the Metaculus competition release is controlled separately.
