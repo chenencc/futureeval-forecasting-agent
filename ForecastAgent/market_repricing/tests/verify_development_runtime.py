@@ -40,6 +40,8 @@ class DevelopmentRuntime(unittest.TestCase):
         article = {'content': 'A regulator discussed whether trading was blocked in some countries. '
                               'This article reports the hearing and explains the proposals. ' * 20}
         self.assertTrue(quality(article, 'https://example.org/news')['usable_text'])
+        footer={'content':'About\nPress\nCopyright\nContact us\nCreators\nAdvertise\nDevelopers\nTerms\nPrivacy\nPolicy & Safety\nHow YouTube works\nTest new features\nNFL Sunday Ticket\n© 2026 Google LLC'}
+        self.assertFalse(quality(footer,'https://www.youtube.com/watch?v=example')['usable_text'])
 
     def test_zero_bundle_recovers_saved_leads_once_with_durable_failed_attempts(self):
         from ForecastAgent.market_repricing.materials import recover, prepare
@@ -98,6 +100,24 @@ class DevelopmentRuntime(unittest.TestCase):
             self.assertEqual(task['status'],'retry_wait')
             self.assertEqual(task['historical_forecast']['status'],'completed')
             self.assertTrue((folder/'invalid-result-quarantine.json').exists())
+
+    def test_shallow_book_is_observational_not_depth_qualified_score(self):
+        from ForecastAgent.market_repricing.worker import execute
+        market, _, bundle=self.bundle()
+        ledger={'tasks':{market['key']:{'market':market,'status':'queued','executions':0}}}
+        observed=[]
+        def score(bundle,market,anchor,root,cfg):
+            observed.append(anchor)
+            return {'status':'completed','arms':{'original':{'status':'completed'}}}
+        with tempfile.TemporaryDirectory() as directory, patch(
+            'ForecastAgent.market_repricing.worker.refresh',return_value=(market,{})), patch(
+            'ForecastAgent.market_repricing.worker.screen',return_value={'status':'candidate'}), patch(
+            'ForecastAgent.market_repricing.worker.book',return_value={'status':'shallow_book',
+                'received_at':now(),'yes_bid':.061,'yes_ask':.107,'yes_bid_size':10,'yes_ask_size':30}):
+            execute(directory,ledger,market['key'],policy(),None,collector=lambda *a:bundle,forecaster=score)
+        self.assertAlmostEqual(observed[0]['midpoint'],.084)
+        self.assertIn('shallow_book',observed[0]['quality_flags'])
+        self.assertFalse(ledger['tasks'][market['key']]['forecast']['eligible_for_model_metrics'])
 
     def test_native_capture_child_reads_absolute_request_from_engine_cwd(self):
         from ForecastAgent.supplement.transport import capture

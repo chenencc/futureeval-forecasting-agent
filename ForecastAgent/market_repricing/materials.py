@@ -28,7 +28,15 @@ def quality(page, url):
                   ('go to polymarket.us' in text and len(text) < 1200))
     if restricted:
         diagnostic.update(state='geographic_access_interstitial', usable_text=False)
-    elif market_host(url):
+    else:
+        lines = [s.strip().lower() for s in page.get('content', '').splitlines() if s.strip()]
+        controls = {'about','press','copyright','contact us','creators','advertise','developers',
+                    'terms','privacy','policy & safety','how youtube works','test new features',
+                    'nfl sunday ticket','home','search','more','sign in','log in','menu'}
+        chrome = sum(s in controls or bool(re.fullmatch(r'©?\s*\d{4}\s+\w+(?:\s+\w+)*', s)) for s in lines)
+        if len(lines) >= 5 and chrome / len(lines) >= .8 and len(text) < 1500:
+            diagnostic.update(state='navigation_or_footer_only', usable_text=False)
+    if not restricted and market_host(url):
         diagnostic.update(state='market_rules_or_signal_not_external_event_evidence', usable_text=False)
     return diagnostic
 
