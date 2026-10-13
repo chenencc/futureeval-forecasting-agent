@@ -1,13 +1,15 @@
 """Finite prospective three-arm trial, separate from production admission."""
 import argparse
 import copy
+import hashlib
 import os
 from pathlib import Path
 
 from . import SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, write
 from .forecast import mean
-from .official_map import VERSION, UPSTREAM, construct, scoring_state
+from .official_map import VERSION, UPSTREAM
+from .official_map_references import construct_reference, project_reference
 
 
 def run(root, manifest):
@@ -23,7 +25,10 @@ def run(root, manifest):
         raise ValueError('First official-map pilot is limited to three cases and fifteen model requests')
     if (root/'progress.json').exists() and read(root/'progress.json')['status'] == 'blocked':
         return read(root/'report.json')
-    identity = {'schema': VERSION, 'manifest_sha256': digest(manifest)}
+    identity = {'schema': VERSION, 'manifest_sha256': digest(manifest),
+        'graph_protocol':'reference-only-v2',
+        'trial_adapter_sha256_lf':hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n',b'\n')).hexdigest(),
+        'reference_adapter_sha256_lf':hashlib.sha256(Path(__file__).with_name('official_map_references.py').read_bytes().replace(b'\r\n',b'\n')).hexdigest()}
     if (root/'identity.json').exists() and read(root/'identity.json') != identity:
         raise ValueError('Frozen official-map trial identity changed')
     write(root/'identity.json', identity)
@@ -78,19 +83,19 @@ def run(root, manifest):
             result.update(anchor=anchor, price_schedule=case['price_schedule'],
                 common_original_sha256=digest(common), registry_sha256=digest(heads))
             with provider_budget(root,ledger,case['key'],cfg):
-                graph = construct(common,folder/'official-map',model=manifest.get('map_model',SUPER))
+                graph = construct_reference(common,folder/'official-map',folder/'official-map',model=manifest.get('map_model',SUPER))
                 new_records = ledger.get('provider_reservations',[])[n:]
                 if new_records and new_records[-1].get('http_status') in {401,402,403,429}:
                     raise RuntimeError('Account or rate/quota stop; no automatic model or key change')
                 result['graph_status'] = graph['status']
                 result['graph_audit'] = graph.get('audit')
-                result['graph_sha256'] = graph['graph_sha256']
+                result['graph_sha256'] = graph.get('graph_sha256',digest(None))
                 states = {'original':copy.deepcopy(common)}
                 if previous_map and previous_map.get('nodes'):
                     states['mapped'] = copy.deepcopy(common) | {'research_map':previous_map}
-                if graph['status'] == 'accepted':
+                if graph['status'] == 'hypothesis_only':
                     try:
-                        states['official_map'] = scoring_state(common,graph)
+                        states['official_map'] = project_reference(common,graph,min(5600,BYTE_CAP-request_bytes(common,heads)-160))
                     except ValueError as exc:
                         result['graph_delivery_error'] = str(exc)
                 for arm in ('original','mapped','official_map'):

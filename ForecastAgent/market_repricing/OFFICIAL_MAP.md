@@ -130,3 +130,7 @@ The trial requires an immutable manifest with matched saved states, registry,
 market identity, original provider records and a bounded model allowance. All
 results, rejected proposals, raw model responses, usage, timestamps and hashes
 are retained. The manifest is independent of live production admission.
+The generic trial entry point now uses the reference-only adapter directly;
+the initial strict quotation path remains available for diagnostic replay.
+Adapter hashes are frozen in the trial identity, so old completed attempts
+cannot silently restart under changed code or renew any allowance.
