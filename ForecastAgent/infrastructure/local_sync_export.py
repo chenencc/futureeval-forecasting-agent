@@ -37,7 +37,8 @@ def summary(root):
         for ident, task in state.get('tasks', {}).items():
             row = {key: task[key] for key in ('status', 'stage', 'executions', 'enrolled_at',
                 'last_attempt_at', 'retry_at', 'error_type', 'evidence_status', 'analysis_stage', 'price_schedule',
-                'acquisition_policy', 'capture_summary') if key in task}
+                'acquisition_policy', 'capture_summary', 'pipeline_version', 'pipeline_commit',
+                'analysis_version', 'analysis_arms') if key in task}
             row['id'] = ident
             market = task.get('market', {})
             if market:
@@ -46,11 +47,13 @@ def summary(root):
             forecast = task.get('forecast') or {}
             if forecast:
                 row['forecast'] = {key: forecast[key] for key in ('anchor_at', 'sealed_at', 'status',
-                    'timely', 'baseline', 'pair_audit', 'price_schedule', 'forecast_before_targets') if key in forecast}
+                    'timely', 'baseline', 'pair_audit', 'price_schedule', 'forecast_before_targets',
+                    'completed_at', 'sealed_at_role', 'eligible_for_model_metrics', 'analysis_usage') if key in forecast}
                 row['forecast']['anchor'] = {key: forecast.get('anchor', {})[key] for key in (
                     'received_at', 'status', 'yes_bid', 'yes_ask', 'midpoint', 'spread', 'raw_book_sha256') if key in forecast.get('anchor', {})}
                 row['forecast']['arms'] = {arm: {key: value[key] for key in ('status', 'price_means',
-                    'eventual_probability_yes', 'map_delivered', 'map_status', 'response_sha256') if key in value}
+                    'eventual_probability_yes', 'map_delivered', 'map_status', 'response_sha256',
+                    'sealed_at', 'timely', 'seal_latency_minutes', 'state_sha256', 'reason', 'error_type') if key in value}
                     for arm, value in forecast.get('arms', {}).items()}
             rows.append(row)
         result[filename] = {'identity': state.get('identity'), 'schema': state.get('schema'),

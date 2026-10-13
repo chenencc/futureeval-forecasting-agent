@@ -22,7 +22,10 @@ class DeploymentTests(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 deployment.verify_checkout('.', invalid)
         with patch.dict(os.environ, {'MARKET_PIPELINE_SHA': SHA}):
-            self.assertEqual(deployment.task_release(), {'pipeline_version': deployment.VERSION, 'pipeline_commit': SHA})
+            release = deployment.task_release()
+            self.assertEqual(release['pipeline_version'], deployment.VERSION)
+            self.assertEqual(release['pipeline_commit'], SHA)
+            self.assertEqual(release['analysis_arms'], ['original', 'mapped', 'official_map'])
 
     def test_checkout_mismatch_and_dirty_tree_fail_before_requests(self):
         root = Path(deployment.__file__).resolve().parents[2]

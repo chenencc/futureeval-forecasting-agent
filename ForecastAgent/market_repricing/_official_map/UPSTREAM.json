@@ -1,0 +1,43 @@
+{
+  "schema": "official-map-vendor-v1",
+  "repository": "https://github.com/Metaculus/map-forecasting-research",
+  "commit": "c34f34666207bcaa2aaee489a780bc835c41fb36",
+  "license": "BSD-2-Clause",
+  "files_sha256_lf": {
+    "map_forecasting/llm.py": "b5744b69a511b619f882495350ae869a21e9b4fa20402fef3760d7a58699eafa",
+    "map_forecasting/__init__.py": "8fa32e2a6b80deb8ec0fb236cd2a62afcb277102ce75d013168474f81492e89e",
+    "map_forecasting/builders/causal.py": "c036f0b5653b414da3852c5dc3f0f32081af991e056ab5d1d8a691c90de19ef1",
+    "map_forecasting/builders/quantitative.py": "fc8296da0471dda1a01e3673b39b82e81cd22ef51a58e7849caa3a19e9348006",
+    "map_forecasting/builders/__init__.py": "6056496132f68758066b5d8501d7a93437fe0d0bc843603f326a4401a87d4198",
+    "map_forecasting/consistency/arbitrage.py": "20c2974370f220f391588bd86a9ac346c16126dd69ef22622a6d85f5805c4410",
+    "map_forecasting/consistency/batch.py": "9ecc2850ad2a67c837f41f25cd7ef115d354074449688856590add0467a18316",
+    "map_forecasting/consistency/coherence.py": "cd2265273a31729144dee0d197fe9a5222bea0ca58a639f9554ea5b9a19b824b",
+    "map_forecasting/consistency/floors.py": "4e52f812e59fd381f56b225c1ad2d9ced7780fe6df71c7ddf2134d65f5023598",
+    "map_forecasting/consistency/__init__.py": "08e584901ec3b0014b85dcaede128e9971a53e6f417f3b61c422a3c9e538c68f",
+    "map_forecasting/grading/align.py": "ae1e584483fcab31d50b3b5d138243dc5c60fc8256a2159eec11b0d47847e776",
+    "map_forecasting/grading/capture.py": "a3efd20c1975852aee8564eef76d8aa0c4a0b54d61946fd56a6b0e2ddb93703e",
+    "map_forecasting/grading/grade.py": "c1596698faddb97732cf0afd0b2dc7027e3a10c0bc3b9a762db1c8bfc0d0ea2a",
+    "map_forecasting/grading/key_factors.py": "2729a9d4eaa1f8b3234d918d9776c796702784bc73046cc0909bdf2aa561a7dc",
+    "map_forecasting/grading/scoring.py": "12463acacf6e811da80f6c3ab4b573b8eb6d685e76b860b6d2ac7e166c4d0bc3",
+    "map_forecasting/grading/__init__.py": "83565298ee62c0301ff066ebca25b9bf42b3a18df99910ee587363ea85ca221b",
+    "map_forecasting/maps/cleaning.py": "1e842dd23ae1831f2703e47c08a97103802649e39f5e9cd2502534013094ed1b",
+    "map_forecasting/maps/guesstimate.py": "9093cdd347ef6abdd3dbee02b435f9c2567ae9fe77025dd5bbb65d19c5de073c",
+    "map_forecasting/maps/ir.py": "1cf12f0dce6ac1da22f105668dee0aa190f61e7472751bce5355c89e70b96427",
+    "map_forecasting/maps/radiant.py": "037245ec87b688d3536f243e9d0a0c7c390ec60c8190f47fb9c876a7a3ee24e2",
+    "map_forecasting/maps/squiggle.py": "889bfec79a1f234ad35a2c5b5ab063d93e406292125dd646b95dcbfbbff58026",
+    "map_forecasting/maps/__init__.py": "5424abd235ccd403c8b1fb35def3462a932bc5236b05ae1491c893e052e5b85c",
+    "map_forecasting/radiant/http_client.py": "5e6dfe76bdb8c73555d8c9901c04df560f03cbbe9dcd19877d0eef3105add75c",
+    "map_forecasting/radiant/toolset.py": "c359ccfa0e68b6a45a6aa694e17632ba543e8cb6603994627d1d53eb66f66c10",
+    "map_forecasting/radiant/urls.py": "a55d0ed2c77c54764c13e26603b9a026e61dfae3c09b077ad468b1c2c5dcdfba",
+    "map_forecasting/radiant/__init__.py": "ebc5d6d40e002c37ca926662b13bf7a27441990bc7ddf07adf74c76df6384127",
+    "LICENSE": "f9e985cb7456508c8ce2bf1dde715ac154903ee89722090107a74fa2c81f39b0"
+  },
+  "unmodified_upstream_python": true,
+  "enabled_features": [
+    "MapIR",
+    "build_map",
+    "probability coherence"
+  ],
+  "remote_radiant_disabled": true,
+  "llm_sdk_not_used": true
+}

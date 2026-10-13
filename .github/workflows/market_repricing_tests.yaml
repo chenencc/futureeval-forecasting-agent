@@ -23,6 +23,8 @@ jobs:
           python-version: '3.11'
       - name: Install saved-source structure parser
         run: python -m pip install lxml==6.1.1
+      - name: Install optional official map research dependencies
+        run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
       - name: Verify immutable independent market checkout
         run: MARKET_PIPELINE_SHA="$(git rev-parse HEAD)" python -m ForecastAgent.market_repricing.deployment
       - name: Offline sidecar gates
@@ -35,3 +37,7 @@ jobs:
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
         run: python -m ForecastAgent.market_repricing.tests.verify_capture_runtime -v
+      - name: Production official map and three-arm failure isolation
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.market_repricing.tests.verify_official_runtime -v

@@ -319,6 +319,8 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
 
 def forecast_policy(task, cfg):
     # Old enrolled tasks and pending retries keep their frozen forecast protocol.
+    if task.get('analysis_arms'):
+        cfg = cfg | {'analysis_arms': list(task['analysis_arms'])}
     if task.get('price_schedule'):
         return cfg | {'price_schedule': task['price_schedule']}
     return cfg | {'horizons_hours': [72, 168], 'price_target_origin': 'forecast_anchor_at'}
@@ -398,7 +400,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                                     'source_task_sha256': digest(task),
                                     **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
                                     **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {}),
-                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit') if field in task}}
+                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms') if field in task}}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
