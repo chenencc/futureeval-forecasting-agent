@@ -1,0 +1,37 @@
+name: Market saved context and raw handoff validation
+on:
+  push:
+    branches: [codex/market-context-recovery]
+    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_context_validation.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .development
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original parsing dependencies
+        run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt lxml==6.1.1
+      - name: Restore exact saved failure checkpoint
+        run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role worker --root snapshots/worker --run-id 38543075802
+      - name: Replay all three context failures and original-preserving raw handoffs
+        run: python -m ForecastAgent.market_repricing.tests.saved_context_replay --root snapshots/worker --engine .development --output snapshots/receipts/context-replay.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: market-context-replay
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30

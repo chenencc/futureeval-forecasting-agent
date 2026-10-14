@@ -86,6 +86,7 @@ def acquire(task, folder):
     from ForecastAgent.intelligence.research_map import enable
     from ForecastAgent.intelligence import worker as native_worker
     from .budget_runtime import native_accounting
+    from .context_delivery import adapter as context_adapter
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
     from .evidence_capture import VERSION as capture_version, policy_identity, capture_adapter
@@ -150,7 +151,7 @@ def acquire(task, folder):
             'to capture external original bodies before further map planning. fetch_page '
             'is unavailable. Market pages supply rules/prices, not independent event evidence. '
             'Use registered tools only; respect each tool schema. Missing reports never prove NO.') + search_guide(args[0])
-    with native_accounting(folder), native_worker.remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
+    with native_accounting(folder), context_adapter(folder), native_worker.remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
             capture_adapter() if new_capture else contextlib.nullcontext(), \
             search_adapter() if profile is not None else contextlib.nullcontext():
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
@@ -443,7 +444,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                                     'source_task_sha256': digest(task),
                                     **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
                                     **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {}),
-                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms', 'market_search_profile') if field in task}}
+                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms', 'market_search_profile', 'market_context_runtime') if field in task}}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
