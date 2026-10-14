@@ -176,9 +176,9 @@ jobs:
           assert m['source_reading_policy']==POLICY
           assert m['operational_patch']=='v1.0.5-capture.1'
           assert m['acquisition_variant']=='v1.0.5-shared.1'
-          from ForecastAgent.acquisition.eager_capture import identity
+          from ForecastAgent.acquisition import eager_capture
           from ForecastAgent.integrations.shared_acquisition import adapter
-          with adapter(): capture=identity()
+          with adapter(): capture=eager_capture.identity()
           assert capture['shared_acquisition']==m['shared_acquisition']
           require_backend()
           save(Path('snapshots/official/release-runtime.json'), {
