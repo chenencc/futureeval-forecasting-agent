@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.3'
+VERSION = 'market-v0.3.3-recovery.1'
 PENDING = {'queued', 'running', 'retry_wait'}
 
 

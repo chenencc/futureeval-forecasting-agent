@@ -128,8 +128,8 @@ Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-At most 30 new venue event families enter per Asia/Shanghai calendar day, counted
-from immutable enrollment timestamps. Failed tasks consume the same daily slot;
+At most 30 new venue event families enter per rolling 24 hours, counted
+from immutable enrollment timestamps. Failed tasks consume the same window slot;
 retries do not count as new tasks. The initial three-family lifetime cap is removed.
 Workers retain batches of at most three tasks per dispatch and their existing
 provider budgets. Thirty admissions do not guarantee 30 completed analyses that
@@ -506,3 +506,8 @@ a finite four-GiB expanded bound (one-GiB compressed), preserving path,
 symlink, empty-target and SHA verification. This accommodates the observed
 2.175-GB cumulative worker archive that exceeded the old two-GiB bound.
 Archive growth remains bounded and visible; no old evidence is discarded.
+
+`market-v0.3.3-recovery.1` also evaluates exact approved admission migrations
+through an in-memory state view when the worker migrates before the next monitor
+tick. Source receipts and delayed labels are not rewritten; unknown policy or
+provider-budget changes still fail closed.

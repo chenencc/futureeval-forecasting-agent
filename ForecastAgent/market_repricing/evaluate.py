@@ -3,16 +3,23 @@ import math
 from collections import Counter
 from pathlib import Path
 
-from .common import digest, policy, read, write
+from .common import digest, policy, read, state, write
 
 
 def run(monitor_root, worker_root, output):
     from .tracking import forecast_schedule, final_record
     from .common import instant
     monitor, worker = read(Path(monitor_root) / 'state.json'), read(Path(worker_root) / 'state.json')
+    cfg = policy()
+    # An exact approved admission migration can occur in the worker before the
+    # next monitor tick. Use its in-memory view without rewriting old labels or
+    # source receipts. Unknown policies, engine drift and quota changes fail closed.
+    if monitor['identity']['policy_sha256'] != digest(cfg):
+        monitor = state(monitor_root, 'monitor', cfg)
+    if worker['identity']['policy_sha256'] != digest(cfg):
+        worker = state(worker_root, 'worker', cfg)
     if monitor['identity']['policy_sha256'] != worker['identity']['policy_sha256']:
         raise ValueError('Evaluation policies differ')
-    cfg = policy()
     if digest(cfg) != worker['identity']['policy_sha256']:
         raise ValueError('Evaluation configuration drift')
     rows, summary, event_rows = [], {}, []
