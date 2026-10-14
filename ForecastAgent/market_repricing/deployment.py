@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.1'
+VERSION = 'market-v0.3.2'
 PENDING = {'queued', 'running', 'retry_wait'}
 
 
@@ -20,8 +20,10 @@ def task_release():
     if not re.fullmatch('[0-9a-f]{40}', sha):
         raise ValueError('Market deployment must use an immutable full commit SHA')
     from .official_arm import ARMS, VERSION as analysis_version
+    from .search_policy import identity as search_identity
     return {'pipeline_version': VERSION, 'pipeline_commit': sha,
-            'analysis_version': analysis_version, 'analysis_arms': list(ARMS)}
+            'analysis_version': analysis_version, 'analysis_arms': list(ARMS),
+            'market_search_profile': search_identity()}
 
 
 def verify_checkout(root, expected):
@@ -37,12 +39,13 @@ def verify_checkout(root, expected):
     from .evidence_capture import policy_identity
     from .common import policy
     from .official_arm import implementation, ARMS
+    from .search_policy import identity as search_identity
     return {'schema': 'market-independent-deployment-v1', 'version': VERSION,
             'pipeline_commit': sha, 'engine_sha': ENGINE_SHA,
             'policy_sha256': digest(policy()), 'capture_identity': policy_identity(),
             'version_control': 'MARKET_REPRICING_SHA', 'budget_reset': False,
             'competition_release_changed': False, 'analysis_arms': list(ARMS),
-            'official_map_identity': implementation()}
+            'official_map_identity': implementation(), 'market_search_profile': search_identity()}
 
 
 def validate_pending(worker_root, monitor_root, receipt):
@@ -60,9 +63,13 @@ def validate_pending(worker_root, monitor_root, receipt):
         folder = worker_root / 'tasks' / digest(key)
         request_path = folder / 'collection-request.json'
         if request_path.exists():
-            identity = read(request_path).get('market_capture_identity')
+            request = read(request_path)
+            identity = request.get('market_capture_identity')
             if identity is not None and identity != expected:
                 raise ValueError('Pending market capture requires its original implementation: ' + key)
+            search_profile = request.get('market_search_profile')
+            if search_profile is not None and search_profile != receipt.get('market_search_profile'):
+                raise ValueError('Pending market search requires its original profile: ' + key)
         identity_path = folder / 'evidence-capture-v2' / 'identity.json'
         if identity_path.exists():
             saved = read(identity_path)
