@@ -82,11 +82,12 @@ def guide(task):
 @contextlib.contextmanager
 def adapter():
     """Keep native validation, deduplication, temporal gates and physical routing."""
-    from ForecastAgent.runtime import retrieval, tool_selection
+    from ForecastAgent.runtime import retrieval, tool_selection, collection_actions
     from ForecastAgent.providers import tavily_search as provider
     Task = retrieval.RetrievalTask
     execute, budget = Task._execute, Task.budget
     validate, active = retrieval.validate, tool_selection.active_tools
+    stop = collection_actions.raw_stop_reason
 
     def mixed_budget(task):
         result = budget(task)
@@ -105,9 +106,8 @@ def adapter():
             check(task, args)
         return validate(task, name, args, offered)
 
-    def selected(task, entries, *args, **kwargs):
-        if not enabled(task):
-            return active(task, entries, *args, **kwargs)
+    @contextlib.contextmanager
+    def native_frontier(task):
         actual_budget = task.budget
         def visibility_budget():
             result = actual_budget()
@@ -116,6 +116,12 @@ def adapter():
             result['tavily_basic_remaining'] = result['tavily_total_remaining']
             return result
         with patch.object(task, 'budget', visibility_budget):
+            yield
+
+    def selected(task, entries, *args, **kwargs):
+        if not enabled(task):
+            return active(task, entries, *args, **kwargs)
+        with native_frontier(task):
             result = tools(active(task, entries, *args, **kwargs))
         remaining = usage(task)
         for entry in result:
@@ -123,6 +129,14 @@ def adapter():
                 entry['function']['parameters']['properties']['search_depth']['enum'] = [
                     depth for depth in ('basic', 'advanced') if remaining['tavily_' + depth + '_remaining']]
         return result
+
+    def stop_reason(task):
+        if not enabled(task):
+            return stop(task)
+        # Closing uses the same frontier as tool visibility. Other native stop
+        # reasons (body budget, stalled progress, deadlines) remain authoritative.
+        with native_frontier(task):
+            return stop(task)
 
     def mixed_execute(task, name, args, key):
         if name != 'search_tavily' or not enabled(task):
@@ -171,5 +185,6 @@ def adapter():
     with patch.object(Task, '_execute', mixed_execute), patch.object(Task, 'budget', mixed_budget), \
             patch.object(retrieval, 'validate', mixed_validate), \
             patch.object(retrieval, 'COLLECTION_TOOLS', tools(retrieval.COLLECTION_TOOLS)), \
-            patch.object(tool_selection, 'active_tools', selected):
+            patch.object(tool_selection, 'active_tools', selected), \
+            patch.object(collection_actions, 'raw_stop_reason', stop_reason):
         yield

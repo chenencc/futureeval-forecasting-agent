@@ -194,5 +194,23 @@ class MixedSearchRuntime(unittest.TestCase):
             task = self.task(root); task.bundle['request']['market_search_profile']['caps']['basic'] = 9
             with adapter(), self.assertRaises(ValueError): task.budget()
 
+    def test_raw_close_frontier_preserves_optional_advanced_and_other_stop_reasons(self):
+        from ForecastAgent.runtime import collection_actions
+        with tempfile.TemporaryDirectory() as root:
+            task = self.task(root)
+            task.bundle['searches'] = [{'depth': 'basic', 'results': [], 'status': 'completed'} for _ in range(2)]
+            task.bundle['exa_searches'] = [{'status': 'completed', 'results': []}]
+            with patch.object(collection_actions, 'primary_rescue', return_value=None), \
+                    patch.object(collection_actions, 'discovery_read_action', return_value=None), \
+                    patch('ForecastAgent.research_loop.fusion.local_cycle', return_value=None):
+                self.assertIsNone(collection_actions.raw_stop_reason(task))  # Native total counter still one.
+                with adapter():
+                    self.assertIsNone(collection_actions.raw_stop_reason(task))
+                    task.bundle['control']['no_progress_turns'] = 2
+                    self.assertEqual(collection_actions.raw_stop_reason(task), 'raw_no_progress_limit')
+                    task.bundle['control']['no_progress_turns'] = 0
+                    task.bundle['searches'].append({'depth': 'advanced', 'results': [], 'status': 'failed'})
+                    self.assertEqual(collection_actions.raw_stop_reason(task), 'raw_discovery_frontier_exhausted')
+
 
 if __name__ == '__main__': unittest.main()
