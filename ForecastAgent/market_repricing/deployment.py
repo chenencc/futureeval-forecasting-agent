@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.6'
+VERSION = 'market-v0.3.7-p0.1'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
 FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
                        'd00bc630300a22ee84d1f6064892f261894d833b': 900,
@@ -17,15 +17,29 @@ PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
 
 
 def budget_compatibility():
+    """Pin old stages; allow only a separately declared acquisition candidate."""
     import hashlib
     root = Path(__file__).parent
     manifest = read(root / 'budget_compatibility.json')
     if manifest['predecessor'] != BUDGET_PREDECESSOR:
         raise ValueError('Unexpected budget compatibility predecessor')
+    candidate_path=root/'capture_stage_candidate.json'
+    candidate=read(candidate_path) if candidate_path.exists() else None
+    if candidate:
+        if (candidate.get('parent_pipeline_commit')!='098a56c197012661f976d34f15cf21ac4106d024' or
+                set(candidate.get('candidate_files_sha256_lf',{}))!={'evidence_capture.py','materials.py','acquisition_contract.py'}):
+            raise ValueError('Undeclared capture-stage candidate')
+        for name,expected in candidate['candidate_files_sha256_lf'].items():
+            if hashlib.sha256((root/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()!=expected:
+                raise ValueError('Capture candidate source changed: '+name)
     for name, expected in manifest['unchanged_stage_files_sha256_lf'].items():
+        if candidate and name in candidate['candidate_files_sha256_lf']:
+            if candidate.get('legacy_stage_sha256_lf',{}).get(name)!=expected:
+                raise ValueError('Capture candidate changed legacy baseline: '+name)
+            continue
         if hashlib.sha256((root / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() != expected:
             raise ValueError('Budget promotion changed frozen stage: ' + name)
-    return digest(manifest)
+    return digest({'legacy_budget_manifest':manifest,'declared_capture_candidate':candidate}) if candidate else digest(manifest)
 
 
 def task_release():

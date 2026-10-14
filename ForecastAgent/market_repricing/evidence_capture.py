@@ -14,7 +14,7 @@ HTTP_CAP, BROWSER_CAP = 4, 2
 
 
 def policy_identity():
-    files = ('evidence_capture.py', 'materials.py', 'source_profile.py')
+    files = ('evidence_capture.py', 'materials.py', 'source_profile.py', 'acquisition_contract.py')
     return {'version': VERSION, 'initial_capture_budget': 'existing_native_fetch_attempts',
             'supplement_http_cap': HTTP_CAP, 'supplement_browser_cap': BROWSER_CAP,
             'tavily_basic_cap': 3, 'exa_cap': 1,
@@ -25,6 +25,9 @@ def policy_identity():
 def allowed_url(url):
     # DNS/public-address validation remains in the native network transport.
     try:
+        from .acquisition_contract import action_link
+        if action_link(url):
+            return False
         part = urlsplit(url)
         return (part.scheme in {'http', 'https'} and bool(part.hostname) and
                 not part.username and not part.password and not market_host(url))
@@ -77,7 +80,7 @@ def candidates(bundle):
             row['title'] = item['title']
         if query and query not in row['search_queries']:
             row['search_queries'].append(query)
-        for field in ('origin', 'depth', 'parent_url', 'parent_source_sha256', 'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute',
+        for field in ('origin', 'depth', 'parent_url', 'parent_source_sha256', 'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute','observed_grid_id','declared_rows','declared_columns',
                       'automatic_capture_eligible', 'automatic_capture_block_reason'):
             if field in item:
                 row[field] = item[field]
@@ -113,6 +116,24 @@ def candidates(bundle):
             if scope.get('automatic_followup_requires_scope_review'):
                 item.update(automatic_capture_eligible=False, automatic_capture_block_reason='parent_source_scope_requires_review')
             add(item, need_ids=parent.get('need_ids', []))
+    from .acquisition_contract import sheet_export, sheet_tab_leads
+    for url, page in bundle.get('pages', {}).items():
+        export = sheet_export(page.get('url') or url)
+        if not export:
+            continue
+        add({'url':export, 'title':'CSV data export of saved spreadsheet',
+             'origin':'observed_data_export', 'parent_url':url,
+             'parent_source_sha256':page.get('sha256'),
+             'parent_retrieved_at_utc':page.get('retrieved_at_utc')})
+        sources[export]['priority'] = 75
+        sources[export]['roles'] = sorted(set(sources[export]['roles']) | {'data_export'})
+        # One observed workbook layer only; do not recursively walk every tab.
+        if any(l.get('url')==url and l.get('origin')=='observed_sheet_tab' for l in sources.values()):
+            continue
+        for tab in sheet_tab_leads(page,page.get('url') or url):
+            add(tab)
+            sources[tab['url']]['roles']=sorted(set(sources[tab['url']]['roles'])|{'observed_data_view'})
+            sources[tab['url']]['priority']=65
     # Spread ordinary slots across publishers; designated originals remain first.
     ranked = sorted(sources.values(), key=lambda row: (-row['priority'], row['url']))
     primary, first, rest, hosts = [], [], [], set()
@@ -228,18 +249,18 @@ def checklist(bundle, leads, records=()):
     attempted = {r.get('url') for r in bundle.get('fetch_attempts', [])} | {r.get('url') for r in records}
     rows = []
     for lead in leads:
-        page = pages.get(lead['url'])
-        if page is None:
-            # Native keys are canonical; original URL spelling remains in the page.
-            page = next((p for key, p in pages.items() if comparison_key(lead['url']) in {
-                comparison_key(value) for value in (key, p.get('url'), p.get('final_url')) if value}), None)
+        from .acquisition_contract import saved_source
+        page, reuse = saved_source(bundle, lead['url'])
         diagnostic = quality(page, lead['url']) if page else None
         scope = applicability(page, lead['url'], lead, bundle.get('request', {})) if page else None
         rows.append(lead | {'capture_status': 'body_saved' if diagnostic and diagnostic['usable_text'] and diagnostic.get('qualifies_full_body', True) else
             'contextual_lead_saved' if diagnostic and diagnostic['usable_text'] else
             'lead_or_blocked_saved' if page else 'attempted_unavailable' if lead['url'] in attempted else 'unattempted',
             'body_state': diagnostic['state'] if diagnostic else None,
-            'source_applicability': scope, 'target_coverage_verified': False})
+            'source_applicability': scope, 'target_coverage_verified': False,
+            'body_role': diagnostic.get('body_role') if diagnostic else None,
+            'data_coverage': diagnostic.get('data_coverage') if diagnostic else None,
+            'saved_source_binding': reuse})
     missing = [r['url'] for r in rows if 'rules_designated' in r['roles'] and r['capture_status'] != 'body_saved']
     role_rows = {role: {'available_urls': len(selected := [r for r in rows if role in r['roles']]),
                        'attempted_urls': sum(r['capture_status'] != 'unattempted' for r in selected),
@@ -270,8 +291,8 @@ def eager(task):
     while len(selected) < 4 and task.budget()['page_fetch_remaining'] > 0:
         leads = candidates(task.bundle)
         for lead in leads:
-            if 'rules_designated' in lead['roles'] or lead.get('origin') == 'observed_document_detail':
-                origin = 'question_resolution_metadata' if 'rules_designated' in lead['roles'] else 'observed_document_detail'
+            if 'rules_designated' in lead['roles'] or lead.get('origin') in {'observed_document_detail','observed_sheet_tab'}:
+                origin = 'question_resolution_metadata' if 'rules_designated' in lead['roles'] else lead['origin']
                 saved = task.bundle.setdefault('source_leads', {}).setdefault(canonical_url(lead['url']), {
                     **lead, 'origin': origin, 'source_request_sha256': digest(task.bundle['request'])})
                 if origin == 'observed_document_detail':
@@ -282,10 +303,15 @@ def eager(task):
                         history.append(binding)
                     # Native page_link identity remains; stronger literal provenance is additive.
                     saved.update(binding, depth=1, automatic_capture_origin=origin)
+                elif origin == 'observed_sheet_tab':
+                    binding={k:lead[k] for k in ('parent_url','parent_source_sha256',
+                        'parent_retrieved_at_utc','observed_grid_id','declared_rows','declared_columns')}
+                    saved.update(binding,depth=1,automatic_capture_origin=origin)
         attempted = {canonical_url(r.get('url', '')) for r in task.bundle.get('fetch_attempts', [])}
         attempted.update(canonical_url(row['url']) for row in selected)
-        available = [r for r in leads if r.get('automatic_capture_eligible', True) and canonical_url(r['url']) not in attempted and
-                     canonical_url(r['url']) not in task.bundle.get('pages', {})]
+        from .acquisition_contract import saved_source
+        available = [r for r in leads if r.get('origin') != 'observed_data_export' and r.get('automatic_capture_eligible', True) and canonical_url(r['url']) not in attempted and
+                     saved_source(task.bundle, r['url'])[0] is None]
         choice = select_candidates(available, limit=1, previous=selected)
         if not choice:
             break
@@ -342,12 +368,23 @@ def capture_adapter():
                 eager(task)  # Save failed searches and capture already-known rule links.
             raise
         normalizations = task.bundle.get('market_capture', {}).get('parameter_normalizations', [])
+        if name=='fetch_page' and task.bundle.get('request',{}).get('market_acquisition_policy')==VERSION:
+            from .acquisition_contract import materialize_sheet
+            from ForecastAgent.tavily_research import canonical_url
+            url=canonical_url(args['url'])
+            if url in task.bundle.get('pages',{}):
+                task.bundle['pages'][url]=materialize_sheet(task.bundle['pages'][url],url)
+                task.save()
         if isinstance(value, dict) and normalizations and normalizations[-1]['tool'] == name:
             value['parameter_normalization'] = normalizations[-1]
         if eager_search:
             eager(task)
         return value
-    with patch.object(Task, '_execute', wrapped), patch.object(retrieval, 'validate', validate):
+    from ForecastAgent.intelligence import admission
+    original_inspect = admission.inspect
+    def inspect(page):
+        return quality(page, page.get('url') or page.get('final_url') or '', inspector=original_inspect)
+    with patch.object(Task, '_execute', wrapped), patch.object(retrieval, 'validate', validate), patch.object(admission, 'inspect', inspect):
         yield
 
 
@@ -382,10 +419,19 @@ def recover(bundle, directory, capture=None):
                 if not lead.get('automatic_capture_eligible', True):
                     continue
                 url = lead['url']
-                page = child.get('pages', {}).get(url)
+                from .acquisition_contract import saved_source, export_access_denied
+                if export_access_denied(url, rows + bundle.get('fetch_attempts', [])):
+                    continue
+                page, binding = saved_source(child, url)
                 if page:
                     diagnostic = quality(page, url)
                     if diagnostic['usable_text'] and (method == 'http' or diagnostic.get('qualifies_full_body', True)):
+                        if binding['source_url'] != url:
+                            reused = child.setdefault('market_source_reuse', [])
+                            receipt = {'requested_url':url, **binding, 'new_http_requests':0,
+                                       'source_clock_preserved':True}
+                            if receipt not in reused:
+                                reused.append(receipt)
                         continue
                     if diagnostic.get('source_profile', {}).get('role') == 'document_catalog':
                         continue
@@ -397,6 +443,8 @@ def recover(bundle, directory, capture=None):
                     previous = [r for r in rows if r['url'] == url and r['method'] == 'http']
                     native = [r for r in bundle.get('fetch_attempts', []) if r.get('url') == url]
                     if not previous and not native:
+                        continue
+                    if any(r.get('automatic_browser_retry_allowed') is False for r in previous):
                         continue
                     if urlsplit(url).path.lower().endswith(('.pdf', '.csv', '.json', '.zip', '.xlsx')):
                         continue
@@ -412,18 +460,25 @@ def recover(bundle, directory, capture=None):
             if lead.get('origin') == 'observed_document_detail':
                 row['observed_detail_provenance'] = {k: lead[k] for k in (
                     'parent_url', 'parent_source_sha256', 'parent_retrieved_at_utc', 'observed_xpath', 'observed_attribute')}
+            if lead.get('origin') == 'observed_sheet_tab':
+                row['observed_sheet_provenance']={k:lead[k] for k in (
+                    'parent_url','parent_source_sha256','parent_retrieved_at_utc','observed_grid_id',
+                    'declared_rows','declared_columns')}
             rows.append(row); write(root / 'captures.json', rows)
             try:
                 page = capture(method, url, root / ('capture-' + str(index)), timeout_seconds=60,
                     browser_profile={'backend': 'crawl4ai', 'query': ''} if method == 'browser' else None)
                 page.setdefault('retrieved_at_utc', now())
+                from .acquisition_contract import materialize_csv, materialize_sheet
+                page = materialize_sheet(materialize_csv(page, url), url)
                 filename = 'page-' + str(index) + '.json'
                 write(root / filename, page)
                 child.setdefault('pages', {})[url] = page
                 row.update(status='completed', page_file=filename, diagnostic=quality(page, url),
                            captured_at=page['retrieved_at_utc'], body_sha256=digest(page.get('content', '')))
             except Exception as exc:
-                row.update(status='failed', error_type=type(exc).__name__)
+                from .acquisition_contract import failure_details
+                row.update(status='failed', error_type=type(exc).__name__, **failure_details(exc))
             finally:
                 write(root / 'captures.json', rows)
     status = checklist(child, candidates(child), rows)
@@ -436,5 +491,8 @@ def recover(bundle, directory, capture=None):
         'external_full_body_count': audit.get('external_full_body_count', len(view['pages'])),
         'physical_capture_reservations': len(rows), 'new_searches': 0, 'budget_reset': False,
         'checklist': status, 'parent_sha256': digest(bundle), 'bundle_sha256': digest(child)}
+    report['saved_source_reuse'] = child.get('market_source_reuse', [])
+    report['data_coverage'] = {url:quality(page, url).get('data_coverage') for url,page in child.get('pages',{}).items()
+        if quality(page, url).get('data_coverage',{}).get('table_document_count') or page.get('data_export_coverage')}
     write(root / 'bundle.json', child); write(root / 'result.json', report)
     return child, report

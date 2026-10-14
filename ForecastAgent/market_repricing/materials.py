@@ -19,9 +19,9 @@ def market_host(url):
     return any(host == h or host.endswith('.' + h) for h in MARKET_HOSTS)
 
 
-def quality(page, url):
+def quality(page, url, *, inspector=None):
     from ForecastAgent.intelligence.admission import inspect
-    diagnostic = inspect(page)
+    diagnostic = (inspector or inspect)(page)
     text = re.sub(r'\s+', ' ', page.get('content', '')).strip().lower()
     # Short first-person access interstitials, not articles discussing restrictions.
     restricted = ('trading is blocked in the united states on' in text or
@@ -64,7 +64,8 @@ def quality(page, url):
             diagnostic.update(state=source['role'] + '_lead_only', qualifies_full_body=False,
                               admission_role='contextual_lead', original_lead_preserved=True)
     diagnostic.setdefault('qualifies_full_body', diagnostic['usable_text'])
-    return diagnostic
+    from .acquisition_contract import body_contract
+    return body_contract(page, url, diagnostic)
 
 
 def prepare(bundle):
