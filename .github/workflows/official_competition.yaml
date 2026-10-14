@@ -192,6 +192,10 @@ jobs:
           PY
       - name: Acquire analyze and submit eligible questions
         run: |
+          if [ "$SUBMIT_FORECASTS" != "true" ]; then
+            python -m ForecastAgent.integrations.shared_preservation --root snapshots/official --output snapshots/official/verification-shared.json
+            exit 0
+          fi
           if [ -n "$RESTORED_LEGACY_RUN" ]; then
             echo "Legacy collection state is preserved; explicit migration is required before new collection."
             exit 1
