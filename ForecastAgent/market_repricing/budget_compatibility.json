@@ -1,0 +1,15 @@
+{
+  "predecessor": "0f3101af9b574194620baa54826654d122483361",
+  "unchanged_stage_files_sha256_lf": {
+    "__init__.py": "91c8bacff87a2886356609de82ffd25c285c814602abb419869ccdc136e0e278",
+    "evidence_capture.py": "abbefd119e4043ac2b78565dce04b39001e26463ea5f8e9c3966d0ffd03c7b8b",
+    "materials.py": "8ba00825227a1e066b1a1b23545b4af61de569a9243fc6ad0dfbf33e7bd86d70",
+    "forecast.py": "76ef631b9aef15f121d95cbaf0ab477b22b9254a409c01516a065fa931d261b1",
+    "official_arm.py": "0afea1c52b3635e150df37f7b88b550fb4454e82d55551baa99fd0fc80d05ed4",
+    "official_map.py": "0e71fd03ddaf3ea02d649d0047a79988948e3626d861c3c21581430fbc42bb31",
+    "official_map_references.py": "9073a4c843b42085897852050eb7f75f978d3b68fb844484a9345b6b235e82ae",
+    "search_policy.py": "f7e7bd92b1bcc8b0f880b8e29f457d53ee3820e4a52a3dbbc4e2d30c371bfd16",
+    "search_credentials.py": "f7cce535c8f0d70b5de8586f99250a3fdf8b7115be74fc4c2adfc089cd7b6335",
+    "_official_map/UPSTREAM.json": "7a524c1060395fb98e388b71a15eb2a6361658a54048b095d7bcb8a4cc063bdb"
+  }
+}

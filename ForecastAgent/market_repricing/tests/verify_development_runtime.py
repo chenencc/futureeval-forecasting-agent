@@ -187,6 +187,30 @@ class DevelopmentRuntime(unittest.TestCase):
             self.assertEqual(task['bundle_sha256'], digest(result))
             self.assertNotIn('release_sha', read(Path(root)/'material-integrity.json'))
 
+    def test_native_budget_denials_are_projected_without_modifying_original_receipts(self):
+        from ForecastAgent.market_repricing.budget_runtime import native_accounting
+        from ForecastAgent.market_repricing.tests.test_budget_recovery import BudgetRecovery
+        from ForecastAgent.intelligence import worker
+        with tempfile.TemporaryDirectory() as root:
+            folder = Path(root)
+            path = BudgetRecovery().denial(folder)
+            raw = path.read_bytes()
+            directory = folder / 'development-intelligence'
+            self.assertEqual(worker.attempts(directory), {'http': 1, 'decisions': 0, 'failures': 1})
+            with native_accounting(folder):
+                self.assertEqual(worker.attempts(directory), {'http': 0, 'decisions': 0, 'failures': 0})
+            self.assertEqual(worker.attempts(directory)['http'], 1)
+            self.assertEqual(path.read_bytes(), raw)
+
+    def test_incomplete_native_collection_has_explicit_failure_not_missing_package(self):
+        from ForecastAgent.market_repricing.worker import acquire
+        from ForecastAgent.market_repricing.budgets import CollectionIncomplete
+        from ForecastAgent.intelligence import pipeline
+        market, _, _ = self.bundle()
+        with tempfile.TemporaryDirectory() as root, patch.object(pipeline, 'collect', return_value={
+                'status': 'collection_incomplete', 'resumable': True}):
+            with self.assertRaises(CollectionIncomplete): acquire({'market': market}, Path(root))
+
     def test_accepted_development_map_is_delivered_on_common_originals(self):
         from ForecastAgent.tests.test_research_map_paired import inputs, mapped
         from ForecastAgent.market_repricing.forecast import prepare

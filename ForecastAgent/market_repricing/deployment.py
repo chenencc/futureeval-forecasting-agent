@@ -8,8 +8,21 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.4'
-PENDING = {'queued', 'running', 'retry_wait'}
+VERSION = 'market-v0.3.5'
+BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
+PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
+
+
+def budget_compatibility():
+    import hashlib
+    root = Path(__file__).parent
+    manifest = read(root / 'budget_compatibility.json')
+    if manifest['predecessor'] != BUDGET_PREDECESSOR:
+        raise ValueError('Unexpected budget compatibility predecessor')
+    for name, expected in manifest['unchanged_stage_files_sha256_lf'].items():
+        if hashlib.sha256((root / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() != expected:
+            raise ValueError('Budget promotion changed frozen stage: ' + name)
+    return digest(manifest)
 
 
 def task_release():
@@ -58,7 +71,10 @@ def validate_pending(worker_root, monitor_root, receipt):
     pending.update({key: task for key, task in monitor['tasks'].items() if key not in worker['tasks']})
     expected = policy_identity()
     for key, task in pending.items():
-        if task.get('pipeline_commit') not in (None, receipt['pipeline_commit']):
+        old = task.get('pipeline_commit') == BUDGET_PREDECESSOR
+        if old:
+            budget_compatibility()
+        if task.get('pipeline_commit') not in (None, receipt['pipeline_commit'], BUDGET_PREDECESSOR):
             raise ValueError('Pending market task requires its frozen pipeline commit: ' + key)
         folder = worker_root / 'tasks' / digest(key)
         request_path = folder / 'collection-request.json'
@@ -76,7 +92,8 @@ def validate_pending(worker_root, monitor_root, receipt):
             if {k: v for k, v in saved.items() if k != 'parent_sha256'} != expected:
                 raise ValueError('Pending market supplement requires its original implementation: ' + key)
     return {'pending_checked': len(pending), 'terminal_cases_preserved': sum(
-        task['status'] not in PENDING for task in worker['tasks'].values()), 'budget_reset': False}
+        task['status'] not in PENDING for task in worker['tasks'].values()), 'budget_reset': False,
+        'budget_compatibility_sha256': budget_compatibility()}
 
 
 def record(root, receipt):

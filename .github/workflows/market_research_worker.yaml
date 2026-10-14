@@ -96,10 +96,12 @@ jobs:
           python - <<'PY'
           import os
           from ForecastAgent.market_repricing.common import read, instant, now, policy
+          from ForecastAgent.market_repricing.budgets import executions_used, availability
           state = read('snapshots/market-worker/state.json')
           cap = policy()['maximum_executions_per_task']
-          pending = any(t['status'] in {'queued','retry_wait','running'} and t['executions'] < cap and
-              (not t.get('retry_at') or instant(t['retry_at']) <= instant(now())) for t in state['tasks'].values())
+          pending = any(t['status'] in {'queued','retry_wait','running','budget_wait'} and executions_used(t) < cap and
+              (not t.get('retry_at') or instant(t['retry_at']) <= instant(now())) and
+              availability(state, key, policy()) is None for key,t in state['tasks'].items())
           ready = pending and os.environ['VERIFY_ONLY'] != 'true'
           with open(os.environ['GITHUB_OUTPUT'],'a') as output:
               output.write('ready='+str(ready).lower()+'\n')

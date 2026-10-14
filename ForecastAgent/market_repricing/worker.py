@@ -9,10 +9,7 @@ import urllib.request
 from . import ENGINE_SHA, ENGINE_BRANCH, SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write, verify
 from .venues import book, refresh, screen
-
-
-class ProviderCap(RuntimeError):
-    pass
+from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package
 
 
 @contextlib.contextmanager
@@ -20,6 +17,7 @@ def provider_budget(root, ledger, key, cfg):
     """Physical POST reservations, including failures, persist before transmission."""
     original = urllib.request.urlopen
     replaced = []
+    denials = []
     def bounded(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else str(request)
         model = url.startswith('https://openrouter.ai/api/')
@@ -29,13 +27,12 @@ def provider_budget(root, ledger, key, cfg):
             records = ledger.setdefault('provider_reservations', [])
             date, run_id = instant(now()).date().isoformat(), os.environ.get('GITHUB_RUN_ID', 'local')
             kind = 'model' if model else 'search'
-            same = [r for r in records if r['kind'] == kind]
-            dispatch_cap = cfg['maximum_worker_model_attempts_per_dispatch'] if model else cfg['maximum_worker_search_attempts_per_dispatch']
-            if sum(r['run_id'] == run_id for r in same) >= dispatch_cap:
-                raise ProviderCap('Worker physical HTTP dispatch budget exhausted')
-            if model and (sum(r['day'] == date for r in same) >= cfg['maximum_worker_model_attempts_per_utc_day'] or
-                          sum(r['key'] == key for r in same) >= cfg['maximum_worker_model_attempts_per_task']):
-                raise ProviderCap('Worker cumulative model budget exhausted')
+            denied = availability(ledger, key, cfg, kind)
+            if denied:
+                denials.append(denied)
+                ledger.setdefault('provider_budget_denials', []).append(denied)
+                write(Path(root) / 'state.json', ledger)
+                raise ProviderCap(denied)
             record = {'key': key, 'kind': kind, 'endpoint': url.split('?')[0], 'day': date,
                       'run_id': run_id, 'reserved_at': now(), 'status': 'reserved'}
             if url == 'https://api.tavily.com/search' and isinstance(request, urllib.request.Request):
@@ -61,7 +58,7 @@ def provider_budget(root, ledger, key, cfg):
             replaced.append(module); module.urlopen = routed
     urllib.request.urlopen = routed
     try:
-        yield
+        yield denials
     finally:
         urllib.request.urlopen = original
         for module in replaced:
@@ -87,7 +84,8 @@ def request_for(market):
 def acquire(task, folder):
     from ForecastAgent.intelligence import pipeline
     from ForecastAgent.intelligence.research_map import enable
-    from ForecastAgent.intelligence.worker import remaining_budget
+    from ForecastAgent.intelligence import worker as native_worker
+    from .budget_runtime import native_accounting
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
     from .evidence_capture import VERSION as capture_version, policy_identity, capture_adapter
@@ -152,14 +150,14 @@ def acquire(task, folder):
             'to capture external original bodies before further map planning. fetch_page '
             'is unavailable. Market pages supply rules/prices, not independent event evidence. '
             'Use registered tools only; respect each tool schema. Missing reports never prove NO.') + search_guide(args[0])
-    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
+    with native_accounting(folder), native_worker.remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
             capture_adapter() if new_capture else contextlib.nullcontext(), \
             search_adapter() if profile is not None else contextlib.nullcontext():
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
                                   recover_data=True, research_map=True, channel_tools=True)
-    package = directory / 'final-map-package.json'
-    if not package.exists():
-        package = directory / 'retrieval/development-channels/package.json'
+    # The outer durable denial list also survives native exception wrapping.
+    # Return native incompleteness explicitly; execute maps it to budget_wait.
+    package = require_package(directory, result, [])
     bundle = read(package)
     if str(bundle['request']['id']) != request['id']:
         raise ValueError('Development material identity mismatch')
@@ -259,13 +257,27 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
         result = read(result_path)
         task.update(status=result['status'], forecast=result)
         return
+    denied = availability(ledger, key, cfg)
+    if denied:
+        hold(task, denied)
+        ledger.setdefault('provider_budget_denials', []).append(denied)
+        write(Path(root) / 'state.json', ledger)
+        return
     task['executions'] = task.get('executions', 0) + 1
     task['status'] = 'running'
     task['last_attempt_at'] = now()
     write(Path(root) / 'state.json', ledger)
+    denials = []
     try:
-        with provider_budget(root, ledger, key, cfg):
+        with provider_budget(root, ledger, key, cfg) as denials:
             bundle = collector(task, folder)
+            if denials:
+                raise ProviderCap(denials[-1])
+            # Three score arms and at most two official-map requests fit before
+            # freezing a price anchor; do not seal an all-budget-failed baseline.
+            denied = availability(ledger, key, cfg, required=5)
+            if denied:
+                raise ProviderCap(denied)
             # Save acquisition identity immediately. Replays cannot renew a search.
             write(Path(root) / 'state.json', ledger)
             stage = folder / task.get('analysis_stage', 'analysis')
@@ -306,7 +318,12 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
                 result = baseline_result(anchor, cfg, 'insufficient_external_originals', body_audit)
                 write(stage / 'result.json', result)
             else:
-                result = forecaster(bundle, task['market'], anchor, stage, cfg)
+                # Budget-only promotion preserves existing forecast identities.
+                analysis_cfg = cfg
+                from .deployment import BUDGET_PREDECESSOR
+                if task.get('pipeline_commit') == BUDGET_PREDECESSOR:
+                    analysis_cfg = cfg | {'maximum_worker_model_attempts_per_utc_day': 400}
+                result = forecaster(bundle, task['market'], anchor, stage, analysis_cfg)
                 if anchor.get('eligible_for_model_metrics') is False:
                     result.update(eligible_for_model_metrics=False, observational_context_only=True)
                     write(stage / 'result.json', result)
@@ -316,9 +333,16 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
                     write(stage / 'terminal-result.json', result)
             task.update(status=result['status'], forecast=result)
     except Exception as exc:
+        if denials:
+            exc = ProviderCap(denials[-1])
+        if isinstance(exc, ProviderCap):
+            hold(task, exc.receipt, started=True)
+            write(folder / 'budget-wait.json', exc.receipt | {'original_executions': task['executions'],
+                  'service_executions_used': executions_used(task), 'saved_materials_preserved': True})
+            return
         # Local provider caps and corruption need visible intervention; transport
         # retries reuse native reservations and are limited to three executions.
-        retry = task['executions'] < cfg['maximum_executions_per_task'] and not isinstance(exc, (ValueError, ProviderCap))
+        retry = executions_used(task) < cfg['maximum_executions_per_task'] and not isinstance(exc, ValueError)
         task.update(status='retry_wait' if retry else 'blocked', error_type=type(exc).__name__,
                     retry_at=(instant(now()) + timedelta(minutes=cfg['minimum_retry_minutes'])).isoformat() if retry else None)
         if not retry:
@@ -356,7 +380,7 @@ def baseline_result(anchor, cfg, reason, audit):
 
 
 def pending_keys(ledger):
-    due = [k for k, t in ledger['tasks'].items() if t['status'] in {'queued', 'retry_wait', 'running'} and
+    due = [k for k, t in ledger['tasks'].items() if t['status'] in {'queued', 'retry_wait', 'running', 'budget_wait'} and
            (not t.get('retry_at') or instant(t['retry_at']) <= instant(now()))]
     # Legacy checkpoints have execution counts but no last-attempt field.
     # Interleave two untouched tasks and one oldest retry; neither class starves.
@@ -405,6 +429,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     if source['identity']['engine_sha'] != ENGINE_SHA or source['identity']['policy_sha256'] != digest(cfg):
         raise ValueError('Queue pin or policy changed')
     ledger = state(root, 'worker', cfg)
+    recovered_budget_tasks = recover_legacy(root, ledger)
     fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
     if not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
         raise ValueError('Stale discovery cannot enroll unseen tasks')
@@ -432,12 +457,16 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
     quarantine_invalid_results(root, ledger)
     processed = []
     try:
+        for key in pending_keys(ledger):
+            denied = availability(ledger, key, cfg)
+            if denied:
+                hold(ledger['tasks'][key], denied)
         if not verification_only:
             # A process timeout leaves a running task; resume its exact saved stage.
             pending = pending_keys(ledger)
             http = http or PublicHTTP(root / 'market-http', 15)
             for key in pending[:cfg['maximum_tasks_per_dispatch']]:
-                if ledger['tasks'][key]['executions'] >= cfg['maximum_executions_per_task']:
+                if executions_used(ledger['tasks'][key]) >= cfg['maximum_executions_per_task']:
                     ledger['tasks'][key]['status'] = 'blocked'
                     continue
                 # Development collection has cumulative call/tool/deadline caps.
@@ -453,6 +482,8 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'engine_sha': ENGINE_SHA, 'engine_branch': ENGINE_BRANCH,
                   'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
         report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
+        report['budget_recovered_tasks'] = recovered_budget_tasks
+        report['budget_holds'] = {k: t.get('budget_hold') for k, t in ledger['tasks'].items() if t['status'] == 'budget_wait'}
         from .deployment import task_release
         report.update(task_release())
         from .search_credentials import configured
