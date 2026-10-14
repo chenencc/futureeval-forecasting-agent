@@ -1,0 +1,86 @@
+{
+  "schema": "bandwidth-pack-frozen-trial-v1",
+  "source_repo": "chenencc/futureeval-forecasting-agent",
+  "source_run_id": 38504204984,
+  "source_artifact_id": 11867073491,
+  "source_artifact_name": "market-repricing-v2-worker-state",
+  "source_compressed_bytes": 966647332,
+  "maximum_local_download_bytes": 25165824,
+  "cases": [
+    {
+      "key": "polymarket:5676512",
+      "files": [
+        {
+          "path": "tasks/616c83b7d295bd488226e6123f584b62f965326b683778f14137f3f6917f634c/evidence-capture-v2/reading-input.json",
+          "sha256": "156e4b26ebddfd8083cc8360d485e6b7c4a3de0940237eb179134959bb84adc1",
+          "size_bytes": 6965148
+        },
+        {
+          "path": "tasks/616c83b7d295bd488226e6123f584b62f965326b683778f14137f3f6917f634c/evidence-capture-v2/analysis-input.json",
+          "sha256": "5555e32299617298c68472040860d5592daa2889c4237fa165c993ff78147a88",
+          "size_bytes": 6965890
+        }
+      ]
+    },
+    {
+      "key": "polymarket:5676511",
+      "files": [
+        {
+          "path": "tasks/9092dae5ab1d40b6e26624ed6d493d9f0f4b22df3e96489f5ce1ed0d031fab88/evidence-capture-v2/reading-input.json",
+          "sha256": "e71505eaf2f70a0f51a30a4e16dc173dae3d72fb906b6e11a7a206da79843009",
+          "size_bytes": 2493048
+        },
+        {
+          "path": "tasks/9092dae5ab1d40b6e26624ed6d493d9f0f4b22df3e96489f5ce1ed0d031fab88/evidence-capture-v2/analysis-input.json",
+          "sha256": "2c06f66be8e429cae018d7cd177fda684bc9c621e13265aaa0900b280356a5a6",
+          "size_bytes": 2491343
+        }
+      ]
+    },
+    {
+      "key": "polymarket:5676492",
+      "files": [
+        {
+          "path": "tasks/7c30d7ecc7086203ba5455507d2c3598f9349842f86d6c54d2f11645aa01f4af/evidence-capture-v2/reading-input.json",
+          "sha256": "8d634152e74a94060c98a069abe1f9776f37f0efd952389df5368a81a9037f91",
+          "size_bytes": 8897435
+        },
+        {
+          "path": "tasks/7c30d7ecc7086203ba5455507d2c3598f9349842f86d6c54d2f11645aa01f4af/evidence-capture-v2/analysis-input.json",
+          "sha256": "38b05ce14d46e2b2704ea01a6ab7aeb27c04acf197494ffb465e6a757fc78f3d",
+          "size_bytes": 8963682
+        }
+      ]
+    },
+    {
+      "key": "polymarket:5676484",
+      "files": [
+        {
+          "path": "tasks/9c84bd9911488d5c442c5818b2000d059907be560ed06193ebdcdd831ce2b976/evidence-capture-v2/reading-input.json",
+          "sha256": "6e873d92cdf548453088563491fc31abcdb3aa356028ec5c606b5512932dff64",
+          "size_bytes": 8775263
+        },
+        {
+          "path": "tasks/9c84bd9911488d5c442c5818b2000d059907be560ed06193ebdcdd831ce2b976/evidence-capture-v2/analysis-input.json",
+          "sha256": "f739d95c4e20f4dc29235d2306115c7d66dc3cd86f1fd2eba4212dad80d6aaf6",
+          "size_bytes": 8811999
+        }
+      ]
+    },
+    {
+      "key": "polymarket:5676480",
+      "files": [
+        {
+          "path": "tasks/bef7863f7660460247d1b8591ba9ba0c8d0577c0e2889c3c6f62b1dbb4953210/evidence-capture-v2/reading-input.json",
+          "sha256": "5d299578d586b3ea298d1bf4ff46c5c33854393b981455aa2b07cdcb7e19267e",
+          "size_bytes": 2212109
+        },
+        {
+          "path": "tasks/bef7863f7660460247d1b8591ba9ba0c8d0577c0e2889c3c6f62b1dbb4953210/evidence-capture-v2/analysis-input.json",
+          "sha256": "755cc6469eee9bef71e30366cfb2c72dee626799f432137154cfe2b91e48ed64",
+          "size_bytes": 2248074
+        }
+      ]
+    }
+  ]
+}

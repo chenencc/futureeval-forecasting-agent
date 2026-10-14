@@ -1,0 +1,47 @@
+name: Bandwidth evidence pack trial
+on:
+  push:
+    branches: [codex/bandwidth-pack-validation]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify lossless pack and corruption gates
+        run: python -m unittest ForecastAgent.infrastructure.test_evidence_packs -v
+      - name: Repack five frozen public market corpora inside GitHub
+        env:
+          GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m ForecastAgent.infrastructure.bandwidth_trial produce --root snapshots/bandwidth-trial
+      - name: Publish plain ZIP baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandwidth-trial-baseline
+          path: snapshots/bandwidth-trial/baseline
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish per-question lossless packs
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandwidth-trial-packed
+          path: snapshots/bandwidth-trial/packed
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish small independent transport heads
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandwidth-trial-heads
+          path: snapshots/bandwidth-trial/heads
+          compression-level: 6
+          retention-days: 14
+          if-no-files-found: error
