@@ -106,13 +106,29 @@ def ingest(ledger, venue, rows, cfg, clock):
                                  'selection': screen(market, clock, cfg)}
 
 
+def admission_window(ledger, cfg, clock):
+    """Count immutable admissions, including blocked/failed tasks, across midnight."""
+    current = instant(clock)
+    hours = cfg['enrollment_window_hours']
+    start = current - timedelta(hours=hours)
+    stamps = sorted(instant(task['enrolled_at']) for task in ledger['tasks'].values())
+    if any(stamp > current for stamp in stamps):
+        raise ValueError('Future enrollment receipt; refusing to admit beyond a trustworthy window')
+    recent = [stamp for stamp in stamps if start < stamp <= current]
+    cap = cfg['maximum_new_tasks_per_day']
+    return {'mode': 'rolling_24_hours', 'window_hours': hours, 'start_exclusive': start.isoformat(),
+            'end_inclusive': current.isoformat(), 'cap': cap, 'admitted': len(recent),
+            'remaining': max(0, cap-len(recent)), 'cap_reached': len(recent) >= cap,
+            'next_slot_at': (recent[len(recent)-cap] + timedelta(hours=hours)).isoformat()
+                if len(recent) >= cap else None,
+            'all_statuses_count': True, 'budget_reset': False}
+
+
 def enroll(ledger, cfg, clock):
     zone = ZoneInfo(cfg['enrollment_day_timezone'])
     date = instant(clock).astimezone(zone).date().isoformat()
-    # Recompute from immutable enrollment receipts, including migrated tasks.
-    # Failed/blocked tasks still consume the day admission allowance.
-    count = sum(instant(t['enrolled_at']).astimezone(zone).date().isoformat() == date
-                for t in ledger['tasks'].values())
+    # Calendar-day counts are reporting only; no midnight allowance reset.
+    count = admission_window(ledger, cfg, clock)['admitted']
     families = {t['market']['family'] for t in ledger['tasks'].values()}
     ordered = sorted(ledger['markets'].values(), key=lambda m: m.get('created_at') or m['first_seen_at'], reverse=True)
     for market in ordered:
@@ -136,7 +152,9 @@ def enroll(ledger, cfg, clock):
                                 'acquisition_policy': 'market-evidence-capture-v2', **task_release()}
         families.add(market['family'])
         count += 1
-    ledger.setdefault('enrollment_daily', {})[date] = count
+    ledger.setdefault('enrollment_daily', {})[date] = sum(
+        instant(task['enrolled_at']).astimezone(zone).date().isoformat() == date for task in ledger['tasks'].values())
+    ledger['admission_window'] = admission_window(ledger, cfg, clock)
 
 
 def quote_turns(ledger, worker, candidates, cfg, clock):
@@ -361,6 +379,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                                'maximum_new_families_per_day': cfg['maximum_new_tasks_per_day'],
                                'enrollment_day_timezone': cfg['enrollment_day_timezone'],
                                'enrollment_daily': ledger['enrollment_daily'],
+                               'admission_window': ledger['admission_window'],
                                'price_target_origin': 'market_created_at',
                                'price_horizons_hours': [24, 72, 168],
                                'final_status_distribution': dict(Counter(t['final']['status'] for t in ledger['followups'].values())),

@@ -16,6 +16,7 @@ from .common import verify, read, write
 
 WORKFLOWS = {'monitor': ('market_research_monitor.yaml', 'Market repricing research monitor', 'Run research monitor'),
              'worker': ('market_research_worker.yaml', 'Market repricing research worker', 'Run development research')}
+MAX_EXPANDED_BYTES = 4 * 1024 ** 3
 
 
 class ArtifactRedirect(HTTPRedirectHandler):
@@ -88,7 +89,7 @@ def extract(data, root):
     if root.exists() and any(root.iterdir()):
         raise ValueError('Restore target must be empty')
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        if sum(i.file_size for i in archive.infolist()) > 2 * 1024 ** 3:
+        if sum(i.file_size for i in archive.infolist()) > MAX_EXPANDED_BYTES:
             raise ValueError('Expanded state exceeds bound')
         for item in archive.infolist():
             # Windows drive names, traversal and symlinks are all rejected.

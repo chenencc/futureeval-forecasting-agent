@@ -13,7 +13,7 @@ import zipfile
 from ForecastAgent.market_repricing import ENGINE_SHA
 from ForecastAgent.market_repricing.common import digest, instant, now, policy, read, seal, state, verify, write
 from ForecastAgent.market_repricing.venues import normalize, quote, screen
-from ForecastAgent.market_repricing.monitor import discover, enroll, ingest, label, quote_turns, run as monitor_run
+from ForecastAgent.market_repricing.monitor import admission_window, discover, enroll, ingest, label, quote_turns, run as monitor_run
 from ForecastAgent.market_repricing.forecast import mean, registry
 from ForecastAgent.market_repricing.github_state import extract, find, ArtifactRedirect, recover_omitted_mutexes
 from ForecastAgent.market_repricing.worker import ProviderCap, provider_budget, request_for, run, pending_keys
@@ -26,7 +26,7 @@ def previous_policy():
     cfg = policy()
     for field in ('maximum_candidate_age_hours', 'price_target_origin',
                   'maximum_resolution_requests_per_dispatch', 'final_refresh_interval_hours',
-                  'resolved_recheck_interval_hours'):
+                  'resolved_recheck_interval_hours', 'enrollment_window_hours'):
         cfg.pop(field)
     return cfg | {'maximum_candidate_age_days': 1, 'maximum_new_tasks_per_day': 20, 'horizons_hours': [72, 168]}
 
@@ -90,7 +90,7 @@ class Selection(unittest.TestCase):
         before = digest(ledger['tasks'])
         for market in ledger['markets'].values(): market['metadata_versions'].append({'new': 'metadata'})
         self.assertEqual(digest(ledger['tasks']), before)
-    def test_thirty_per_shanghai_day_without_lifetime_cap(self):
+    def test_thirty_per_rolling_day_without_midnight_reset_or_lifetime_cap(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         before_midnight = '2026-10-12T15:59:59Z'
         ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'createdAt': before_midnight, 'events': [{'id': str(i)}]} for i in range(70)], self.cfg, before_midnight)
@@ -99,9 +99,17 @@ class Selection(unittest.TestCase):
         for task in ledger['tasks'].values(): task['status'] = 'blocked'
         enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 30)
         for m in ledger['markets'].values(): m['last_quote']['received_at'] = '2026-10-12T16:00:00Z'
-        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 60)
-        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 60)
-        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 30, '2026-10-13': 30})
+        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 30)
+        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 30)
+        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 30, '2026-10-13': 0})
+        self.assertEqual(ledger['admission_window']['remaining'], 0)
+        next_day = '2026-10-13T15:59:59Z'
+        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'createdAt': next_day, 'events': [{'id': str(i)}]}
+                                     for i in range(100, 140)], self.cfg, next_day)
+        for market in ledger['markets'].values(): market['last_quote'] = {'status':'usable', 'received_at':next_day}
+        enroll(ledger, self.cfg, next_day)
+        self.assertEqual(len(ledger['tasks']), 60)
+        self.assertEqual(ledger['admission_window']['admitted'], 30)
     def test_enrollment_requires_quote_from_current_dispatch(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
                   'identity': {'policy_sha256': digest(self.cfg)}}
@@ -123,6 +131,24 @@ class Selection(unittest.TestCase):
         frozen = next(iter(ledger['tasks'].values()))['market']['last_quote']
         self.assertEqual(frozen['quality_flags'], ['wide_spread'])
         self.assertAlmostEqual(frozen['midpoint'], .505)
+    def test_rolling_window_boundary_staggered_slots_and_all_statuses(self):
+        ledger = {'tasks': {str(i): {'enrolled_at': (instant(CLOCK)-timedelta(hours=23, minutes=i)).isoformat(),
+                    'status': 'blocked' if i % 2 else 'completed'} for i in range(30)}}
+        window = admission_window(ledger, self.cfg, CLOCK)
+        self.assertEqual(window['admitted'], 30); self.assertEqual(window['remaining'], 0)
+        self.assertTrue(window['cap_reached'])
+        release = window['next_slot_at']
+        just_before = (instant(release)-timedelta(microseconds=1)).isoformat()
+        self.assertEqual(admission_window(ledger, self.cfg, just_before)['remaining'], 0)
+        self.assertEqual(admission_window(ledger, self.cfg, release)['remaining'], 1)
+        self.assertEqual(admission_window(ledger, self.cfg, release)['admitted'], 29)
+        ledger['tasks']['31'] = {'enrolled_at': CLOCK, 'status': 'failed'}
+        self.assertEqual(admission_window(ledger, self.cfg, CLOCK)['remaining'], 0)
+        self.assertEqual(instant(admission_window(ledger,self.cfg,CLOCK)['next_slot_at']), instant(release)+timedelta(minutes=1))
+    def test_future_or_missing_admission_receipt_fails_closed(self):
+        for task in ({'enrolled_at': (instant(CLOCK)+timedelta(seconds=1)).isoformat()}, {}):
+            with self.subTest(task=task), self.assertRaises((ValueError, KeyError)):
+                admission_window({'tasks': {'bad':task}}, self.cfg, CLOCK)
     def test_large_cohort_quote_turns_prioritize_due_labels_and_reserve_new_entries(self):
         ledger = {'markets': {}, 'tasks': {}}
         worker = {'tasks': {}}
@@ -311,6 +337,23 @@ class Persistence(unittest.TestCase):
             for field in ('tasks', 'enrollment_daily', 'provider_reservations'):
                 self.assertEqual(migrated[field], ledger[field])
             self.assertFalse(migrated['policy_migrations'][0]['budget_reset'])
+    def test_exact_calendar_to_rolling_migration_preserves_budget_and_receipts(self):
+        cfg = policy(); old = dict(cfg); old.pop('enrollment_window_hours')
+        self.assertEqual(digest(old), 'd72c87273d613240e98f8e6f0fc1022e4c462db0c5b6c022bdf7a4e55054d7c2')
+        for role in ('monitor','worker'):
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as root:
+                ledger = state(root,role,old)
+                ledger.update(tasks={'old':{'enrolled_at':CLOCK,'status':'blocked','executions':3,
+                    'policy_sha256':digest(old)}},enrollment_daily={'2026-10-12':30},
+                    provider_reservations=[{'kind':'search','status':'failed'}])
+                write(Path(root)/'state.json',ledger)
+                migrated = state(root,role,cfg)
+                for field in ('tasks','enrollment_daily','provider_reservations','daily'):
+                    self.assertEqual(migrated[field],ledger[field])
+                self.assertFalse(migrated['policy_migrations'][-1]['budget_reset'])
+                for bad in (cfg | {'enrollment_window_hours':25},cfg | {'maximum_new_tasks_per_day':31},
+                            cfg | {'maximum_worker_model_attempts_per_task':61}):
+                    with self.assertRaises(ValueError): state(root,role,bad)
     def test_artifact_redirect_drops_github_token_and_rejects_untrusted_host(self):
         from urllib.request import Request
         request = Request('https://api.github.com/repos/example/repo/actions/artifacts/1/zip',
@@ -381,6 +424,14 @@ class Persistence(unittest.TestCase):
         with zipfile.ZipFile(data, 'w') as z: z.writestr('../escape.json', '{}')
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(ValueError): extract(data.getvalue(), root)
+    def test_restore_size_remains_bounded_before_extracting_any_files(self):
+        from ForecastAgent.market_repricing import github_state
+        self.assertEqual(github_state.MAX_EXPANDED_BYTES,4*1024**3)
+        data = io.BytesIO()
+        with zipfile.ZipFile(data,'w') as z: z.writestr('state.json','{}')
+        with tempfile.TemporaryDirectory() as root, patch.object(github_state,'MAX_EXPANDED_BYTES',1):
+            with self.assertRaisesRegex(ValueError,'Expanded state exceeds bound'): extract(data.getvalue(),root)
+            self.assertEqual(list(Path(root).iterdir()),[])
     def test_grid_mean_not_event_probability(self):
         self.assertAlmostEqual(mean({'probabilities': {'p'+str(i): 1 if i == 6 else 0 for i in range(21)}}), .3)
         with self.assertRaises(ValueError): mean({'probabilities': {'p0': 1}})
