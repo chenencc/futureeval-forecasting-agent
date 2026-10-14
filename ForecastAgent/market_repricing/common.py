@@ -52,14 +52,17 @@ def state(root, role, configuration):
         saved = read(path)
         # Exact authorized operational-cap migration, never a ledger reset.
         # Older admission migrations still run against their original 400 policy.
-        if (saved.get('identity') != identity and digest(configuration) ==
-                '5af20b76a50914620c01a50b29353be41f7cf9a87d4eeeb70c8faaa21551e84e'):
-            old = dict(configuration, maximum_worker_model_attempts_per_utc_day=400)
+        daily_transitions = {
+            '5af20b76a50914620c01a50b29353be41f7cf9a87d4eeeb70c8faaa21551e84e': (400, 900),
+            '0196e5ce39582e9c5a84758440ae7dd5717c10b0ad64f37d9a3192ab3ad83893': (900, 1500)}
+        if saved.get('identity') != identity and digest(configuration) in daily_transitions:
+            previous_limit, current_limit = daily_transitions[digest(configuration)]
+            old = dict(configuration, maximum_worker_model_attempts_per_utc_day=previous_limit)
             saved = state(root, role, old)
             previous = saved['identity']
             saved.setdefault('policy_migrations', []).append({'at': now(),
                 'from_identity': previous, 'to_identity': identity,
-                'reason': 'Authorized local model daily ceiling 400 to 900; physical usage retained.',
+                'reason': f'Authorized local model daily ceiling {previous_limit} to {current_limit}; physical usage retained.',
                 'provider_reservations_unchanged': True, 'existing_tasks_unchanged': True,
                 'budget_reset': False})
             saved['identity'] = identity

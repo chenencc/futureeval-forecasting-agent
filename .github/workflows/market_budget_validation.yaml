@@ -1,7 +1,7 @@
 name: Market budget recovery saved-state validation
 on:
   push:
-    branches: [codex/market-budget-recovery]
+    branches: [codex/market-budget-recovery, codex/market-budget-1500]
     paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_budget_validation.yaml']
   workflow_dispatch:
 permissions:

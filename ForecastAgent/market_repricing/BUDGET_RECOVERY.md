@@ -1,6 +1,6 @@
-# Local budget recovery (market-v0.3.5)
+# Local budget recovery (market-v0.3.5-budget.1)
 
-The daily local model ceiling is 900 physical reservations per UTC day. This is
+The daily local model ceiling is 1500 physical reservations per UTC day. This is
 not a statement about OpenRouter account availability. Failed transmissions and
 unknown physical reservations remain charged. The per-task limit stays 60;
 the dispatch limit stays 200; all search and admission limits are unchanged.
@@ -24,8 +24,8 @@ physical reservation records remain intact. The effective native remaining
 allowance excludes only proven non-HTTP denials; an independent receipt records
 both original and effective counts. No search reservation is refunded.
 
-The exact 400-to-900 policy migration is audited. Pending tasks from the exact
-market-v0.3.4 predecessor may resume only if the pinned collection engine and
+The exact 400-to-900 and 900-to-1500 policy migrations are audited. Pending tasks
+from the exact market-v0.3.4 and market-v0.3.5 predecessors may resume only if the pinned collection engine and
 all listed capture/search/scoring stage files match their frozen digests.
 Their original task deployment identities and forecast configuration remain
 preserved. Production competition controls are independent.

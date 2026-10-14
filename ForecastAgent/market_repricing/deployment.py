@@ -8,8 +8,10 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.5'
+VERSION = 'market-v0.3.5-budget.1'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
+FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
+                       'd00bc630300a22ee84d1f6064892f261894d833b': 900}
 PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
 
 
@@ -71,10 +73,10 @@ def validate_pending(worker_root, monitor_root, receipt):
     pending.update({key: task for key, task in monitor['tasks'].items() if key not in worker['tasks']})
     expected = policy_identity()
     for key, task in pending.items():
-        old = task.get('pipeline_commit') == BUDGET_PREDECESSOR
+        old = task.get('pipeline_commit') in FROZEN_DAILY_LIMITS
         if old:
             budget_compatibility()
-        if task.get('pipeline_commit') not in (None, receipt['pipeline_commit'], BUDGET_PREDECESSOR):
+        if task.get('pipeline_commit') not in (None, receipt['pipeline_commit'], *FROZEN_DAILY_LIMITS):
             raise ValueError('Pending market task requires its frozen pipeline commit: ' + key)
         folder = worker_root / 'tasks' / digest(key)
         request_path = folder / 'collection-request.json'

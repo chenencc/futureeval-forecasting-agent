@@ -22,7 +22,7 @@
   "maximum_quote_requests_per_dispatch": 40,
   "maximum_metadata_refresh_per_dispatch": 40,
   "maximum_worker_model_attempts_per_dispatch": 200,
-  "maximum_worker_model_attempts_per_utc_day": 900,
+  "maximum_worker_model_attempts_per_utc_day": 1500,
   "maximum_worker_model_attempts_per_task": 60,
   "maximum_task_runtime_minutes": 45,
   "maximum_worker_search_attempts_per_dispatch": 20,

@@ -9,7 +9,7 @@ import urllib.request
 from . import ENGINE_SHA, ENGINE_BRANCH, SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write, verify
 from .venues import book, refresh, screen
-from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package
+from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package, refresh_waits
 
 
 @contextlib.contextmanager
@@ -320,9 +320,9 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
             else:
                 # Budget-only promotion preserves existing forecast identities.
                 analysis_cfg = cfg
-                from .deployment import BUDGET_PREDECESSOR
-                if task.get('pipeline_commit') == BUDGET_PREDECESSOR:
-                    analysis_cfg = cfg | {'maximum_worker_model_attempts_per_utc_day': 400}
+                from .deployment import FROZEN_DAILY_LIMITS
+                if task.get('pipeline_commit') in FROZEN_DAILY_LIMITS:
+                    analysis_cfg = cfg | {'maximum_worker_model_attempts_per_utc_day': FROZEN_DAILY_LIMITS[task['pipeline_commit']]}
                 result = forecaster(bundle, task['market'], anchor, stage, analysis_cfg)
                 if anchor.get('eligible_for_model_metrics') is False:
                     result.update(eligible_for_model_metrics=False, observational_context_only=True)
@@ -430,6 +430,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         raise ValueError('Queue pin or policy changed')
     ledger = state(root, 'worker', cfg)
     recovered_budget_tasks = recover_legacy(root, ledger)
+    refresh_waits(ledger, cfg)
     fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
     if not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
         raise ValueError('Stale discovery cannot enroll unseen tasks')
