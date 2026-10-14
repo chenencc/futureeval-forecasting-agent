@@ -144,6 +144,8 @@ class OfficialRuntime(unittest.TestCase):
             saved = read(worker/'state.json')['tasks'][market['key']]
             self.assertEqual(forecast_policy(saved, cfg)['analysis_arms'], ['original', 'mapped', 'official_map'])
             self.assertEqual(saved['executions'], 0)
+            from ForecastAgent.market_repricing.search_policy import identity
+            self.assertEqual(saved['market_search_profile'], identity())
 
     def test_native_search_inherits_tavily_routing_and_one_logical_search(self):
         import io

@@ -38,6 +38,10 @@ def provider_budget(root, ledger, key, cfg):
                 raise ProviderCap('Worker cumulative model budget exhausted')
             record = {'key': key, 'kind': kind, 'endpoint': url.split('?')[0], 'day': date,
                       'run_id': run_id, 'reserved_at': now(), 'status': 'reserved'}
+            if url == 'https://api.tavily.com/search' and isinstance(request, urllib.request.Request):
+                import json
+                depth = json.loads(request.data).get('search_depth', 'basic')
+                record.update(search_depth=depth, credits_estimate=2 if depth == 'advanced' else 1)
             records.append(record); write(Path(root) / 'state.json', ledger)
             try:
                 value = original(request, *args, **kwargs)
@@ -118,6 +122,14 @@ def acquire(task, folder):
     request_path = folder / 'collection-request.json'
     request = read(request_path) if request_path.exists() else enable(
         request_for(task['market']), predictive_focus=True, scoring_delivery=True)
+    from .search_policy import identity as search_identity, adapter as search_adapter, guide as search_guide
+    profile = task.get('market_search_profile')
+    if profile is not None:
+        if profile != search_identity() or request.get('market_search_profile') not in (None, profile):
+            raise ValueError('Frozen market search implementation changed')
+        if request_path.exists() and request.get('market_search_profile') is None:
+            raise ValueError('Cannot grant mixed search allowance to an existing collection')
+        request['market_search_profile'] = profile
     request['collection_model'] = SUPER
     if new_capture:
         expected = policy_identity()
@@ -139,8 +151,10 @@ def acquire(task, folder):
             '\nAfter a search returns URLs, call read_sources with exact discovered URLs '
             'to capture external original bodies before further map planning. fetch_page '
             'is unavailable. Market pages supply rules/prices, not independent event evidence. '
-            'Use registered tools only; respect each tool schema. Missing reports never prove NO.')
-    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided), capture_adapter() if new_capture else contextlib.nullcontext():
+            'Use registered tools only; respect each tool schema. Missing reports never prove NO.') + search_guide(args[0])
+    with remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
+            capture_adapter() if new_capture else contextlib.nullcontext(), \
+            search_adapter() if profile is not None else contextlib.nullcontext():
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
                                   recover_data=True, research_map=True, channel_tools=True)
     package = directory / 'final-map-package.json'
@@ -403,7 +417,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                                     'source_task_sha256': digest(task),
                                     **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
                                     **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {}),
-                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms') if field in task}}
+                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms', 'market_search_profile') if field in task}}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),

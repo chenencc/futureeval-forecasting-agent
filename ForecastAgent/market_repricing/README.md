@@ -465,3 +465,27 @@ All actual Search/Extract attempts re-enter the worker's physical budget ledger,
 including failed primary attempts. Native per-task search reservations remain
 unchanged; changing credentials does not reset any budget. The worker report
 records only secret names and configuration presence, never credential values.
+
+## Market-v0.3.2 selective Advanced search
+
+New admissions freeze `market-tavily-mixed-v1` in their task and collection
+request: at most two Basic plus one optional Advanced search, three logical
+reservations total. Super chooses `search_depth`; Advanced requires an existing
+critical evidence need, `gap`/`official_gap` role and an explicit reason. Read
+saved sources first. Unused discovery slots do not block normal completion.
+The theoretical successful Search cost is at most four credits (2x1 + 1x2);
+Extract, Exa and failed/unknown physical requests are accounted separately.
+
+Reservations include actual depth before transmission and survive interruption,
+restart and credential failover. Key3/4 routing stays intact; both physical
+attempts enter the worker ledger but consume one logical native search slot.
+The model sees the remaining depth-specific allowances, including Advanced
+after both Basic slots are used. The adapter preserves complete returned
+search excerpts and raw results while retaining native top-ten distinct URL,
+domain and temporal filtering. Excerpts are discovery leads, not full bodies.
+Free reading, eager captures, independent supplement and three scoring arms
+remain unchanged. Historical frozen tasks are not reopened or migrated.
+
+```text
+MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_search_runtime -v
+```

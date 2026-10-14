@@ -43,3 +43,7 @@ jobs:
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
         run: python -m ForecastAgent.market_repricing.tests.verify_official_runtime -v
+      - name: Mixed Basic Advanced search and durable quota integration
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.market_repricing.tests.verify_search_runtime -v
