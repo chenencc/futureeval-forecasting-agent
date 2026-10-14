@@ -77,6 +77,19 @@ def run(root, engine, output):
         'original_files_unchanged': len(originals) - len(allowed), 'allowed_stage_transitions': len(allowed),
         'original_bodies_and_provider_journals_unchanged': True,
         'provider_calls': 0, 'search_calls': 0, 'quota_reset': False, 'real_forecasts_completed': False}
+    if (root / 'state.json').exists():
+        from ForecastAgent.market_repricing.budgets import recover_context_waits, executions_used
+        ledger = read(root / 'state.json')
+        before = copy.deepcopy(ledger)
+        recovered = recover_context_waits(root, ledger)
+        assert set(recovered) == set(keys)
+        assert ledger.get('provider_reservations') == before.get('provider_reservations')
+        for key, task in before['tasks'].items():
+            if key not in keys: assert ledger['tasks'][key] == task
+            else: assert ledger['tasks'][key]['executions'] == task['executions']
+        report['queue_recovery'] = {'recovered': recovered, 'physical_reservations_unchanged': True,
+            'all_other_tasks_unchanged': True, 'original_execution_totals_unchanged': True,
+            'service_executions_used': {k: executions_used(ledger['tasks'][k]) for k in keys}}
     write(output, report)
     return report
 

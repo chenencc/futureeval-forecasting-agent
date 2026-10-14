@@ -9,7 +9,7 @@ import urllib.request
 from . import ENGINE_SHA, ENGINE_BRANCH, SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write, verify
 from .venues import book, refresh, screen
-from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package, refresh_waits
+from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package, refresh_waits, recover_context_waits
 
 
 @contextlib.contextmanager
@@ -431,6 +431,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         raise ValueError('Queue pin or policy changed')
     ledger = state(root, 'worker', cfg)
     recovered_budget_tasks = recover_legacy(root, ledger)
+    recovered_context_tasks = recover_context_waits(root, ledger)
     refresh_waits(ledger, cfg)
     fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
     if not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
@@ -485,6 +486,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
         report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
         report['budget_recovered_tasks'] = recovered_budget_tasks
+        report['context_recovered_tasks'] = recovered_context_tasks
         report['budget_holds'] = {k: t.get('budget_hold') for k, t in ledger['tasks'].items() if t['status'] == 'budget_wait'}
         from .deployment import task_release
         report.update(task_release())

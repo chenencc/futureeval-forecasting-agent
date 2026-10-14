@@ -31,3 +31,10 @@ originals, across five dispatch phases each. It verifies the message ceiling,
 literal span bindings, unchanged rule fields and raw handoff without model/search
 calls. Live forecasting completion is checked separately after deployment. The
 daily 1500, task 60, dispatch 200 and existing search ceilings stay unchanged.
+
+A legacy local context retry that transmitted no paid provider request can be
+recovered once. The worker verifies its saved native reason and exact execution
+interval against the durable reservation ledger. Original execution totals and
+terminal artifacts remain preserved; a separate program-wait counter excludes
+only the proven non-transmitted attempt from service retries. This grants no new
+model/search quota and never reopens a completed or baseline-only forecast.

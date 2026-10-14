@@ -167,5 +167,25 @@ class BudgetRecovery(unittest.TestCase):
             deployment.validate_pending(root, Path(root) / 'monitor', {'pipeline_commit': '1' * 40})
             self.assertEqual(read(Path(root) / 'state.json'), ledger)
 
+    def test_local_context_interruption_recovery_preserves_counters_and_is_one_time(self):
+        for paid in (False, True):
+            with self.subTest(paid=paid), tempfile.TemporaryDirectory() as root:
+                task = {'status': 'blocked', 'executions': 4, 'budget_wait_executions': 1,
+                        'error_type': 'CollectionIncomplete', 'last_attempt_at': CLOCK,
+                        'terminal_result': {'status': 'blocked'}}
+                ledger = {'tasks': {'t': task}, 'provider_reservations': self.records(1, key='t') if paid else []}
+                folder = Path(root) / 'tasks' / digest('t')
+                write(folder / 'failure.json', {'error_type': 'CollectionIncomplete'})
+                write(folder / 'development-intelligence/collection-status.json', {
+                    'collector_report': {'state': {'termination_reason': 'context_projection_failure', 'interrupted': True}}})
+                before = {p: p.read_bytes() for p in folder.rglob('*') if p.is_file()}
+                records = copy.deepcopy(ledger['provider_reservations'])
+                self.assertEqual(budgets.recover_context_waits(root, ledger), [] if paid else ['t'])
+                self.assertEqual(budgets.recover_context_waits(root, ledger), [])
+                self.assertEqual(task['executions'], 4)
+                self.assertEqual(ledger['provider_reservations'], records)
+                self.assertEqual(budgets.executions_used(task), 3 if paid else 2)
+                for p, raw in before.items(): self.assertEqual(p.read_bytes(), raw)
+
 
 if __name__ == '__main__': unittest.main()
