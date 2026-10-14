@@ -1,0 +1,38 @@
+name: Competition capture deployment acceptance
+on:
+  push:
+    branches: [codex/deploy-competition-capture]
+permissions:
+  contents: read
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deployment scope and embedded runtime code
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          text=Path('.github/workflows/official_competition.yaml').read_text()
+          assert text.count('v1.0.5-capture.1')==4
+          assert 'FORECAST_RELEASE_EXPECTED_SHA: f06d50300a6779688fe7c1167d56e01a3434d053' in text
+          assert 'OPENROUTER_API_KEY2: ${{ secrets.OPENROUTER2 }}' in text
+          assert 'TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY2 }}' in text
+          for block in text.split("python - <<'PY'\n")[1:]:
+              code=block.split('\n          PY')[0]
+              ast.parse('\n'.join(line[10:] for line in code.splitlines()))
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.0.5-capture.1
+          path: .release
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact production release checkout
+        working-directory: .release
+        run: |
+          test "$(git rev-parse HEAD)" = "f06d50300a6779688fe7c1167d56e01a3434d053"
+          python -m ForecastAgent.releases.manifest
+          python -c "from ForecastAgent.acquisition.pipeline import verify_baseline; from ForecastAgent.acquisition.eager_capture import identity; verify_baseline(); assert identity()['extra_models']==0"
