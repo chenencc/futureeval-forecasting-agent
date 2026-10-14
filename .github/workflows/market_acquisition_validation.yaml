@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 25
     env:
       GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
         with:
