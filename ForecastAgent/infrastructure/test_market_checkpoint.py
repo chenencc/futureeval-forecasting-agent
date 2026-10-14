@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+import shutil
 import unittest
 from unittest.mock import patch
 import zipfile
@@ -46,13 +47,17 @@ class CheckpointTests(unittest.TestCase):
     def test_lossless_deduplicated_roundtrip_and_stable_packs(self):
         first, second = self.base / 'first', self.base / 'second'
         receipt = transport.publish(self.root, first)
-        transport.publish(self.root, second)
+        reused = transport.publish(self.root, second)
+        self.assertEqual(reused['unchanged_task_packs_reused'], 1)
         self.assertLess(receipt['unique_task_object_bytes'], sum(len(v) for k, v in self.bytes.items() if k.startswith('tasks/')))
         self.assertEqual((first / 'packs' / (self.key + '.tar.xz')).read_bytes(),
                          (second / 'packs' / (self.key + '.tar.xz')).read_bytes())
         restored = self.base / 'restored'
+        shutil.rmtree(self.base / '.market-checkpoint-cache')
         transport.extract_file(self.zipped(first), restored)
         self.assert_originals(restored)
+        with patch.object(transport.lzma, 'open', side_effect=AssertionError('No recompression needed')):
+            self.assertEqual(transport.publish(restored, self.base / 'reused')['unchanged_task_packs_reused'], 1)
         # Independent mutable paths, not hardlinks into other evidence.
         (restored / 'tasks' / self.key / 'analysis-input.json').write_bytes(b'changed')
         self.assertEqual((restored / 'tasks' / self.key / 'reading-input.json').read_bytes(),
@@ -90,6 +95,12 @@ class CheckpointTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             transport.extract_file(self.zipped(packed), self.base / 'bad')
         self.assertFalse((self.base / 'bad/state.json').exists())
+
+    def test_changed_cached_pack_cannot_be_republished(self):
+        transport.publish(self.root, self.base / 'packed')
+        next((self.base / '.market-checkpoint-cache').glob('*.tar.xz')).write_bytes(b'corrupt')
+        with self.assertRaisesRegex(ValueError, 'Cached immutable'):
+            transport.publish(self.root, self.base / 'bad-publication')
 
     def test_expansion_and_path_guards(self):
         raw = self.zipped(self.root)

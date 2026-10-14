@@ -49,6 +49,20 @@ def write(path, value):
     path.write_text(json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False), encoding='utf-8')
 
 
+def cache_key(names, files):
+    data = {'codec': 'tar.xz-preset6', 'files': {name: files[name] for name in sorted(names)}}
+    return hashlib.sha256(json.dumps(data, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def save_cache(root, path, names, files):
+    cache = root.parent / '.market-checkpoint-cache'
+    cache.mkdir(exist_ok=True)
+    ident = cache_key(names, files)
+    target = cache / (ident + '.tar.xz')
+    shutil.copyfile(path, target)
+    write(cache / (ident + '.json'), {'sha256': sha(target), 'size': target.stat().st_size})
+
+
 def selected(name, projection):
     return (not projection or not name.startswith('tasks/') or
             re.fullmatch(r'tasks/[0-9a-f]{64}/(?:collection-request.json|evidence-capture-v2/identity.json)', name))
@@ -99,16 +113,28 @@ def publish(root, output):
             target = output / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(root / name, target)
+    reused = 0
     for group, names in sorted(groups.items()):
         unique = {files[name]['sha256']: name for name in names}
         target = output / 'packs' / (group.split('/')[1] + '.tar.xz')
         target.parent.mkdir(exist_ok=True)
-        with lzma.open(target, 'wb', preset=6) as compressed, tarfile.open(fileobj=compressed, mode='w|') as archive:
-            for digest, name in sorted(unique.items()):
-                info = tarfile.TarInfo('objects/' + digest)
-                info.size, info.mtime, info.mode = files[name]['size'], 0, 0o444
-                with (root / name).open('rb') as source:
-                    archive.addfile(info, source)
+        cache = root.parent / '.market-checkpoint-cache'
+        ident = cache_key(names, files)
+        cached, metadata = cache / (ident + '.tar.xz'), cache / (ident + '.json')
+        if cached.is_file() and metadata.is_file():
+            expected = json.loads(metadata.read_text(encoding='utf-8'))
+            if cached.stat().st_size != expected['size'] or sha(cached) != expected['sha256']:
+                raise ValueError('Cached immutable task pack changed')
+            shutil.copyfile(cached, target)
+            reused += 1
+        else:
+            with lzma.open(target, 'wb', preset=6) as compressed, tarfile.open(fileobj=compressed, mode='w|') as archive:
+                for digest, name in sorted(unique.items()):
+                    info = tarfile.TarInfo('objects/' + digest)
+                    info.size, info.mtime, info.mode = files[name]['size'], 0, 0o444
+                    with (root / name).open('rb') as source:
+                        archive.addfile(info, source)
+            save_cache(root, target, names, files)
         row = {'path': target.relative_to(output).as_posix(), 'sha256': sha(target),
                'size': target.stat().st_size, 'files': names,
                'objects': {digest: files[name]['size'] for digest, name in unique.items()}}
@@ -120,6 +146,7 @@ def publish(root, output):
     return {'schema': SCHEMA, 'files': len(files), 'task_packs': len(groups), 'original_bytes': total,
             'published_bytes': sum(p.stat().st_size for p in output.rglob('*') if p.is_file()),
             'unique_task_object_bytes': sum(sum(p['objects'].values()) for p in manifest['packs'].values()),
+            'unchanged_task_packs_reused': reused,
             'budget_reset': False}
 
 
@@ -163,6 +190,8 @@ def unpack_pack(path, row, files, output, projection=False):
             raise ValueError('Pack original mapping differs')
         if selected(name, projection):
             destinations.setdefault(item['sha256'], []).append(output / name)
+    if set(expected) != {files[name]['sha256'] for name in row['files']}:
+        raise ValueError('Pack contains unreferenced objects')
     with tempfile.TemporaryDirectory(dir=output.parent) as scratch:
         with lzma.open(path, 'rb') as decoded, tarfile.open(fileobj=decoded, mode='r|') as archive:
             for info in archive:
@@ -228,6 +257,9 @@ def extract_file(source, root, projection=False):
                     packed_path = Path(temporary) / 'task.tar.xz'
                     copy_member(archive, members[row['path']], packed_path, row['sha256'])
                     unpack_pack(packed_path, row, files, staging, projection)
+                    if not projection:
+                        # Verified compressed originals can be republished unchanged.
+                        save_cache(root, packed_path, row['files'], files)
                     packed_path.unlink()
             else:
                 if 'inventory.json' not in members:

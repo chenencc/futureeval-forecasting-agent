@@ -41,6 +41,8 @@ jobs:
           for name,expected in source_files.items():
               if sha(Path('snapshots/roundtrip')/name)!=expected:raise ValueError('Original changed: '+name)
           projection=extract_file('snapshots/packed.zip','snapshots/projected',True)
+          reuse=publish('snapshots/roundtrip','snapshots/reused')
+          if reuse['unchanged_task_packs_reused']!=receipt['task_packs']:raise ValueError('Unchanged historical packs were recompressed')
           if sha(Path('snapshots/projected/state.json'))!=state_before:raise ValueError('Projected ledger changed')
           for path in original.glob('tasks/*/collection-request.json'):
               if sha(Path('snapshots/projected')/path.relative_to(original))!=sha(path):raise ValueError('Compatibility request changed')
@@ -49,7 +51,7 @@ jobs:
           report={'schema':'market-checkpoint-live-preservation-v1','source_run':38504204984,
               'state_sha256':state_before,'all_original_files_verified':len(source_files),
               'task_distribution':counts,'provider_reservations':len(ledger.get('provider_reservations',[])),
-              'pack_publication':receipt,'full_restore':full,'monitor_projection':projection,
+              'pack_publication':receipt,'full_restore':full,'monitor_projection':projection,'republication':reuse,
               'model_search_calls':0,'budget_reset':False,'legacy_local_download_bytes':0}
           write('snapshots/receipts/preservation.json',report)
           print(json.dumps(report))

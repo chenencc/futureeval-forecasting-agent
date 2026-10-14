@@ -20,6 +20,8 @@ Actions run. Metaculus competition workflows are unchanged.
 5. Publish only after the original inventory verifies. Preserve the original
    ledger, provider reservations, failed attempts, source clocks and forecasts.
    Mutable duplicate paths are copied independently, never hardlinked.
+   Full restoration caches verified compressed task objects outside the runtime
+   state; publication hash-checks and reuses unchanged packs without recompression.
 
 ## Existing oversized checkpoints
 
