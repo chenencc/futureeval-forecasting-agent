@@ -21,10 +21,16 @@ jobs:
     env:
       GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       MARKET_PIPELINE_SHA: ${{ vars.MARKET_REPRICING_SHA }}
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ vars.MARKET_REPRICING_SHA }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .transport
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -36,9 +42,9 @@ jobs:
       - name: Run independent sidecar regression gates
         run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
       - name: Restore exact monitor checkpoint
-        run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME"
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME"
       - name: Restore latest completed worker for labels
-        run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME" --projection
       - name: Validate pending market version compatibility
         run: python -m ForecastAgent.market_repricing.deployment --worker-root snapshots/market-worker --monitor-root snapshots/market-monitor
       - name: Run research monitor

@@ -48,6 +48,7 @@ jobs:
       VERIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_only }}
       RETRY_NOT_BEFORE: ${{ inputs.not_before }}
       MARKET_PIPELINE_SHA: ${{ vars.MARKET_REPRICING_SHA }}
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,6 +58,11 @@ jobs:
         with:
           ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
           path: .development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .transport
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -78,9 +84,9 @@ jobs:
           time.sleep(max(0, min(900, wait)))
           PY
       - name: Restore exact worker checkpoint
-        run: python -m ForecastAgent.market_repricing.github_state --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME"
       - name: Restore triggering trusted monitor checkpoint
-        run: python -m ForecastAgent.market_repricing.github_state --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
       - name: Validate pending market version compatibility
         run: python -m ForecastAgent.market_repricing.deployment --worker-root snapshots/market-worker --monitor-root snapshots/market-monitor
       - name: Verify queue before installing model and browser dependencies
@@ -123,13 +129,23 @@ jobs:
             python -m ForecastAgent.market_repricing.deployment --record-root snapshots/market-worker
             python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-worker')"
           fi
-      - name: Publish independent worker checkpoint
+      - name: Build lossless per-task recovery packs
         if: always()
+        id: packed
+        run: |
+          if [ -f snapshots/market-worker/state.json ]; then
+            python .transport/ForecastAgent/infrastructure/market_checkpoint.py publish --root snapshots/market-worker --output snapshots/market-worker-packed
+          else
+            exit 1
+          fi
+      - name: Publish independent worker checkpoint
+        if: always() && steps.packed.outcome == 'success'
         id: checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: market-repricing-v2-worker-state
-          path: snapshots/market-worker
+          path: snapshots/market-worker-packed
+          compression-level: 0
           if-no-files-found: error
           retention-days: 90
           include-hidden-files: true
@@ -137,7 +153,7 @@ jobs:
         id: local_catalog
         if: always() && steps.checkpoint.outcome == 'success'
         continue-on-error: true
-        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-worker --source market-repricing-v2-worker-state=snapshots/market-worker --source-id market-repricing-v2-worker-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
+        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-worker --source market-repricing-v2-worker-state=snapshots/market-worker-packed --source-id market-repricing-v2-worker-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'
         continue-on-error: true
