@@ -2,9 +2,9 @@
   "schema": "market-capture-stage-candidate-v1",
   "parent_pipeline_commit": "098a56c197012661f976d34f15cf21ac4106d024",
   "candidate_files_sha256_lf": {
-    "evidence_capture.py": "1a1f1ee63e7e255e79e92f785de882eff3623f4b15a863af27ccc8bfb5092d76",
+    "evidence_capture.py": "ebfc41b0b33b0e98db81a24f30803b85b8046bbbb00e7456abf6519bcdce967b",
     "materials.py": "63cb90522f85d4c3f0733ec95260ba73324165df5a35193b0afad9f3261f69af",
-    "acquisition_contract.py": "e671711aaf4026a9bbf1807dabc79cb7cfe8c1d38e15086e6f22ad8ec7aa5870"
+    "acquisition_contract.py": "12524eaf070789075cc7c227fec896a68e88f5f53ac8303e0223e430a93339ca"
   },
   "legacy_stage_sha256_lf": {
     "evidence_capture.py": "abbefd119e4043ac2b78565dce04b39001e26463ea5f8e9c3966d0ffd03c7b8b",
@@ -12,5 +12,15 @@
   },
   "not_a_budget_only_upgrade": true,
   "started_tasks_require_exact_frozen_capture_identity": true,
-  "analysis_and_search_stages_unchanged": true
+  "analysis_and_search_stages_unchanged": true,
+  "shared_acquisition": {
+    "version": "shared-acquisition-p0-v1",
+    "network_requests": 0,
+    "host_budgets_required": true,
+    "files_sha256_lf": {
+      "__init__.py": "f31aa553c0dbaac1ab3ea09d76b7554cce21106328d1f495854f5ac78c07d735",
+      "contract.py": "6ee22faedeac0bbf02d9e84d8a3975239e8fedeed3a98256b00b0cc237d3d6be",
+      "tool_output.py": "c296699d3688c1dae9189b17cb06578e19bfac045ee5a2e6a9f8b57825224e40"
+    }
+  }
 }

@@ -1,8 +1,8 @@
 name: Market acquisition saved-state promotion gates
 on:
   push:
-    branches: [codex/market-acquisition-p0]
-    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_acquisition_validation.yaml']
+    branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0]
+    paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_acquisition_validation.yaml']
   workflow_dispatch:
 permissions:
   contents: read

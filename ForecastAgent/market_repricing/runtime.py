@@ -16,9 +16,10 @@ def activate(engine):
     subprocess.run(['git', '-C', str(engine), 'diff', '--quiet', 'HEAD'], check=True)
     # The entire existing dependency tree comes from the development snapshot.
     import ForecastAgent
+    from ForecastAgent import acquisition_shared
     ForecastAgent.__path__[:] = [str(engine / 'ForecastAgent')]
     for name in list(sys.modules):
-        if name.startswith('ForecastAgent.') and not name.startswith('ForecastAgent.market_repricing'):
+        if name.startswith('ForecastAgent.') and not name.startswith(('ForecastAgent.market_repricing','ForecastAgent.acquisition_shared')):
             del sys.modules[name]
     from ForecastAgent.acquisition.pipeline import verify_baseline
     from ForecastAgent.intelligence.identity import code_identity

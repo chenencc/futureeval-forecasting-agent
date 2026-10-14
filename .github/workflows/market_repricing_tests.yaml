@@ -1,9 +1,9 @@
 name: Market repricing development integration gates
 on:
   push:
-    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_*']
+    paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_*']
   pull_request:
-    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_*']
+    paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_*']
 permissions:
   contents: read
 jobs:
@@ -17,6 +17,11 @@ jobs:
         with:
           ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
           path: .development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 16013ebf43373fc4c116e736e1b034a768f314b8
+          path: .competition-core
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -43,6 +48,20 @@ jobs:
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
         run: python -m ForecastAgent.market_repricing.tests.verify_sheet_runtime -v
+      - name: Shared capability engine activation and bounded model metadata
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.market_repricing.tests.verify_shared_runtime -v
+      - name: Both deployed adapters consume exactly the same shared capability bytes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from ForecastAgent.acquisition_shared import identity
+          for name in ('__init__.py','contract.py','tool_output.py'):
+              assert Path('ForecastAgent/acquisition_shared',name).read_bytes()==Path('.competition-core/ForecastAgent/acquisition_shared',name).read_bytes(),name
+          assert json.loads(Path('.competition-core/ForecastAgent/releases/manifest.json').read_text())['shared_acquisition']==identity()
+          PY
       - name: Production official map and three-arm failure isolation
         env:
           MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
