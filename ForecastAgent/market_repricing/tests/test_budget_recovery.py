@@ -101,6 +101,18 @@ class BudgetRecovery(unittest.TestCase):
             self.denial(folder); write(folder / 'failure.json', {'error_type': 'FileNotFoundError'})
             self.assertEqual(budgets.recover_legacy(root, ledger), [])
 
+    def test_relative_restore_paths_keep_exact_native_denial_bindings(self):
+        import os
+        with tempfile.TemporaryDirectory() as root:
+            folder = Path(root)
+            self.denial(folder)
+            previous = Path.cwd()
+            try:
+                os.chdir(folder.parent)
+                self.assertEqual(len(budgets.native_denials(Path(folder.name))), 1)
+            finally:
+                os.chdir(previous)
+
     def test_exact_400_to_900_migration_preserves_all_counters_and_other_changes_fail(self):
         cfg = policy(); old = cfg | {'maximum_worker_model_attempts_per_utc_day': 400}
         with tempfile.TemporaryDirectory() as root:

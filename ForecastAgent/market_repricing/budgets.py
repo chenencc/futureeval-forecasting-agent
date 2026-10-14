@@ -53,8 +53,9 @@ def hold(task, receipt, started=False):
 def native_denials(folder):
     """Only final pre-transmission ProviderCap receipts qualify; originals stay intact."""
     import hashlib
+    folder = Path(folder).resolve()
     found = []
-    for bundle_path in Path(folder).glob('development-intelligence/retrieval/**/collection/bundle.json'):
+    for bundle_path in folder.glob('development-intelligence/retrieval/**/collection/bundle.json'):
         bundle = read(bundle_path)
         for attempt in bundle.get('model_attempts', []):
             path = (bundle_path.parent / attempt['path']).resolve()
