@@ -128,11 +128,11 @@ Polymarket uses the actual YES asset, including reversed outcome arrays. Kalshi
 fixed-point YES ask is `1-max(NO bid)` with the corresponding size. Ambiguous
 cent schemas are not guessed. Display prices/last trades are not book snapshots.
 
-At most 30 new venue event families enter per rolling 24 hours, counted
+At most 50 new venue event families enter per rolling 24 hours, counted
 from immutable enrollment timestamps. Failed tasks consume the same window slot;
 retries do not count as new tasks. The initial three-family lifetime cap is removed.
 Workers retain batches of at most three tasks per dispatch and their existing
-provider budgets. Thirty admissions do not guarantee 30 completed analyses that
+provider budgets. Fifty admissions do not guarantee 50 completed analyses that
 day when provider budgets or service availability limit throughput.
 Each family gets a quote turn before additional thresholds.
 Cross-venue title similarity does not establish rule equivalence.

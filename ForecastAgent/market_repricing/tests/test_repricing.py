@@ -90,26 +90,26 @@ class Selection(unittest.TestCase):
         before = digest(ledger['tasks'])
         for market in ledger['markets'].values(): market['metadata_versions'].append({'new': 'metadata'})
         self.assertEqual(digest(ledger['tasks']), before)
-    def test_thirty_per_rolling_day_without_midnight_reset_or_lifetime_cap(self):
+    def test_fifty_per_rolling_day_without_midnight_reset_or_lifetime_cap(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         before_midnight = '2026-10-12T15:59:59Z'
         ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'createdAt': before_midnight, 'events': [{'id': str(i)}]} for i in range(70)], self.cfg, before_midnight)
         for m in ledger['markets'].values(): m['last_quote'] = {'status': 'usable', 'received_at': before_midnight}
-        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 30)
+        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 50)
         for task in ledger['tasks'].values(): task['status'] = 'blocked'
-        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 30)
+        enroll(ledger, self.cfg, before_midnight); self.assertEqual(len(ledger['tasks']), 50)
         for m in ledger['markets'].values(): m['last_quote']['received_at'] = '2026-10-12T16:00:00Z'
-        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 30)
-        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 30)
-        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 30, '2026-10-13': 0})
+        enroll(ledger, self.cfg, '2026-10-12T16:00:00Z'); self.assertEqual(len(ledger['tasks']), 50)
+        enroll(ledger, self.cfg, '2026-10-12T16:01:00Z'); self.assertEqual(len(ledger['tasks']), 50)
+        self.assertEqual(ledger['enrollment_daily'], {'2026-10-12': 50, '2026-10-13': 0})
         self.assertEqual(ledger['admission_window']['remaining'], 0)
         next_day = '2026-10-13T15:59:59Z'
         ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'createdAt': next_day, 'events': [{'id': str(i)}]}
-                                     for i in range(100, 140)], self.cfg, next_day)
+                                     for i in range(100, 170)], self.cfg, next_day)
         for market in ledger['markets'].values(): market['last_quote'] = {'status':'usable', 'received_at':next_day}
         enroll(ledger, self.cfg, next_day)
-        self.assertEqual(len(ledger['tasks']), 60)
-        self.assertEqual(ledger['admission_window']['admitted'], 30)
+        self.assertEqual(len(ledger['tasks']), 100)
+        self.assertEqual(ledger['admission_window']['admitted'], 50)
     def test_enrollment_requires_quote_from_current_dispatch(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
                   'identity': {'policy_sha256': digest(self.cfg)}}
@@ -133,22 +133,35 @@ class Selection(unittest.TestCase):
         self.assertAlmostEqual(frozen['midpoint'], .505)
     def test_rolling_window_boundary_staggered_slots_and_all_statuses(self):
         ledger = {'tasks': {str(i): {'enrolled_at': (instant(CLOCK)-timedelta(hours=23, minutes=i)).isoformat(),
-                    'status': 'blocked' if i % 2 else 'completed'} for i in range(30)}}
+                    'status': 'blocked' if i % 2 else 'completed'} for i in range(50)}}
         window = admission_window(ledger, self.cfg, CLOCK)
-        self.assertEqual(window['admitted'], 30); self.assertEqual(window['remaining'], 0)
+        self.assertEqual(window['admitted'], 50); self.assertEqual(window['remaining'], 0)
         self.assertTrue(window['cap_reached'])
         release = window['next_slot_at']
         just_before = (instant(release)-timedelta(microseconds=1)).isoformat()
         self.assertEqual(admission_window(ledger, self.cfg, just_before)['remaining'], 0)
         self.assertEqual(admission_window(ledger, self.cfg, release)['remaining'], 1)
-        self.assertEqual(admission_window(ledger, self.cfg, release)['admitted'], 29)
-        ledger['tasks']['31'] = {'enrolled_at': CLOCK, 'status': 'failed'}
+        self.assertEqual(admission_window(ledger, self.cfg, release)['admitted'], 49)
+        ledger['tasks']['51'] = {'enrolled_at': CLOCK, 'status': 'failed'}
         self.assertEqual(admission_window(ledger, self.cfg, CLOCK)['remaining'], 0)
         self.assertEqual(instant(admission_window(ledger,self.cfg,CLOCK)['next_slot_at']), instant(release)+timedelta(minutes=1))
     def test_future_or_missing_admission_receipt_fails_closed(self):
         for task in ({'enrolled_at': (instant(CLOCK)+timedelta(seconds=1)).isoformat()}, {}):
             with self.subTest(task=task), self.assertRaises((ValueError, KeyError)):
                 admission_window({'tasks': {'bad':task}}, self.cfg, CLOCK)
+    def test_larger_window_keeps_thirty_existing_slots_and_admits_only_twenty_more(self):
+        ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
+        old = self.cfg | {'maximum_new_tasks_per_day': 30}
+        ingest(ledger, 'polymarket', [raw_poly() | {'id': str(i), 'events': [{'id': str(i)}]}
+                                    for i in range(70)], self.cfg, CLOCK)
+        for market in ledger['markets'].values(): market['last_quote'] = {'status':'usable', 'received_at':CLOCK}
+        enroll(ledger, old, CLOCK)
+        self.assertEqual(len(ledger['tasks']), 30)
+        before = copy.deepcopy(ledger['tasks'])
+        enroll(ledger, self.cfg, CLOCK)
+        self.assertEqual(len(ledger['tasks']), 50)
+        self.assertEqual({key:ledger['tasks'][key] for key in before}, before)
+        self.assertEqual(ledger['admission_window']['remaining'], 0)
     def test_large_cohort_quote_turns_prioritize_due_labels_and_reserve_new_entries(self):
         ledger = {'markets': {}, 'tasks': {}}
         worker = {'tasks': {}}
@@ -338,7 +351,7 @@ class Persistence(unittest.TestCase):
                 self.assertEqual(migrated[field], ledger[field])
             self.assertFalse(migrated['policy_migrations'][0]['budget_reset'])
     def test_exact_calendar_to_rolling_migration_preserves_budget_and_receipts(self):
-        cfg = policy(); old = dict(cfg); old.pop('enrollment_window_hours')
+        cfg = policy(); old = dict(cfg, maximum_new_tasks_per_day=30); old.pop('enrollment_window_hours')
         self.assertEqual(digest(old), 'd72c87273d613240e98f8e6f0fc1022e4c462db0c5b6c022bdf7a4e55054d7c2')
         for role in ('monitor','worker'):
             with self.subTest(role=role), tempfile.TemporaryDirectory() as root:
@@ -354,6 +367,29 @@ class Persistence(unittest.TestCase):
                 for bad in (cfg | {'enrollment_window_hours':25},cfg | {'maximum_new_tasks_per_day':31},
                             cfg | {'maximum_worker_model_attempts_per_task':61}):
                     with self.assertRaises(ValueError): state(root,role,bad)
+    def test_exact_thirty_to_fifty_migration_preserves_pending_and_terminal_tasks(self):
+        cfg = policy(); old = cfg | {'maximum_new_tasks_per_day':30}
+        self.assertEqual(digest(old), '7c60c698059b659a0e3111f49592dbf0d00daecda14e4a1976d49bf27346b0c1')
+        for role in ('monitor','worker'):
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as root:
+                ledger = state(root,role,old)
+                ledger.update(tasks={status:{'status':status,'executions':2,'enrolled_at':CLOCK,
+                    'policy_sha256':digest(old),'pipeline_commit':'1'*40,'forecast':{'probability':.4}}
+                    for status in ('queued','running','retry_wait','completed','baseline_only','blocked')},
+                    provider_reservations=[{'kind':'model','status':'failed'}],
+                    daily={'2026-10-12':99}, enrollment_daily={'2026-10-12':30})
+                write(Path(root)/'state.json',ledger); raw=(Path(root)/'state.json').read_bytes()
+                for bad in (cfg | {'maximum_new_tasks_per_day':51}, cfg | {'enrollment_window_hours':25},
+                            cfg | {'maximum_worker_model_attempts_per_task':61}):
+                    with self.assertRaises(ValueError): state(root,role,bad)
+                    self.assertEqual((Path(root)/'state.json').read_bytes(),raw)
+                migrated=state(root,role,cfg)
+                for field in ('tasks','provider_reservations','daily','enrollment_daily'):
+                    self.assertEqual(migrated[field],ledger[field])
+                self.assertFalse(migrated['policy_migrations'][-1]['budget_reset'])
+                self.assertEqual((Path(root)/'state.json').read_bytes(),raw)
+                write(Path(root)/'state.json',migrated)
+                self.assertEqual(state(root,role,cfg),migrated)
     def test_artifact_redirect_drops_github_token_and_rejects_untrusted_host(self):
         from urllib.request import Request
         request = Request('https://api.github.com/repos/example/repo/actions/artifacts/1/zip',
