@@ -14,7 +14,7 @@
   "minimum_resolution_hours": 168,
   "maximum_close_horizon_days": 90,
   "enrollment_day_timezone": "Asia/Shanghai",
-  "maximum_new_tasks_per_day": 30,
+  "maximum_new_tasks_per_day": 50,
   "enrollment_window_hours": 24,
   "maximum_executions_per_task": 3,
   "maximum_tasks_per_dispatch": 3,

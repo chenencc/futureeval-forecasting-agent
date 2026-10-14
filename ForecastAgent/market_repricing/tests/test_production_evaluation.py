@@ -53,7 +53,7 @@ class ProductionEvaluation(unittest.TestCase):
     def test_worker_first_approved_migration_evaluates_without_rewriting_sources_or_labels(self):
         market = {'family':'family','created_at':'2026-10-12T00:00:00Z','rules_sha256':'rules'}
         schedule = creation_schedule({'market':market})
-        cfg = policy(); old = dict(cfg); old.pop('enrollment_window_hours')
+        cfg = policy(); old = dict(cfg, maximum_new_tasks_per_day=30); old.pop('enrollment_window_hours')
         forecast = {'timely':True,'sealed_at':'2026-10-12T01:00:00Z','price_schedule':schedule,
             'baseline':{'24':.45,'72':.45,'168':.45},'pair_audit':{'map_delivered':True},
             'arms':{name:{'status':'completed','price_means':{'24':value},'eventual_probability_yes':value,
@@ -76,7 +76,7 @@ class ProductionEvaluation(unittest.TestCase):
             self.assertEqual(run(monitor,worker,root/'reference.json'),result)
 
     def test_evaluation_rejects_unapproved_policy_or_quota_changes(self):
-        cfg=policy(); old=dict(cfg); old.pop('enrollment_window_hours')
+        cfg=policy(); old=dict(cfg, maximum_new_tasks_per_day=30); old.pop('enrollment_window_hours')
         for change in ({'maximum_worker_model_attempts_per_task':61},{'maximum_new_tasks_per_day':31}):
             with self.subTest(change=change),tempfile.TemporaryDirectory() as root:
                 root=Path(root); monitor=root/'monitor'; worker=root/'worker'
