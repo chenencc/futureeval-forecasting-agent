@@ -14,10 +14,11 @@ HTTP_CAP, BROWSER_CAP = 4, 2
 
 
 def policy_identity():
+    from ForecastAgent.acquisition_shared import identity as shared_identity
     files = ('evidence_capture.py', 'materials.py', 'source_profile.py', 'acquisition_contract.py')
     return {'version': VERSION, 'initial_capture_budget': 'existing_native_fetch_attempts',
             'supplement_http_cap': HTTP_CAP, 'supplement_browser_cap': BROWSER_CAP,
-            'tavily_basic_cap': 3, 'exa_cap': 1,
+            'tavily_basic_cap': 3, 'exa_cap': 1, 'shared_acquisition':shared_identity(),
             'adapter_sha256_lf': {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()
                 .replace(b'\r\n', b'\n')).hexdigest() for name in files}}
 
@@ -340,6 +341,7 @@ def capture_adapter():
     from unittest.mock import patch
     Task = retrieval.RetrievalTask
     original = Task._execute
+    original_page_view=Task.page_view
     original_validate = retrieval.validate
     def validate(task, name, args, tools=None):
         if task.bundle.get('request', {}).get('market_acquisition_policy') == VERSION and tools and isinstance(args, dict):
@@ -384,7 +386,13 @@ def capture_adapter():
     original_inspect = admission.inspect
     def inspect(page):
         return quality(page, page.get('url') or page.get('final_url') or '', inspector=original_inspect)
-    with patch.object(Task, '_execute', wrapped), patch.object(retrieval, 'validate', validate), patch.object(admission, 'inspect', inspect):
+    def page_view(task,page,*args,**kwargs):
+        value=original_page_view(task,page,*args,**kwargs)
+        if task.bundle.get('request',{}).get('market_acquisition_policy')==VERSION:
+            from ForecastAgent.acquisition_shared.tool_output import compact_view
+            return compact_view(value)
+        return value
+    with patch.object(Task, '_execute', wrapped), patch.object(Task,'page_view',page_view), patch.object(retrieval, 'validate', validate), patch.object(admission, 'inspect', inspect):
         yield
 
 

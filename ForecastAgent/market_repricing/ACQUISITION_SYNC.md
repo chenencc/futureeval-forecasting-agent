@@ -1,8 +1,8 @@
 # Shared acquisition capabilities, independent forecasting deployments
 
-This is the integration design for the validated market P0 capabilities. It does
-not claim that the Metaculus production release already consumes them. Production
-status requires exact deployed hashes and worker receipts.
+The two platform adapters now consume the same versioned P0 implementation.
+Production status requires exact deployed hashes and worker receipts, separately
+from code integration and Linux acceptance.
 
 ```mermaid
 flowchart TD
@@ -27,10 +27,13 @@ preservation, shell/action classification, source identity contracts and explici
 coverage/failure receipts. Official API adapters are supplied by the Channels
 lane. Navigation produces candidate references, not certified relevant evidence.
 
-The current P0 implementation resides in `market_repricing/acquisition_contract.py`.
-It still imports the pinned engine's source parser and is **not yet a standalone
-shared package**. Its generic functions can move into a Channels-owned common
-module only through a reviewed source-hash handoff. Market-host exclusion,
+The P0 implementation resides in `acquisition_shared/contract.py`;
+`market_repricing/acquisition_contract.py` is a compatibility import. The
+competition release uses `integrations/shared_acquisition.py`. Exact common-file
+hashes are checked against both immutable releases in Linux CI, and source
+parser dependencies remain bound to each host's validated implementation.
+Pipeline owns these integration contracts; Channels still owns its native
+reader/toolbox development. Market-host exclusion,
 forecast-market signals and venue-specific source roles remain in the market
 adapter; Metaculus must not inherit those platform rules by copying a worker.
 
@@ -88,20 +91,27 @@ stand in for an earlier information window. Initially keep caches independent.
    market upgrade does not change a competition tag. Roll back a selector only
    when pending-task compatibility is verified; never relabel old artifacts.
 
-For this release, the market pilot and public-table supplement provide capture
-validation. The Metaculus ADIZ snapshot is a regression fixture, not a new
-Metaculus end-to-end production test. Competition adoption still needs its own
-adapter, Linux restore and submission-format/duplicate-delivery checks.
+The market pilot and public-table supplement provide capture validation.
+Identical19frozen packets/200sources pass both platform projections with zero
+common differences and unchanged hashes/clocks. Competition's native adapter,
+Linux60gates and611-file/29-accepted-receipt restoration passed. Market's native
+engine activation, byte equality and full state preservation are separate gates.
+These are not a new prospective forecast-quality test or proof of accuracy.
 
 ## Current implementation and remaining work
 
 | Capability | Market P0 | Metaculus production |
 | --- | --- | --- |
-| Explicit roles and table coverage | Implemented and locally verified | Existing native reader; P0 adapter not promoted |
-| Observed public tabs and cell coordinates | Implemented; two actual public captures | Saved ADIZ input replay only |
-| MND document identity reuse | Implemented and replayed | Duplicate capitalized URLs observed; adoption pending |
-| Authentication stop rules | Implemented;401 preserved | Common contract adoption pending |
-| Independent snapshots and budget preservation | Existing runtime plus P0 checks | Existing release contract retained |
+| Explicit roles and table coverage | Shared implementation | Same shared implementation through native adapter |
+| Observed public tabs and cell coordinates | Actual captures plus native gates | Same reader and request-bound navigation |
+| MND document identity reuse | Implemented and replayed | Native reuse/resume gate; no duplicate fetch reservation |
+| Authentication stop rules |401preserved | Typed wrapped401and source-routing holds |
+| Independent snapshots and budget preservation | Native market runtime | Native competition runtime and accepted receipts retained |
+
+Tool replies use a bounded metadata projection; the full cell maps, merges and
+source bytes remain archived. Native task identities include the shared hashes.
+Legacy terminal records keep their actual release. Started incompatible tasks
+block a switch rather than receiving fresh budgets or rewritten fingerprints.
 
 Do not compare eventual accuracy before resolution. More bodies, fewer gaps or
 a successful worker are separate acquisition/operational measurements.

@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.7-p0.1'
+VERSION = 'market-v0.3.8-shared.1'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
 FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
                        'd00bc630300a22ee84d1f6064892f261894d833b': 900,
@@ -32,6 +32,9 @@ def budget_compatibility():
         for name,expected in candidate['candidate_files_sha256_lf'].items():
             if hashlib.sha256((root/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()!=expected:
                 raise ValueError('Capture candidate source changed: '+name)
+        from ForecastAgent.acquisition_shared import identity as shared_identity
+        if candidate.get('shared_acquisition')!=shared_identity():
+            raise ValueError('Shared acquisition capability changed')
     for name, expected in manifest['unchanged_stage_files_sha256_lf'].items():
         if candidate and name in candidate['candidate_files_sha256_lf']:
             if candidate.get('legacy_stage_sha256_lf',{}).get(name)!=expected:
