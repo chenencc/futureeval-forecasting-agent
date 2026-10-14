@@ -63,3 +63,37 @@ IPv4-only follow-up receiving401. Public-address and redirect checks were not
 disabled. Complete live spreadsheet export is therefore **not verified**; the
 old100-row sheet capture remains partial. No alternate authentication route was
 attempted. Unit fixtures verify bounded CSV parsing and row coordinates only.
+
+## Public table gap follow-up
+
+Saved Google public worksheet metadata can expose additional tabs in the same
+workbook. The candidate reads literal JSON metadata only, never executes page
+JavaScript or guesses worksheet IDs. Each public view lead carries its observed
+tab ID, parent original hash and parent capture time. Existing capture limits
+remain active and only one workbook navigation layer is admitted.
+
+A workbook CSV export returning401 prevents automatic attempts against another
+tab's export endpoint. Ordinary observed public views remain separate sources.
+Authentication, removed-source and rate-limit failures are retained with typed
+reasons rather than silently cycling through browser retries.
+
+The offline public-cell reader binds each rendered row to its actual worksheet
+row ID and each cell to its column coordinate. Horizontal and vertical merges
+retain their spans. The projection has1000-row and100000-character ceilings;
+omissions remain explicit. Original bytes, hashes and capture clocks stay intact.
+Rendered declared grid extent is not complete target-series certification. Month
+labels retain month precision; an in-progress month is not a final observation.
+
+The October14follow-up performed two public GETs and no model/search calls. The
+FAQ exposed70rendered rows and the monthly category table75, extending to an
+October2026label. Both match the requested tab and declared grid dimensions.
+The original Daily Totals view still exposes only100of2227declared rows. Its
+full daily series and denied CSV export remain gaps. The third-party FAQ also
+distinguishes de facto ADIZ activity from median-line crossings; neither its
+authority nor metric equivalence is inferred from readability.
+
+New originals and coordinate views are preserved as a later independent
+supplement, with immutable parent linkage and packet-object verification. The
+171market tests,11pinned-engine tests and19frozen-input regression are offline.
+These checks validate transport, parsing and preservation; they do not measure
+forecast accuracy or certify the three pilot questions' semantic completeness.

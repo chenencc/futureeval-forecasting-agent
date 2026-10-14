@@ -5,10 +5,23 @@ import csv
 from datetime import date
 import hashlib
 import io
+import json
 import re
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 VERSION = 'market-material-contract-v1'
+
+
+def failure_details(exc):
+    """Preserve typed transport reasons; auth denial never triggers browser retry."""
+    audit=getattr(exc,'audit',None)
+    detail=(audit or {}).get('transport_error',{}).get('detail','') if isinstance(audit,dict) else ''
+    code=getattr(exc,'code',None)
+    match=re.search(r'HTTP (?:Error )?(\d{3})',detail)
+    if code is None and match:code=int(match[1])
+    category='authentication_required' if code==401 else 'source_removed' if code==410 else 'rate_limited' if code==429 else 'transport_failure'
+    return {'http_status':code,'failure_category':category,'automatic_browser_retry_allowed':code not in {401,410,429},
+            'transport_audit':audit,'detail':str(exc)[:500]}
 
 
 def action_link(url):
@@ -66,6 +79,82 @@ def sheet_export(url):
         {'format': 'csv', 'gid': next(iter(gids))})
 
 
+def export_access_denied(url, attempts):
+    """One workbook export auth denial also prevents alternate-tab export retries."""
+    p=urlsplit(url)
+    if p.hostname!='docs.google.com' or not p.path.endswith('/export'):return False
+    for attempt in attempts:
+        other=urlsplit(attempt.get('url',''))
+        if other.hostname!=p.hostname or other.path!=p.path:continue
+        detail=str(attempt.get('detail',''))+' '+str(attempt.get('error',''))+' '+str(attempt.get('transport_audit',{}))
+        if attempt.get('http_status')==401 or attempt.get('failure_category')=='authentication_required' or re.search(r'HTTP (?:Error )?401\b',detail):
+            return True
+    return False
+
+
+def sheet_grid_profile(page, url):
+    """Read literal public bootstrap metadata; never execute page JavaScript."""
+    if sheet_export(url) is None or not page.get('raw_response_base64'):
+        return None
+    from ForecastAgent.readers.material_structure import html_tree
+    try:
+        tree=html_tree(page)
+        mark='var bootstrapData = '
+        script=next((node.text for node in tree.xpath('//script') if mark in (node.text or '') and len(node.text)<2_000_000),None)
+        if not script:
+            return {'status':'bootstrap_unavailable','complete_target_series_verified':False}
+        data,end=json.JSONDecoder().raw_decode(script.split(mark,1)[1])
+        tabs=[];extents=[];active=str(data.get('gridId'))
+        for value in data.get('changes',{}).values():
+            if not isinstance(value,list):continue
+            for record in value[:10000]:
+                if not isinstance(record,list) or len(record)!=2 or not isinstance(record[1],str):continue
+                if record[0] not in {21350203,341438337}:continue
+                item=json.loads(record[1])
+                if record[0]==21350203:
+                    name=item[3][0]['1'][0][2]
+                    if (isinstance(name,str) and str(item[2]).isdigit() and
+                        isinstance(item[-2],int) and isinstance(item[-1],int)):
+                        tabs.append({'gid':str(item[2]),'name':name,'declared_rows':item[-2],'declared_columns':item[-1]})
+                elif isinstance(item,dict):
+                    for operation in item.get('2',[]):
+                        region=operation.get('1')
+                        if (isinstance(region,list) and len(region)==5 and str(region[0])==active and
+                            all(isinstance(n,int) and n>=0 for n in region[1:])):
+                            extents.append({'row_start':region[1],'row_end_exclusive':region[2],
+                                'column_start':region[3],'column_end_exclusive':region[4]})
+        q=urlsplit(url);gid=(parse_qs(q.query).get('gid') or parse_qs(q.fragment).get('gid') or [None])[0]
+        current=next((t for t in tabs if t['gid']==active),None)
+        complete=bool(current and any(r['row_start']==0 and r['row_end_exclusive']>=current['declared_rows'] and
+             r['column_start']==0 and r['column_end_exclusive']>=current['declared_columns'] for r in extents))
+        return {'status':'parsed_literal_metadata','schema':'google_public_sheet_grid_v1','active_gid':active,
+            'requested_gid':gid,'requested_tab_matches':gid==active,'active_tab':current,
+            'declared_loaded_regions':extents,'declared_grid_extent_loaded':complete,
+            'tabs':tabs,'raw_source_sha256':page.get('sha256'),
+            'javascript_executed':False,'metadata_extent_is_not_cell_extraction':True,
+            'complete_target_series_verified':False}
+    except (ValueError,KeyError,TypeError,IndexError,StopIteration) as exc:
+        return {'status':'unsupported_bootstrap','error_type':type(exc).__name__,
+                'complete_target_series_verified':False,'javascript_executed':False}
+
+
+def sheet_tab_leads(page,url,*,limit=8):
+    """Only saved same-workbook identities can become ordinary public view links."""
+    data=sheet_grid_profile(page,url)
+    if not data or data.get('status')!='parsed_literal_metadata':return []
+    p=urlsplit(url);out=[]
+    for tab in data['tabs']:
+        if tab['gid']==data['active_gid']:continue
+        out.append({'url':urlunsplit((p.scheme,p.netloc,p.path,urlencode({'gid':tab['gid']}),'')),
+            'title':tab['name'],'origin':'observed_sheet_tab','parent_url':url,
+            'parent_source_sha256':page.get('sha256'),'parent_retrieved_at_utc':page.get('retrieved_at_utc'),
+            'observed_grid_id':tab['gid'],'declared_rows':tab['declared_rows'],
+            'declared_columns':tab['declared_columns'],'automatic_capture_eligible':True})
+    # Compact summaries and definitions fit a bounded visible table better.
+    out.sort(key=lambda t:(not bool(re.search('monthly|total|faq|definition',t['title'],re.I)),t['declared_rows'],t['observed_grid_id']))
+    return out[:limit]
+
+
 def _dates(text):
     iso = re.findall(r'\b(20\d{2})[-.](\d{1,2})[-.](\d{1,2})\b', text)
     values = []
@@ -102,6 +191,18 @@ def coverage(page, url):
         result.update(page['data_export_coverage'])
     if viewport:
         result.update(recommended_export_url=sheet_export(url), full_dataset_verified=False)
+        grid=sheet_grid_profile(page,url)
+        if grid:
+            result['public_grid_metadata']=grid
+            if grid.get('requested_tab_matches') is False:
+                result['coverage_status']='requested_tab_not_returned'
+            elif grid.get('declared_grid_extent_loaded'):
+                result['coverage_status']='captured_declared_grid_extent'
+        if page.get('sheet_cell_coverage'):
+            result['rendered_cells']=page['sheet_cell_coverage']
+            if grid and grid.get('requested_tab_matches'):
+                result['coverage_status']=('captured_rendered_grid_extent' if
+                    page['sheet_cell_coverage']['all_declared_cells_rendered'] else 'observed_subset')
     return result
 
 
@@ -109,6 +210,11 @@ def body_contract(page, url, diagnostic):
     result = copy.deepcopy(diagnostic)
     if action_link(url) or action_link(page.get('final_url') or url):
         result.update(state='sharing_action_not_original',usable_text=False,qualifies_full_body=False)
+    route=urlsplit(url)
+    if (route.hostname=='docs.google.com' and route.path.endswith('/export') and
+        parse_qs(route.query).get('format')==['csv'] and
+        page.get('content_type','').split(';')[0].lower() in {'text/html','application/xhtml+xml'}):
+        result.update(state='csv_export_returned_html',usable_text=False,qualifies_full_body=False)
     state = result.get('state', '')
     result['body_role'] = ('blocked_or_unavailable' if not result.get('usable_text') else
         'contextual_lead' if result.get('qualifies_full_body') is False else 'readable_original_scope_unverified')
@@ -117,7 +223,7 @@ def body_contract(page, url, diagnostic):
     data = coverage(page, url)
     result['data_coverage'] = data
     if result.get('usable_text') and (data['table_document_count'] or sheet_export(url) or page.get('data_export_coverage')):
-        result['body_role'] = 'partial_data' if data['coverage_status'] in {'browser_sheet_view_only', 'observed_subset'} else 'structured_data_scope_unverified'
+        result['body_role'] = 'partial_data' if data['coverage_status'] in {'browser_sheet_view_only', 'observed_subset','requested_tab_not_returned'} else 'structured_data_scope_unverified'
         if result.get('usable_text') and result['body_role'] == 'partial_data':
             result['qualifies_full_body'] = False
     result.update(material_contract_version=VERSION, target_coverage_verified=False)
@@ -172,4 +278,78 @@ def materialize_csv(page, url):
             'selected_rows_guaranteed_recent':False, 'original_csv_bytes_preserved':True,
             'full_dataset_verified':False, 'transport_response_complete':not page.get('content_truncated', False),
             'all_row_observed_date_range':_dates(text)})
+    return child
+
+
+def materialize_sheet(page, url):
+    """Project saved public cells with coordinates; never infer target completeness."""
+    grid=sheet_grid_profile(page,url)
+    if not grid or not grid.get('requested_tab_matches') or not grid.get('active_tab'):
+        return page
+    if page.get('sheet_cell_view',{}).get('raw_source_sha256')==page.get('sha256'):
+        return page
+    from ForecastAgent.readers.material_structure import html_tree
+    tree=html_tree(page);gid=grid['active_gid'];tab=grid['active_tab']
+    rows=[];parts=[];periods=[];seen=set();chars=0;bounded=False;occupied={}
+    if tab['declared_columns']>1000:return page
+    months={m:i+1 for i,m in enumerate(('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'))}
+    def column_name(n):
+        label=''
+        while n:
+            n,r=divmod(n-1,26);label=chr(65+r)+label
+        return label
+    for row in tree.xpath('//table[contains(concat(" ",normalize-space(@class)," ")," waffle ")]//tr'):
+        heads=row.xpath('./th[@id]')
+        if not heads:continue
+        match=re.fullmatch(re.escape(gid)+r'R(\d+)',heads[0].get('id',''))
+        if not match:continue
+        number=int(match[1])+1
+        if number in seen:return page  # Ambiguous overlapping panes need a separate reader.
+        inherited=occupied.get(number,{})
+        cells=[];column=1;row_periods=[];used=set(inherited)
+        for cell in row.xpath('./td'):
+            while column in used:column+=1
+            try:span=int(cell.get('colspan','1'));height=int(cell.get('rowspan','1'))
+            except ValueError:return page
+            if not 1<=span<=1000 or not 1<=height<=1000 or column+span-1>1000:return page
+            if any(n in used for n in range(column,column+span)):return page
+            text=' '.join(cell.text_content().split())
+            address=column_name(column)+str(number)
+            cells.append({'address':address,'column_start':column,'column_span':span,'row_span':height,'text':text})
+            used.update(range(column,column+span))
+            for target in range(number+1,number+height):
+                pending=occupied.setdefault(target,{})
+                if any(n in pending for n in range(column,column+span)):return page
+                pending.update({n:address for n in range(column,column+span)})
+            period=re.fullmatch(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (20\d{2})',text)
+            if period:
+                month='%s-%02d'%(period[2],months[period[1]])
+                row_periods.append({'address':address,'literal':text,'month':month,
+                    'period_in_progress_at_capture':month==str(page.get('retrieved_at_utc',''))[:7],
+                    'source_period_finality_verified':False})
+            column+=span
+        line='[Sheet %s row %s] '%(gid,number)+' | '.join(c['address']+'='+c['text']+
+            (' [span %sx%s]'%(c['row_span'],c['column_span']) if c['column_span']>1 or c['row_span']>1 else '') for c in cells if c['text'])
+        if len(rows)>=1000 or chars+len(line)>100000:
+            bounded=True;break
+        chars+=len(line);parts.append(line);seen.add(number);periods.extend(row_periods)
+        rows.append({'sheet_row':number,'rendered_column_count':len(used),
+            'inherited_merged_cells':{str(k):v for k,v in inherited.items()},'cells':cells})
+    if not rows:return page
+    complete=(not bounded and len(seen)==tab['declared_rows'] and min(seen)==1 and
+        max(seen)==tab['declared_rows'] and all(r['rendered_column_count']==tab['declared_columns'] for r in rows))
+    content='\n'.join(parts);child=copy.deepcopy(page)
+    child.update(content=content,content_sha256=hashlib.sha256(content.encode()).hexdigest(),
+        parent_parser_content_sha256=hashlib.sha256(page.get('content','').encode()).hexdigest(),
+        content_truncated=bool(bounded or page.get('content_truncated')),
+        sheet_cell_view={'gid':gid,'name':tab['name'],'rows':rows,'raw_source_sha256':page['sha256'],
+            'capture_at':page.get('retrieved_at_utc'),'network_calls':0},
+        sheet_cell_coverage={'original_row_numbers':sorted(seen),'rendered_row_count':len(rows),
+            'row_bound':1000,'character_bound':100000,'projection_truncated':bounded,
+            'all_declared_cells_rendered':complete,'full_daily_series_verified':False,
+            'earliest_observed_month':min((p['month'] for p in periods),default=None),
+            'latest_observed_month':max((p['month'] for p in periods),default=None),
+            'month_literal_cells':periods,'source_period_finality_verified':False},
+        documents=[{'page_content':content,'metadata':{'format':'spreadsheet','row_count':len(rows),
+            'original_row_numbers':sorted(seen),'truncated':bounded,'gid':gid}}])
     return child

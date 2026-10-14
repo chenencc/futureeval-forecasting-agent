@@ -2,9 +2,9 @@
   "schema": "market-capture-stage-candidate-v1",
   "parent_pipeline_commit": "098a56c197012661f976d34f15cf21ac4106d024",
   "candidate_files_sha256_lf": {
-    "evidence_capture.py": "104c7af550f80dbc9f770619ed283b8604552adb70f07c5223151e89ff281187",
+    "evidence_capture.py": "1a1f1ee63e7e255e79e92f785de882eff3623f4b15a863af27ccc8bfb5092d76",
     "materials.py": "63cb90522f85d4c3f0733ec95260ba73324165df5a35193b0afad9f3261f69af",
-    "acquisition_contract.py": "f0c09db79315b19de80d283d1dd108e90fc4f3a37bab002188d25df955f94880"
+    "acquisition_contract.py": "e671711aaf4026a9bbf1807dabc79cb7cfe8c1d38e15086e6f22ad8ec7aa5870"
   },
   "legacy_stage_sha256_lf": {
     "evidence_capture.py": "abbefd119e4043ac2b78565dce04b39001e26463ea5f8e9c3966d0ffd03c7b8b",
