@@ -4,6 +4,8 @@ on:
     branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0]
     paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_acquisition_validation.yaml']
   workflow_dispatch:
+  pull_request:
+    paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_acquisition_validation.yaml']
 permissions:
   contents: read
   actions: read
