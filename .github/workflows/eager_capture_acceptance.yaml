@@ -1,0 +1,37 @@
+name: Competition eager capture acceptance
+on:
+  push:
+    branches: [codex/metaculus-eager-capture]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/requirements-supplement.txt
+      - name: Verify immutable source and unchanged acquisition baseline
+        run: |
+          python -m ForecastAgent.releases.manifest
+          python -c "from ForecastAgent.acquisition.pipeline import verify_baseline; verify_baseline()"
+      - name: Capture, resume, failover, typed payload and delivery regressions
+        run: >-
+          python -m unittest
+          ForecastAgent.tests.test_eager_capture
+          ForecastAgent.tests.test_collection_recovery
+          ForecastAgent.tests.test_collection_actions
+          ForecastAgent.tests.test_production_collection
+          ForecastAgent.tests.test_supplement
+          ForecastAgent.tests.test_release_1_0_5
+          ForecastAgent.tests.test_source_reading_runtime
+          ForecastAgent.tests.test_material_structure
+          ForecastAgent.tests.test_official_recovery
+          ForecastAgent.tests.test_official_competition
+          ForecastAgent.tests.test_nonbinary_distributions -q

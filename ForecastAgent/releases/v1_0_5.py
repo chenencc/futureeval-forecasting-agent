@@ -110,15 +110,18 @@ def collect(request, retrieval):
                    recover_sources_before_stall=True,
                    source_recovery_policy_sha256=hashlib.sha256((Path(__file__).parents[1]/'runtime/source_frontier.py').read_bytes().replace(b'\r\n',b'\n')).hexdigest(),
                    exa_search_policy='required')
+    from ForecastAgent.acquisition.eager_capture import FIELD, identity as capture_identity, adapter as capture_adapter
+    request[FIELD] = capture_identity()
     directory=Path(retrieval)/'release-1.0.5'
     if not directory.exists() and Path(retrieval).exists() and any(Path(retrieval).iterdir()):
         raise ValueError('Previous acquisition files exist; preserve budgets and require explicit migration')
     if (directory/'state.json').exists() and (directory/'collection/bundle.json').exists():
         if load(directory/'identity.json')!=pipeline.identity(request,True):raise ValueError('Saved acquisition identity differs from the current request')
         handoff(directory)
-    result=pipeline.run(request,directory,supplement_network=True)
-    if result.get('state')!='complete' and handoff(directory):
+    with capture_adapter():
         result=pipeline.run(request,directory,supplement_network=True)
+        if result.get('state')!='complete' and handoff(directory):
+            result=pipeline.run(request,directory,supplement_network=True)
     raw=load(directory/'collection/bundle.json')
     if result.get('state')!='complete':return raw
     from ForecastAgent.acquisition.recovery import has_readable_material
@@ -148,6 +151,12 @@ def collect(request, retrieval):
         package=directory/'raw-export-package.json'
         if package.exists() and load(package)!=exported:raise ValueError('Frozen raw export package changed')
         save(package,exported)
+    from ForecastAgent.acquisition.eager_capture import export as capture_export
+    exported = capture_export(load(package), directory)
+    package = directory/'capture-export-package.json'
+    if package.exists() and load(package) != exported:
+        raise ValueError('Frozen capture export changed')
+    save(package, exported)
     # The legacy worker receives a stage-completion adapter, not a rewritten
     # collector result. Its supplement hook supplies the exact immutable package.
     adapter={'request':raw['request'],'result':{'status':'raw_package_exported','incomplete':False,
@@ -162,7 +171,7 @@ def supplement(adapter, folder, ident):
     directory=Path(folder)/'retrieval/release-1.0.5'
     marker=adapter.get('release_acquisition') or {}
     name=marker.get('package_file','package.json')
-    if name not in {'package.json','raw-export-package.json'}:raise ValueError('Invalid material package filename')
+    if name not in {'package.json','raw-export-package.json','capture-export-package.json'}:raise ValueError('Invalid material package filename')
     path=directory/name
     if marker.get('version')!=VERSION or file_hash(path)!=marker.get('package_sha256'):
         raise ValueError('Frozen material export adapter changed')
