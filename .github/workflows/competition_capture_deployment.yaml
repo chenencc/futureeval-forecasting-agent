@@ -37,3 +37,12 @@ jobs:
           python -m pip install -r ForecastAgent/requirements-supplement.txt
           python -m ForecastAgent.releases.manifest
           python -c "from ForecastAgent.acquisition.pipeline import verify_baseline; from ForecastAgent.acquisition.eager_capture import identity; verify_baseline(); assert identity()['extra_models']==0"
+          python - <<'PY'
+          from ForecastAgent.releases.v1_0_5 import verify_release
+          from ForecastAgent.acquisition import eager_capture
+          from ForecastAgent.integrations.shared_acquisition import adapter
+          manifest=verify_release()
+          with adapter(): active=eager_capture.identity()
+          assert active['shared_acquisition']==manifest['shared_acquisition']
+          assert active['extra_models']==0 and active['fetch_budget_shared']
+          PY
