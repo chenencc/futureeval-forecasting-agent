@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
-from ForecastAgent.market_repricing.common import now, write
+from ForecastAgent.market_repricing.common import now, write, policy
 from ForecastAgent.market_repricing.continuation import run
 
 
@@ -48,7 +48,7 @@ class Continuation(unittest.TestCase):
                 'ForecastAgent.market_repricing.continuation.api') as api:
                 run(root,'123',verification_only=True)
                 write(Path(root)/'state.json', {'tasks':{'test':{'status':'queued','executions':0}},
-                    'provider_reservations':[{'kind':'model','day':now()[:10]}]*400})
+                    'provider_reservations':[{'kind':'model','day':now()[:10]}]*policy()['maximum_worker_model_attempts_per_utc_day']})
                 run(root,'123')
             api.assert_not_called()
 

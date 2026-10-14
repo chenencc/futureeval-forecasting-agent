@@ -33,7 +33,7 @@ class CreationFollowups(unittest.TestCase):
                     self.assertEqual(saved[key], migrated[key])
                 self.assertFalse(migrated['policy_migrations'][-1]['budget_reset'])
                 write(Path(root) / 'state.json', migrated)
-                self.assertEqual(len(state(root, role, self.cfg)['policy_migrations']), 1)
+                self.assertEqual(len(state(root, role, self.cfg)['policy_migrations']), 2)
 
     def test_creation_origin_not_enrollment_or_anchor(self):
         result = creation_schedule(self.task)

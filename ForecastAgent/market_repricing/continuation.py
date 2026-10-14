@@ -7,13 +7,14 @@ from urllib.request import Request, urlopen
 from .common import now, instant, policy, read, write
 from .github_state import api
 from .worker import pending_keys
+from .budgets import executions_used
 
 
 def run(root, monitor_run, verification_only=False):
     root = Path(root)
     ledger, cfg = read(root / 'state.json'), policy()
-    pending = [k for k,t in ledger['tasks'].items() if t['status'] in {'queued','running','retry_wait'}
-               and t['executions'] < cfg['maximum_executions_per_task']]
+    pending = [k for k,t in ledger['tasks'].items() if t['status'] in {'queued','running','retry_wait','budget_wait'}
+               and executions_used(t) < cfg['maximum_executions_per_task']]
     due = pending_keys(ledger)
     current = os.environ['GITHUB_RUN_ID']
     day = now()[:10]
@@ -21,8 +22,13 @@ def run(root, monitor_run, verification_only=False):
     used = sum(r['kind'] == 'model' and r['day'] == day for r in records)
     report = {'pending': len(pending), 'source_monitor_run': str(monitor_run),
               'budget_reset': False, 'status': 'idle'}
-    if verification_only or not pending or used >= cfg['maximum_worker_model_attempts_per_utc_day']:
+    if verification_only or not pending:
         return report
+    if used >= cfg['maximum_worker_model_attempts_per_utc_day']:
+        from datetime import timedelta
+        retry = (instant(now()).replace(hour=0,minute=0,second=0,microsecond=0) + timedelta(days=1)).isoformat()
+        return report | {'status': 'budget_wait', 'scope': 'utc_day', 'used': used,
+                         'limit': cfg['maximum_worker_model_attempts_per_utc_day'], 'retry_at': retry}
     runs = api('/actions/workflows/market_research_worker.yaml/runs?branch=main&per_page=30')['workflow_runs']
     if any(str(r['id']) != current and r['status'] in {'queued', 'in_progress', 'waiting', 'requested', 'pending'} for r in runs):
         return report | {'status': 'another_worker_already_scheduled'}

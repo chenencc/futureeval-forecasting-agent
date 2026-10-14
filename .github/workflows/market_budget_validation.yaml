@@ -1,0 +1,67 @@
+name: Market budget recovery saved-state validation
+on:
+  push:
+    branches: [codex/market-budget-recovery]
+    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_budget_validation.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore saved production checkpoint without provider access
+        run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role worker --root snapshots/worker --run-id 38539388664
+      - name: Verify exact budget migration and original preservation
+        run: |
+          python - <<'PY'
+          import hashlib, json, subprocess
+          from collections import Counter
+          from pathlib import Path
+          from ForecastAgent.market_repricing.common import policy, read, state, verify, write
+          from ForecastAgent.market_repricing.budgets import availability, executions_used, recover_legacy
+          from ForecastAgent.market_repricing.deployment import validate_pending
+          root=Path('snapshots/worker')
+          verified=verify(root)
+          before=read(root/'state.json')
+          inventory=read(root/'inventory.json')['files']
+          cfg=policy()
+          migrated=state(root,'worker',cfg)
+          recovered=recover_legacy(root,migrated)
+          for field in ('provider_reservations','daily'):
+              assert migrated.get(field)==before.get(field),field
+          terminal={k:t for k,t in before['tasks'].items() if t['status'] in {'completed','baseline_only'}}
+          assert {k:migrated['tasks'][k] for k in terminal}==terminal
+          for name,expected in inventory.items():
+              assert hashlib.sha256((root/name).read_bytes()).hexdigest()==expected,name
+          receipt=validate_pending(root,Path('snapshots/no-monitor'),{'pipeline_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()})
+          rows={k:{'before_status':before['tasks'][k]['status'],'after_status':t['status'],
+              'executions':t['executions'],'service_executions_used':executions_used(t),
+              'budget_available':availability(migrated,k,cfg) is None,
+              'failure':read(root/'tasks'/__import__('ForecastAgent.market_repricing.common',fromlist=['digest']).digest(k)/'failure.json')
+                  if (root/'tasks'/__import__('ForecastAgent.market_repricing.common',fromlist=['digest']).digest(k)/'failure.json').exists() else None}
+              for k,t in migrated['tasks'].items() if t['status'] not in {'completed','baseline_only'}}
+          report={'source_run':38539388664,'all_original_files_unchanged':verified,
+              'terminal_tasks_unchanged':len(terminal),'recovered':recovered,'remaining':rows,
+              'state_distribution':dict(Counter(t['status'] for t in migrated['tasks'].values())),
+              'provider_reservations':len(before.get('provider_reservations',[])),
+              'daily_model_limit':cfg['maximum_worker_model_attempts_per_utc_day'],
+              'policy_migrations':migrated.get('policy_migrations',[]),'compatibility':receipt,
+              'provider_calls':0,'budget_reset':False}
+          write('snapshots/receipts/budget-preservation.json',report)
+          print(json.dumps(report))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: market-budget-preservation
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30

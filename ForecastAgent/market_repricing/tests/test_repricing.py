@@ -23,7 +23,7 @@ CLOCK = '2026-10-12T00:00:00+00:00'
 
 
 def previous_policy():
-    cfg = policy()
+    cfg = policy() | {'maximum_worker_model_attempts_per_utc_day': 400}
     for field in ('maximum_candidate_age_hours', 'price_target_origin',
                   'maximum_resolution_requests_per_dispatch', 'final_refresh_interval_hours',
                   'resolved_recheck_interval_hours', 'enrollment_window_hours'):
@@ -351,7 +351,7 @@ class Persistence(unittest.TestCase):
                 self.assertEqual(migrated[field], ledger[field])
             self.assertFalse(migrated['policy_migrations'][0]['budget_reset'])
     def test_exact_calendar_to_rolling_migration_preserves_budget_and_receipts(self):
-        cfg = policy(); old = dict(cfg, maximum_new_tasks_per_day=30); old.pop('enrollment_window_hours')
+        cfg = policy(); old = dict(cfg, maximum_new_tasks_per_day=30, maximum_worker_model_attempts_per_utc_day=400); old.pop('enrollment_window_hours')
         self.assertEqual(digest(old), 'd72c87273d613240e98f8e6f0fc1022e4c462db0c5b6c022bdf7a4e55054d7c2')
         for role in ('monitor','worker'):
             with self.subTest(role=role), tempfile.TemporaryDirectory() as root:
@@ -368,7 +368,7 @@ class Persistence(unittest.TestCase):
                             cfg | {'maximum_worker_model_attempts_per_task':61}):
                     with self.assertRaises(ValueError): state(root,role,bad)
     def test_exact_thirty_to_fifty_migration_preserves_pending_and_terminal_tasks(self):
-        cfg = policy(); old = cfg | {'maximum_new_tasks_per_day':30}
+        cfg = policy(); old = cfg | {'maximum_new_tasks_per_day':30, 'maximum_worker_model_attempts_per_utc_day':400}
         self.assertEqual(digest(old), '7c60c698059b659a0e3111f49592dbf0d00daecda14e4a1976d49bf27346b0c1')
         for role in ('monitor','worker'):
             with self.subTest(role=role), tempfile.TemporaryDirectory() as root:
