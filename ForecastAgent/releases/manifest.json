@@ -61,6 +61,9 @@
     "ForecastAgent/acquisition/VALIDATION.md": "a6a1a4c056ea5375d4878e9c84556a4e7829f63edf6a10b21df9a204bfb0facc",
     "ForecastAgent/acquisition/verify_nextgen.py": "facaab8fe7bc77ea07b655cd8a53898bd89721a0cecba14f744b4b377e77cf98",
     "ForecastAgent/acquisition/verify_release_source_tools.py": "591ce56eb03674f342f491f234390a4d82b7792925fb7d4e2ccc06640839a6d6",
+    "ForecastAgent/acquisition_shared/__init__.py": "f31aa553c0dbaac1ab3ea09d76b7554cce21106328d1f495854f5ac78c07d735",
+    "ForecastAgent/acquisition_shared/contract.py": "6ee22faedeac0bbf02d9e84d8a3975239e8fedeed3a98256b00b0cc237d3d6be",
+    "ForecastAgent/acquisition_shared/tool_output.py": "c296699d3688c1dae9189b17cb06578e19bfac045ee5a2e6a9f8b57825224e40",
     "ForecastAgent/agent.py": "47da6b5d455c82a5b457f6813605fc7edbddb70061264537ea1e39a66b77649d",
     "ForecastAgent/analysis/__init__.py": "fe8adca115dc6a37fad755f083a22df5ab6cb20f4d096409717351b7a4ba6b0b",
     "ForecastAgent/analysis/apodex_compat_trial.py": "ad8c9ea3a3df28a4752df6dab6d99d70b659c579dbbf0be240039d6a7abf0ab6",
@@ -148,6 +151,8 @@
     "ForecastAgent/historical_research.py": "ce79e5c3c9da88c967f5a4c583be7fea2d6e31033fe5bffcf61be41c2ecf2308",
     "ForecastAgent/inspect_resolved_access.py": "3a802c0bde43f64b74559a9bc57db98997189078eb801547cf70ce6b49837d4a",
     "ForecastAgent/integrations/main_lightningrod_eval.py": "70629705a0d59392cd41d07b082e6e9fdae5586b1dce2d282fe3c303b1984581",
+    "ForecastAgent/integrations/shared_acquisition.py": "3fad023e353e4041e6324ae434eedcc0475f6b3c65224f7f7d00197c31c3f93b",
+    "ForecastAgent/integrations/shared_preservation.py": "1801fcd509ba5340795c1cfd127d7b05f85fea17026bc485bee384e82af691b8",
     "ForecastAgent/live_collection_trial.py": "6e98ff2b5f6b193438cb50316d136956d028025e0a9fe75974ebba3042bd6145",
     "ForecastAgent/local_sync.py": "0a30fe313235e84635d899c5dc583bd50858f0974830a0382c82c4bfc7915690",
     "ForecastAgent/main.py": "a0920ed3c83732c830e82eb25afd4b1780b725b5138dd51f59d7139399fa6fd8",
@@ -209,7 +214,7 @@
     "ForecastAgent/releases/v1_0_2.py": "75c7c384c849918082bb7fc0448d04579671a4a7318d860e29f3049ad8e4d2db",
     "ForecastAgent/releases/v1_0_3.py": "74a5b55c2d5c63b63543ed007abefe5cae125eee2c55041722736f0e772c73d8",
     "ForecastAgent/releases/v1_0_4.py": "9dcb64674632555d4a692d1fb573414e47374f5d7170a7e54f2e209e9c6514d8",
-    "ForecastAgent/releases/v1_0_5.py": "919411c7772fb088ccf1c10d3027688d159b0b6e1bb2f9788393ca91256d3287",
+    "ForecastAgent/releases/v1_0_5.py": "2c4cd0bafc22720fbcd679024e1b50a3202e1d48f99cb323e3a2d41ac04371ee",
     "ForecastAgent/requirements-crawl4ai.txt": "7f41b2caa244ee2fd50a3584ef9cb4674b7cea9b224ed6d8b8c0123446513692",
     "ForecastAgent/requirements-retrieval.txt": "0ab834aa405d082d590315d7527b3ee425e98ed37b09742278eb1303a8f52a7e",
     "ForecastAgent/requirements-supplement.txt": "57798a4e4b8e24764a2ee14286c0b1369d81273b3005ca91d144fd17b6c3e687",
@@ -279,5 +284,16 @@
   "release_variant": "crawl4ai.1",
   "operational_patch": "v1.0.5-capture.1",
   "collection_enhancement": "release-eager-originals-v1",
-  "collection_base_tag": "v1.0.5-recovery.2"
+  "collection_base_tag": "v1.0.5-recovery.2",
+  "shared_acquisition": {
+    "version": "shared-acquisition-p0-v1",
+    "network_requests": 0,
+    "host_budgets_required": true,
+    "files_sha256_lf": {
+      "__init__.py": "f31aa553c0dbaac1ab3ea09d76b7554cce21106328d1f495854f5ac78c07d735",
+      "contract.py": "6ee22faedeac0bbf02d9e84d8a3975239e8fedeed3a98256b00b0cc237d3d6be",
+      "tool_output.py": "c296699d3688c1dae9189b17cb06578e19bfac045ee5a2e6a9f8b57825224e40"
+    }
+  },
+  "acquisition_variant": "v1.0.5-shared.1"
 }

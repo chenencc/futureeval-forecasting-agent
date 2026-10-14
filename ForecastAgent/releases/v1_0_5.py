@@ -102,6 +102,10 @@ def service_gap_eligible(bundle,root):
     return True
 
 
+from ForecastAgent.integrations.shared_acquisition import acquisition_call
+
+
+@acquisition_call
 def collect(request, retrieval):
     verify_release()
     request=copy.deepcopy(request)
