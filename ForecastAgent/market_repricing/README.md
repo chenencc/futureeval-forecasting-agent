@@ -489,3 +489,20 @@ remain unchanged. Historical frozen tasks are not reopened or migrated.
 ```text
 MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_search_runtime -v
 ```
+
+## Market-v0.3.3 rolling admission window
+
+Admission is limited to thirty distinct event-family tasks in any rolling
+24-hour window, using immutable `enrolled_at` receipts. Shanghai midnight
+does not reset this allowance. Completed, blocked, failed and baseline-only
+tasks all count until their admission is exactly 24 hours old. The monitor
+report records the window, admitted count, remaining slots, cap state and next
+slot time. Calendar-day counts remain reporting fields only.
+
+The exact previous calendar policy can migrate once without changing task
+receipts, provider reservations, execution caps or existing price targets.
+This change does not enlarge search or model budgets. Checkpoint restore has
+a finite four-GiB expanded bound (one-GiB compressed), preserving path,
+symlink, empty-target and SHA verification. This accommodates the observed
+2.175-GB cumulative worker archive that exceeded the old two-GiB bound.
+Archive growth remains bounded and visible; no old evidence is discarded.

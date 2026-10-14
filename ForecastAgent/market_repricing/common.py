@@ -54,6 +54,7 @@ def state(root, role, configuration):
             # Only exact previously deployed admission policies may migrate.
             # Engine, reservations and every provider cap remain unchanged.
             admission_previous = dict(configuration)
+            admission_previous.pop('enrollment_window_hours', None)
             for field in ('maximum_candidate_age_hours', 'price_target_origin',
                           'maximum_resolution_requests_per_dispatch', 'final_refresh_interval_hours',
                           'resolved_recheck_interval_hours'):
@@ -69,19 +70,27 @@ def state(root, role, configuration):
             approved_hashes = {'315c683957751c19000d0a307a52a4bc664ac682dd07bcdea4413cea578333b9',
                                '642119b33adddb5331834c728c5ae43a0a4e22f742e104891e388b7e47ae96df',
                                '31ef70793256bce9ca689e0d51911e05fe8288fa1aedffd8661487c81d423825'}
+            calendar_previous = dict(configuration)
+            calendar_previous.pop('enrollment_window_hours', None)
+            if configuration.get('enrollment_window_hours') == 24:
+                approved_hashes.add('d72c87273d613240e98f8e6f0fc1022e4c462db0c5b6c022bdf7a4e55054d7c2')
             previous = next((identity | {'policy_sha256': digest(candidate)}
-                for candidate in (admission_previous, previous_daily, legacy)
+                for candidate in (admission_previous, previous_daily, legacy, calendar_previous)
                 if digest(candidate) in approved_hashes and saved.get('identity') == identity | {'policy_sha256': digest(candidate)}), None)
             expected = {'maximum_new_tasks_per_day': 30, 'maximum_candidate_age_hours': 2,
                 'horizons_hours': [24, 72, 168], 'price_target_origin': 'market_created_at',
                 'maximum_resolution_requests_per_dispatch': 20, 'final_refresh_interval_hours': 6,
                 'resolved_recheck_interval_hours': 24, 'enrollment_day_timezone': 'Asia/Shanghai',
                 'allow_wide_spread': True}
+            if 'enrollment_window_hours' in configuration:
+                expected['enrollment_window_hours'] = 24
             if previous is None or any(configuration.get(k) != v for k, v in expected.items()):
                 raise ValueError('State identity changed; explicit migration is required')
             saved.setdefault('policy_migrations', []).append({
                 'at': now(), 'from_identity': previous, 'to_identity': identity,
-                'reason': 'User authorized thirty daily families, two-hour admission and creation-based 1/3/7-day observations.',
+                'reason': 'User authorized at most thirty families per rolling 24 hours; two-hour admission and creation-based observations retained.'
+                    if configuration.get('enrollment_window_hours') == 24 else
+                    'User authorized thirty daily families, two-hour admission and creation-based 1/3/7-day observations.',
                 'existing_tasks_unchanged': True, 'legacy_forecast_targets_unchanged': True,
                 'provider_reservations_unchanged': True, 'legacy_daily_counts_retained': True,
                 'budget_reset': False})
