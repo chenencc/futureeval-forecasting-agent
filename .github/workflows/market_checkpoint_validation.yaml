@@ -1,0 +1,62 @@
+name: Market checkpoint transport validation
+on:
+  push:
+    branches: [codex/market-state-transport]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify atomic restore and preservation gates
+        run: python -m unittest ForecastAgent.infrastructure.test_market_checkpoint -v
+      - name: Restore exact oversized legacy worker inside GitHub
+        run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role worker --root snapshots/original --run-id 38504204984
+      - name: Validate lossless full worker and monitor projection roundtrips
+        run: |
+          python - <<'PY'
+          import hashlib, json, zipfile
+          from pathlib import Path
+          from ForecastAgent.infrastructure.market_checkpoint import publish, extract_file, sha, write
+          from ForecastAgent.market_repricing.common import read, verify
+          original=Path('snapshots/original')
+          source_files=read(original/'inventory.json')['files']
+          source_files['inventory.json']=sha(original/'inventory.json')
+          state_before=sha(original/'state.json')
+          receipt=publish(original,'snapshots/packed')
+          with zipfile.ZipFile('snapshots/packed.zip','w',zipfile.ZIP_STORED,allowZip64=True) as archive:
+              for path in Path('snapshots/packed').rglob('*'):
+                  if path.is_file():archive.write(path,path.relative_to('snapshots/packed').as_posix())
+          full=extract_file('snapshots/packed.zip','snapshots/roundtrip')
+          for name,expected in source_files.items():
+              if sha(Path('snapshots/roundtrip')/name)!=expected:raise ValueError('Original changed: '+name)
+          projection=extract_file('snapshots/packed.zip','snapshots/projected',True)
+          if sha(Path('snapshots/projected/state.json'))!=state_before:raise ValueError('Projected ledger changed')
+          for path in original.glob('tasks/*/collection-request.json'):
+              if sha(Path('snapshots/projected')/path.relative_to(original))!=sha(path):raise ValueError('Compatibility request changed')
+          ledger=read(original/'state.json')
+          counts={status:sum(t['status']==status for t in ledger['tasks'].values()) for status in {t['status'] for t in ledger['tasks'].values()}}
+          report={'schema':'market-checkpoint-live-preservation-v1','source_run':38504204984,
+              'state_sha256':state_before,'all_original_files_verified':len(source_files),
+              'task_distribution':counts,'provider_reservations':len(ledger.get('provider_reservations',[])),
+              'pack_publication':receipt,'full_restore':full,'monitor_projection':projection,
+              'model_search_calls':0,'budget_reset':False,'legacy_local_download_bytes':0}
+          write('snapshots/receipts/preservation.json',report)
+          print(json.dumps(report))
+          PY
+      - name: Publish small preservation receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-checkpoint-preservation
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30
