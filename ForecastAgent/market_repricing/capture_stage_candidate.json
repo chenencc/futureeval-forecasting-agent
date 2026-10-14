@@ -1,0 +1,16 @@
+{
+  "schema": "market-capture-stage-candidate-v1",
+  "parent_pipeline_commit": "098a56c197012661f976d34f15cf21ac4106d024",
+  "candidate_files_sha256_lf": {
+    "evidence_capture.py": "104c7af550f80dbc9f770619ed283b8604552adb70f07c5223151e89ff281187",
+    "materials.py": "63cb90522f85d4c3f0733ec95260ba73324165df5a35193b0afad9f3261f69af",
+    "acquisition_contract.py": "f0c09db79315b19de80d283d1dd108e90fc4f3a37bab002188d25df955f94880"
+  },
+  "legacy_stage_sha256_lf": {
+    "evidence_capture.py": "abbefd119e4043ac2b78565dce04b39001e26463ea5f8e9c3966d0ffd03c7b8b",
+    "materials.py": "8ba00825227a1e066b1a1b23545b4af61de569a9243fc6ad0dfbf33e7bd86d70"
+  },
+  "not_a_budget_only_upgrade": true,
+  "started_tasks_require_exact_frozen_capture_identity": true,
+  "analysis_and_search_stages_unchanged": true
+}
