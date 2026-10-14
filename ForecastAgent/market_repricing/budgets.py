@@ -50,6 +50,19 @@ def hold(task, receipt, started=False):
                 retry_at=receipt['retry_at'], budget_hold=receipt, error_type='ProviderCap')
 
 
+def refresh_waits(ledger, cfg):
+    """An authorized raised ceiling releases only satisfied local budget holds."""
+    for key, task in ledger['tasks'].items():
+        receipt = task.get('budget_hold') or {}
+        if task['status'] != 'budget_wait' or receipt.get('scope') not in {'utc_day', 'dispatch'}:
+            continue
+        if availability(ledger, key, cfg, receipt.get('kind', 'model'), receipt.get('required', 1)) is None:
+            if task.get('retry_at'):
+                task.setdefault('budget_releases', []).append({'at': now(), 'previous_hold': receipt,
+                    'reason': 'Recorded budget condition is now satisfied', 'budget_reset': False})
+                task['retry_at'] = None
+
+
 def native_denials(folder):
     """Only final pre-transmission ProviderCap receipts qualify; originals stay intact."""
     import hashlib

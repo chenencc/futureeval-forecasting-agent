@@ -20,7 +20,7 @@ class BudgetRecovery(unittest.TestCase):
     def test_daily_preflight_waits_until_utc_midnight_without_execution_or_http(self):
         with tempfile.TemporaryDirectory() as root, patch.object(budgets, 'now', return_value=CLOCK):
             ledger = {'tasks': {'t': {'executions': 0, 'status': 'queued'}},
-                      'provider_reservations': self.records(900)}
+                      'provider_reservations': self.records(policy()['maximum_worker_model_attempts_per_utc_day'])}
             original = copy.deepcopy(ledger['provider_reservations'])
             with patch.object(worker, 'acquire') as collector:
                 worker.execute(root, ledger, 't', policy(), None, collector=collector)
@@ -48,7 +48,7 @@ class BudgetRecovery(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             ledger = {'tasks': {'t': {'executions': 1, 'status': 'retry_wait'}}, 'provider_reservations': []}
             def collect(task, folder):
-                ledger['provider_reservations'].extend(self.records(900))
+                ledger['provider_reservations'].extend(self.records(policy()['maximum_worker_model_attempts_per_utc_day']))
                 try:
                     urllib.request.urlopen('https://openrouter.ai/api/v1/chat/completions')
                 except budgets.ProviderCap:
@@ -113,7 +113,7 @@ class BudgetRecovery(unittest.TestCase):
             finally:
                 os.chdir(previous)
 
-    def test_exact_400_to_900_migration_preserves_all_counters_and_other_changes_fail(self):
+    def test_exact_legacy_to_current_migration_preserves_all_counters_and_other_changes_fail(self):
         cfg = policy(); old = cfg | {'maximum_worker_model_attempts_per_utc_day': 400}
         with tempfile.TemporaryDirectory() as root:
             ledger = state(root, 'worker', old)
@@ -136,6 +136,36 @@ class BudgetRecovery(unittest.TestCase):
             self.assertEqual((Path(root) / 'state.json').read_bytes(), raw)
             with patch.object(deployment, 'budget_compatibility', side_effect=ValueError('changed')):
                 with self.assertRaises(ValueError): deployment.validate_pending(root, Path(root) / 'monitor', {'pipeline_commit': '1' * 40})
+
+    def test_900_to_1500_preserves_state_and_releases_satisfied_daily_wait(self):
+        cfg = policy(); old = cfg | {'maximum_worker_model_attempts_per_utc_day': 900}
+        with tempfile.TemporaryDirectory() as root, patch.object(budgets, 'now', return_value=CLOCK):
+            ledger = state(root, 'worker', old)
+            ledger['provider_reservations'] = self.records(900)
+            task = {'status': 'queued', 'executions': 2}
+            budgets.hold(task, budgets.availability(ledger, 't', old))
+            ledger['tasks'] = {'t': task}
+            write(Path(root) / 'state.json', ledger)
+            migrated = state(root, 'worker', cfg)
+            self.assertEqual(migrated['provider_reservations'], ledger['provider_reservations'])
+            self.assertEqual(migrated['tasks'], ledger['tasks'])
+            budgets.refresh_waits(migrated, cfg)
+            self.assertIsNone(migrated['tasks']['t']['retry_at'])
+            self.assertEqual(migrated['tasks']['t']['executions'], 2)
+            self.assertEqual(len(migrated['policy_migrations']), 1)
+            self.assertEqual(len(migrated['provider_reservations']), 900)
+
+    def test_raised_daily_cap_preserves_lifetime_denial_and_old_pending_pins(self):
+        with tempfile.TemporaryDirectory() as root:
+            task = {'status': 'budget_wait', 'retry_at': CLOCK, 'executions': 2,
+                'pipeline_commit': 'd00bc630300a22ee84d1f6064892f261894d833b',
+                'budget_hold': {'scope': 'task_lifetime'}}
+            ledger = {'tasks': {'t': task}, 'provider_reservations': self.records(60, key='t')}
+            budgets.refresh_waits(ledger, policy())
+            self.assertEqual(task['retry_at'], CLOCK)
+            write(Path(root) / 'state.json', ledger)
+            deployment.validate_pending(root, Path(root) / 'monitor', {'pipeline_commit': '1' * 40})
+            self.assertEqual(read(Path(root) / 'state.json'), ledger)
 
 
 if __name__ == '__main__': unittest.main()
