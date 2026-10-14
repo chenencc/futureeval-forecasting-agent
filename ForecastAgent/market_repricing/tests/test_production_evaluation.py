@@ -50,5 +50,39 @@ class ProductionEvaluation(unittest.TestCase):
             if key not in ('analysis_arms', 'horizons_hours', 'price_target_origin'):
                 self.assertEqual(routed[key], value)
 
+    def test_worker_first_approved_migration_evaluates_without_rewriting_sources_or_labels(self):
+        market = {'family':'family','created_at':'2026-10-12T00:00:00Z','rules_sha256':'rules'}
+        schedule = creation_schedule({'market':market})
+        cfg = policy(); old = dict(cfg); old.pop('enrollment_window_hours')
+        forecast = {'timely':True,'sealed_at':'2026-10-12T01:00:00Z','price_schedule':schedule,
+            'baseline':{'24':.45,'72':.45,'168':.45},'pair_audit':{'map_delivered':True},
+            'arms':{name:{'status':'completed','price_means':{'24':value},'eventual_probability_yes':value,
+                'timely':True,'sealed_at':'2026-10-12T01:00:00Z'} for name,value in [('original',.4),('mapped',.6)]}}
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root); monitor=root/'monitor'; worker=root/'worker'
+            m=state(monitor,'monitor',old); w=state(worker,'worker',cfg)
+            m['markets']={'new':market}; w['tasks']={'new':{'market':market,'forecast':forecast,'status':'completed'}}
+            write(monitor/'state.json',m); write(worker/'state.json',w)
+            label_path=monitor/'labels'/(digest('new')+'.json')
+            write(label_path,{'24':{'status':'quoted','target_at':schedule['targets']['24'],'label':.5}})
+            before=(monitor/'state.json').read_bytes(); label_bytes=label_path.read_bytes()
+            result=run(monitor,worker,root/'metrics.json')
+            self.assertEqual((monitor/'state.json').read_bytes(),before)
+            self.assertEqual(label_path.read_bytes(),label_bytes)
+            row=next(r for r in result['rows'] if r['horizon_hours']==24)
+            self.assertAlmostEqual(row['arms']['original']['error'],-.1)
+            self.assertAlmostEqual(row['arms']['mapped']['error'],.1)
+            write(monitor/'state.json',state(monitor,'monitor',cfg))
+            self.assertEqual(run(monitor,worker,root/'reference.json'),result)
+
+    def test_evaluation_rejects_unapproved_policy_or_quota_changes(self):
+        cfg=policy(); old=dict(cfg); old.pop('enrollment_window_hours')
+        for change in ({'maximum_worker_model_attempts_per_task':61},{'maximum_new_tasks_per_day':31}):
+            with self.subTest(change=change),tempfile.TemporaryDirectory() as root:
+                root=Path(root); monitor=root/'monitor'; worker=root/'worker'
+                write(monitor/'state.json',state(monitor,'monitor',old | change))
+                write(worker/'state.json',state(worker,'worker',cfg))
+                with self.assertRaises(ValueError):run(monitor,worker,root/'metrics.json')
+
 
 if __name__ == '__main__': unittest.main()
