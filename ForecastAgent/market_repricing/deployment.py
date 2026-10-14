@@ -8,10 +8,11 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.5-budget.1'
+VERSION = 'market-v0.3.6'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
 FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
-                       'd00bc630300a22ee84d1f6064892f261894d833b': 900}
+                       'd00bc630300a22ee84d1f6064892f261894d833b': 900,
+                       '7690c6a94ebfcada8f024de53f842ec44d74466d': 1500}
 PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
 
 
@@ -36,9 +37,10 @@ def task_release():
         raise ValueError('Market deployment must use an immutable full commit SHA')
     from .official_arm import ARMS, VERSION as analysis_version
     from .search_policy import identity as search_identity
+    from .context_delivery import identity as context_identity
     return {'pipeline_version': VERSION, 'pipeline_commit': sha,
             'analysis_version': analysis_version, 'analysis_arms': list(ARMS),
-            'market_search_profile': search_identity()}
+            'market_search_profile': search_identity(), 'market_context_runtime': context_identity()}
 
 
 def verify_checkout(root, expected):
@@ -55,12 +57,14 @@ def verify_checkout(root, expected):
     from .common import policy
     from .official_arm import implementation, ARMS
     from .search_policy import identity as search_identity
+    from .context_delivery import identity as context_identity
     return {'schema': 'market-independent-deployment-v1', 'version': VERSION,
             'pipeline_commit': sha, 'engine_sha': ENGINE_SHA,
             'policy_sha256': digest(policy()), 'capture_identity': policy_identity(),
             'version_control': 'MARKET_REPRICING_SHA', 'budget_reset': False,
             'competition_release_changed': False, 'analysis_arms': list(ARMS),
-            'official_map_identity': implementation(), 'market_search_profile': search_identity()}
+            'official_map_identity': implementation(), 'market_search_profile': search_identity(),
+            'context_runtime': context_identity()}
 
 
 def validate_pending(worker_root, monitor_root, receipt):

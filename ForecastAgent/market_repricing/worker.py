@@ -9,7 +9,7 @@ import urllib.request
 from . import ENGINE_SHA, ENGINE_BRANCH, SUPER
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write, verify
 from .venues import book, refresh, screen
-from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package, refresh_waits
+from .budgets import ProviderCap, CollectionIncomplete, availability, executions_used, hold, recover_legacy, require_package, refresh_waits, recover_context_waits
 
 
 @contextlib.contextmanager
@@ -86,6 +86,7 @@ def acquire(task, folder):
     from ForecastAgent.intelligence.research_map import enable
     from ForecastAgent.intelligence import worker as native_worker
     from .budget_runtime import native_accounting
+    from .context_delivery import adapter as context_adapter
     source = folder / 'analysis-input.json'
     marker = folder / 'material-integrity.json'
     from .evidence_capture import VERSION as capture_version, policy_identity, capture_adapter
@@ -150,7 +151,7 @@ def acquire(task, folder):
             'to capture external original bodies before further map planning. fetch_page '
             'is unavailable. Market pages supply rules/prices, not independent event evidence. '
             'Use registered tools only; respect each tool schema. Missing reports never prove NO.') + search_guide(args[0])
-    with native_accounting(folder), native_worker.remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
+    with native_accounting(folder), context_adapter(folder), native_worker.remaining_budget(directory), patch.object(guidance, 'collection_system', guided), \
             capture_adapter() if new_capture else contextlib.nullcontext(), \
             search_adapter() if profile is not None else contextlib.nullcontext():
         result = pipeline.collect(request, directory, clock_utc=request['as_of_utc'],
@@ -430,6 +431,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
         raise ValueError('Queue pin or policy changed')
     ledger = state(root, 'worker', cfg)
     recovered_budget_tasks = recover_legacy(root, ledger)
+    recovered_context_tasks = recover_context_waits(root, ledger)
     refresh_waits(ledger, cfg)
     fresh_source = 0 <= (instant(now()) - instant(source['last_attempt_at'])).total_seconds() <= 3600
     if not fresh_source and any(k not in ledger['tasks'] for k in source['tasks']):
@@ -443,7 +445,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                                     'source_task_sha256': digest(task),
                                     **({'price_schedule': task['price_schedule']} if task.get('price_schedule') else {}),
                                     **({'acquisition_policy': task['acquisition_policy']} if task.get('acquisition_policy') else {}),
-                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms', 'market_search_profile') if field in task}}
+                                    **{field: task[field] for field in ('pipeline_version', 'pipeline_commit', 'analysis_version', 'analysis_arms', 'market_search_profile', 'market_context_runtime') if field in task}}
         elif ledger['tasks'][key]['source_task_sha256'] != digest(task):
             raise ValueError('Enrolled task identity changed')
         entry = {'key': key, 'enrolled_at': task.get('enrolled_at'),
@@ -484,6 +486,7 @@ def run(root, monitor_root, verification_only=False, cfg=None, http=None, collec
                   'release_fallback': False, 'model': SUPER, 'submission_enabled': False, 'trading_enabled': False}
         report['capture_summaries'] = {k: t['capture_summary'] for k, t in ledger['tasks'].items() if t.get('capture_summary')}
         report['budget_recovered_tasks'] = recovered_budget_tasks
+        report['context_recovered_tasks'] = recovered_context_tasks
         report['budget_holds'] = {k: t.get('budget_hold') for k, t in ledger['tasks'].items() if t['status'] == 'budget_wait'}
         from .deployment import task_release
         report.update(task_release())

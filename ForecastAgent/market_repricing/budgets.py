@@ -40,7 +40,44 @@ def availability(ledger, key, cfg, kind='model', required=1):
 
 
 def executions_used(task):
-    return task.get('executions', 0) - task.get('budget_wait_executions', 0)
+    return (task.get('executions', 0) - task.get('budget_wait_executions', 0)
+            - task.get('program_wait_executions', 0))
+
+
+def recover_context_waits(root, ledger):
+    """Credit one proven local, non-transmitted context interruption; keep all usage."""
+    recovered = []
+    for key, task in ledger['tasks'].items():
+        if task['status'] not in {'blocked', 'retry_wait'} or task.get('context_hold_recovery'):
+            continue
+        if task.get('error_type') != 'CollectionIncomplete' or not task.get('last_attempt_at'):
+            continue
+        folder = Path(root) / 'tasks' / digest(key)
+        marker = folder / 'development-intelligence/collection-status.json'
+        failure = folder / 'failure.json'
+        if not marker.exists() or not failure.exists():
+            continue
+        report = read(marker).get('collector_report') or {}
+        native = report.get('state') or {}
+        if (native.get('termination_reason') != 'context_projection_failure'
+                or native.get('interrupted') is not True
+                or read(failure).get('error_type') != 'CollectionIncomplete'):
+            continue
+        if any(r['key'] == key and instant(r['reserved_at']) >= instant(task['last_attempt_at'])
+               for r in ledger.get('provider_reservations', [])):
+            continue
+        receipt = {'at': now(), 'reason': 'Verified context interruption before any paid provider transmission',
+            'original_status': task['status'], 'original_executions': task.get('executions', 0),
+            'original_failure': read(failure), 'native_collection_state': native,
+            'provider_reservations_unchanged': True, 'excluded_program_executions': 1, 'budget_reset': False}
+        write(folder / 'context-hold-recovery.json', receipt)
+        task['context_hold_recovery'] = receipt
+        task['program_wait_executions'] = task.get('program_wait_executions', 0) + 1
+        if task.get('terminal_result'):
+            task.setdefault('historical_terminal_results', []).append(task.pop('terminal_result'))
+        task.update(status='retry_wait', retry_at=None)
+        recovered.append(key)
+    return recovered
 
 
 def hold(task, receipt, started=False):
