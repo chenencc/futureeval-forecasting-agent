@@ -28,7 +28,7 @@ jobs:
           from pathlib import Path
           from ForecastAgent.market_repricing.common import policy, read, state, verify, write
           from ForecastAgent.market_repricing.budgets import availability, executions_used, recover_legacy
-          from ForecastAgent.market_repricing.deployment import validate_pending
+          from ForecastAgent.market_repricing.deployment import validate_pending, verify_checkout
           root=Path('snapshots/worker')
           verified=verify(root)
           before=read(root/'state.json')
@@ -42,7 +42,8 @@ jobs:
           assert {k:migrated['tasks'][k] for k in terminal}==terminal
           for name,expected in inventory.items():
               assert hashlib.sha256((root/name).read_bytes()).hexdigest()==expected,name
-          receipt=validate_pending(root,Path('snapshots/no-monitor'),{'pipeline_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()})
+          release=verify_checkout('.',subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
+          receipt=validate_pending(root,Path('snapshots/no-monitor'),release)
           rows={k:{'before_status':before['tasks'][k]['status'],'after_status':t['status'],
               'executions':t['executions'],'service_executions_used':executions_used(t),
               'budget_available':availability(migrated,k,cfg) is None,
