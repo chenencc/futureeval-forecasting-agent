@@ -1,5 +1,5 @@
 """Observe only saved sheet identities and keep partial/auth responses explicit."""
-import base64,hashlib,json,unittest
+import base64,hashlib,json,unittest,os
 from unittest.mock import patch
 from ForecastAgent.market_repricing.acquisition_contract import (
     sheet_grid_profile,sheet_tab_leads,coverage,body_contract,failure_details,materialize_sheet,
@@ -20,6 +20,11 @@ def page(rows=2227,loaded=100):
 
 
 class SheetNavigation(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from ForecastAgent.market_repricing.runtime import activate
+        activate(os.environ['MARKET_ENGINE_DIRECTORY'])
+
     def rendered(self, rows=2):
         p=page(rows=rows,loaded=0)
         raw=base64.b64decode(p['raw_response_base64']).decode().replace('</body>',

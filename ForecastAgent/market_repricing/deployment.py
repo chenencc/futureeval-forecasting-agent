@@ -8,7 +8,7 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.7-p0-candidate'
+VERSION = 'market-v0.3.7-p0.1'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
 FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
                        'd00bc630300a22ee84d1f6064892f261894d833b': 900,

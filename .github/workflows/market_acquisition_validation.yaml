@@ -1,0 +1,37 @@
+name: Market acquisition saved-state promotion gates
+on:
+  push:
+    branches: [codex/market-acquisition-p0]
+    paths: ['ForecastAgent/market_repricing/**', '.github/workflows/market_acquisition_validation.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .transport
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore latest completed production checkpoint without provider access
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/worker --branch main
+      - name: Verify exact task, quota and original-file preservation
+        run: python -m ForecastAgent.market_repricing.tests.verify_acquisition_promotion --root snapshots/worker --output snapshots/receipts/acquisition-promotion.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: market-acquisition-promotion
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30

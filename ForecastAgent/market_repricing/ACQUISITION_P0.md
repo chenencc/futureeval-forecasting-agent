@@ -2,7 +2,8 @@
 
 This development candidate keeps the selected `c17c1ec` engine, Super collection
 model, Mercury forecasting sources and analysis prompts unchanged. Production
-still selects its independent immutable version. The candidate is not deployed.
+selects its independent immutable version; promotion requires recorded Linux
+integration and actual saved-state preservation gates.
 
 ## Three changes
 
@@ -97,3 +98,10 @@ supplement, with immutable parent linkage and packet-object verification. The
 171market tests,11pinned-engine tests and19frozen-input regression are offline.
 These checks validate transport, parsing and preservation; they do not measure
 forecast accuracy or certify the three pilot questions' semantic completeness.
+
+The public-sheet runtime tests run only after activating the exact selected
+engine, which provides the saved-source parser. The standalone163sidecar tests
+remain independent. Linux promotion includes11sheet-runtime tests, the other
+engine integration gates and a read-only production checkpoint restoration.
+See [cross-platform synchronization design](ACQUISITION_SYNC.md) for the common
+capability boundary and independent Metaculus/market promotion requirements.
