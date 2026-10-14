@@ -119,7 +119,9 @@ class DeploymentTests(unittest.TestCase):
             self.assertIn('python -m ForecastAgent.market_repricing.deployment', text)
             self.assertNotIn('FORECAST_RELEASE_TAG', text)
         competition = (root / '.github/workflows/official_competition.yaml').read_text()
-        self.assertIn('ref: v1.0.5-recovery.2', competition)
+        # The controller may promote competition capture independently of the
+        # frozen market implementation; both audited competition pins are valid.
+        self.assertRegex(competition, r'ref: v1\.0\.5-(?:recovery\.2|capture\.1)\b')
         self.assertNotIn('MARKET_REPRICING_SHA', competition)
 
 

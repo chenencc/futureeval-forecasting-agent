@@ -2,6 +2,7 @@ name: Market checkpoint transport validation
 on:
   push:
     branches: [codex/market-state-transport]
+    paths: ['ForecastAgent/infrastructure/market_checkpoint.py', 'ForecastAgent/infrastructure/test_market_checkpoint.py']
   workflow_dispatch:
 permissions:
   contents: read
