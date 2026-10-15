@@ -65,6 +65,13 @@ evaluation. With no initial midpoint, future price errors are recorded separatel
 under `unpaired_arms`; no-change and direction comparisons are unavailable. A
 missing book never grants trading permission. Existing terminal cases and sealed
 forecast identities are preserved; incompatible pending versions block promotion.
+The exact `3ccf35e` predecessor is resume-compatible because capture/scoring
+stages, prompts and quotas remain identical. Its immutable positive suitability
+approvals remain valid only under their original input hash, known policy hash
+and confidence threshold; negative/uncertain decisions do not inherit approval.
+The original request receipts and cumulative budgets are retained. This permits
+queued continuations to use the new orchestration without restarting an active
+worker or requiring a second suitability request for an unchanged approved event.
 
 ## Bounded semantic classification
 

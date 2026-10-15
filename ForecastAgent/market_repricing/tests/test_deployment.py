@@ -60,6 +60,17 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 deployment.validate_pending(Path(base) / 'worker', Path(base) / 'monitor', {'pipeline_commit': SHA})
 
+    def test_declared_intake_predecessor_retains_pending_requests_and_budgets(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = Path(base)/'worker'
+            saved = {'tasks': {'old': {'status': 'retry_wait', 'executions': 1,
+                'pipeline_commit': '3ccf35e942c801c903d7cda917d7d8fa407d6cf5'}},
+                'provider_reservations': [{'kind': 'model', 'status': 'failed'}]}
+            write(root/'state.json', saved)
+            original = (root/'state.json').read_bytes()
+            self.assertEqual(deployment.validate_pending(root, Path(base)/'monitor', {'pipeline_commit': SHA})['pending_checked'], 1)
+            self.assertEqual((root/'state.json').read_bytes(), original)
+
     def test_pending_request_and_recovery_hashes_are_not_reset(self):
         for field in ('request', 'recovery'):
             with self.subTest(field=field), tempfile.TemporaryDirectory() as base:

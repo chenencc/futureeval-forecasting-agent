@@ -17,7 +17,10 @@ FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
                        # search, analysis and policy; pending tasks keep all quotas.
                        'f154a406a9611ebd4a64fc4077bb74778659b808': 1500,
                        # Intake-only successor preserves collection/analysis stages.
-                       '1a88d3b3390a6d6b92172ccd223b5f8a7948bfce': 1500}
+                       '1a88d3b3390a6d6b92172ccd223b5f8a7948bfce': 1500,
+                       # Optional-book orchestration retains exact capture,
+                       # scoring source, prompts, request identities and quotas.
+                       '3ccf35e942c801c903d7cda917d7d8fa407d6cf5': 1500}
 PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
 
 
