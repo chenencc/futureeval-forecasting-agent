@@ -174,6 +174,15 @@ def mirror(args):
                     report['history'].append(item_report)
             from .local_revisions import import_revisions
             report['local_material_revisions']=import_revisions(db,root.parent)
+            policy=root/'web-material-policy.json'
+            if policy.is_file():
+                settings=json.loads(policy.read_bytes())
+                if settings.get('enabled') is True:
+                    from .web_materials import hydrate
+                    result=hydrate(db,root,settings.get('object_roots',[]))
+                    report['web_materials']={'packets':len(result['packets']),'new_documents':result['new_documents'],
+                        'states':{state:sum(p['status']==state for p in result['packets'])
+                            for state in sorted({p['status'] for p in result['packets']})}}
             report.update(finished_at=clock(),stats=stats(db),status='ok')
             write(root/'latest-sync.json',report)
         except Exception as exc:

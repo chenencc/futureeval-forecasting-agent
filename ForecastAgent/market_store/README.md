@@ -99,6 +99,11 @@ body references keep their explicit remote availability until separately synced.
 
 ## Operations
 
+For the complete Web integration contract, every database field/index/view,
+per-batch decision evidence, body hashes, graph binding, price semantics and
+read-only APIs, see [WEB_DATABASE.md](WEB_DATABASE.md). The additive local Web
+extension does not change native forecasts or the cloud history collector.
+
 ```powershell
 python -m ForecastAgent.market_store.cli sync
 ```
