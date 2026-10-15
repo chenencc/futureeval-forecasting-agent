@@ -239,6 +239,8 @@ def records_since(db, seq):
 
 def ingest_summary(db, summary, source):
     observed = summary['generated_at']
+    from ForecastAgent.pipeline_health import observations
+    observations(db, summary, source)
     for content in summary['sources'].values():
         for task in content.get('state.json', {}).get('tasks', []):
             market, key = task['market'], task['id']

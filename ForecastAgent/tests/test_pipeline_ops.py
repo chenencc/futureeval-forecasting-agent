@@ -48,7 +48,9 @@ class PipelineAcceptanceTests(unittest.TestCase):
             competition.candidate(db,'12',candidate,AT,'fixture')
             competition.receipt(db,'12',{'status':'accepted','confirmed_at_utc':AT,
                 'payload':candidate['payload']},AT,'fixture')
-        self.assertEqual(pipeline_ops.audit(self.root)['status'],'ok')
+        check=pipeline_ops.audit(self.root)
+        self.assertEqual(check['domains']['competition']['errors'],[])
+        self.assertEqual(check['domains']['competition']['replay']['not_ready'],1)
         with db:db.execute("UPDATE receipts SET payload='{}'")
         db.close()
         result=pipeline_ops.audit(self.root)

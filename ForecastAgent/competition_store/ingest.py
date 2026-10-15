@@ -151,6 +151,40 @@ def import_catalog(db,archives,stream,archive_root):
         store.save(db,'imports',(source_id,stream,str(manifest['run_id']),at,clock(),encoded(receipt).decode()))
     return {'stream':stream,'run_id':manifest['run_id'],'files':refs,'missing':len(failures),'status':'imported'}
 
+def repair_missing_local(db, archives, archive_root):
+    """Revisit prior import gaps when their original SHA objects arrive later."""
+    rows=list(db.execute("SELECT * FROM file_refs WHERE availability='missing' ORDER BY source_id,path"))
+    repaired=[];by_source=defaultdict(list)
+    reader=Native(db,archives,{}, {},archive_root)
+    for row in rows:
+        try:
+            value=reader.read({'path':row['path'],'sha256':row['sha256'],'size_bytes':row['size_bytes']},local_only=True)
+        except FileNotFoundError:
+            continue
+        by_source[row['source_id']].append((row,value))
+    db.execute('''CREATE TABLE IF NOT EXISTS native_recovery_receipts(
+        id TEXT PRIMARY KEY,ref_id TEXT NOT NULL,sha256 TEXT NOT NULL,recovered_at TEXT NOT NULL)''')
+    for source, values in by_source.items():
+        original=db.execute('SELECT observed_at FROM imports WHERE id=?',(source,)).fetchone()
+        if original is None:raise ValueError('Recovery source import receipt missing')
+        files={row['path']:value for row,value in values}
+        keys={row['question_key'] for row,_ in values}
+        for row in db.execute('SELECT * FROM file_refs WHERE source_id=?',(source,)).fetchall():
+            if row['question_key'] not in keys or row['path'] in files or not material_file(row['path']):continue
+            try: files[row['path']]=reader.read({'path':row['path'],'sha256':row['sha256'],'size_bytes':row['size_bytes']},local_only=True)
+            except FileNotFoundError:continue
+        with db:
+            project(db,files,original[0],source)
+            for row,_ in values:
+                db.execute("UPDATE file_refs SET availability='verified_local_object' WHERE id=?",(row['id'],))
+                db.execute('INSERT OR IGNORE INTO native_recovery_receipts VALUES(?,?,?,?)',
+                           (digest([row['id'],row['sha256']]),row['id'],row['sha256'],clock()))
+                repaired.append(row['id'])
+    return {'repaired_references':len(repaired),'remaining_missing':db.execute(
+        "SELECT count(*) FROM file_refs WHERE availability='missing'").fetchone()[0],
+        'recaptured':False,'original_observation_clocks_preserved':True}
+
+
 def sync(root,archives=None,archive_root='E:/metaculus_data'):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     with task_lock(root):
@@ -159,8 +193,14 @@ def sync(root,archives=None,archive_root='E:/metaculus_data'):
         try:
             archives=archives or Archives(root/'github-cache')
             for stream in ('official-monitor','official-worker'):report['imports'].append(import_catalog(db,archives,stream,archive_root))
+            report['recovery']=repair_missing_local(db,archives,archive_root)
             from .local import market_pulse
             report['local_market_pulse']=market_pulse(db,archive_root)
+            from ForecastAgent import pipeline_readiness,pipeline_health
+            replay=pipeline_readiness.competition(db)
+            pipeline_readiness.persist(db,replay)
+            report['replay']={k:v for k,v in replay.items() if k!='tasks'}
+            pipeline_health.persist(db,pipeline_health.alerts(db,'competition')+pipeline_health.replay_alerts(replay,'competition'))
             report.update(status='ok',finished_at=clock(),stats=store.stats(db))
         except Exception as exc:
             report.update(status='failed',finished_at=clock(),error_type=type(exc).__name__,reason=str(exc)[:200]);raise

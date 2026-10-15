@@ -174,6 +174,16 @@ def mirror(args):
             from .local_revisions import import_revisions
             report['local_material_revisions']=import_revisions(db,root.parent)
             policy=root/'web-material-policy.json'
+            pipeline_policy=root.parent.parent/'pipeline-policy.json'
+            if pipeline_policy.is_file() and json.loads(pipeline_policy.read_bytes()).get('recover_saved_originals') is True:
+                from ForecastAgent.pipeline_recovery import run_locked
+                try:
+                    recovered=run_locked(root.parent.parent,max_seconds=120)
+                    report['saved_original_recovery']={k:recovered[k] for k in
+                        ('recovered_bytes','attempted_uncompressed_bytes','errors','time_slice_exhausted')}
+                except RuntimeError as exc:
+                    if 'already running' not in str(exc):raise
+                    report['saved_original_recovery']={'status':'another_recovery_running'}
             if policy.is_file():
                 settings=json.loads(policy.read_bytes())
                 if settings.get('enabled') is True:
@@ -182,6 +192,13 @@ def mirror(args):
                     report['web_materials']={'packets':len(result['packets']),'new_documents':result['new_documents'],
                         'states':{state:sum(p['status']==state for p in result['packets'])
                             for state in sorted({p['status'] for p in result['packets']})}}
+            from ForecastAgent import pipeline_readiness,pipeline_health
+            replay=pipeline_readiness.market(db)
+            pipeline_readiness.persist(db,replay)
+            report['replay']={k:v for k,v in replay.items() if k!='tasks'}
+            items=pipeline_health.alerts(db,'market')+pipeline_health.replay_alerts(replay,'market')
+            pipeline_health.persist(db,items)
+            report['operational_alerts']=items
             report.update(market_status='ok',stats=stats(db))
         except Exception as exc:
             report.update(market_status='failed',error_type=type(exc).__name__,reason=str(exc)[:200])
@@ -201,6 +218,13 @@ def mirror(args):
             report['competition']={'status':'failed','error_type':type(exc).__name__,'reason':str(exc)[:200]}
         failed=report['market_status']!='ok' or report['competition']['status'] not in {'ok','disabled'}
         report.update(finished_at=clock(),status='partial_failure' if failed else 'ok')
+        policy_path=root.parent.parent/'pipeline-policy.json'
+        if policy_path.is_file() and json.loads(policy_path.read_bytes()).get('observe_triggers') is True:
+            try:
+                from ForecastAgent.pipeline_health import observe_triggers
+                report['trigger_health']=observe_triggers(root.parent.parent,archives.client)
+            except Exception as exc:
+                report['trigger_health']={'alerts':[{'code':'trigger_observation_failed','error_type':type(exc).__name__}]}
         write(root/'latest-sync.json',report)
         if report['competition']['status']!='disabled':
             from ForecastAgent.pipeline_ops import audit
