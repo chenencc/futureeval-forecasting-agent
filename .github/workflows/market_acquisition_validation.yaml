@@ -1,7 +1,7 @@
 name: Market acquisition saved-state promotion gates
 on:
   push:
-    branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0, codex/market-discovery-windows]
+    branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0, codex/market-discovery-windows, codex/market-intake-vnext]
     paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_acquisition_validation.yaml']
   workflow_dispatch:
   pull_request:
@@ -28,6 +28,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install native offline dependencies
+        run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
+      - name: Verify discovery and native pipeline regression gates without providers
+        run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
       - name: Restore latest completed production checkpoint without provider access
         run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/worker --branch main
       - name: Verify exact task, quota and original-file preservation

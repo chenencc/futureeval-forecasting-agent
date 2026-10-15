@@ -149,11 +149,9 @@ def screen(market, clock, cfg, *, check_newness=True):
         return {'status': 'waiting_rules', 'reason': 'exact_rules_missing'}
     if market['disputed']:
         return {'status': 'waiting_market', 'reason': 'disputed_rules'}
-    domain = next((k for k, expression in DOMAINS.items() if re.search(expression, text, re.I)), None)
-    if not domain:
-        return {'status': 'waiting_relevance', 'reason': 'event_catalyst_not_identified'}
-    # This is a source lead, not a claim that a catalyst date is confirmed.
-    result = {'domain': domain, 'catalyst_status': 'plausible_unconfirmed',
+    # Check hard time/market constraints before spending any semantic-review slot.
+    # A keyword match is a latency shortcut, not the complete event taxonomy.
+    result = {'catalyst_status': 'plausible_unconfirmed',
               'catalyst_evidence': [], 'close_time_role': market['close_time_role']}
     try:
         remaining = (instant(market['close_at']) - instant(clock)).total_seconds() / 3600
@@ -175,6 +173,19 @@ def screen(market, clock, cfg, *, check_newness=True):
     result.update(expected_resolution_remaining_hours=resolution_hours, resolution_hint=hint)
     if not market['tradable']:
         return {**result, 'status': 'waiting_market', 'reason': 'not_orderable'}
+    domain = next((k for k, expression in DOMAINS.items() if re.search(expression, text, re.I)), None)
+    if not domain:
+        from .intake import reviewed_domain, bound_review
+        domain = reviewed_domain(market)
+        reviewed = bound_review(market)
+        answer = reviewed.get('answer', {})
+        if (not domain and answer.get('choice') == 'excluded' and answer.get('confidence', 0) >= .8
+                and answer.get('probabilities', {}).get('excluded', 0) >= .8):
+            return {**result, 'status': 'excluded', 'reason': 'semantic_event_suitability_excluded',
+                    'intake_review_receipt': reviewed['receipt']}
+    if not domain:
+        return {**result, 'status': 'waiting_relevance', 'reason': 'event_catalyst_not_identified'}
+    result['domain'] = domain
     return {**result, 'status': 'candidate', 'reason': 'event_domain_prescreen_only'}
 
 
@@ -240,6 +251,20 @@ def refresh(http, market):
         response, receipt = http.get(KALSHI + 'markets/' + market['venue_id'])
         raw = response['market']
     value = normalize(market['venue'], raw)
+    if value['key'] != market['key']:
+        raise ValueError('Refreshed market identity mismatch')
+    if market['venue'] == 'polymarket' and not raw.get('events'):
+        # The single-market endpoint can omit the parent event. Preserve the
+        # family proven by discovery; omission is not a new independent event.
+        value['family'] = market['family']
+        value['url'] = market['url']
+    if market.get('intake_review'):
+        from .intake import bound_review
+        # Worker freeze checks receive the same bound approval, but rule/entity
+        # changes invalidate it before a new price anchor can be accepted.
+        review = bound_review(value | {'intake_review': market['intake_review']})
+        if review:
+            value['intake_review'] = review
     if value.get('final_observation'):
         value['final_observation'].update(observed_at=receipt['received_at'], receipt=receipt)
     return value, receipt
