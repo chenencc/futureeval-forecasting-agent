@@ -14,7 +14,11 @@
         "kind":{"enum":["binary","multiple_choice","numeric","discrete","date"]},
         "title":{"type":"string","minLength":1},"rules":{"type":"string","minLength":1},
         "fine_print":{"type":"string"},"options":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-        "scale":{"type":"object"},"observed_at":{"$ref":"#/$defs/optional_clock"}
+        "scale":{"type":"object","additionalProperties":false,"properties":{
+          "range_min":{"type":["number","string","null"]},"range_max":{"type":["number","string","null"]},
+          "zero_point":{"type":["number","null"]},"inbound_outcome_count":{"type":["integer","null"],"minimum":2},
+          "open_lower_bound":{"type":"boolean"},"open_upper_bound":{"type":"boolean"},"unit":{"type":["string","null"]}
+        }},"observed_at":{"$ref":"#/$defs/optional_clock"}
       }
     },
     "source": {

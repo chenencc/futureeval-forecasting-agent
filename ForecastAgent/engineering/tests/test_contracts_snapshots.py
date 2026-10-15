@@ -24,6 +24,10 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ContractError):
                 validate('packet', value)
 
+    def test_future_labels_cannot_hide_in_numeric_metadata(self):
+        value=packet('numeric');value['question']['scale']['resolution']='FORBIDDEN'
+        with self.assertRaises(ContractError):validate('packet',value)
+
     def test_wrong_original_hash_missing_rules_and_unknown_versions(self):
         for mutate in (lambda p: p['sources'][0].update(body_sha256='0'*64),
                        lambda p: p['question'].update(rules=''),

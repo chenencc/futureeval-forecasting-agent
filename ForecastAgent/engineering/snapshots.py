@@ -145,11 +145,15 @@ def packet(domain, database, batch_id, task_key, *, as_of_utc=None):
     if not kind:
         raise ValueError('Original question type is missing; do not infer binary')
     kind = {'categorical': 'multiple_choice', 'continuous': 'numeric'}.get(kind, kind)
+    dimensions = request.get('scaling') or request.get('scale') or {}
+    scale_fields = {'range_min', 'range_max', 'zero_point', 'inbound_outcome_count', 'open_lower_bound', 'open_upper_bound', 'unit'}
+    scale = {k: v for k, v in dimensions.items() if k in scale_fields}
+    scale.update({k: request[k] for k in ('open_lower_bound', 'open_upper_bound', 'unit', 'inbound_outcome_count') if k in request})
     q = {'key': task_key, 'platform': platform, 'kind': kind,
          'title': request.get('question') or request.get('title') or '',
          'rules': request.get('resolution_criteria') or '', 'fine_print': request.get('fine_print') or '',
          'options': request.get('options') or request.get('all_options_ever') or [],
-         'scale': request.get('scaling') or request.get('scale') or {},
+         'scale': scale,
          'observed_at': request.get('as_of_utc') or bundle.get('created_at')}
     if q['observed_at']:
         try:
