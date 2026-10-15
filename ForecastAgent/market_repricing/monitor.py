@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write
 from .tracking import creation_schedule, forecast_schedule, labels, targets_for, final_record
 from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen, final_resolution
+from .discovery import scan as scan_creation_window
 
 
 def discover(http, venue, cfg, clock):
@@ -250,17 +251,27 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
     errors, scans = [], {}
     try:
         for venue in ('polymarket', 'kalshi'):
+            seed = {}
             try:
-                rows, scan = discover_events(http, venue, cfg, clock)
-                # A small newest-market overlap also observes new children under old events.
-                overlap_cfg = cfg | {'maximum_discovery_pages_per_venue': 1}
-                overlap, overlap_audit = discover(http, venue, overlap_cfg, clock)
-                scan['new_market_overlap'] = overlap_audit
-                rows.extend(overlap)
+                # The event path is a bounded latency aid, not the coverage authority.
+                rows, seed = discover_events(http, venue, cfg, clock)
                 ingest(ledger, venue, rows, cfg, clock)
-                scans[venue] = scan
             except Exception as exc:
-                scans[venue] = {'complete': False, 'error_type': type(exc).__name__}
+                seed = {'complete': False, 'error_type': type(exc).__name__}
+                errors.append({'venue': venue, 'stage': 'event_seed', 'error': str(exc)})
+            try:
+                saved = ledger.setdefault('discovery_windows', {}).setdefault(venue, {})
+                # Existing five-page event paths plus four cursor pages per venue
+                # use at most20of120 public requests, reserving100for the native
+                #40metadata+40book+20resolution follow-up allowances.
+                window_cfg = cfg | {'maximum_discovery_pages_per_venue': max(1, cfg['maximum_discovery_pages_per_venue'] - 1)}
+                scan = scan_creation_window(http, venue, window_cfg, clock, saved,
+                    lambda rows, observed: ingest(ledger, venue, rows, cfg, max((clock, observed), key=instant)))
+                scan['event_seed'] = seed
+                scans[venue] = scan
+                errors.extend(dict(error, venue=venue) for error in scan['errors'])
+            except Exception as exc:
+                scans[venue] = {'complete': False, 'error_type': type(exc).__name__, 'event_seed': seed}
                 errors.append({'venue': venue, 'stage': 'discovery', 'error': str(exc)})
         # A question can be published DURING a multi-page scan. Enrollment uses
         # actual observation time, not the earlier scan-start clock; otherwise
@@ -269,6 +280,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         for scan in scans.values():
             observed_times.extend(p['received_at'] for p in scan.get('pages', []))
             observed_times.extend(p['received_at'] for p in scan.get('new_market_overlap', {}).get('pages', []))
+            observed_times.extend(p['received_at'] for p in scan.get('event_seed', {}).get('pages', []))
         clock = max(observed_times, key=instant)
         worker = state(worker_root, 'worker', cfg) if worker_root and (Path(worker_root) / 'state.json').exists() else {'tasks': {}}
         if worker.get('identity') and worker['identity']['policy_sha256'] != ledger['identity']['policy_sha256']:
@@ -372,6 +384,8 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         if all(x['complete'] for x in scans.values()) and not errors:
             ledger['last_complete_success_at'] = clock
         ledger['heartbeat'] = {'discovery_complete': all(x['complete'] for x in scans.values()),
+                               'discovery_coverage': {venue: {k: v for k, v in scan.items() if k not in ('pages', 'event_seed')}
+                                                      for venue, scan in scans.items()},
                                'waiting_or_excluded_distribution': dict(Counter(m['selection']['status'] for m in ledger['markets'].values())),
                                'queued_families': len(ledger['tasks']), 'no_model_calls': True,
                                'candidate_age_limit_hours': cfg['maximum_candidate_age_hours'],

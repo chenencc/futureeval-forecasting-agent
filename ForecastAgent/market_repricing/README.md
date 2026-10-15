@@ -3,6 +3,9 @@
 An independent, read-only Polymarket/Kalshi research sidecar. It has no trading
 or Metaculus delivery entry point. Production competition workflows stay separate.
 
+Creation-window discovery, durable cursors and coverage receipts are documented
+in [DISCOVERY.md](DISCOVERY.md). Partial API scans never imply complete coverage.
+
 ## Selected engine: latest development, not Release
 
 | Layer | Implementation |
