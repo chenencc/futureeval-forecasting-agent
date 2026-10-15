@@ -69,6 +69,23 @@ class IntakeTests(unittest.TestCase):
             self.assertEqual(again['http_attempts'], 0)
             self.assertEqual(screen(self.ledger['markets']['polymarket:new'], CLOCK, self.cfg)['status'], 'candidate')
 
+    def test_known_legacy_positive_approval_survives_without_renewing_attempts(self):
+        market = self.ledger['markets']['polymarket:new']
+        legacy = {'status': 'accepted', 'input_sha256': intake.fingerprint(market),
+            'policy_sha256': intake.COMPATIBLE_POSITIVE_POLICY, 'model': intake.decisions.MODEL,
+            'answer': {'choice': 'event', 'confidence': .99, 'probabilities': {'event': .99}},
+            'receipt': 'original/native/receipt.json'}
+        market['intake_review'] = legacy
+        self.assertEqual(screen(market, CLOCK, self.cfg)['status'], 'candidate')
+        with tempfile.TemporaryDirectory() as root, patch.object(intake.decisions, 'decide', side_effect=AssertionError('duplicate review')):
+            result = intake.review(root, self.ledger, self.cfg, CLOCK)
+            self.assertEqual(result['http_attempts'], 0)
+        for changed in ({'input_sha256': 'changed'}, {'policy_sha256': 'arbitrary'},
+                        {'status': 'not_accepted'}, {'answer': {'choice': 'excluded'}},
+                        {'answer': {'choice': 'event', 'confidence': .5}}):
+            market['intake_review'] = legacy | changed
+            self.assertEqual(screen(market, CLOCK, self.cfg)['status'], 'waiting_relevance')
+
     def test_review_invalidation_and_hard_conditions_remain_authoritative(self):
         with tempfile.TemporaryDirectory() as root:
             intake.review(root, self.ledger, self.cfg, CLOCK, answer())

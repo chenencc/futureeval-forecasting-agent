@@ -295,12 +295,13 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
                 from .observations import forecast_context
                 try:
                     observed = book(http, current, cfg)
-                except ValueError:
-                    # Identity/schema corruption is not a missing quote.
-                    raise
                 except Exception as exc:
-                    observed = {'status': 'fetch_failed', 'midpoint': None,
-                                'attempted_at': now(), 'error_type': type(exc).__name__}
+                    # The independently refreshed contract identity remains
+                    # authoritative. Reject a malformed/mismatched book as a
+                    # price observation without rejecting research on that event.
+                    observed = {'status': 'invalid_book' if isinstance(exc, ValueError) else 'fetch_failed',
+                                'midpoint': None, 'attempted_at': now(),
+                                'error_type': type(exc).__name__, 'error': str(exc)[:300]}
                 anchor = forecast_context(observed, now())
                 task['market'] = current
                 write(anchor_path, anchor)

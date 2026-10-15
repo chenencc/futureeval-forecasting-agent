@@ -17,6 +17,9 @@ MAX_REQUESTS_PER_DISPATCH = 1
 MAX_REQUESTS_PER_UTC_DAY = 40
 MAX_ATTEMPTS_PER_INPUT = 2
 RETRY_MINUTES = 30
+# The former stricter policy's positive decisions remain a subset of the new
+# permitted event scope. Negative/uncertain decisions never inherit approval.
+COMPATIBLE_POSITIVE_POLICY = '2f46bf9d61bf235ba822d18a5f075f1ec04235e425907f9929370fca0c666cf0'
 CHOICES = {
     'event': 'An observable real-world outcome or published measurement with an explicit settlement condition. Includes operational, publishing and product-release events and economic or business statistics such as retail foot traffic and credit-card spending. A named actor taking an action is not required for a statistical measurement. A sector, including crypto, or an objectively measured financial price is not by itself a gambling exclusion. Book spread, liquidity, depth, volume and price availability are never suitability criteria.',
     'excluded': 'Pure gambling: sports/esports wagers, casino or randomized games, or purely performative speech-mention, click, popularity and attention bets rather than substantive real-world outcomes or measurements. Do not exclude company/regulatory events or measured economic/financial outcomes merely because of their sector or mention of a market price.',
@@ -41,8 +44,12 @@ def fingerprint(market):
 
 def bound_review(market):
     record = market.get('intake_review') or {}
+    answer = record.get('answer') or {}
+    compatible_positive = (record.get('policy_sha256') == COMPATIBLE_POSITIVE_POLICY
+        and record.get('status') == 'accepted' and answer.get('choice') == 'event'
+        and answer.get('confidence', 0) >= .8 and answer.get('probabilities', {}).get('event', 0) >= .8)
     if (record.get('input_sha256') == fingerprint(market)
-            and record.get('policy_sha256') == digest(REVIEW_POLICY)
+            and (record.get('policy_sha256') == digest(REVIEW_POLICY) or compatible_positive)
             and str(record.get('model', '')).startswith('inception/mercury-decide')):
         return record
     return {}

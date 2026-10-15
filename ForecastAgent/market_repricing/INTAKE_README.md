@@ -56,8 +56,10 @@ Before scoring, `anchor.json` freezes an analysis context clock. Its
 `quote_observed_at`; the verbatim observation is retained in `original_quote`.
 Valid two-sided shallow/wide books retain their status/flags and can supply a
 noisy observed midpoint. One-sided, failed, stale and crossed books supply null,
-never an invented 0.5, zero or old price. Identity/schema failures still surface
-as errors rather than being disguised as missing prices.
+never an invented 0.5, zero or old price. A book identity/schema failure is
+retained as an explicit `invalid_book` error and never supplies a price. Contract
+metadata identity/schema failures remain separate blocking errors; an invalid
+book alone does not reject research on an independently verified contract.
 
 The unchanged Mercury scoring inputs can carry that null price with the same
 original evidence. Event forecasts remain eligible for later resolution-based
@@ -65,6 +67,13 @@ evaluation. With no initial midpoint, future price errors are recorded separatel
 under `unpaired_arms`; no-change and direction comparisons are unavailable. A
 missing book never grants trading permission. Existing terminal cases and sealed
 forecast identities are preserved; incompatible pending versions block promotion.
+The exact `3ccf35e` predecessor is resume-compatible because capture/scoring
+stages, prompts and quotas remain identical. Its immutable positive suitability
+approvals remain valid only under their original input hash, known policy hash
+and confidence threshold; negative/uncertain decisions do not inherit approval.
+The original request receipts and cumulative budgets are retained. This permits
+queued continuations to use the new orchestration without restarting an active
+worker or requiring a second suitability request for an unchanged approved event.
 
 ## Bounded semantic classification
 
