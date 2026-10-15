@@ -76,7 +76,7 @@ class IntakeTests(unittest.TestCase):
             for field, changed in [('question', 'Different issuer'), ('rules', 'Different threshold'),
                                    ('family', 'different'), ('rules_sources', ['https://changed.example'])]:
                 self.assertEqual(screen(market | {field: changed}, CLOCK, self.cfg)['status'], 'waiting_relevance')
-            for change in ({'screen_text': 'Bitcoin book publisher'}, {'binary': False}, {'composite': True}):
+            for change in ({'screen_text': 'NBA exact score'}, {'binary': False}, {'composite': True}):
                 self.assertEqual(screen(market | change, CLOCK, self.cfg)['status'], 'excluded')
             self.assertEqual(screen(market, '2026-10-12T02:00:01Z', self.cfg)['status'], 'outside_new_question_window')
             self.assertEqual(screen(market | {'tradable': False}, CLOCK, self.cfg)['status'], 'candidate')
@@ -166,9 +166,9 @@ class IntakeTests(unittest.TestCase):
 
     def test_all_raw_new_rows_have_first_seen_receipt_even_if_excluded(self):
         ledger = {'markets': {}, 'tasks': {}}
-        raw = unknown('crypto') | {'question': 'Bitcoin future price'}
+        raw = unknown('gambling') | {'question': 'NBA exact score'}
         ingest_window(ledger, 'polymarket', [raw, raw], self.cfg, CLOCK)
-        self.assertNotIn('polymarket:crypto', ledger['markets'])
+        self.assertNotIn('polymarket:gambling', ledger['markets'])
         self.assertEqual(ledger['intake']['first_seen_total'], 1)
         with tempfile.TemporaryDirectory() as root:
             result = intake.health(root, ledger, {}, CLOCK, 0)

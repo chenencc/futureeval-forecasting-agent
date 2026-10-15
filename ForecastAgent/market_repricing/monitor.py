@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write
 from .tracking import creation_schedule, forecast_schedule, labels, targets_for, final_record
-from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen, final_resolution
+from .venues import GAMMA, KALSHI, gambling_only, book, normalize, refresh, screen, final_resolution
 from .discovery import scan as scan_creation_window
 from . import intake
 
@@ -57,7 +57,7 @@ def discover_events(http, venue, cfg, clock, saved=None, consume=None):
             saved.update(close_min=close_min.isoformat(), cursor_hashes=[])
     excluded_tags = []
     if venue == 'polymarket':
-        for slug in ('sports', 'crypto'):
+        for slug in ('sports',):
             tag, receipt = http.get(GAMMA + 'tags/slug/' + slug)
             if str(tag.get('slug')) != slug or not str(tag.get('id', '')).isdigit():
                 raise ValueError('Exclusion tag identity mismatch')
@@ -83,7 +83,7 @@ def discover_events(http, venue, cfg, clock, saved=None, consume=None):
         start_index = len(rows)
         for event in events:
             text = ' '.join(str(event.get(k) or '') for k in ('title', 'category', 'tags', 'ticker', 'event_ticker'))
-            if CRYPTO.search(text) or GAMBLING.search(text):
+            if gambling_only(text, str(event.get('title') or '')):
                 continue
             for original in event.get('markets') or []:
                 market = original.copy()

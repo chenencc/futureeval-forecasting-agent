@@ -40,6 +40,8 @@ Spread, top-of-book size, liquidity, volume, missing prices and temporary
 orderability are not research admission gates. Sports and gambling exclusions
 remain content rules. Real business/economic measurements are eligible event
 outcomes; an action by a named actor is not required for a statistical release.
+There is no blanket crypto-industry or asset-price exclusion. Unknown propositions
+still receive bounded suitability review; a sector alone does not prove gambling.
 The existing binary, exact-rules, creation-age, horizon, rolling-cap and
 already-closed/resolved restrictions remain in force.
 

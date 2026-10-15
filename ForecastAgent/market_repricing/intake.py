@@ -18,8 +18,8 @@ MAX_REQUESTS_PER_UTC_DAY = 40
 MAX_ATTEMPTS_PER_INPUT = 2
 RETRY_MINUTES = 30
 CHOICES = {
-    'event': 'An observable real-world outcome or published measurement with an explicit settlement condition. Includes operational, publishing and product-release events and economic or business statistics such as retail foot traffic and credit-card spending. A named actor taking an action is not required for a statistical measurement. Book spread, liquidity, depth, volume and price availability are never suitability criteria.',
-    'excluded': 'Sports, gambling, crypto/digital assets, a pure asset-price threshold, social activity, mentions, popularity, attention or market-share-of-mind rather than a concrete real-world event.',
+    'event': 'An observable real-world outcome or published measurement with an explicit settlement condition. Includes operational, publishing and product-release events and economic or business statistics such as retail foot traffic and credit-card spending. A named actor taking an action is not required for a statistical measurement. A sector, including crypto, or an objectively measured financial price is not by itself a gambling exclusion. Book spread, liquidity, depth, volume and price availability are never suitability criteria.',
+    'excluded': 'Pure gambling: sports/esports wagers, casino or randomized games, or purely performative speech-mention, click, popularity and attention bets rather than substantive real-world outcomes or measurements. Do not exclude company/regulatory events or measured economic/financial outcomes merely because of their sector or mention of a market price.',
     'unclear': 'Cannot establish the observable outcome or measurement or exact settlement applicability from the supplied question and rules. Uncertainty about the outcome is not uncertainty about suitability. Do not invent missing context.'}
 INSTRUCTIONS = ('Classify ONLY candidate {index}, market {key}, whose exact question is: {question}\n'
     'Use that candidate\'s full rules in state.candidates[{index}]. '

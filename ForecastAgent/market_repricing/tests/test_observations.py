@@ -76,6 +76,11 @@ class ObservationTests(unittest.TestCase):
             market = normalize('polymarket', raw_poly() | {'question': question})
             self.assertEqual(screen(market, CLOCK, policy())['status'], 'candidate')
 
+    def test_sports_entities_in_real_business_and_legal_events_are_not_wagers(self):
+        for question in ('Will the NFL face an antitrust lawsuit?', 'Will NBA revenue exceed its estimate?'):
+            market = normalize('polymarket', raw_poly() | {'question': question})
+            self.assertEqual(screen(market, CLOCK, policy())['status'], 'candidate')
+
     def test_gambling_remains_outside_research_and_time_limits_still_apply(self):
         market = normalize('polymarket', raw_poly())
         self.assertEqual(screen(market | {'screen_text': 'NFL exact score'}, CLOCK, policy())['status'], 'excluded')

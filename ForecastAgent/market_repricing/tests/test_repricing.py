@@ -66,11 +66,11 @@ class Selection(unittest.TestCase):
                 run(worker,monitor,verification_only=True)
     def setUp(self): self.cfg = policy(); self.m = normalize('polymarket', raw_poly())
     def test_reversed_yes_identity(self): self.assertEqual(self.m['yes_token'], 'yes_asset')
-    def test_crypto_broad_exclusion(self):
+    def test_industry_alone_does_not_exclude_real_events(self):
         for title in ['Coinbase merger', 'Bitcoin ETF ruling', 'crypto regulation', 'MicroStrategy earnings', 'Ethereum inflation']:
             with self.subTest(title=title):
                 m = self.m | {'screen_text': title}
-                self.assertEqual(screen(m, CLOCK, self.cfg)['reason'], 'crypto_excluded')
+                self.assertEqual(screen(m, CLOCK, self.cfg)['status'], 'candidate')
     def test_sports_social_exclusion(self):
         for title in ['NFL finals', 'soccer match', 'esports vote', 'president mentions', 'NBA game']:
             self.assertEqual(screen(self.m | {'screen_text': title}, CLOCK, self.cfg)['status'], 'excluded')
