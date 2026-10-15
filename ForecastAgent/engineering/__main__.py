@@ -63,6 +63,10 @@ def main():
             result = summary(db)
             result['experiments'] = [dict(r) for r in db.execute('SELECT id,name,created_at FROM experiments')]
             result['lifecycle_events'] = db.execute('SELECT count(*) FROM lifecycle').fetchone()[0]
+            result['lifecycle_distribution'] = [dict(r) for r in db.execute(
+                'SELECT domain,stage,state,count(*) AS tasks,max(occurred_at) AS last_observed_at FROM lifecycle e '
+                'WHERE e.rowid=(SELECT x.rowid FROM lifecycle x WHERE x.domain=e.domain AND x.task_key=e.task_key '
+                'AND x.stage=e.stage ORDER BY x.occurred_at DESC,x.rowid DESC LIMIT 1) GROUP BY domain,stage,state')]
         write(Path(args.root) / ('last-' + args.command + '.json'), result)
         print(json.dumps(result, ensure_ascii=False))
     finally:
