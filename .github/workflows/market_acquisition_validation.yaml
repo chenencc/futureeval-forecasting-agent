@@ -40,6 +40,8 @@ jobs:
         run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/monitor --branch main
       - name: Verify creation-window discovery without changing restored originals
         run: python -m ForecastAgent.market_repricing.tests.verify_discovery_preservation --root snapshots/monitor --output snapshots/receipts/discovery-preservation.json
+      - name: Verify intake against frozen actual admissions without provider calls
+        run: python -m ForecastAgent.market_repricing.tests.verify_intake_preservation --root snapshots/monitor --output snapshots/receipts/intake-preservation.json
       - uses: actions/upload-artifact@v4
         with:
           name: market-acquisition-promotion
