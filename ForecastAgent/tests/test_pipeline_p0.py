@@ -14,6 +14,7 @@ from ForecastAgent.market_store import store
 from ForecastAgent.market_store.web_materials import hydrate
 from ForecastAgent.competition_store import store as competition
 from ForecastAgent.competition_store.ingest import repair_missing_local
+from ForecastAgent.competition_store.ingest import project
 
 
 AT='2026-10-15T02:00:00+00:00'
@@ -108,6 +109,32 @@ class ReplayTests(unittest.TestCase):
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_one_corrupt_competition_snapshot_does_not_hide_other_questions(self):
+        with TemporaryDirectory() as folder:
+            db=competition.connect(Path(folder)/'competition.sqlite3')
+            for ident in ('101','102'):
+                text='Original source';url='https://example.org/report';body=hashlib.sha256(text.encode()).hexdigest()
+                bundle={'request':{'id':ident,'question':'Will the event occur?','resolution_criteria':'Explicit rule'},
+                        'pages':{url:{'content':text,'content_sha256':body,'retrieved_at_utc':AT}}}
+                state={'question':bundle['request'],'sources':[{'url':url,'body_sha256':body}]}
+                request={'state':state,'model':'fixture'};result={'payload':{'question':int(ident),'probability_yes':0.3},'selection':'mercury_first_read'}
+                prefix='tasks/'+ident+'/analysis-core-1.0.1/mercury-v1.0.1/'
+                files={'tasks/'+ident+'/analysis-input.json':bundle,'tasks/'+ident+'/candidate.json':{
+                    **result,'model_result_sha256':competition.native_hash(result)},prefix+'result.json':result,
+                    prefix+'first-state.json':state,prefix+'first/request.json':request,
+                    prefix+'first/identity.json':{'request_sha256':competition.native_hash(request)}}
+                with db:
+                    project(db,files,AT,'source')
+                    raw=json.dumps(bundle).encode();digest=hashlib.sha256(raw).hexdigest()
+                    competition.save(db,'native_objects',(digest,raw,len(raw),'plain'))
+                    competition.save(db,'file_refs',(ident,'source','metaculus:'+ident,'tasks/'+ident+'/analysis-input.json',digest,len(raw),'verified_local_object','{}'))
+            self.assertEqual(replay.competition(db)['ready'],2)
+            with db:db.execute("UPDATE native_objects SET bytes=?,codec='gzip' WHERE sha256=(SELECT sha256 FROM file_refs WHERE id='101')",(b'corrupt',))
+            report=replay.competition(db)
+            self.assertEqual(report['ready'],1)
+            self.assertIn('replay_validation_failed',report['tasks'][0]['gaps'])
+            db.close()
+
     def remote_fixture(self, root, payloads):
         db=store.connect(root/'prediction_markets/store/market.sqlite3');db.close()
         db=competition.connect(root/'competitions/store/competition.sqlite3')

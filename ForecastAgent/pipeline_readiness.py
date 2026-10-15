@@ -9,6 +9,7 @@ import hashlib
 import gzip
 import json
 from pathlib import Path
+import zlib
 
 
 def sha(value):
@@ -134,15 +135,15 @@ def market(db):
                 'material_sha256': materials.get('material_sha256'),
                 'original_input': routes.get('original'), 'original_output': original,
                 'source_kind': selected.get('source_kind'), 'native_dependencies':raw_dependencies,'sources': dependencies}))
-        except (ValueError, KeyError, TypeError) as exc:
+        except (ValueError, KeyError, TypeError, OSError, EOFError, zlib.error) as exc:
             rows.append(receipt(key, None, 'unknown', {'replay_validation_failed'},
                                 {'error_type': type(exc).__name__, 'reason': str(exc)[:180]}))
     return summarize(rows)
 
 
-def competition(db):
+def _competition(db, key):
     rows, cache = [], {}
-    for record in db.execute('SELECT key FROM questions ORDER BY key').fetchall():
+    for record in db.execute('SELECT key FROM questions WHERE key=?',(key,)).fetchall():
         key = record[0]
         task = db.execute('SELECT stage FROM latest_tasks WHERE question_key=?', (key,)).fetchone()
         forecast = db.execute('SELECT * FROM latest_forecasts WHERE question_key=?', (key,)).fetchone()
@@ -202,6 +203,16 @@ def competition(db):
             'input_sha256': selected['state_sha256'] if selected else None,
             'model': (json.loads(selected['data']).get('model') if selected else None),
             'material_sha256': batch['bundle_sha256'] if batch else None, 'sources': dependencies}))
+    return summarize(rows)
+
+
+def competition(db):
+    rows=[]
+    for record in db.execute('SELECT key FROM questions ORDER BY key').fetchall():
+        try:rows.extend(_competition(db,record[0])['tasks'])
+        except (ValueError,KeyError,TypeError,OSError,EOFError,zlib.error) as exc:
+            rows.append(receipt(record[0],None,'unknown',{'replay_validation_failed'},
+                                {'error_type':type(exc).__name__,'reason':str(exc)[:180]}))
     return summarize(rows)
 
 
