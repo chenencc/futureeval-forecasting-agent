@@ -172,6 +172,9 @@ jobs:
       - name: Verify and rehydrate original task bytes
         if: steps.recovery.outputs.needed == 'true'
         run: python -m ForecastAgent.competition.recovery_store --root snapshots/official --evidence snapshots/legacy-evidence
+      - name: Verify original state before writing current deployment metadata
+        if: steps.source.outputs.submit != 'true'
+        run: python -m ForecastAgent.integrations.shared_preservation --root snapshots/official --output snapshots/verification-shared.json --allow-delivery-only
       - name: Install free readers and browser
         run: |
           mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
@@ -216,7 +219,8 @@ jobs:
       - name: Acquire analyze and submit eligible questions
         run: |
           if [ "$SUBMIT_FORECASTS" != "true" ]; then
-            python -m ForecastAgent.integrations.shared_preservation --root snapshots/official --output snapshots/official/verification-shared.json --allow-delivery-only
+            cat snapshots/verification-shared.json
+            cat snapshots/official/unified-acquisition-preservation.json
             exit 0
           fi
           if [ -n "$RESTORED_LEGACY_RUN" ]; then
