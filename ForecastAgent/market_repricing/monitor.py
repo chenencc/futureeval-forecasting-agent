@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from .common import PublicHTTP, digest, instant, now, policy, read, seal, state, write
 from .tracking import creation_schedule, forecast_schedule, labels, targets_for, final_record
-from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen, final_resolution
+from .venues import GAMMA, KALSHI, gambling_only, book, normalize, refresh, screen, final_resolution
 from .discovery import scan as scan_creation_window
 from . import intake
 
@@ -57,7 +57,7 @@ def discover_events(http, venue, cfg, clock, saved=None, consume=None):
             saved.update(close_min=close_min.isoformat(), cursor_hashes=[])
     excluded_tags = []
     if venue == 'polymarket':
-        for slug in ('sports', 'crypto'):
+        for slug in ('sports',):
             tag, receipt = http.get(GAMMA + 'tags/slug/' + slug)
             if str(tag.get('slug')) != slug or not str(tag.get('id', '')).isdigit():
                 raise ValueError('Exclusion tag identity mismatch')
@@ -83,7 +83,7 @@ def discover_events(http, venue, cfg, clock, saved=None, consume=None):
         start_index = len(rows)
         for event in events:
             text = ' '.join(str(event.get(k) or '') for k in ('title', 'category', 'tags', 'ticker', 'event_ticker'))
-            if CRYPTO.search(text) or GAMBLING.search(text):
+            if gambling_only(text, str(event.get('title') or '')):
                 continue
             for original in event.get('markets') or []:
                 market = original.copy()
@@ -180,18 +180,19 @@ def enroll(ledger, cfg, clock):
         if count >= cfg['maximum_new_tasks_per_day']:
             break
         market['selection'] = screen(market, clock, cfg)
-        if market['selection']['status'] != 'candidate' or (market.get('last_quote') or {}).get('status') != 'usable':
+        if market['selection']['status'] != 'candidate':
             continue
-        observed = market['last_quote'].get('received_at')
-        if not observed or not instant(ledger.get('last_attempt_at', clock)) <= instant(observed) <= instant(clock):
-            # An old usable book cannot masquerade as the admission-time price.
+        if market.get('admission_metadata_error'):
+            # Invalid contract identity/schema is independent of book quality.
             continue
         if market['family'] in families:
             continue
         key = market['key']
         # One immutable representative per venue event family. No cross-venue title matching.
         from .deployment import task_release
+        from .observations import admission_quote
         ledger['tasks'][key] = {'key': key, 'market': copy.deepcopy(market), 'enrolled_at': clock,
+                                'admission_quote': admission_quote(market, ledger.get('last_attempt_at', clock), clock),
                                 'status': 'queued', 'policy_sha256': ledger['identity']['policy_sha256'],
                                 'price_schedule': creation_schedule({'market': market}),
                                 'acquisition_policy': 'market-evidence-capture-v2', **task_release()}
@@ -353,8 +354,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None, intake_decide=N
                 groups.setdefault(ledger['markets'][key]['family'], []).append(key)
         def rank(key):
             m = ledger['markets'][key]
-            return (bool(m.get('last_quote')), -float(m.get('discovery_volume_hint') or 0),
-                    -float(m.get('discovery_liquidity_hint') or 0), key)
+            return (bool(m.get('last_quote')), m.get('created_at') or m['first_seen_at'], key)
         groups = {family: sorted(keys, key=rank) for family, keys in groups.items()}
         rounds = [keys[i] for i in range(max((len(g) for g in groups.values()), default=0))
                   for family, keys in sorted(groups.items()) if i < len(keys)]
@@ -366,6 +366,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None, intake_decide=N
             market = ledger['markets'][key]
             try:
                 current, receipt = refresh(http, market)
+                market.pop('admission_metadata_error', None)
                 clock = max((clock, receipt['received_at']), key=instant)
                 if key in selected and current.get('created_at') != ledger['tasks'][key]['market']['created_at']:
                     market['creation_time_drift'] = {'seen_at': receipt['received_at'],
@@ -404,6 +405,9 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None, intake_decide=N
                 market['last_followup_check_at'] = receipt['received_at']
             except Exception as exc:
                 refresh_failed.add(key)
+                if isinstance(exc, ValueError):
+                    market['admission_metadata_error'] = {'at': clock, 'error_type': type(exc).__name__,
+                                                         'reason': 'metadata_identity_or_schema_error'}
                 market['last_followup_attempt_at'] = clock
                 errors.append({'key': key, 'stage': 'metadata_or_resolution_refresh', 'error': str(exc)})
         for key in priority:

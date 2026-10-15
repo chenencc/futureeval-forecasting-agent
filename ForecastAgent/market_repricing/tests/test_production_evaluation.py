@@ -11,6 +11,30 @@ from ForecastAgent.market_repricing.worker import forecast_policy
 
 
 class ProductionEvaluation(unittest.TestCase):
+    def test_missing_initial_price_keeps_event_brier_and_unpaired_price_errors(self):
+        market = {'family': 'family', 'created_at': '2026-10-12T00:00:00Z', 'rules_sha256': 'rules',
+            'final_observation': {'status': 'resolved', 'result': 'yes', 'observed_at': '2026-10-22T00:00:00Z'}}
+        timing = creation_schedule({'market': market})
+        forecast = {'timely': True, 'sealed_at': '2026-10-12T01:00:00Z', 'price_schedule': timing,
+            'baseline': {'24': None, '72': None, '168': None}, 'arms': {'original': {
+                'status': 'completed', 'price_means': {'24': .4}, 'eventual_probability_yes': .4}}}
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root); monitor = root/'monitor'; worker = root/'worker'
+            m, w = state(monitor, 'monitor', policy()), state(worker, 'worker', policy())
+            m['markets'] = {'new': market}
+            w['tasks'] = {'new': {'market': market, 'status': 'completed', 'forecast': forecast}}
+            write(monitor/'state.json', m); write(worker/'state.json', w)
+            write(monitor/'labels'/(digest('new')+'.json'), {'24': {'status': 'quoted',
+                'target_at': timing['targets']['24'], 'label': .5}})
+            result = run(monitor, worker, root/'evaluation.json')
+            row = next(r for r in result['rows'] if r['horizon_hours'] == 24)
+            self.assertIsNone(row['baseline'])
+            self.assertAlmostEqual(row['unpaired_arms']['original']['error'], -.1)
+            self.assertIsNone(row['unpaired_arms']['original']['direction_correct'])
+            self.assertEqual(result['event_brier']['original']['n'], 1)
+            self.assertAlmostEqual(result['event_brier']['original']['brier'], .36)
+            self.assertEqual(result['summary']['market_created_at:24']['comparisons']['original_vs_mapped']['metrics']['no_change']['paired_n'], 0)
+
     def test_per_arm_seals_and_pair_attrition_are_separate(self):
         market = {'family': 'family', 'created_at': '2026-10-12T00:00:00Z', 'rules_sha256': 'rules'}
         schedule = creation_schedule({'market': market})

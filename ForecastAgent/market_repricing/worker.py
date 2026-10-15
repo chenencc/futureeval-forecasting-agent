@@ -292,20 +292,16 @@ def execute(root, ledger, key, cfg, http, collector=acquire, forecaster=None):
                     return
                 if screen(current, now(), cfg, check_newness=False)['status'] != 'candidate':
                     raise RuntimeError('Contract no longer eligible at freeze time')
-                anchor = book(http, current, cfg)
-                # A shallow valid two-sided book supplies observational context
-                # only, never depth-qualified metrics or trade eligibility.
-                if anchor['status'] == 'shallow_book':
-                    bid, ask = anchor.get('yes_bid'), anchor.get('yes_ask')
-                    if (isinstance(bid, (int,float)) and isinstance(ask, (int,float)) and
-                        0 < bid <= ask < 1 and anchor.get('yes_bid_size', 0) > 0 and anchor.get('yes_ask_size', 0) > 0):
-                        anchor.update(status='usable', observed_book_status='shallow_book',
-                            midpoint=(bid+ask)/2, eligible_for_model_metrics=False,
-                            observational_context_only=True,
-                            quality_flags=list(anchor.get('quality_flags', []))+['shallow_book'])
-                if anchor['status'] != 'usable':
-                    write(stage / 'unusable-anchor.json', anchor)
-                    raise RuntimeError('No usable live two-sided anchor')
+                from .observations import forecast_context
+                try:
+                    observed = book(http, current, cfg)
+                except ValueError:
+                    # Identity/schema corruption is not a missing quote.
+                    raise
+                except Exception as exc:
+                    observed = {'status': 'fetch_failed', 'midpoint': None,
+                                'attempted_at': now(), 'error_type': type(exc).__name__}
+                anchor = forecast_context(observed, now())
                 task['market'] = current
                 write(anchor_path, anchor)
             if (instant(now()) - instant(anchor['received_at'])).total_seconds() > cfg['maximum_seal_latency_minutes'] * 60:
@@ -375,7 +371,8 @@ def baseline_result(anchor, cfg, reason, audit):
     return {'price_schedule': price_schedule, 'status': 'baseline_only', 'reason': reason, 'anchor_at': anchor['received_at'],
         'anchor': anchor, 'sealed_at': now(), 'timely': False,
         'baseline': {str(h): anchor['midpoint'] for h in cfg['horizons_hours']},
-        'arms': {}, 'eventual_probability_yes': None, 'score_source': 'market_no_change_control',
+        'arms': {}, 'eventual_probability_yes': None,
+        'score_source': 'market_no_change_control' if anchor['midpoint'] is not None else 'unavailable_no_model_forecast',
         'eligible_for_model_metrics': False, 'body_audit': audit,
         'no_orders_or_platform_forecasts': True, 'development_only': True}
 

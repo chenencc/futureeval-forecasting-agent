@@ -104,7 +104,7 @@ class DevelopmentRuntime(unittest.TestCase):
             self.assertEqual(task['historical_forecast']['status'],'completed')
             self.assertTrue((folder/'invalid-result-quarantine.json').exists())
 
-    def test_shallow_book_is_observational_not_depth_qualified_score(self):
+    def test_shallow_book_is_observation_without_blocking_research(self):
         from ForecastAgent.market_repricing.worker import execute
         market, _, bundle=self.bundle()
         ledger={'tasks':{market['key']:{'market':market,'status':'queued','executions':0}}}
@@ -120,7 +120,8 @@ class DevelopmentRuntime(unittest.TestCase):
             execute(directory,ledger,market['key'],policy(),None,collector=lambda *a:bundle,forecaster=score)
         self.assertAlmostEqual(observed[0]['midpoint'],.084)
         self.assertIn('shallow_book',observed[0]['quality_flags'])
-        self.assertFalse(ledger['tasks'][market['key']]['forecast']['eligible_for_model_metrics'])
+        self.assertEqual(observed[0]['status'], 'shallow_book')
+        self.assertNotEqual(ledger['tasks'][market['key']]['forecast'].get('eligible_for_model_metrics'), False)
 
     def test_native_capture_child_reads_absolute_request_from_engine_cwd(self):
         from ForecastAgent.supplement.transport import capture
@@ -162,6 +163,26 @@ class DevelopmentRuntime(unittest.TestCase):
             self.assertEqual(set(result['arms']), {'original', 'mapped'})
             for span in seen[0]['evidence']:
                 self.assertEqual(text[span['start']:span['end']], span['text'])
+
+    def test_real_development_packing_accepts_missing_price_without_fabricating_control(self):
+        from ForecastAgent.market_repricing.forecast import run
+        from ForecastAgent.market_repricing.observations import forecast_context
+        from ForecastAgent.research_loop import decision_http
+        market, text, bundle = self.bundle()
+        anchor = forecast_context({'status': 'missing_two_sided_book', 'received_at': now()}, now())
+        def decision(state, root, questions, **kwargs):
+            self.assertIsNone(state['anchor_quote']['midpoint'])
+            answers = {'event_yes': {'type': 'noul', 'noul': .3}}
+            for key, question in questions.items():
+                if key.startswith('price_'):
+                    answers[key] = {'type': 'choice', 'choice': 'p6', 'confidence': 1,
+                        'probabilities': {k: 1 if k == 'p6' else 0 for k in question['criteria']}}
+            return {'model': 'inception/mercury-decide:free', 'answers': answers}
+        with tempfile.TemporaryDirectory() as root, patch.object(decision_http, 'call', side_effect=decision):
+            result = run(bundle, market, anchor, Path(root), policy() | {'analysis_arms': ['original']})
+            self.assertEqual(result['status'], 'completed')
+            self.assertEqual(result['arms']['original']['eventual_probability_yes'], .3)
+            self.assertTrue(all(value is None for value in result['baseline'].values()))
 
     def test_integrated_development_acquisition_flags_and_resume(self):
         from ForecastAgent.market_repricing.worker import acquire

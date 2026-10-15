@@ -13,11 +13,17 @@ GAMBLING = re.compile(r'\b(sports?|esports?|soccer|football|basketball|baseball|
 PRICE_ONLY = re.compile(r'\b(price|trading|trade|close|closing|above|below|hit|reach)\b.{0,65}\b(\$|usd|stock|share price|gold|silver|oil|nasdaq|s&p|dow|dollar)', re.I)
 DOMAINS = {
     'macro_policy': r'\b(fed|fomc|interest rate|inflation|cpi|gdp|unemployment|payroll|central bank|ecb|monetary|tariff)\b',
-    'company_event': r'\b(earnings|revenue|eps|merger|acquisition|antitrust|product launch|fda approval|deliveries)\b',
-    'government_law': r'\b(court|lawsuit|ruling|bill|legislation|congress|senate|parliament|ceasefire|treaty|sanction|vote|hearing|government|budget)\b',
+    'company_event': r'\b(earnings|revenue|eps|merger|acquisition|antitrust|product launch|fda approval|deliveries|foot traffic|credit card spend|same.store sales|retail sales)\b',
+    'government_law': r'\b(court|lawsuit|ruling|regulation|bill|legislation|congress|senate|parliament|ceasefire|treaty|sanction|vote|hearing|government|budget)\b',
     'election': r'\b(election|president|governor|polling|nominee|referendum|debate|midterms)\b',
     'science_health': r'\b(nasa|spacex|launch|spacecraft|clinical trial|outbreak|vaccine|public health|research|ai model|artificial intelligence)\b'
 }
+
+
+def gambling_only(text, question=''):
+    """A sports entity in an operational/legal proposition is not a sports wager."""
+    substantive = re.search(r'\b(merger|acquisition|antitrust|bankrupt\w*|earnings|revenue|eps|lawsuit|court|regulat\w*|legislation|labor agreement|collective bargaining|strike)\b', question, re.I)
+    return bool(GAMBLING.search(text) and not substantive)
 
 
 def array(value):
@@ -128,9 +134,11 @@ def normalize(venue, raw):
 
 def screen(market, clock, cfg, *, check_newness=True):
     text = market['screen_text']
-    for pattern, reason in ((CRYPTO, 'crypto_excluded'), (GAMBLING, 'gambling_or_mentions_excluded'), (PRICE_ONLY, 'price_only_excluded')):
-        if pattern.search(text):
-            return {'status': 'excluded', 'reason': reason}
+    # Industry and market prices are not gambling classifications. In particular,
+    # crypto company/regulatory events and measured financial outcomes are not
+    # excluded by sector. Remaining unknown propositions get bounded review.
+    if gambling_only(text, market.get('question', '')):
+        return {'status': 'excluded', 'reason': 'gambling_or_mentions_excluded'}
     if not market['binary']:
         return {'status': 'excluded', 'reason': 'binary_contract_required_for_quote_v1'}
     if market.get('composite'):
@@ -171,8 +179,10 @@ def screen(market, clock, cfg, *, check_newness=True):
         return {**result, 'status': 'short_resolution_cohort', 'reason': 'expected_resolution_within_seven_days',
                 'expected_resolution_remaining_hours': resolution_hours, 'resolution_hint': hint}
     result.update(expected_resolution_remaining_hours=resolution_hours, resolution_hint=hint)
-    if not market['tradable']:
-        return {**result, 'status': 'waiting_market', 'reason': 'not_orderable'}
+    if market.get('terminal_result') or market.get('platform_status') in {'closed', 'settled', 'determined', 'finalized'}:
+        return {**result, 'status': 'waiting_market', 'reason': 'contract_not_open'}
+    result['orderability_observed'] = market['tradable']
+    result['book_required_for_research'] = False
     domain = next((k for k, expression in DOMAINS.items() if re.search(expression, text, re.I)), None)
     if not domain:
         from .intake import reviewed_domain, bound_review
