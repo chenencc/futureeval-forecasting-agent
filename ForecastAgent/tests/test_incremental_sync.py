@@ -11,7 +11,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from ForecastAgent import local_sync
 from ForecastAgent.incremental_sync import import_members, import_catalog, validate_expected, execute
 from ForecastAgent.infrastructure.local_sync_export import export, PREFIX
-from ForecastAgent.local_transfer import ArtifactZip, RangeFile, TrafficBudget, TransferDeferred,SignedRanges
+from ForecastAgent.local_transfer import ArtifactZip, RangeFile, TrafficBudget, TransferDeferred,SignedRanges,CachedBlocks
 
 REPO = 'chenencc/futureeval-forecasting-agent'
 
@@ -56,6 +56,21 @@ class Client:
 
 
 class RangeTests(TestCase):
+    def test_many_small_members_share_one_verified_block_and_survive_restart(self):
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            files={f'tasks/{i}/receipt.json':json.dumps({'id':i}).encode() for i in range(200)}
+            raw=zip_bytes(root,'many',files)
+            info={'id':1,'size_in_bytes':len(raw),'digest':hashlib.sha256(raw).hexdigest()}
+            calls=[]
+            def fetch(start,stop):
+                calls.append((start,stop));return raw[start:stop]
+            for _ in range(2):
+                blocks=CachedBlocks(root/'blocks',info,fetch)
+                with ArtifactZip(RangeFile(root/'ranges',info,blocks)) as archive:
+                    for name,data in files.items():self.assertEqual(archive.read(name),data)
+            self.assertEqual(calls,[(0,len(raw))])
+
     def test_old_signed_redirect_refreshes_before_payload_without_hidden_retry(self):
         with TemporaryDirectory() as directory:
             budget=TrafficBudget(directory,100)

@@ -60,6 +60,8 @@ or an arbitrary conflicting ID is still rejected. No native quota is renewed.
 SHA-256 and resumable ranges. Its catalog summary bound is 32 MiB, matching native
 readers; source, manifest, embedding and expanded-archive bounds remain enforced.
 Both PowerShell wrappers drain stdout/stderr before checking the native exit code.
+Aligned one-MiB cached blocks amortize tiny member requests. Signed URLs refresh
+before their expiry; payload failures still wait for the next scheduled run.
 Their hidden launch and existing task schedules must be preserved.
 
 ## Acceptance and recovery

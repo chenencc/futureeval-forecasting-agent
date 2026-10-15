@@ -225,6 +225,24 @@ class RangeFile(io.RawIOBase):
         return b''.join(chunks)
 
 
+class CachedBlocks:
+    """Amortize tiny ZIP member reads over bounded, verified cached blocks."""
+    def __init__(self,directory,metadata,fetch,budget=None):
+        self.reader=RangeFile(directory,metadata,fetch,budget)
+
+    def __call__(self,start,stop):
+        chunks=[]
+        while start<stop:
+            aligned=start//MAX_RANGE*MAX_RANGE
+            end=min(aligned+MAX_RANGE,self.reader.size)
+            self.reader.seek(aligned)
+            block=self.reader.read(end-aligned)
+            take=min(stop,end)
+            chunks.append(block[start-aligned:take-aligned])
+            start=take
+        return b''.join(chunks)
+
+
 class ArtifactZip:
     """Read individual members with ZIP CRC checks, retaining resumable ranges."""
     def __init__(self, reader):
