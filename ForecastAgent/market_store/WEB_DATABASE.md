@@ -155,6 +155,10 @@ of the Web worktree and the dirty root development checkout. Resolve its current
 location through the local `reader-runtime.json` pointer. Do not import an older
 root checkout merely because it is already on `PYTHONPATH`.
 
+For a CLI command started inside an older checkout, also change directory to
+the installed runtime before `python -m ...`: Python's current directory precedes
+`PYTHONPATH`. A service must resolve the pointer before importing ForecastAgent.
+
 ```python
 import json
 from pathlib import Path
@@ -1555,6 +1559,7 @@ producer changes schema or semantics, Pipeline must update this contract, tests,
 and a bound example before the Web consumer relies on the change.
 
 
+
 ## 20. Competition SQLite: Fall FutureEval and saved Market Pulse
 
 Added 2026-10-15. This is the same single-file Web handbook, extended to cover
@@ -1727,16 +1732,16 @@ Snapshot validated on2026-10-15. No new model, search or submission calls.
 | Measure | Verified value |
 |---|---|
 | questions | 59 |
-| question_versions | 231 |
-| task_versions | 90 |
+| question_versions | 315 |
+| task_versions | 119 |
 | forecasts | 57 |
 | receipts | 61 |
 | bundles | 95 |
 | captures | 410 |
 | documents | 151 |
 | events | 795 |
-| native_objects | 1252 |
-| file_refs | 2212 |
+| native_objects | 1270 |
+| file_refs | 2266 |
 | types | {'binary': 14, 'discrete': 19, 'multiple_choice': 11, 'numeric': 15} |
 | task_stages | {'accepted': 51} |
 | delivery | {'accepted': 48, 'accepted_unbound': 3} |
@@ -1744,7 +1749,7 @@ Snapshot validated on2026-10-15. No new model, search or submission calls.
 
 Fall:40observed questions,32accepted bound receipts. Market Pulse:19historically submitted questions;3latest native receipts have no matching imported candidate. Six Fall final input chains remain unavailable. These gaps are preserved. The database is usable without claiming complete archival coverage.
 
-8competition invariants plus31market and30transfer tests passed. All59question detail DTOs and151display-body hashes were read successfully; SQLite integrity check passed.
+9competition invariants plus31market and30transfer tests passed. All59question detail DTOs and151display-body hashes were read successfully; SQLite integrity check passed.
 
 
 All table columns, indexes, foreign keys and views follow. Their `data`/`payload`

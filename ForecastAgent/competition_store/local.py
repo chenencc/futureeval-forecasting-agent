@@ -9,7 +9,7 @@ from . import store
 def market_pulse(db,data_root):
     root=Path(data_root)/'tournaments/market-pulse-26q4'
     if not root.is_dir():return {'status':'not_present'}
-    receipts=[];results=[];packages=[];inventories=[]
+    receipts=[];results=[];packages=[];inventories=[];inputs=[]
     for folder in ('deliveries','campaigns'):
         for path in sorted((root/folder).rglob('submission.json')):
             value=json.loads(path.read_bytes())
@@ -28,8 +28,11 @@ def market_pulse(db,data_root):
         if str(value.get('request',{}).get('id')) in ids:packages.append((path,value))
     for path in sorted((root/'snapshots').glob('*/inventory.json')):
         inventories.append((path,json.loads(path.read_bytes())))
-    sources=receipts+results+packages+inventories
-    source_id='local-market-pulse-v2:'+digest([(str(p.relative_to(root)),hashlib.sha256(p.read_bytes()).hexdigest()) for p,_ in sources])
+    for path in sorted((root/'snapshots').glob('*/inputs/*.json')):
+        value=json.loads(path.read_bytes())
+        if str(value.get('request',{}).get('id')) in ids: inputs.append((path,value))
+    sources=receipts+results+packages+inventories+inputs
+    source_id='local-market-pulse-v3:'+digest([(str(p.relative_to(root)),hashlib.sha256(p.read_bytes()).hexdigest()) for p,_ in sources])
     if db.execute('SELECT 1 FROM imports WHERE id=?',(source_id,)).fetchone():return {'status':'already_imported','source_id':source_id}
     at=clock()
     with db:
@@ -47,6 +50,10 @@ def market_pulse(db,data_root):
                 if str(row['question_id']) not in ids:continue
                 inventory_by_id[str(row['question_id'])]=row
                 store.question(db,row,'market-pulse-26q4',observed,source_id)
+        for _,value in inputs:
+            request=value['request'];ident=str(request['id'])
+            store.question(db,{**inventory_by_id.get(ident,{}),**request,'status':'not_refreshed'},
+                'market-pulse-26q4',at,source_id)
         for path,value in packages:
             ident=str(value['request']['id'])
             store.bundle(db,ident,value,'local:'+str(path.relative_to(root)),at,source_id)

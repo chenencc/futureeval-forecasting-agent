@@ -100,4 +100,22 @@ class CompetitionStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):reader.read({'path':'../private.json','sha256':'a'*64,'size_bytes':1})
         with self.assertRaises(FileNotFoundError):reader.read({'path':'tasks/101/x.json','sha256':'a'*64,'size_bytes':1},local_only=True)
 
+    def test_local_nonbinary_metadata_survives_inventory_only_archives(self):
+        from ForecastAgent.competition_store.local import market_pulse
+        root=self.root/'tournaments/market-pulse-26q4'
+        data={
+            'deliveries/v1/tasks/101/submission.json':{'payload':self.candidate['payload'],'status':'accepted','confirmed_at_utc':AT},
+            'analysis/v1/tasks/101/result.json':self.candidate,
+            'snapshots/v1/inventory.json':{'retrieved_at_utc':AT,'rows':[{'question_id':101,'post_id':900,'type':'multiple_choice','title':'Which option?'}]},
+            'snapshots/v1/inputs/101.json':{'request':{**self.bundle['request'],'scaling':{'range_min':0,'range_max':10},'inbound_outcome_count':200}}}
+        for name,value in data.items():
+            path=root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(value),encoding='utf-8')
+        market_pulse(self.db,self.root)
+        detail=read_task(self.db,'metaculus:101')
+        self.assertEqual(detail['question']['scaling']['range_min'],0)
+        self.assertEqual(detail['question']['options'],['A','B'])
+        self.assertEqual(detail['question']['post_id'],900)
+        self.assertEqual(detail['question']['status'],'not_refreshed')
+        self.assertTrue(detail['receipts'][0]['verified_binding'])
+
 if __name__=='__main__':unittest.main()
