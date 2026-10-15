@@ -1,5 +1,64 @@
 # ForecastAgent Web database contract
 
+## Read this first: website versus analysis replay
+
+Verified2026-10-15. The database layer supports the website's saved question,
+pipeline, evidence, map, forecast, receipt and price displays. HTTP routes and
+live frontend wiring remain Web-owned; their suggested mappings are not a claim
+that the live website has already switched to these readers.
+
+It also retains native evidence for offline research, but the presentation DTO
+is **not** an analysis input. It is redacted/allowlisted and may contain only an
+excerpt. Recover the exact native original by immutable batch/hash instead:
+
+| Dataset | Exact original batches recovered | Questions with usable saved bodies |
+|---|---|---|
+| Competition | 95/95 indexed material batches | 38/59:26Fall and12savedMarketPulse |
+| Prediction market | 83local material vintages | 65/72 |
+
+Competition's remaining21questions include8inventory-only questions with no
+worker acquisition,6Fall historical analysis-package gaps and7MarketPulse
+questions without an imported body package. Market's remaining7native packages
+are not synchronized locally. These are availability counts, not relevance,
+truth, temporal-leakage or calibration certificates.
+
+Both source domains were actually restored and hash-checked without network,
+models or search calls. The raw recovery proof for official46293contains8usable
+saved bodies; marketpolymarket:5676514contains6. Reports and private proof files:
+`E:/metaculus_data/reports/snapshot-replay-readiness-20261015.json` and
+`D:/metaculus/.tmp/snapshot-replay-readiness-20261015/`.
+
+### Research isolation requirements
+
+1. Freeze an explicit domain/question/batch/material hash. Do not select the
+   latest batch again while a paired experiment is running.
+2. Supply that batch's frozen request/rules and original pages. Do not join
+   `latest_questions` outcomes, current resolutions, future prices, later
+   supplements, old forecast answers or model transcripts into a historical
+   analysis prompt. The complete raw archival bundle is not itself a sanitized
+   new-model prompt.
+3. Keep original acquisition/capture clocks and explicit unknown cutoffs. A raw
+   recovery proof with no `as_of_utc` does not invent one or certify an as-of
+   backtest. Retain the actual available capture clocks and source cutoff policy.
+4. Preserve production candidates, receipts and native rows. Store experimental
+   model/prompt/config/seed/usage/output/errors separately, with the immutable
+   input hash and any outcome/price evaluation labels in a separate namespace.
+5. Compare new analysis against the old output on the exact same input. Recovering
+   a full acquisition bundle and reproducing the exact old selected model input
+   are separate tests; missing original selected inputs remain explicit gaps.
+
+The two database modules currently have **no unified research snapshot exporter,
+frozen experiment registry or dedicated experiment-results tables**. Existing
+Web `export`/`publish_snapshot` commands export presentation data. A small
+independent research adapter is still required for repeatable batch experiments;
+its manifest should bind cohort, native file/body hashes, cutoff policy, input
+allowlist, prompt/model/config versions and separate labels/results.
+
+Competition `native_objects` contains compressed original JSON bytes. Market
+SQLite still depends on saved `objects/`, generic SHA blobs and timestamped
+revision files; copying `market.sqlite3` alone is not a full-evidence backup.
+Back up that referenced object set together with a consistent SQLite snapshot.
+
 Contract: **market-web-database-v1**
 Owner: Pipeline; consumer: the Web lane, chat `01a1240d-cd6f-7af1-9c0f-8972f68142ed`.
 Canonical repository document: `ForecastAgent/market_store/WEB_DATABASE.md`.

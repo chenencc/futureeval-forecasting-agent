@@ -6,9 +6,29 @@ from pathlib import Path
 from ForecastAgent.market_store.store import clock,digest,encoded
 from . import store
 
+def repair_local_refs(db):
+    """Repair derived question links; never alter original files or hashes."""
+    repaired=0
+    rows=list(db.execute("SELECT f.id,o.* FROM file_refs f JOIN native_objects o ON o.sha256=f.sha256 "
+        "WHERE f.question_key IS NULL AND f.source_id LIKE 'local-market-pulse%'") )
+    for row in rows:
+        raw=gzip.decompress(row['bytes']) if row['codec']=='gzip' else row['bytes']
+        if len(raw)!=row['size_bytes'] or hashlib.sha256(raw).hexdigest()!=row['sha256']:
+            raise ValueError('Original local archive object integrity differs')
+        value=json.loads(raw)
+        ident=str((value.get('payload') or {}).get('question') or (value.get('request') or {}).get('id') or '')
+        if not ident.isdecimal():continue
+        key='metaculus:'+ident
+        if not db.execute('SELECT 1 FROM questions WHERE key=?',(key,)).fetchone():continue
+        with db:
+            db.execute('UPDATE file_refs SET question_key=? WHERE id=? AND question_key IS NULL',(key,row['id']))
+        repaired+=1
+    return repaired
+
 def market_pulse(db,data_root):
     root=Path(data_root)/'tournaments/market-pulse-26q4'
     if not root.is_dir():return {'status':'not_present'}
+    repaired=repair_local_refs(db)
     receipts=[];results=[];packages=[];inventories=[];inputs=[]
     for folder in ('deliveries','campaigns'):
         for path in sorted((root/folder).rglob('submission.json')):
@@ -33,13 +53,13 @@ def market_pulse(db,data_root):
         if str(value.get('request',{}).get('id')) in ids: inputs.append((path,value))
     sources=receipts+results+packages+inventories+inputs
     source_id='local-market-pulse-v3:'+digest([(str(p.relative_to(root)),hashlib.sha256(p.read_bytes()).hexdigest()) for p,_ in sources])
-    if db.execute('SELECT 1 FROM imports WHERE id=?',(source_id,)).fetchone():return {'status':'already_imported','source_id':source_id}
+    if db.execute('SELECT 1 FROM imports WHERE id=?',(source_id,)).fetchone():return {'status':'already_imported','source_id':source_id,'repaired_file_links':repaired}
     at=clock()
     with db:
         for path,value in sources:
             raw=path.read_bytes();sha=hashlib.sha256(raw).hexdigest()
             store.save(db,'native_objects',(sha,gzip.compress(raw,mtime=0),len(raw),'gzip'))
-            ident=str((value.get('payload') or value.get('request') or {}).get('question') or value.get('request',{}).get('id') or '')
+            ident=str((value.get('payload') or {}).get('question') or (value.get('request') or {}).get('id') or '')
             key=store.identify(db,ident) if ident.isdecimal() else None
             ref={'local_archive_relative_path':str(path.relative_to(root)),'tournament':'market-pulse-26q4','sha256':sha}
             store.save(db,'file_refs',(digest(ref),source_id,key,str(path.relative_to(root)),sha,len(raw),'verified_local_object',encoded(ref).decode()))

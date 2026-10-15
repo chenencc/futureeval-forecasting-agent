@@ -117,5 +117,9 @@ class CompetitionStoreTests(unittest.TestCase):
         self.assertEqual(detail['question']['post_id'],900)
         self.assertEqual(detail['question']['status'],'not_refreshed')
         self.assertTrue(detail['receipts'][0]['verified_binding'])
+        self.assertEqual(self.db.execute("SELECT question_key FROM file_refs WHERE path LIKE '%101.json'").fetchone()[0],'metaculus:101')
+        with self.db:self.db.execute("UPDATE file_refs SET question_key=NULL WHERE path LIKE '%101.json'")
+        market_pulse(self.db,self.root)
+        self.assertEqual(self.db.execute("SELECT question_key FROM file_refs WHERE path LIKE '%101.json'").fetchone()[0],'metaculus:101')
 
 if __name__=='__main__':unittest.main()
