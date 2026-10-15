@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -19,7 +20,26 @@ spec = importlib.util.spec_from_file_location('shared_launcher', HERE/'unified_a
 launcher = importlib.util.module_from_spec(spec); spec.loader.exec_module(launcher)
 
 
-def main(core, engine, expected, output):
+def validate_release_input(path, release):
+    code = '''import json,sys,urllib.request
+def forbidden(*a, **kw):raise AssertionError('Unexpected provider call')
+urllib.request.urlopen=forbidden
+from ForecastAgent.releases import context_decisions as context
+from ForecastAgent.competition.mercury import distribution_spec
+bundle=json.load(open(sys.argv[1]))
+kind=bundle['request']['question_type']
+registry=context.chain.questions() if kind=='binary' else context.typed.questions(distribution_spec(bundle['request']))
+state,audit=context.select_first(bundle,registry)
+assert state['evidence'], 'Readable original did not reach unchanged decision context'
+assert not context.audit_spans(bundle,state), 'Decision evidence is not bound to original spans'
+print(json.dumps({'unchanged_release_evidence_selection':True,'selected_spans':len(state['evidence']),'mode':audit['mode']}))
+'''
+    env = dict(os.environ, PYTHONPATH=str(Path(release).resolve()))
+    return json.loads(subprocess.check_output([sys.executable, '-c', code, str(Path(path).resolve())],
+        cwd=str(Path(release).resolve()), env=env, text=True))
+
+
+def main(core, engine, expected, output, release=None):
     identity = launcher.verify(core, engine, expected)
     from ForecastAgent.market_repricing.runtime import activate
     activate(engine)
@@ -73,6 +93,8 @@ def main(core, engine, expected, output):
                 assert (directory/'evidence-capture-v2/packets/first-packet.json').exists()
                 cases.append({'kind': kind, 'actual_market_acquire_and_repair_used': True,
                     'raw_byte_packet_preserved': True, 'resume_reused': True, 'network_calls': 0})
+                if release:
+                    cases[-1]['release_analysis_input'] = validate_release_input(directory/'package.json', release)
 
         # Each primary and backup transmission must own a separate market-native
         # physical reservation, including calls from imported provider aliases.
@@ -117,5 +139,6 @@ if __name__ == '__main__':
     parser.add_argument('--core', required=True)
     parser.add_argument('--engine', required=True)
     parser.add_argument('--expected', required=True)
+    parser.add_argument('--release')
     parser.add_argument('--output', required=True)
-    args = parser.parse_args(); main(args.core, args.engine, args.expected, args.output)
+    args = parser.parse_args(); main(args.core, args.engine, args.expected, args.output, args.release)

@@ -51,7 +51,7 @@ jobs:
           python -m unittest discover -s ForecastAgent/infrastructure -p test_unified_acquisition.py -v
           python -m unittest ForecastAgent.infrastructure.test_storage_monitor -v
       - name: Exercise actual selected acquisition and repair callable without providers
-        run: python ForecastAgent/infrastructure/verify_unified_engine.py --core .core --engine .engine --expected "$FORECAST_ACQUISITION_SHA" --output snapshots/receipts/selected-engine.json
+        run: python ForecastAgent/infrastructure/verify_unified_engine.py --core .core --engine .engine --release .release --expected "$FORECAST_ACQUISITION_SHA" --output snapshots/receipts/selected-engine.json
       - name: Find latest exact official checkpoint
         id: official
         uses: actions/github-script@v7
@@ -76,7 +76,7 @@ jobs:
           python ForecastAgent/infrastructure/storage.py verify --root snapshots/official
           python ForecastAgent/infrastructure/unified_competition_validation.py --release .release --core .core --engine .engine --root snapshots/official --output snapshots/receipts/competition.json
       - name: Restore current original market checkpoint without provider access
-        run: python ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/market --branch main
+        run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role worker --root snapshots/market --branch main
       - name: Verify unchanged market task, quota and file identities
         working-directory: .core
         env:
