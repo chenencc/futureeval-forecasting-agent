@@ -13,13 +13,28 @@ from unittest.mock import patch
 
 from ForecastAgent.market_store import cli
 from ForecastAgent.market_store.collector import collect
-from ForecastAgent.market_store.github_io import bounded_gunzip,REPO
+from ForecastAgent.market_store.github_io import bounded_gunzip,REPO,BlockFetch
 from ForecastAgent.market_store.providers import venue_status,Retryable,history
 from ForecastAgent.market_store.store import connect,ingest_summary,append,stats
 from test_store import AT,KEY,MARKET,FakeHTTP
 
 
 class PublicationTests(unittest.TestCase):
+    def test_small_member_reads_reuse_verified_blocks(self):
+        payload=b'x'*(2*1024**2)
+        calls=[]
+        def fetch(start,end):
+            calls.append((start,end))
+            return payload[start:end]
+        with tempfile.TemporaryDirectory() as folder:
+            metadata={'id':1,'size_in_bytes':len(payload),'digest':'same'}
+            reader=BlockFetch(Path(folder),metadata,fetch)
+            self.assertEqual(reader(10,40),b'x'*30)
+            self.assertEqual(reader(500,550),b'x'*50)
+            second=BlockFetch(Path(folder),metadata,fetch)
+            self.assertEqual(second(100,130),b'x'*30)
+            self.assertEqual(len(calls),1)
+
     def test_cloud_checkpoint_delta_restore_and_local_replay(self):
         class EmptyArchives:
             repo=REPO
