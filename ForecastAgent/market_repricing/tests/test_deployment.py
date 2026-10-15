@@ -121,7 +121,7 @@ class DeploymentTests(unittest.TestCase):
         competition = (root / '.github/workflows/official_competition.yaml').read_text()
         # The controller may promote competition capture independently of the
         # frozen market implementation; both audited competition pins are valid.
-        self.assertRegex(competition, r'ref: v1\.0\.5-(?:recovery\.2|capture\.1|shared\.1)\b')
+        self.assertRegex(competition, r'ref: v1\.0\.5-(?:recovery\.2|capture\.1|shared\.1|delivery\.1)\b')
         self.assertNotIn('MARKET_REPRICING_SHA', competition)
 
 
