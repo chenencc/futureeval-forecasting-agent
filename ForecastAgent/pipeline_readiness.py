@@ -58,6 +58,8 @@ def market(db):
         key = record[0]
         try:
             task = read_task(db, key, with_history=False)
+            saved_task=db.execute('SELECT data FROM latest_tasks WHERE market_key=?',(key,)).fetchone()
+            lineage=json.loads(saved_task[0]) if saved_task else {}
             selected = next((b for b in task['revisions'] if b['id'] == task['selected_revision_id']), {})
             materials = selected.get('materials') or {}
             forecast = selected.get('forecast') or {}
@@ -91,6 +93,7 @@ def market(db):
             if not materials.get('material_sha256'):
                 problems.add('material_identity_missing')
             raw_dependencies=[]
+            model=None
             if selected.get('source_kind') == 'original_worker':
                 root=Path(db.execute('PRAGMA database_list').fetchone()[2]).parent
                 # Native market paths use the store's canonical digest.
@@ -98,7 +101,8 @@ def market(db):
                 prefix='tasks/'+digest(key)+'/'
                 stage=task.get('analysis_stage') or 'analysis'
                 base=(materials.get('provenance') or {}).get('material_path')
-                names=[base,stage+'/original/state.json',stage+'/original/result.json']
+                names=[base,stage+'/original/state.json',stage+'/original/result.json',
+                       stage+'/original/decision/request.json',stage+'/original/decision/response.json']
                 for name in names:
                     matches=db.execute('SELECT sha256,size_bytes FROM material_refs WHERE market_key=? AND path=? '
                                        'ORDER BY rowid DESC',(key,prefix+str(name))).fetchall()
@@ -113,6 +117,10 @@ def market(db):
                             if name.endswith('/state.json') and digest(value)!=routes.get('original',{}).get('state_sha256'):continue
                             if name.endswith('/result.json') and any(value.get(k)!=original[k] for k in
                                 ('eventual_probability_yes','response_sha256','state_sha256') if k in original):continue
+                            if name.endswith('/decision/request.json'):
+                                if digest(value.get('state'))!=routes.get('original',{}).get('state_sha256'):continue
+                                model=value.get('model')
+                            if name.endswith('/decision/response.json') and digest(value)!=original.get('response_sha256'):continue
                             found={'path':name,'sha256':ref[0],'size_bytes':ref[1]};break
                         if found:break
                     if found:raw_dependencies.append(found)
@@ -134,6 +142,9 @@ def market(db):
                 'forecast_fingerprint': selected.get('forecast_fingerprint'),
                 'material_sha256': materials.get('material_sha256'),
                 'original_input': routes.get('original'), 'original_output': original,
+                'model':model,
+                'pipeline_identity':{k:lineage.get(k)
+                                     for k in ('pipeline_commit','pipeline_version','analysis_version','acquisition_policy')},
                 'source_kind': selected.get('source_kind'), 'native_dependencies':raw_dependencies,'sources': dependencies}))
         except (ValueError, KeyError, TypeError, OSError, EOFError, zlib.error) as exc:
             rows.append(receipt(key, None, 'unknown', {'replay_validation_failed'},

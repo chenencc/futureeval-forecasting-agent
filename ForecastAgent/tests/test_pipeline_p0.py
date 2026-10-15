@@ -36,13 +36,16 @@ class ReplayTests(unittest.TestCase):
         bundle={'request':q,'pages':{url:{'content':text,'content_sha256':body,'retrieved_at_utc':AT}}}
         state={'question':q,'sources':[{'source_id':'s','url':url,'body_sha256':body}],
                'evidence':[{'evidence_id':'e','source_id':'s','text':text,'start':0,'end':len(text)}]}
+        response={'prediction':0.0}
         self.result={'status':'completed','eventual_probability_yes':0.0,'price_means':{},
-                     'state_sha256':store.digest(state),'response_sha256':'response','sealed_at':SEAL}
+                     'state_sha256':store.digest(state),'response_sha256':store.digest(response),'sealed_at':SEAL}
         self.task={'id':KEY,'market':self.market,'status':'completed','enrolled_at':AT,'analysis_stage':'analysis',
                    'forecast':{'sealed_at':SEAL,'arms':{'original':self.result}}}
         self.ingest(self.task)
         for path,value in [('analysis-input.json',bundle),('material-integrity.json',{'bundle_sha256':store.digest(bundle)}),
-                           ('analysis/original/state.json',state),('analysis/original/result.json',self.result)]:
+                           ('analysis/original/state.json',state),('analysis/original/result.json',self.result),
+                           ('analysis/original/decision/request.json',{'model':'fixture','state':state}),
+                           ('analysis/original/decision/response.json',response)]:
             raw=json.dumps(value,indent=2).encode();sha=hashlib.sha256(raw).hexdigest()
             local=self.local/'objects'/sha[:2]/sha;local.parent.mkdir(parents=True,exist_ok=True);local.write_bytes(raw)
             with self.db:store.append(self.db,'ref',KEY,{'path':'tasks/'+store.digest(KEY)+'/'+path,
