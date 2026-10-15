@@ -111,35 +111,50 @@ def import_members(root, db, client, repo, metadata, budget, expected=None):
             if set(expected) != set(archive.members):
                 raise ValueError('Catalog does not cover exact source artifact members')
         report.update(expected_files=len(expected), assurance=assurance)
-        for path, info in sorted(expected.items()):
-            if path not in archive.members and path not in documents:
-                raise ValueError('Source member is unavailable')
-            if path in archive.members and archive.members[path].file_size != info['size_bytes']:
-                raise ValueError('Catalog and member sizes differ')
-            digest = info['sha256']
-            local = Path(root) / 'blobs' / 'sha256' / digest[:2] / digest if digest else None
-            existing = db.execute('SELECT sha256,size_bytes FROM files WHERE repo=? AND artifact_id=? AND path=?',
-                                  (repo, ident, path)).fetchone()
-            if digest and local.is_file():
-                data = local.read_bytes()
-                if len(data) != info['size_bytes'] or hashlib.sha256(data).hexdigest() != digest:
-                    raise ValueError('Existing local object failed integrity validation')
-                report['reused_files'] += 1
-                if path in archive.members:
-                    report['avoided_compressed_member_bytes'] += archive.members[path].compress_size
-            else:
-                data = documents[path] if path in documents else archive.read(path)
-                if len(data) != info['size_bytes'] or digest and hashlib.sha256(data).hexdigest() != digest:
-                    raise ValueError('Publisher file hash mismatch: ' + path)
-                digest = blob(root, data)
-                report['fetched_files'] += 1
-            if existing and (existing[0] != digest or existing[1] != len(data)):
-                raise ValueError('Previously indexed source artifact member changed')
-            if not existing:
-                db.execute('INSERT INTO files VALUES(?,?,?,?,?)', (repo, ident, path, digest, len(data)))
-                add_records(db, repo, ident, path, data, digest)
-                # Completed objects remain committed across a later traffic pause.
-                db.commit()
+        pending=0
+        try:
+            for path, info in sorted(expected.items()):
+                if path not in archive.members and path not in documents:
+                    raise ValueError('Source member is unavailable')
+                if path in archive.members and archive.members[path].file_size != info['size_bytes']:
+                    raise ValueError('Catalog and member sizes differ')
+                digest = info['sha256']
+                local = Path(root) / 'blobs' / 'sha256' / digest[:2] / digest if digest else None
+                existing = db.execute('SELECT sha256,size_bytes FROM files WHERE repo=? AND artifact_id=? AND path=?',
+                                      (repo, ident, path)).fetchone()
+                if digest and local.is_file():
+                    data = local.read_bytes()
+                    if len(data) != info['size_bytes'] or hashlib.sha256(data).hexdigest() != digest:
+                        raise ValueError('Existing local object failed integrity validation')
+                    report['reused_files'] += 1
+                    if path in archive.members:
+                        report['avoided_compressed_member_bytes'] += archive.members[path].compress_size
+                else:
+                    data = documents[path] if path in documents else archive.read(path)
+                    if len(data) != info['size_bytes'] or digest and hashlib.sha256(data).hexdigest() != digest:
+                        raise ValueError('Publisher file hash mismatch: ' + path)
+                    digest = blob(root, data)
+                    report['fetched_files'] += 1
+                if existing and (existing[0] != digest or existing[1] != len(data)):
+                    raise ValueError('Previously indexed source artifact member changed')
+                if not existing:
+                    if not db.in_transaction:db.execute('BEGIN')
+                    db.execute('SAVEPOINT verified_file')
+                    try:
+                        db.execute('INSERT INTO files VALUES(?,?,?,?,?)', (repo, ident, path, digest, len(data)))
+                        add_records(db, repo, ident, path, data, digest)
+                    except Exception:
+                        db.execute('ROLLBACK TO verified_file')
+                        db.execute('RELEASE verified_file')
+                        raise
+                    db.execute('RELEASE verified_file')
+                    pending+=1
+                    if pending>=64:
+                        db.commit();pending=0
+        finally:
+            # Preserve all fully verified objects on a transfer/hash failure; a
+            # killed process replays at most one small batch from local SHA bytes.
+            db.commit()
         db.execute('INSERT INTO artifacts VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(repo,artifact_id) DO UPDATE SET '
                    'status=CASE WHEN artifacts.status="imported" THEN "imported" ELSE "files_imported" END,'
                    'imported_at=excluded.imported_at,error=NULL',
@@ -273,8 +288,18 @@ def execute(root, db, client, repo, budget, maximum=20, *, discovery_failures=0)
     rows = db.execute('SELECT a.artifact_id,a.run_id,a.name FROM artifacts a LEFT JOIN retries r '
         'ON a.repo=r.repo AND a.artifact_id=r.artifact_id WHERE a.repo=? AND a.status IN ("pending","failed","transfer_wait") '
         'AND (r.next_retry_at IS NULL OR r.next_retry_at<=?) '
-        'ORDER BY CASE WHEN a.name LIKE ? THEN 0 ELSE 1 END,CAST(a.run_id AS INTEGER) DESC,a.artifact_id',
-        (repo, utc(), PREFIX + '%')).fetchall()
+        'ORDER BY CASE a.name WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 ELSE 4 END,'
+        'CAST(a.run_id AS INTEGER) DESC,a.artifact_id',
+        (repo, utc(), PREFIX+'market-worker', PREFIX+'official-worker', PREFIX+'official-monitor', PREFIX+'market-monitor')).fetchall()
+    # Give each domain's latest eligible catalog a turn before historical
+    # catch-up. Worker body packs precede bulky discovery caches within a turn.
+    newest={}
+    for _,run_id,name in rows:
+        if name.startswith(PREFIX):newest[name]=max(newest.get(name,0),int(run_id))
+    role={PREFIX+stream:index for index,stream in enumerate(
+        ('market-worker','official-worker','official-monitor','market-monitor'))}
+    rows=sorted(rows,key=lambda row:(0 if int(row[1])==newest.get(row[2]) else 1,
+        role.get(row[2],4),-int(row[1]),row[0]))
     seen, attempted = set(), 0
     for ident, run_id, name in rows:
         current = db.execute('SELECT status FROM artifacts WHERE repo=? AND artifact_id=?', (repo, ident)).fetchone()
