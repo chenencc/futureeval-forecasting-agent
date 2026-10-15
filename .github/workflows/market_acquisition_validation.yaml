@@ -28,6 +28,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/checkout@v4
+        with:
+          ref: 1a88d3b3390a6d6b92172ccd223b5f8a7948bfce
+          path: .intake-baseline
+          persist-credentials: false
       - name: Install native offline dependencies
         run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
       - name: Verify discovery and native pipeline regression gates without providers
@@ -41,7 +46,7 @@ jobs:
       - name: Verify creation-window discovery without changing restored originals
         run: python -m ForecastAgent.market_repricing.tests.verify_discovery_preservation --root snapshots/monitor --output snapshots/receipts/discovery-preservation.json
       - name: Verify intake against frozen actual admissions without provider calls
-        run: python -m ForecastAgent.market_repricing.tests.verify_intake_preservation --root snapshots/monitor --output snapshots/receipts/intake-preservation.json
+        run: python -m ForecastAgent.market_repricing.tests.verify_intake_preservation --root snapshots/monitor --baseline .intake-baseline/ForecastAgent/market_repricing/venues.py --output snapshots/receipts/intake-preservation.json
       - uses: actions/upload-artifact@v4
         with:
           name: market-acquisition-promotion
