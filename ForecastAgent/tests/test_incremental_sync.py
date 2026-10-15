@@ -156,6 +156,17 @@ class RangeTests(TestCase):
 
 
 class IncrementalTests(TestCase):
+    def test_body_packs_are_persisted_before_http_cache_inside_worker(self):
+        with TemporaryDirectory() as directory:
+            temp=Path(directory);root=temp/'local'
+            files={'market-http/a.json':b'{"status":409}','packs/a.tar.xz':b'saved_body_pack'}
+            client=Client(zip_bytes(temp,'worker',files))
+            saved=[];original=local_sync.blob
+            def record(root,data):saved.append(data);return original(root,data)
+            with local_sync.connect(root) as db,patch('ForecastAgent.local_sync.blob',side_effect=record):
+                import_members(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,0),expected(files))
+            self.assertEqual(saved,[b'saved_body_pack',b'{"status":409}'])
+
     def test_worker_bodies_are_not_starved_by_newer_monitor_cache(self):
         with TemporaryDirectory() as directory:
             root=Path(directory)

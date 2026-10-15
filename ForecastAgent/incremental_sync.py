@@ -113,7 +113,8 @@ def import_members(root, db, client, repo, metadata, budget, expected=None):
         report.update(expected_files=len(expected), assurance=assurance)
         pending=0
         try:
-            for path, info in sorted(expected.items()):
+            for path, info in sorted(expected.items(),key=lambda item:(
+                    0 if item[0].startswith(('packs/','tasks/')) else 1,item[0])):
                 if path not in archive.members and path not in documents:
                     raise ValueError('Source member is unavailable')
                 if path in archive.members and archive.members[path].file_size != info['size_bytes']:
