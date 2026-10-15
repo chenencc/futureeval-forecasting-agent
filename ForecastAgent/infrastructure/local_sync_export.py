@@ -26,7 +26,8 @@ def summary(root):
     result = {}
     for filename in ('report.json', 'evaluation.json', 'monitor-health.json', 'tracking.json'):
         path = root / filename
-        if path.is_file() and path.stat().st_size < 256 * 1024:
+        limit = 4 * 1024 ** 2 if filename == 'tracking.json' else 256 * 1024
+        if path.is_file() and path.stat().st_size < limit:
             result[filename] = json.loads(path.read_text(encoding='utf-8'))
     for filename in ('state.json', 'campaign.json'):
         path = root / filename
@@ -43,7 +44,9 @@ def summary(root):
             market = task.get('market', {})
             if market:
                 row['market'] = {key: market[key] for key in ('key', 'venue', 'venue_id', 'question', 'url',
-                    'rules', 'rules_sha256', 'created_at', 'close_at', 'resolution_hint', 'terminal_result') if key in market}
+                    'rules', 'rules_sha256', 'created_at', 'close_at', 'resolution_hint', 'terminal_result',
+                    'family', 'condition_id', 'yes_token', 'yes_outcome_index', 'platform_status',
+                    'final_observation', 'disputed') if key in market}
             forecast = task.get('forecast') or {}
             if forecast:
                 row['forecast'] = {key: forecast[key] for key in ('anchor_at', 'sealed_at', 'status',

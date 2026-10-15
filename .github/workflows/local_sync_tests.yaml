@@ -19,6 +19,8 @@ jobs:
           python-version: '3.11'
       - name: Verify incremental transfer, hidden launch and original import compatibility
         run: python -m unittest ForecastAgent.tests.test_local_sync ForecastAgent.tests.test_incremental_sync -v
+      - name: Verify independent public history storage and replication
+        run: python -m unittest discover -s ForecastAgent/market_store/tests -v
       - name: Build isolated artifact transport rehearsal
         if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
         run: |

@@ -1,0 +1,55 @@
+name: Incremental public market price history
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      max_markets:
+        description: Maximum markets for a bounded acceptance run
+        required: false
+        default: '1000'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: market-price-history
+  cancel-in-progress: false
+
+jobs:
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate independent history and archive contracts
+        run: python -m unittest discover -s ForecastAgent/market_store/tests -v
+      - name: Incrementally collect enrolled public market histories
+        env:
+          MAX_MARKETS: ${{ inputs.max_markets || '1000' }}
+        run: python -m ForecastAgent.market_store.cli collect --root snapshots/market-history --max-markets "$MAX_MARKETS"
+      - name: Preserve lossless history database and incremental records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-price-history-v1
+          path: snapshots/market-history/publication/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Write history health summary
+        if: always()
+        run: |
+          if [ -f snapshots/market-history/publication/report.json ]; then
+            echo '## Public history collection (no model/search/trade calls)' >> "$GITHUB_STEP_SUMMARY"
+            cat snapshots/market-history/publication/report.json >> "$GITHUB_STEP_SUMMARY"
+          fi

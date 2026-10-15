@@ -44,6 +44,10 @@ Input requires `question` and `resolution_criteria`. Live collection uses `"mode
 
 ## Tools and output
 
+The independent [market history database](market_store/README.md) tracks enrolled
+Polymarket/Kalshi states, forecasts and incremental public prices every two hours,
+with a hidden local SQLite mirror and no model, search or trading calls.
+
 The independent [local data synchronizer](docs/LOCAL_DATA.md) pulls Actions
 artifacts into `E:\metaculus_data`, retaining immutable archives and a structured
 SQLite index. Its Windows schedule does not acquire evidence or submit forecasts.
