@@ -257,12 +257,14 @@ class GitHub:
         if not self.executable:
             raise RuntimeError('GitHub CLI is required; install gh and complete gh auth login')
         result = subprocess.run([self.executable, 'auth', 'status', '--hostname', 'github.com'],
-                                capture_output=True, timeout=30)
+                                capture_output=True, timeout=30,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         if result.returncode:
             raise RuntimeError('GitHub CLI needs login; complete gh auth login on this computer')
 
     def api(self, endpoint):
-        result = subprocess.run([self.executable, 'api', endpoint], capture_output=True, timeout=60)
+        result = subprocess.run([self.executable, 'api', endpoint], capture_output=True, timeout=60,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         if result.returncode:
             import re
             match = re.search(r'HTTP\s+(\d{3})', result.stderr.decode('utf-8', errors='replace'))

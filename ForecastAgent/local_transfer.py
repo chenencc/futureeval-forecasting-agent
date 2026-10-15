@@ -2,6 +2,7 @@
 import hashlib
 import io
 import json
+import os
 import re
 import subprocess
 import time
@@ -87,7 +88,8 @@ class SignedRanges:
 
     def resolve(self):
         token = subprocess.check_output([self.gh, 'auth', 'token', '--hostname', 'github.com'],
-                                        text=True, timeout=30).strip()
+                                        text=True, timeout=30,
+                                        creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0).strip()
         request = Request(f'https://api.github.com/repos/{self.repo}/actions/artifacts/{self.artifact_id}/zip',
                           headers={'Authorization': 'Bearer ' + token,
                                    'Accept': 'application/vnd.github+json'})
