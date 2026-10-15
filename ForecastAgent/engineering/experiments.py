@@ -15,6 +15,14 @@ def implementation():
                    for p in sorted(root.iterdir()) if p.suffix in ('.py', '.json')})
 
 
+def environment():
+    import importlib.metadata
+    import platform
+    import sqlite3
+    return {'python': platform.python_version(), 'platform': platform.system(),
+            'jsonschema': importlib.metadata.version('jsonschema'), 'sqlite': sqlite3.sqlite_version}
+
+
 def freeze(db, name, packets, routes):
     if not name.strip() or not packets or not routes:
         raise ValueError('An experiment needs a name, explicit cases and routes')
@@ -33,6 +41,7 @@ def freeze(db, name, packets, routes):
         safe_metadata(route)
     manifest = {'schema': 'forecast-frozen-experiment-v1', 'name': name,
                 'implementation_sha256': implementation(),
+                'environment': environment(),
                 'cases': sorted([{'id': p['case_id'], 'input_sha256': digest(p)} for p in packets], key=lambda p: p['id']),
                 'routes': sorted(routes, key=lambda r: r['id']),
                 'labels_in_model_input': False, 'native_tasks_modified': False}
@@ -74,6 +83,8 @@ def run(db, ident, case_id, route_id, runner=None, *, audit_only=False):
     frozen = manifest(db, ident)
     if frozen['implementation_sha256'] != implementation():
         raise ValueError('Experiment implementation changed; freeze a new version')
+    if not audit_only and frozen['environment'] != environment():
+        raise ValueError('Experiment execution environment changed; freeze a new version')
     route = next((r for r in frozen['routes'] if r['id'] == route_id), None)
     if route is None:
         raise KeyError('Unknown frozen route')

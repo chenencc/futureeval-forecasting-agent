@@ -62,7 +62,9 @@ release entry point has not been replaced or promoted by this package.
 
 An experiment fixes explicit domain/question/batch IDs, original body hashes,
 rules/options/scales, cutoff policy, exact prompt/model/config for each route and
-engineering implementation hash. Experiments are independent of native tables.
+engineering implementation hash and Python/platform/library environment. Actual
+prediction execution rejects an environment mismatch; portable input-only audits
+remain available. Experiments are independent of native tables.
 
 `snapshots.resolve` recovers complete native JSON, verifies archive bytes and the
 original bundle hash, then exports a strict allowlist. Resolutions, old predictions,

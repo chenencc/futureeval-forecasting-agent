@@ -82,6 +82,13 @@ class FrozenExperiments(unittest.TestCase):
         with patch.object(e,'implementation',return_value='a'*64),self.assertRaises(ValueError):
             e.run(self.db,self.ident,self.p['case_id'],'a',runner())
 
+    def test_changed_execution_environment_is_not_silently_reused(self):
+        with patch.object(e,'environment',return_value={'python':'different'}),self.assertRaises(ValueError):
+            e.run(self.db,self.ident,self.p['case_id'],'a',runner())
+        # Input hash audit remains portable and never executes that runner.
+        with patch.object(e,'environment',return_value={'python':'different'}):
+            self.assertEqual(e.run(self.db,self.ident,self.p['case_id'],'a',audit_only=True)['status'],'validated')
+
     def test_damaged_frozen_input_fails_before_runner(self):
         with self.db:self.db.execute("UPDATE objects SET bytes=X'0000' WHERE sha256=?",(digest(self.p),))
         with self.assertRaises(ValueError):e.run(self.db,self.ident,self.p['case_id'],'a',runner())

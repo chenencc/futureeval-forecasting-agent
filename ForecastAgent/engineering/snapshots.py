@@ -138,7 +138,12 @@ def packet(domain, database, batch_id, task_key, *, as_of_utc=None):
         platform = 'metaculus'
     # Deliberate allowlist: resolutions, prices, model answers, graphs, transcripts
     # and later supplements never leak from the raw archive into this input.
-    kind = request.get('type') or request.get('question_type') or 'binary'
+    kind = request.get('type') or request.get('question_type')
+    if not kind and domain == 'market':
+        # This native market pipeline admits only binary contracts.
+        kind = 'binary'
+    if not kind:
+        raise ValueError('Original question type is missing; do not infer binary')
     kind = {'categorical': 'multiple_choice', 'continuous': 'numeric'}.get(kind, kind)
     q = {'key': task_key, 'platform': platform, 'kind': kind,
          'title': request.get('question') or request.get('title') or '',
