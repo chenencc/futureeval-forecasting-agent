@@ -183,6 +183,19 @@ def mirror(args):
                     report['web_materials']={'packets':len(result['packets']),'new_documents':result['new_documents'],
                         'states':{state:sum(p['status']==state for p in result['packets'])
                             for state in sorted({p['status'] for p in result['packets']})}}
+            competition_policy=root/'competition-policy.json'
+            if competition_policy.is_file():
+                settings=json.loads(competition_policy.read_bytes())
+                if settings.get('enabled') is True:
+                    from ForecastAgent.competition_store.ingest import sync as competition_sync
+                    competition_root=Path(settings.get('root') or root.parent.parent/'competitions/store')
+                    try:
+                        result=competition_sync(competition_root,archive_root=root.parent.parent)
+                        report['competition']={k:result[k] for k in ('status','finished_at','stats')}
+                    except Exception as exc:
+                        # Separate mirror failures do not invalidate an already
+                        # completed market import. Each database has its own health.
+                        report['competition']={'status':'failed','error_type':type(exc).__name__,'reason':str(exc)[:200]}
             report.update(finished_at=clock(),stats=stats(db),status='ok')
             write(root/'latest-sync.json',report)
         except Exception as exc:

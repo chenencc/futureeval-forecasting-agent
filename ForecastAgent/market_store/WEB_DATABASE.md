@@ -84,8 +84,9 @@ canonical local store and do not remain dependent on that cache.
 
 This SQLite file contains **enrolled Polymarket and Kalshi research contracts**.
 It does not contain the entire public market universe or excluded discoveries.
-MiniBench and official Metaculus competition streams retain their existing
-read-only native archive adapter. Their generic archive index is
+MiniBench retains its existing read-only native archive adapter. Official
+competition data now also has the separate normalized SQLite described in
+section 20; the existing Web adapter remains compatible until explicitly switched. Their generic archive index is
 `E:/metaculus_data/index.sqlite3`; its actual schema is included in the final
 appendix. Never infer that a market forecast is a Metaculus submission receipt.
 
@@ -255,8 +256,8 @@ with an older independently generated series.
   The default chart uses the venue's regular historical series, not this tip.
 - Keep pending/missing route inputs empty. Existing per-arm rendering supports
   the packet shape; do not restore the legacy shared-evidence fallback.
-- MiniBench/official streams keep their existing adapter and confirmed-receipt
-  semantics; this is not a migration of those datasets.
+- MiniBench keeps its existing adapter. Official/Market Pulse can opt into the
+  new competition store in section 20, retaining confirmed-receipt semantics.
 
 ## 7. Market/detail JSON fields
 
@@ -1192,8 +1193,8 @@ CREATE INDEX web_packet_binding ON web_packets(market_key,batch_id,forecast_fing
 ## 18. Legacy archive schema for MiniBench and official streams
 
 This appendix is metadata-only introspection of the existing general archive
-index. Its data are not migrated into the market SQLite file. Continue using
-the established read-only snapshot/receipt adapter for those streams. In
+index. Its data are not migrated into the market SQLite file. MiniBench retains
+its snapshot adapter; section 20 defines the separate normalized competition store. In
 particular, generated forecasts, attempted POSTs and confirmed submissions are
 different states; only matched accepted platform receipts support submission UI.
 
@@ -1552,3 +1553,605 @@ CREATE INDEX records_question ON records(question_id,kind);
 The installed single-file handbook is the entry point for the Web lane. When a
 producer changes schema or semantics, Pipeline must update this contract, tests,
 and a bound example before the Web consumer relies on the change.
+
+
+## 20. Competition SQLite: Fall FutureEval and saved Market Pulse
+
+Added 2026-10-15. This is the same single-file Web handbook, extended to cover
+both independent production domains. Market-specific clocks, price heads and
+A/B/C route semantics must never be applied to competition distributions.
+
+| Item | Location / meaning |
+|---|---|
+| Competition database | `E:/metaculus_data/competitions/store/competition.sqlite3` |
+| Competition health | Same directory, `latest-sync.json` |
+| Installed competition reader | Same directory, `reader-runtime.json` |
+| Code | `ForecastAgent/competition_store/` |
+| Local mirror policy | Market store directory, `competition-policy.json`, `{"enabled":true}` |
+| Database schema | `competition-web-store-v1` |
+| Read DTO versions | `competition-web-index-v1`, `competition-web-detail-v1` |
+
+### Domain separation and refresh
+
+```mermaid
+flowchart TD
+  L[Official listener snapshots] --> C[Competition SQLite]
+  W[Official worker evidence and confirmed receipts] --> C
+  A[Verified old local native objects] --> C
+  F[Saved Market Pulse accepted records] --> C
+  M[Independent market worker and history] --> P[Market SQLite]
+  C --> R[Read-only Web interfaces]
+  P --> R
+  R --> T[Separate official and market tabs]
+```
+
+The existing hidden15-minute mirror imports markets first, then optionally
+competitions. Each domain has its own lock and health record. A competition
+import failure is reported under `competition.status=failed` and in its own
+health file without invalidating a completed market import. No listener,
+acquisition, model, submission, trade, quota or production selector is changed.
+The local machine must be online/logged in. This does not replace either cloud
+worker or external cron. The database importer reads GitHub only.
+
+Official worker controls and their exact same-run evidence delta are joined by
+file path plus byte SHA. Earlier native files are recovered only from their sealed
+inventory and verified local SHA archive. A missing older object remains a gap;
+it is never replaced with a new search or a later page capture.
+
+Market Pulse import reads native saved confirmed receipts, matching analysis
+results and campaign packages under `E:/metaculus_data/tournaments/market-pulse-26q4`.
+It does not scan experimental/pilot folders or use rendered Web JSON as evidence.
+These are archived records, not a fresh Metaculus status check: old local-only
+platform status is `not_refreshed` where current status cannot be established.
+
+### Stable IDs and versions
+
+- Question: `metaculus:<question_id>`. Never substitute its parent post ID.
+- Membership and metadata: `question_versions` retains tournament, post ID,
+  type, title, status and full original option/scale/rule fields in `data`.
+- Task versions are separate from question/platform status. Inventory-only
+  questions can have no worker task, forecast, receipt or body.
+- Candidate/result: immutable `forecasts.id`; `candidate_sha256` is canonical
+  JSON of the saved candidate/result. Payload vectors and numeric zeros survive
+  unchanged. No display-time clipping, interpolation or option relabeling.
+- Material batch: `bundles.id` binds question, full bundle canonical hash and
+  native role/path. `bundles.data` is a compact metadata projection; the complete
+  original JSON remains hash-addressed in `native_objects` and `file_refs`.
+- Model-input binding: exact candidate/result/request/state chain in
+  `model_inputs`. Its batch is the exact `analysis-input.json`, never whichever
+  bundle happens to have more pages.
+- Receipt: `receipts.id` identifies the native receipt; `forecast_id` binds its
+  exact submitted payload to a particular imported candidate/result vintage.
+
+### Implemented reader APIs
+
+```python
+import json
+from pathlib import Path
+import sys
+root = Path('E:/metaculus_data/competitions/store')
+runtime = json.loads((root / 'reader-runtime.json').read_bytes())
+sys.path.insert(0, runtime['path'])  # before importing ForecastAgent
+from ForecastAgent.competition_store.read import open_readonly, read_index, read_task, read_body
+db = open_readonly(root)
+try:
+    db.execute('BEGIN')
+    index = read_index(db)
+    detail = read_task(db, 'metaculus:46293')
+    db.rollback()
+finally:
+    db.close()
+```
+
+`read_index` provides `schema`, `generated_at`, stable `watermark`, `read_only`
+and `tasks`. Each task is a `question_overview` row: key/question/post/tournament,
+type/title, independent platform/worker/delivery states, forecast identity,
+receipt-binding flag, confirmation clock and capture-version count. Counts are
+versions, not deduplicated-source counts or an assertion of evidence quality.
+
+`read_task` returns:
+
+| Field | Meaning |
+|---|---|
+| `overview`, `question`, `native_task` | Latest saved metadata and original worker state; missing task remains null |
+| `forecasts[]` | Native candidate/result vintages: id, hash, selection, observed clock, payload, release and native result hash |
+| `receipts[]` | Original submitted payload, exact bound forecast id, confirmation time, comment id and binding flag |
+| `material_batches[]` | Batch id/role/hash/observation, frozen request, gaps/plan and saved source list |
+| `decision_inputs[]` | Per-forecast exact selected input status/model/state hash, sources/excerpts/map when verified |
+| `events[]` | Safe search/fetch/stage/model journal metadata and reported usage; no raw headers or hidden prompts |
+| `availability` | Material-batch and verified-input counts; not a completeness/truth certificate |
+
+`read_body` accepts a64hex display SHA, returns verified UTF-8 bytes and refuses
+corruption. `KeyError` means absent question/body; `ValueError` means invalid input
+or integrity failure. No public arbitrary native-object or file-path endpoint is
+implemented. Never serve compressed original objects, SQLite/WAL, request headers
+or private submission comments. Source bodies are plain text only.
+
+Suggested Web-owned routes, not installed by this backend: GET
+`/api/competition/questions`, `/api/competition/questions/{key}` and
+`/api/competition/bodies/{display_sha256}`. The competition DTO is deliberately
+distinct from the market A/B/C DTO; an explicit consumer adapter is required.
+
+### Submission and model-input correctness
+
+| Status | Required display |
+|---|---|
+| `accepted` + `verified_binding=1` | Saved timezone-aware platform readback and exact candidate payload match |
+| `accepted_unbound` | Saved confirmed native receipt, but matching candidate/result not imported; do not mark the displayed research distribution submitted |
+| `unconfirmed` | Accepted-looking record without confirmation clock |
+| `already_forecasted` task | Worker skipped an existing platform forecast; not automatically this system's confirmed receipt |
+| `model_input_verified` | Saved request identity, state, native result hash and selected candidate payload agree |
+| `source_binding_unavailable` | Native input chain exists but source URL+body hash cannot bind to this exact batch; primary evidence remains empty |
+| `input_not_bound` | Saved fallback/older input chain unavailable; show forecast separately without invented citations |
+| `integrity_failed` | Refuse affected input evidence; retain native data and explicit error state |
+
+An earlier receipt can bind to an earlier forecast even if later research exists.
+Never compare only the question ID or latest probability. Multiple-choice options,
+discrete/numeric/date scales, units, CDF vectors and bounds come from the exact
+question/batch metadata. An absent binary probability is normal for non-binary
+questions. Native model input is not independent truth verification.
+
+`observed_at` is the native snapshot/local import observation, never an invented
+model seal time. Receipt confirmation and forecast-start clocks stay native.
+Source capture clocks stay native and may precede receipt/import by days. Local
+Market Pulse imports do not imply current platform status or a new submission.
+
+### Storage, completeness and maintenance
+
+`native_objects.bytes` stores gzip-compressed exact original file bytes;
+`size_bytes` and primary SHA describe uncompressed bytes. It is private archival
+storage. The importer verifies original size/hash before admission. Full bundles
+remain recoverable by joining `file_refs` source/path/hash to those objects;
+compact SQL rows do not discard original native content.
+
+`file_refs.availability` distinguishes `verified_local_object`, `reference_only`
+and `missing`. Missing original journals are import gaps, not newly observed
+provider failures. Files over the explicit64MiB bound remain references/gaps.
+HTTP ZIP reads reuse one-MiB blocks; no repeated full evidence ZIP download is
+needed. The generic96GB archive is not scanned for records.
+
+```powershell
+$env:PYTHONPATH = (Get-Content E:/metaculus_data/competitions/store/reader-runtime.json -Raw | ConvertFrom-Json).path
+python -m ForecastAgent.competition_store.read sync
+python -m ForecastAgent.competition_store.read status
+```
+
+No GET endpoint may run sync. Use short read-only WAL transactions and the
+stable watermark for caching. SQLite online backup, not copying only an active
+database main file, creates consistent offline copies.
+
+### Validated snapshot and exact schema
+
+Snapshot validated on2026-10-15. No new model, search or submission calls.
+
+| Measure | Verified value |
+|---|---|
+| questions | 59 |
+| question_versions | 231 |
+| task_versions | 90 |
+| forecasts | 57 |
+| receipts | 61 |
+| bundles | 95 |
+| captures | 410 |
+| documents | 151 |
+| events | 795 |
+| native_objects | 1252 |
+| file_refs | 2212 |
+| types | {'binary': 14, 'discrete': 19, 'multiple_choice': 11, 'numeric': 15} |
+| task_stages | {'accepted': 51} |
+| delivery | {'accepted': 48, 'accepted_unbound': 3} |
+| input_bindings | {'input_not_bound': 6, 'model_input_verified': 26} |
+
+Fall:40observed questions,32accepted bound receipts. Market Pulse:19historically submitted questions;3latest native receipts have no matching imported candidate. Six Fall final input chains remain unavailable. These gaps are preserved. The database is usable without claiming complete archival coverage.
+
+8competition invariants plus31market and30transfer tests passed. All59question detail DTOs and151display-body hashes were read successfully; SQLite integrity check passed.
+
+
+All table columns, indexes, foreign keys and views follow. Their `data`/`payload`
+TEXT columns hold original JSON or the documented compact projection. They are
+extensible; do not mistake an observed optional key for a required platform field.
+
+### `bundles` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| role | TEXT | 1 | 0 | — |
+| bundle_sha256 | TEXT | 1 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| source_id | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE bundles(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      role TEXT NOT NULL,bundle_sha256 TEXT NOT NULL,observed_at TEXT NOT NULL,source_id TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `bundle_clock`: question_key, observed_at; unique=false.
+
+Index `sqlite_autoindex_bundles_1`: id; unique=true.
+
+### `captures` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| batch_id | TEXT | 1 | 0 | — |
+| url | TEXT | 0 | 0 | — |
+| body_sha256 | TEXT | 1 | 0 | — |
+| display_sha256 | TEXT | 0 | 0 | — |
+| captured_at | TEXT | 0 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE captures(id TEXT PRIMARY KEY,batch_id TEXT NOT NULL REFERENCES bundles(id),url TEXT,
+      body_sha256 TEXT NOT NULL,display_sha256 TEXT REFERENCES documents(display_sha256),captured_at TEXT,data TEXT NOT NULL);
+```
+
+Foreign key: `display_sha256` → `documents.display_sha256`.
+
+Foreign key: `batch_id` → `bundles.id`.
+
+Index `sqlite_autoindex_captures_1`: id; unique=true.
+
+### `documents` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| display_sha256 | TEXT | 0 | 1 | — |
+| text | TEXT | 1 | 0 | — |
+| byte_length | INTEGER | 1 | 0 | — |
+
+```sql
+CREATE TABLE documents(display_sha256 TEXT PRIMARY KEY,text TEXT NOT NULL,byte_length INTEGER NOT NULL);
+```
+
+Index `sqlite_autoindex_documents_1`: display_sha256; unique=true.
+
+### `events` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| kind | TEXT | 1 | 0 | — |
+| occurred_at | TEXT | 0 | 0 | — |
+| source_sha256 | TEXT | 0 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE events(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      kind TEXT NOT NULL,occurred_at TEXT,source_sha256 TEXT,data TEXT NOT NULL);
+```
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `sqlite_autoindex_events_1`: id; unique=true.
+
+### `file_refs` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| source_id | TEXT | 1 | 0 | — |
+| question_key | TEXT | 0 | 0 | — |
+| path | TEXT | 1 | 0 | — |
+| sha256 | TEXT | 1 | 0 | — |
+| size_bytes | INTEGER | 1 | 0 | — |
+| availability | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE file_refs(id TEXT PRIMARY KEY,source_id TEXT NOT NULL,question_key TEXT,
+      path TEXT NOT NULL,sha256 TEXT NOT NULL,size_bytes INTEGER NOT NULL,availability TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Index `ref_question`: question_key, path; unique=false.
+
+Index `sqlite_autoindex_file_refs_1`: id; unique=true.
+
+### `forecasts` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| candidate_sha256 | TEXT | 1 | 0 | — |
+| selection | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| source_id | TEXT | 1 | 0 | — |
+| payload | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE forecasts(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      candidate_sha256 TEXT NOT NULL,selection TEXT,observed_at TEXT NOT NULL,source_id TEXT NOT NULL,
+      payload TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `forecast_clock`: question_key, observed_at; unique=false.
+
+Index `sqlite_autoindex_forecasts_1`: id; unique=true.
+
+### `imports` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| stream | TEXT | 1 | 0 | — |
+| run_id | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| imported_at | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE imports(id TEXT PRIMARY KEY,stream TEXT NOT NULL,run_id TEXT,
+      observed_at TEXT NOT NULL,imported_at TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Index `sqlite_autoindex_imports_1`: id; unique=true.
+
+### `metadata` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| key | TEXT | 0 | 1 | — |
+| value | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+```
+
+Index `sqlite_autoindex_metadata_1`: key; unique=true.
+
+### `model_inputs` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| forecast_id | TEXT | 1 | 0 | — |
+| batch_id | TEXT | 0 | 0 | — |
+| status | TEXT | 1 | 0 | — |
+| state_sha256 | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE model_inputs(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      forecast_id TEXT NOT NULL REFERENCES forecasts(id),batch_id TEXT REFERENCES bundles(id),status TEXT NOT NULL,
+      state_sha256 TEXT,observed_at TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `batch_id` → `bundles.id`.
+
+Foreign key: `forecast_id` → `forecasts.id`.
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `sqlite_autoindex_model_inputs_1`: id; unique=true.
+
+### `native_objects` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| sha256 | TEXT | 0 | 1 | — |
+| bytes | BLOB | 1 | 0 | — |
+| size_bytes | INTEGER | 1 | 0 | — |
+| codec | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE native_objects(sha256 TEXT PRIMARY KEY,bytes BLOB NOT NULL,size_bytes INTEGER NOT NULL,codec TEXT NOT NULL);
+```
+
+Index `sqlite_autoindex_native_objects_1`: sha256; unique=true.
+
+### `question_versions` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| tournament | TEXT | 1 | 0 | — |
+| post_id | TEXT | 0 | 0 | — |
+| kind | TEXT | 0 | 0 | — |
+| title | TEXT | 0 | 0 | — |
+| status | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| source_id | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE question_versions(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      tournament TEXT NOT NULL,post_id TEXT,kind TEXT,title TEXT,status TEXT,observed_at TEXT NOT NULL,
+      source_id TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `question_clock`: question_key, observed_at; unique=false.
+
+Index `sqlite_autoindex_question_versions_1`: id; unique=true.
+
+### `questions` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| key | TEXT | 0 | 1 | — |
+| question_id | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE questions(key TEXT PRIMARY KEY,question_id TEXT NOT NULL UNIQUE);
+```
+
+Index `sqlite_autoindex_questions_2`: question_id; unique=true.
+
+Index `sqlite_autoindex_questions_1`: key; unique=true.
+
+### `receipts` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| forecast_id | TEXT | 0 | 0 | — |
+| status | TEXT | 1 | 0 | — |
+| confirmed_at | TEXT | 0 | 0 | — |
+| verified_binding | INTEGER | 1 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| source_id | TEXT | 1 | 0 | — |
+| payload | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE receipts(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      forecast_id TEXT REFERENCES forecasts(id),status TEXT NOT NULL,confirmed_at TEXT,verified_binding INTEGER NOT NULL,
+      observed_at TEXT NOT NULL,source_id TEXT NOT NULL,payload TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `forecast_id` → `forecasts.id`.
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `receipt_clock`: question_key, observed_at; unique=false.
+
+Index `sqlite_autoindex_receipts_1`: id; unique=true.
+
+### `task_versions` (table)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 1 | — |
+| question_key | TEXT | 1 | 0 | — |
+| stage | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 1 | 0 | — |
+| source_id | TEXT | 1 | 0 | — |
+| data | TEXT | 1 | 0 | — |
+
+```sql
+CREATE TABLE task_versions(id TEXT PRIMARY KEY,question_key TEXT NOT NULL REFERENCES questions(key),
+      stage TEXT,observed_at TEXT NOT NULL,source_id TEXT NOT NULL,data TEXT NOT NULL);
+```
+
+Foreign key: `question_key` → `questions.key`.
+
+Index `task_clock`: question_key, observed_at; unique=false.
+
+Index `sqlite_autoindex_task_versions_1`: id; unique=true.
+
+### `latest_forecasts` (view)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 0 | — |
+| question_key | TEXT | 0 | 0 | — |
+| candidate_sha256 | TEXT | 0 | 0 | — |
+| selection | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 0 | 0 | — |
+| source_id | TEXT | 0 | 0 | — |
+| payload | TEXT | 0 | 0 | — |
+| data | TEXT | 0 | 0 | — |
+
+```sql
+CREATE VIEW latest_forecasts AS SELECT * FROM forecasts q WHERE q.rowid=(
+      SELECT x.rowid FROM forecasts x WHERE x.question_key=q.question_key ORDER BY x.observed_at DESC,x.rowid DESC LIMIT 1);
+```
+
+### `latest_questions` (view)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 0 | — |
+| question_key | TEXT | 0 | 0 | — |
+| tournament | TEXT | 0 | 0 | — |
+| post_id | TEXT | 0 | 0 | — |
+| kind | TEXT | 0 | 0 | — |
+| title | TEXT | 0 | 0 | — |
+| status | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 0 | 0 | — |
+| source_id | TEXT | 0 | 0 | — |
+| data | TEXT | 0 | 0 | — |
+
+```sql
+CREATE VIEW latest_questions AS SELECT * FROM question_versions q WHERE q.rowid=(
+      SELECT x.rowid FROM question_versions x WHERE x.question_key=q.question_key ORDER BY x.observed_at DESC,x.rowid DESC LIMIT 1);
+```
+
+### `latest_receipts` (view)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 0 | — |
+| question_key | TEXT | 0 | 0 | — |
+| forecast_id | TEXT | 0 | 0 | — |
+| status | TEXT | 0 | 0 | — |
+| confirmed_at | TEXT | 0 | 0 | — |
+| verified_binding | INTEGER | 0 | 0 | — |
+| observed_at | TEXT | 0 | 0 | — |
+| source_id | TEXT | 0 | 0 | — |
+| payload | TEXT | 0 | 0 | — |
+| data | TEXT | 0 | 0 | — |
+
+```sql
+CREATE VIEW latest_receipts AS SELECT * FROM receipts q WHERE q.rowid=(
+      SELECT x.rowid FROM receipts x WHERE x.question_key=q.question_key ORDER BY COALESCE(x.confirmed_at,x.observed_at) DESC,x.rowid DESC LIMIT 1);
+```
+
+### `latest_tasks` (view)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| id | TEXT | 0 | 0 | — |
+| question_key | TEXT | 0 | 0 | — |
+| stage | TEXT | 0 | 0 | — |
+| observed_at | TEXT | 0 | 0 | — |
+| source_id | TEXT | 0 | 0 | — |
+| data | TEXT | 0 | 0 | — |
+
+```sql
+CREATE VIEW latest_tasks AS SELECT * FROM task_versions q WHERE q.rowid=(
+      SELECT x.rowid FROM task_versions x WHERE x.question_key=q.question_key ORDER BY x.observed_at DESC,x.rowid DESC LIMIT 1);
+```
+
+### `question_overview` (view)
+
+| Column | SQL type | Not null | PK order | Default |
+|---|---|---|---|---|
+| key | TEXT | 0 | 0 | — |
+| question_id | TEXT | 0 | 0 | — |
+| tournament | TEXT | 0 | 0 | — |
+| post_id | TEXT | 0 | 0 | — |
+| kind | TEXT | 0 | 0 | — |
+| title | TEXT | 0 | 0 | — |
+| platform_status | TEXT | 0 | 0 | — |
+| worker_stage | TEXT | 0 | 0 | — |
+| forecast_id | TEXT | 0 | 0 | — |
+| delivery_status | TEXT | 0 | 0 | — |
+| receipt_binding_verified | INTEGER | 0 | 0 | — |
+| confirmed_at | TEXT | 0 | 0 | — |
+| capture_versions |  | 0 | 0 | — |
+
+```sql
+CREATE VIEW question_overview AS SELECT q.key,q.question_id,v.tournament,v.post_id,v.kind,v.title,
+      v.status AS platform_status,t.stage AS worker_stage,f.id AS forecast_id,r.status AS delivery_status,
+      r.verified_binding AS receipt_binding_verified,r.confirmed_at,
+      (SELECT count(*) FROM captures c JOIN bundles b ON b.id=c.batch_id WHERE b.question_key=q.key) AS capture_versions
+      FROM questions q LEFT JOIN latest_questions v ON v.question_key=q.key LEFT JOIN latest_tasks t ON t.question_key=q.key
+      LEFT JOIN latest_forecasts f ON f.question_key=q.key LEFT JOIN latest_receipts r ON r.question_key=q.key;
+```
+
+### Explicit competition indexes
+
+```sql
+CREATE INDEX bundle_clock ON bundles(question_key,observed_at);
+CREATE INDEX forecast_clock ON forecasts(question_key,observed_at);
+CREATE INDEX question_clock ON question_versions(question_key,observed_at);
+CREATE INDEX receipt_clock ON receipts(question_key,observed_at);
+CREATE INDEX ref_question ON file_refs(question_key,path);
+CREATE INDEX task_clock ON task_versions(question_key,observed_at);
+```
