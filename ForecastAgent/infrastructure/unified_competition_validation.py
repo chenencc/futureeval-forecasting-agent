@@ -2,9 +2,12 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 
 from unified_competition import Collector, guard_pending, load, save, sha
 
@@ -33,6 +36,20 @@ def verify(root, core, engine, output):
     calls, cases = [], []
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
+        empty = temp/'empty-incoming'
+        save(empty/'index.json', {'tournament': 'fall-futureeval-2026', 'open_scan_complete': True,
+            'retrieved_at_utc': datetime.now(timezone.utc).isoformat(), 'questions': [],
+            'open_question_count': 0})
+        env = dict(os.environ, FORECAST_ACQUISITION_CORE=str(Path(core).resolve()),
+            FORECAST_ACQUISITION_ENGINE=str(Path(engine).resolve()),
+            FORECAST_ACQUISITION_SHA='1a88d3b3390a6d6b92172ccd223b5f8a7948bfce')
+        env.pop('PYTHONPATH', None)
+        output_text = subprocess.check_output([sys.executable, str(Path(__file__).with_name('unified_competition.py')),
+            '--root', str(temp/'empty-campaign'), '--snapshots', str(empty)],
+            cwd=str(v1_0_5.pipeline.ROOT), env=env, text=True)
+        startup = json.loads(output_text)
+        if startup['recorded_question_count'] or startup['submission_enabled']:
+            raise ValueError('Direct host startup unexpectedly enabled work')
         def fake(command, log, timeout, cwd=None):
             calls.append(command)
             request = load(command[command.index('--request')+1])
@@ -69,6 +86,7 @@ def verify(root, core, engine, output):
         'original_files_unchanged': True, 'task_compatibility': pending, 'typed_cases': cases,
         'actual_provider_calls': 0, 'model_calls': 0, 'search_calls': 0, 'submitted': False,
         'budgets_reset': False, 'accepted_tasks_reopened': False,
+        'direct_host_process_without_pythonpath': True,
         'scope': 'Typed host/format and original checkpoint preservation, not forecast accuracy.'}
     save(output, report); print(json.dumps(report)); return report
 

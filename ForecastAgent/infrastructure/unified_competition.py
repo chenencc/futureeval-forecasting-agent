@@ -183,6 +183,9 @@ def main():
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--limit', type=int, default=5)
     args = parser.parse_args()
+    # The supervisor starts this absolute script from the frozen release cwd.
+    # Python otherwise searches the infrastructure directory, not that checkout.
+    sys.path.insert(0, os.getcwd())
     from ForecastAgent.releases import v1_0_5 as release
     from ForecastAgent.releases.guard import execute
     release.pipeline.verify_baseline(); release.verify_release()
