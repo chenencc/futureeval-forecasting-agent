@@ -30,6 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      FORECAST_ACQUISITION_SHA: ${{ vars.FORECAST_ACQUISITION_SHA }}
+      FORECAST_ACQUISITION_CORE: ${{ github.workspace }}/.acquisition-core
+      FORECAST_ACQUISITION_ENGINE: ${{ github.workspace }}/.acquisition-engine
       FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
       FORECAST_MODEL_FALLBACK_SUPER: '0'
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
@@ -55,6 +58,18 @@ jobs:
           path: .infrastructure
           persist-credentials: false
           sparse-checkout: ForecastAgent/infrastructure
+      - name: Check out shared immutable acquisition core
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.FORECAST_ACQUISITION_SHA }}
+          path: .acquisition-core
+          persist-credentials: false
+      - name: Check out shared immutable acquisition engine
+        uses: actions/checkout@v4
+        with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .acquisition-engine
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -162,6 +177,11 @@ jobs:
           mkdir -p "$CRAWL4_AI_BASE_DIRECTORY"
           python -m pip install -r ForecastAgent/requirements-crawl4ai.txt
           python -m playwright install --with-deps chromium
+      - name: Verify shared acquisition core and full typed-contract bridge
+        run: |
+          python -m pip install -r .acquisition-core/ForecastAgent/market_repricing/requirements-official-map.txt
+          python .infrastructure/ForecastAgent/infrastructure/unified_acquisition.py --core "$FORECAST_ACQUISITION_CORE" --engine "$FORECAST_ACQUISITION_ENGINE" --expected-core "$FORECAST_ACQUISITION_SHA" --verify-only --output snapshots/official/unified-acquisition-runtime.json
+          python .infrastructure/ForecastAgent/infrastructure/unified_competition_validation.py --release . --core "$FORECAST_ACQUISITION_CORE" --engine "$FORECAST_ACQUISITION_ENGINE" --root snapshots/official --output snapshots/official/unified-acquisition-preservation.json
       - name: Record verified acquisition tool deployment
         run: |
           python - <<'PY'
@@ -190,7 +210,8 @@ jobs:
               'delivery_variant':m['delivery_variant'],
               'crawl4ai_version':BACKEND_VERSION, 'browser_channel':'chromium',
               'model':os.environ['FORECAST_MODEL'], 'budget_reset':False,
-              'collection_enhancement':capture, 'analysis_core_tag':m['analysis_core_tag']})
+              'frozen_release_collection_baseline':capture,
+                'collection_enhancement':__import__('json').loads(Path('snapshots/official/unified-acquisition-runtime.json').read_text()), 'analysis_core_tag':m['analysis_core_tag']})
           PY
       - name: Acquire analyze and submit eligible questions
         run: |
@@ -204,7 +225,7 @@ jobs:
           fi
           args=(--root snapshots/official --snapshots snapshots/incoming --limit 5)
           if [ "$SUBMIT_FORECASTS" = "true" ]; then args+=(--submit); fi
-          python .infrastructure/ForecastAgent/infrastructure/provider_failover.py --root snapshots/official/provider-transport --exa-root snapshots/official/exa-transport --module ForecastAgent.releases.v1_0_5 -- "${args[@]}"
+          python .infrastructure/ForecastAgent/infrastructure/provider_failover.py --root snapshots/official/provider-transport --exa-root snapshots/official/exa-transport --script .infrastructure/ForecastAgent/infrastructure/unified_competition.py -- "${args[@]}"
         env:
           SUBMIT_FORECASTS: ${{ steps.source.outputs.submit }}
           RESTORED_LEGACY_RUN: ${{ steps.previous.outputs.legacy }}

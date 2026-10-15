@@ -1,8 +1,8 @@
 # Public listening and private recovery storage
 
-Fall production forecasting checks out immutable `v1.0.4`. These infrastructure
-utilities are checked out separately from `main`; they do not alter model routing,
-research quotas, probability policy or submission rules.
+Fall delivery and analysis check out immutable `v1.0.5-delivery.1`. Infrastructure
+utilities are checked out separately from `main`. The shared acquisition host is
+documented below; probability and submission rules remain in the frozen release.
 
 ## Exa credit failover
 
@@ -98,3 +98,8 @@ unchanged exports, corruption detection, pagination host restrictions, deadline
 filtering, duplicate suppression, and due retry dispatch. Live acceptance must
 also verify Secrets, authenticated Metaculus access from the public runner,
 private dispatch acceptance, and checkpoint restore after a second private run.
+
+## Unified acquisition
+
+See [UNIFIED_ACQUISITION.md](UNIFIED_ACQUISITION.md) for the shared immutable
+competition/market collector, typed host bridge and preservation gates.
