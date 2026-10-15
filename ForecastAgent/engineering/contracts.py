@@ -3,7 +3,7 @@ import hashlib
 import math
 from pathlib import Path
 
-from .common import encoded, instant, read
+from .common import digest, encoded, instant, read
 
 
 class ContractError(ValueError):
@@ -12,7 +12,7 @@ class ContractError(ValueError):
         super().__init__(code + ': ' + field)
 
 
-def validate(kind, value):
+def validate(kind, value, *, packet=None, candidate=None):
     from jsonschema import Draft202012Validator, FormatChecker
     schemas = read(Path(__file__).with_name('schemas.json'))
     schema = {'$ref': '#/$defs/' + kind, '$defs': schemas['$defs']}
@@ -74,4 +74,28 @@ def validate(kind, value):
                 if not 0 <= knot['p'] <= 1 or previous and (knot['x'] <= previous['x'] or knot['p'] < previous['p']):
                     raise ContractError('invalid_cdf', 'value')
                 previous = knot
+    if kind == 'graph':
+        if packet is None or value['input_sha256'] != digest(packet) or value['question_key'] != packet['question']['key']:
+            raise ContractError('graph_input_not_bound', 'input_sha256')
+        validate('packet', packet)
+        ids, sources = set(), {s['id']: s for s in packet['sources']}
+        for node in value['nodes']:
+            if node['id'] in ids:
+                raise ContractError('duplicate_graph_node', node['id'])
+            ids.add(node['id'])
+            if node['kind'] == 'observed_claim' and not node['references']:
+                raise ContractError('unbound_observed_claim', node['id'])
+            for ref in node['references']:
+                source = sources.get(ref['source_id'])
+                if not source or ref['body_sha256'] != source['body_sha256'] or ref['quote'] not in source['text']:
+                    raise ContractError('graph_quote_not_in_original', node['id'])
+        for edge in value['edges']:
+            if edge['from'] not in ids or edge['to'] not in ids:
+                raise ContractError('dangling_graph_edge', 'edges')
+    if kind == 'receipt':
+        if value['status'] == 'accepted':
+            if not value['confirmed_at'] or candidate is None or value['payload'] != candidate or digest(candidate) != value['candidate_payload_sha256']:
+                raise ContractError('accepted_receipt_not_bound', 'payload')
+            if value['question_key'] != 'metaculus:' + str(candidate.get('question')):
+                raise ContractError('receipt_question_mismatch', 'question_key')
     return value

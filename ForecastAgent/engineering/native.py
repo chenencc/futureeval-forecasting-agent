@@ -8,6 +8,7 @@ from .common import digest, instant, now, read
 from .lifecycle import record, recovery
 from .snapshots import open_readonly
 from .trace import Trace
+from .contracts import validate, ContractError
 
 
 def observation(domain, key, state, stage, source, at, retry=None, failure=None):
@@ -50,8 +51,18 @@ def sync(db, domain, database):
             status = task.get('status') or task.get('stage') or 'unknown'
             verified = False
             if domain == 'competition':
-                receipt = native.execute('SELECT status,verified_binding FROM latest_receipts WHERE question_key=?', (row['task_key'],)).fetchone()
+                receipt = native.execute('SELECT r.status,r.verified_binding,r.confirmed_at,r.payload,r.data,f.payload AS candidate_payload '
+                    'FROM latest_receipts r LEFT JOIN forecasts f ON f.id=r.forecast_id WHERE r.question_key=?', (row['task_key'],)).fetchone()
                 verified = bool(receipt and receipt['status'] == 'accepted' and receipt['verified_binding'])
+                if verified:
+                    payload = json.loads(receipt['payload'])
+                    candidate = json.loads(receipt['candidate_payload']) if receipt['candidate_payload'] else None
+                    try:
+                        validate('receipt', {'schema': 'forecast-delivery-receipt-v1', 'question_key': row['task_key'],
+                            'candidate_payload_sha256': digest(candidate), 'status': 'accepted', 'confirmed_at': receipt['confirmed_at'],
+                            'payload': payload, 'evidence_record_sha256': digest(json.loads(receipt['data']))}, candidate=candidate)
+                    except ContractError:
+                        verified = False
                 if verified:
                     status = 'accepted'
             state, stage, code = state_for(status, delivery_verified=verified)

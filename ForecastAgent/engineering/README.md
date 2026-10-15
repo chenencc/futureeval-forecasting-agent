@@ -26,6 +26,13 @@ body hashes, question identities, source uniqueness, cutoff clocks, complete
 categorical option sets and monotonic numeric/discrete/date CDFs. Schema changes
 require an explicit version and adapter, rather than silently changing old data.
 
+The research-graph contract requires exact packet, source and body-hash binding,
+literal quotes for observed-claim nodes and valid edge endpoints. Conditions and
+hypotheses remain explicitly typed; successful citation binding does not certify
+causal truth. The delivery-receipt contract requires a confirmed timestamp and an
+exact candidate payload match before an accepted projection is emitted. Historical
+native schemas are not silently renamed into either new contract.
+
 - Unknown usage is null. An unknown capture/publication clock remains null.
 - `strict_as_of` rejects unknown or late question clocks and late/unknown source
   capture clocks; `capture_time_unbounded` is explicitly not a historical backtest.
