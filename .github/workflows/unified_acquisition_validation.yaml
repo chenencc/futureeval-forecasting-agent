@@ -4,6 +4,7 @@ on:
     branches: [codex/unified-acquisition]
   pull_request:
     paths:
+      - 'ForecastAgent/market_repricing/**'
       - 'ForecastAgent/infrastructure/unified*'
       - 'ForecastAgent/infrastructure/verify_unified_engine.py'
       - 'ForecastAgent/infrastructure/test_unified_acquisition.py'

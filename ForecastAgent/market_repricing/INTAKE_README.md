@@ -1,6 +1,7 @@
 # Prediction-market intake
 
-`market-v0.3.10-intake.1` improves admission discovery. The immutable common
+`market-v0.3.11-observation.1` separates research eligibility from book quality.
+The earlier `market-v0.3.10-intake.1` introduced admission discovery. The immutable common
 acquisition engine, search limits, supplement, maps and scoring prompts are
 unchanged. Competition uses the same acquisition core but keeps its own official
 question discovery, typed contracts and delivery release.
@@ -14,15 +15,16 @@ flowchart TD
     E --> K[Resume Kalshi event cursor with frozen query bounds]
     R --> O[Original HTTP response and first-seen receipt]
     K --> O
-    O --> H[Hard constraints: exclusions, binary, age, rules, time, orderability]
+    O --> H[Research constraints: exclusions, binary, age, rules, time, unresolved]
     H -->|Fail or incomplete| W[Record exact status and source]
     H -->|Pass| D[Known event-domain shortcut]
     D -->|Unknown| M[Bounded Mercury event-kind classification]
     M -->|Confident real-world event| Q[Protected fresh metadata and book turn]
     M -->|Excluded or uncertain| W
     D -->|Recognized| Q
-    Q --> F[Recheck fresh rules, book, creation clock and rolling admission cap]
-    F --> A[Unchanged common acquisition, supplement, maps and scoring]
+    Q --> F[Recheck rules, creation clock and rolling admission cap]
+    Q --> P[Save available book or explicit timestamped gap]
+    F --> A[Common acquisition, supplement, maps and scoring]
 ```
 
 Discovery success, first sighting, eligibility, admission and completed scoring
@@ -31,6 +33,36 @@ Only native `enrolled_at` receipts consume the existing rolling cap of 50 famili
 per 24 hours; neither midnight nor a policy change renews it. Current creation
 age remains at most two hours and minimum expected resolution/close windows
 remain seven days. Early resolution remains possible under platform rules.
+
+## Book quality is observational
+
+Spread, top-of-book size, liquidity, volume, missing prices and temporary
+orderability are not research admission gates. Sports and gambling exclusions
+remain content rules. Real business/economic measurements are eligible event
+outcomes; an action by a named actor is not required for a statistical release.
+The existing binary, exact-rules, creation-age, horizon, rolling-cap and
+already-closed/resolved restrictions remain in force.
+
+Each new task records `admission_quote`: the exact prior observation, whether it
+belongs to this dispatch, and an explicit `not_observed` or `stale` state when
+needed. A stale price is never relabeled as the admission-time price. Available
+metadata/book turns still run; missing or poor books do not defer enrollment.
+Family representatives no longer receive priority based on volume/liquidity.
+
+Before scoring, `anchor.json` freezes an analysis context clock. Its
+`received_at_role=analysis_context_frozen_at` is distinct from the original
+`quote_observed_at`; the verbatim observation is retained in `original_quote`.
+Valid two-sided shallow/wide books retain their status/flags and can supply a
+noisy observed midpoint. One-sided, failed, stale and crossed books supply null,
+never an invented 0.5, zero or old price. Identity/schema failures still surface
+as errors rather than being disguised as missing prices.
+
+The unchanged Mercury scoring inputs can carry that null price with the same
+original evidence. Event forecasts remain eligible for later resolution-based
+evaluation. With no initial midpoint, future price errors are recorded separately
+under `unpaired_arms`; no-change and direction comparisons are unavailable. A
+missing book never grants trading permission. Existing terminal cases and sealed
+forecast identities are preserved; incompatible pending versions block promotion.
 
 ## Bounded semantic classification
 

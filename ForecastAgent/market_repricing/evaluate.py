@@ -41,6 +41,21 @@ def run(monitor_root, worker_root, output):
                 task.get('evidence_status') != 'invalid_original_quarantined' and
                 forecast.get('timely') and expected and label['status'] == 'quoted'):
                 target, base = label['label'], forecast['baseline'][str(h)]
+                if base is None:
+                    # Missing initial prices do not invalidate event forecasts.
+                    # Price-only errors remain visible, separate from comparisons
+                    # that require a measured no-change control and direction.
+                    row.update(target=target, baseline=None,
+                        baseline_status='initial_midpoint_unavailable', unpaired_arms={})
+                    for name, arm in forecast['arms'].items():
+                        if (arm['status'] == 'completed' and arm.get('timely', forecast['timely'])
+                                and instant(arm.get('sealed_at', forecast['sealed_at'])) < instant(expected)
+                                and str(h) in arm.get('price_means', {})):
+                            p = arm['price_means'][str(h)]
+                            row['unpaired_arms'][name] = {'prediction': p, 'error': p-target,
+                                                         'direction_correct': None}
+                    rows.append(row)
+                    continue
                 row.update(target=target, baseline=base, baseline_error=base-target)
                 for name, arm in forecast['arms'].items():
                     if arm['status'] == 'completed' and arm.get('timely', forecast['timely']) and instant(arm.get('sealed_at', forecast['sealed_at'])) < instant(expected):

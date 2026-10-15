@@ -79,7 +79,9 @@ class Selection(unittest.TestCase):
     def test_unknown_domain_not_force_filled(self): self.assertEqual(screen(self.m | {'screen_text': 'unknown new question'}, CLOCK, self.cfg)['status'], 'waiting_relevance')
     def test_short_resolution_separate(self): self.assertEqual(screen(self.m | {'close_at': '2026-10-13T00:00:00Z'}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
     def test_distant_catalyst_waits(self): self.assertEqual(screen(self.m | {'close_at': '2028-11-07T00:00:00Z'}, CLOCK, self.cfg)['status'], 'waiting_catalyst')
-    def test_unopened_waits(self): self.assertEqual(screen(self.m | {'tradable': False}, CLOCK, self.cfg)['status'], 'waiting_market')
+    def test_unorderable_open_contract_still_researched(self):
+        self.assertEqual(screen(self.m | {'tradable': False}, CLOCK, self.cfg)['status'], 'candidate')
+        self.assertEqual(screen(self.m | {'platform_status': 'closed'}, CLOCK, self.cfg)['status'], 'waiting_market')
     def test_catalyst_not_invented(self): self.assertEqual(screen(self.m, CLOCK, self.cfg)['catalyst_status'], 'plausible_unconfirmed')
     def test_family_daily_dedup(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
@@ -110,15 +112,18 @@ class Selection(unittest.TestCase):
         enroll(ledger, self.cfg, next_day)
         self.assertEqual(len(ledger['tasks']), 100)
         self.assertEqual(ledger['admission_window']['admitted'], 50)
-    def test_enrollment_requires_quote_from_current_dispatch(self):
+    def test_old_quote_is_not_relabelled_as_admission_price(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
                   'identity': {'policy_sha256': digest(self.cfg)}}
         ingest(ledger, 'polymarket', [raw_poly()], self.cfg, CLOCK)
         market = next(iter(ledger['markets'].values()))
         market['last_quote'] = {'status': 'usable', 'received_at': '2026-10-11T23:59:59Z'}
-        enroll(ledger, self.cfg, CLOCK); self.assertFalse(ledger['tasks'])
-        market['last_quote']['received_at'] = CLOCK
-        enroll(ledger, self.cfg, CLOCK); self.assertEqual(len(ledger['tasks']), 1)
+        enroll(ledger, self.cfg, CLOCK)
+        self.assertEqual(len(ledger['tasks']), 1)
+        observation = next(iter(ledger['tasks'].values()))['admission_quote']
+        self.assertEqual(observation['status'], 'stale')
+        self.assertFalse(observation['at_admission'])
+        self.assertEqual(observation['observation']['received_at'], '2026-10-11T23:59:59Z')
     def test_wide_spread_book_reaches_enrollment(self):
         ledger = {'markets': {}, 'tasks': {}, 'daily': {}, 'last_attempt_at': CLOCK,
                   'identity': {'policy_sha256': digest(self.cfg)}}

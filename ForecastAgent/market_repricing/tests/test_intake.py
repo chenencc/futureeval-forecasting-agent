@@ -79,7 +79,7 @@ class IntakeTests(unittest.TestCase):
             for change in ({'screen_text': 'Bitcoin book publisher'}, {'binary': False}, {'composite': True}):
                 self.assertEqual(screen(market | change, CLOCK, self.cfg)['status'], 'excluded')
             self.assertEqual(screen(market, '2026-10-12T02:00:01Z', self.cfg)['status'], 'outside_new_question_window')
-            self.assertEqual(screen(market | {'tradable': False}, CLOCK, self.cfg)['status'], 'waiting_market')
+            self.assertEqual(screen(market | {'tradable': False}, CLOCK, self.cfg)['status'], 'candidate')
             self.assertEqual(screen(market | {'screen_text': 'Updated unrelated tags'}, CLOCK, self.cfg)['status'], 'candidate')
             self.assertEqual(screen(market | {'close_at': '2026-10-13T00:00:00Z'}, CLOCK, self.cfg)['status'], 'short_resolution_cohort')
 
