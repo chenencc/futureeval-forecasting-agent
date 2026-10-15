@@ -12,7 +12,19 @@ def main():
     args = parser.parse_args()
     if args.command == 'monitor':
         from .monitor import run
-        result = run(args.root, args.worker)
+        import os
+        engineering = os.environ.get('FORECAST_ENGINEERING_ROOT')
+        if engineering:
+            from ForecastAgent.engineering.common import connect
+            from ForecastAgent.engineering.native import observed_call
+            db = connect(engineering)
+            try:
+                result = observed_call(db, 'market', '__discovery__', os.environ.get('GITHUB_RUN_ID', 'local'),
+                                       'discovery', lambda: run(args.root, args.worker))
+            finally:
+                db.close()
+        else:
+            result = run(args.root, args.worker)
     elif args.command == 'verify':
         from .common import verify
         result = {'verified_files': verify(args.root)}

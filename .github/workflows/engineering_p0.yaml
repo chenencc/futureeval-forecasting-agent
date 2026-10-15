@@ -1,0 +1,42 @@
+name: Engineering P0 offline acceptance
+on:
+  push:
+    paths: ['ForecastAgent/engineering/**', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', 'ForecastAgent/market_repricing/runtime.py', 'ForecastAgent/market_repricing/__main__.py', '.github/workflows/engineering_p0.yaml']
+  pull_request:
+    paths: ['ForecastAgent/engineering/**', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', 'ForecastAgent/market_repricing/runtime.py', 'ForecastAgent/market_repricing/__main__.py', '.github/workflows/engineering_p0.yaml']
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r ForecastAgent/engineering/requirements.txt
+      - run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
+      - name: Contracts, frozen replay, concurrent claims and process-kill recovery
+        run: python -m unittest discover -s ForecastAgent/engineering/tests -t . -v
+      - name: Native market compatibility
+        run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
+      - name: Market archive and Web-reader regression
+        run: python -m unittest discover -s ForecastAgent/market_store/tests -v
+      - name: Competition archive and receipt regression
+        run: python -m unittest discover -s ForecastAgent/competition_store/tests -v
+      - uses: actions/checkout@v4
+        with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .development
+          persist-credentials: false
+      - run: python -m pip install lxml==6.1.1
+      - name: Actual selected-engine instrumentation without provider access
+        env:
+          MARKET_ENGINE_DIRECTORY: ${{ github.workspace }}/.development
+        run: python -m ForecastAgent.engineering.tests.verify_selected_engine -v

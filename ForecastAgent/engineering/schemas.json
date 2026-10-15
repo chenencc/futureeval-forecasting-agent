@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forecastagent:engineering:v1",
+  "$defs": {
+    "sha": {"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "clock": {"type":"string","format":"date-time"},
+    "optional_clock": {"anyOf":[{"$ref":"#/$defs/clock"},{"type":"null"}]},
+    "question": {
+      "type":"object","additionalProperties":false,
+      "required":["key","platform","kind","title","rules","fine_print","options","scale","observed_at"],
+      "properties":{
+        "key":{"type":"string","minLength":1},
+        "platform":{"enum":["metaculus","polymarket","kalshi"]},
+        "kind":{"enum":["binary","multiple_choice","numeric","discrete","date"]},
+        "title":{"type":"string","minLength":1},"rules":{"type":"string","minLength":1},
+        "fine_print":{"type":"string"},"options":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+        "scale":{"type":"object","additionalProperties":false,"properties":{
+          "range_min":{"type":["number","string","null"]},"range_max":{"type":["number","string","null"]},
+          "zero_point":{"type":["number","null"]},"inbound_outcome_count":{"type":["integer","null"],"minimum":2},
+          "open_lower_bound":{"type":"boolean"},"open_upper_bound":{"type":"boolean"},"unit":{"type":["string","null"]}
+        }},"observed_at":{"$ref":"#/$defs/optional_clock"}
+      }
+    },
+    "source": {
+      "type":"object","additionalProperties":false,
+      "required":["id","url","body_sha256","text","captured_at","published_at","role"],
+      "properties":{
+        "id":{"type":"string","minLength":1},"url":{"type":"string","pattern":"^https?://"},
+        "body_sha256":{"$ref":"#/$defs/sha"},"text":{"type":"string","minLength":1},
+        "captured_at":{"$ref":"#/$defs/optional_clock"},"published_at":{"$ref":"#/$defs/optional_clock"},
+        "role":{"const":"original_body"}
+      }
+    },
+    "packet": {
+      "type":"object","additionalProperties":false,
+      "required":["schema","case_id","question","sources","source_bundle_sha256","archive_byte_sha256","native_request_sha256","cutoff_policy","as_of_utc","gaps","input_role"],
+      "properties":{
+        "schema":{"const":"forecast-evidence-packet-v1"},"case_id":{"type":"string","minLength":1},
+        "question":{"$ref":"#/$defs/question"},"sources":{"type":"array","items":{"$ref":"#/$defs/source"}},
+        "source_bundle_sha256":{"$ref":"#/$defs/sha"},"archive_byte_sha256":{"$ref":"#/$defs/sha"},
+        "native_request_sha256":{"$ref":"#/$defs/sha"},
+        "cutoff_policy":{"enum":["strict_as_of","capture_time_unbounded"]},
+        "as_of_utc":{"$ref":"#/$defs/optional_clock"},"gaps":{"type":"array","items":{"type":"object"}},
+        "input_role":{"const":"sanitized_acquisition_snapshot_not_exact_legacy_model_input"}
+      }
+    },
+    "forecast": {
+      "type":"object","additionalProperties":false,"required":["schema","case_id","input_sha256","kind","value"],
+      "properties":{
+        "schema":{"const":"forecast-experiment-output-v1"},"case_id":{"type":"string","minLength":1},
+        "input_sha256":{"$ref":"#/$defs/sha"},"kind":{"enum":["binary","multiple_choice","numeric","discrete","date"]},
+        "value":{}
+      }
+    },
+    "usage": {
+      "anyOf":[{"type":"null"},{"type":"object","additionalProperties":false,
+        "required":["http_attempts","input_tokens","output_tokens","cost_usd"],
+        "properties":{
+          "http_attempts":{"type":["integer","null"],"minimum":0},
+          "input_tokens":{"type":["integer","null"],"minimum":0},
+          "output_tokens":{"type":["integer","null"],"minimum":0},
+          "cost_usd":{"type":["number","null"],"minimum":0}
+        }}]
+    },
+    "graph": {
+      "type":"object","additionalProperties":false,"required":["schema","question_key","input_sha256","nodes","edges"],
+      "properties":{
+        "schema":{"const":"forecast-research-graph-v1"},"question_key":{"type":"string"},"input_sha256":{"$ref":"#/$defs/sha"},
+        "nodes":{"type":"array","items":{"type":"object","additionalProperties":false,
+          "required":["id","kind","statement","references"],"properties":{
+            "id":{"type":"string","minLength":1},"kind":{"enum":["observed_claim","condition","hypothesis"]},"statement":{"type":"string","minLength":1},
+            "references":{"type":"array","items":{"type":"object","additionalProperties":false,
+              "required":["source_id","body_sha256","quote"],"properties":{
+                "source_id":{"type":"string"},"body_sha256":{"$ref":"#/$defs/sha"},"quote":{"type":"string","minLength":1}
+              }}}
+          }}},
+        "edges":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["from","to","relation"],
+          "properties":{"from":{"type":"string"},"to":{"type":"string"},"relation":{"enum":["supports","contradicts","requires","causal_hypothesis"]}}}}
+      }
+    },
+    "receipt": {
+      "type":"object","additionalProperties":false,
+      "required":["schema","question_key","candidate_payload_sha256","status","confirmed_at","payload","evidence_record_sha256"],
+      "properties":{
+        "schema":{"const":"forecast-delivery-receipt-v1"},"question_key":{"type":"string"},
+        "candidate_payload_sha256":{"$ref":"#/$defs/sha"},"status":{"enum":["accepted","unknown","rejected","not_submitted"]},
+        "confirmed_at":{"$ref":"#/$defs/optional_clock"},"payload":{"type":"object"},"evidence_record_sha256":{"$ref":"#/$defs/sha"}
+      }
+    },
+    "lifecycle": {
+      "type":"object","additionalProperties":false,
+      "required":["schema","domain","task_key","stage","state","occurred_at","retry_at","failure_code","source_sha256","native"],
+      "properties":{
+        "schema":{"const":"forecast-lifecycle-event-v1"},"domain":{"enum":["competition","market","experiment"]},
+        "task_key":{"type":"string","minLength":1},"stage":{"enum":["discovery","acquisition","supplement","mapping","analysis","delivery","sync"]},
+        "state":{"enum":["queued","running","retry_wait","completed","completed_with_gaps","blocked","submission_unknown","accepted"]},
+        "occurred_at":{"$ref":"#/$defs/clock"},"retry_at":{"$ref":"#/$defs/optional_clock"},
+        "failure_code":{"enum":[null,"provider_service","provider_quota","credentials","invalid_request","context_limit","schema_invalid","source_unavailable","deadline","unknown_http_outcome","budget_exhausted","integrity","unknown_failure"]},
+        "source_sha256":{"$ref":"#/$defs/sha"},"native":{"type":"boolean"}
+      }
+    }
+  }
+}

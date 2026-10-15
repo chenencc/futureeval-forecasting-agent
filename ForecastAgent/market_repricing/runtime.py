@@ -19,7 +19,7 @@ def activate(engine):
     from ForecastAgent import acquisition_shared
     ForecastAgent.__path__[:] = [str(engine / 'ForecastAgent')]
     for name in list(sys.modules):
-        if name.startswith('ForecastAgent.') and not name.startswith(('ForecastAgent.market_repricing','ForecastAgent.acquisition_shared')):
+        if name.startswith('ForecastAgent.') and not name.startswith(('ForecastAgent.market_repricing','ForecastAgent.acquisition_shared','ForecastAgent.engineering')):
             del sys.modules[name]
     from ForecastAgent.acquisition.pipeline import verify_baseline
     from ForecastAgent.intelligence.identity import code_identity
@@ -36,11 +36,25 @@ def main():
     parser.add_argument('--monitor', required=True)
     parser.add_argument('--verification-only', action='store_true')
     args = parser.parse_args()
+    engineering = os.environ.get('FORECAST_ENGINEERING_ROOT')
+    if engineering:
+        # Import from this checkout before the native engine replaces package paths.
+        from ForecastAgent.engineering.common import connect
+        from ForecastAgent.engineering.native import market_worker
     activate(args.engine)
     os.environ['FORECAST_MODEL'] = 'nvidia/nemotron-3-super-120b-a12b:free'
     os.environ['FORECAST_MODEL_FALLBACK_SUPER'] = '0'
     from .worker import run
-    print(__import__('json').dumps(run(args.root, args.monitor, verification_only=args.verification_only)))
+    if engineering:
+        db = connect(engineering)
+        try:
+            with market_worker(db, os.environ.get('GITHUB_RUN_ID', 'local')):
+                result = run(args.root, args.monitor, verification_only=args.verification_only)
+        finally:
+            db.close()
+    else:
+        result = run(args.root, args.monitor, verification_only=args.verification_only)
+    print(__import__('json').dumps(result))
 
 
 if __name__ == '__main__':

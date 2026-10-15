@@ -1,5 +1,9 @@
 # ForecastAgent
 
+Engineering contracts, correlated traces, frozen research replay and conservative
+state recovery are documented in [Engineering P0](engineering/README.md). These
+local capabilities preserve native ledgers and do not activate a production rollout.
+
 The official competition worker is pinned to [release 1.0.5](https://github.com/chenencc/futureeval-forecasting-agent/releases/tag/v1.0.5): bounded V3 acquisition recovery → independent supplement → unchanged 1.0.4 original-context delivery → frozen release 1.0.1 Mercury conditional rereading → validated automatic submission. It runs `ForecastAgent.releases.v1_0_5` from the immutable tag, at most five questions per dispatch. Super remains the collector; Exa credit failover remains separate infrastructure. Empty exports are explicitly blocked before analysis, and confirmed receipts and existing task budgets are retained. See [1.0.5 collection changes and rollback](docs/RELEASE_1_0_5.md) and the [tagged release contracts](https://github.com/chenencc/futureeval-forecasting-agent/blob/v1.0.5/ForecastAgent/releases/README.md).
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.
