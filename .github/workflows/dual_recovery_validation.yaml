@@ -1,0 +1,63 @@
+name: Dual production recovery transport gates
+on:
+  push:
+    branches: [codex/dual-production-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check bounded transport and atomic corruption gates
+        run: python -m unittest ForecastAgent.infrastructure.test_market_checkpoint -v
+      - name: Restore exact oversized successful monitor
+        run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role monitor --root snapshots/original --run-id 38625620351
+      - name: Verify real control chunks preserve all original files and task clocks
+        run: |
+          python - <<'PY'
+          import json,zipfile
+          from pathlib import Path
+          from ForecastAgent.infrastructure.market_checkpoint import publish,extract_file,sha,write
+          from ForecastAgent.infrastructure.local_sync_export import export
+          from ForecastAgent.market_repricing.common import read,verify
+          root=Path('snapshots/original')
+          before=read(root/'inventory.json')['files'];before['inventory.json']=sha(root/'inventory.json')
+          state=read(root/'state.json')
+          packed=publish(root,'snapshots/packed')
+          with zipfile.ZipFile('snapshots/packed.zip','w',zipfile.ZIP_STORED,allowZip64=True) as archive:
+              for path in Path('snapshots/packed').rglob('*'):
+                  if path.is_file():archive.write(path,path.relative_to('snapshots/packed').as_posix())
+          restored=extract_file('snapshots/packed.zip','snapshots/roundtrip')
+          for name,digest in before.items():
+              assert sha(Path('snapshots/roundtrip')/name)==digest,name
+          assert read('snapshots/roundtrip/state.json')==state
+          manifest=read('snapshots/packed/state-pack-manifest.json')
+          assert 'state.json' in manifest['encoded_controls']
+          catalog=export([('monitor',Path('snapshots/packed'),None)],'snapshots/catalog','market-monitor',
+              summary_roots={'monitor':Path('snapshots/roundtrip')})
+          report={'schema':'market-control-chunk-live-preservation-v1','source_run':38625620351,
+              'original_files_verified':len(before),'state_bytes':(root/'state.json').stat().st_size,
+              'state_sha256':sha(root/'state.json'),'task_count':len(state['tasks']),
+              'original_files_unchanged':True,'tasks_and_clocks_unchanged':True,
+              'control_chunk_count':len(manifest['encoded_controls']['state.json']['chunks']),
+              'publication':packed,'restore':restored,'catalog':catalog,
+              'provider_calls':0,'budget_reset':False,'state_discarded':False}
+          write('snapshots/receipts/market-preservation.json',report)
+          print(json.dumps(report))
+          PY
+      - name: Publish small recovery receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: dual-recovery-preservation
+          path: snapshots/receipts
+          retention-days: 30
+          if-no-files-found: error

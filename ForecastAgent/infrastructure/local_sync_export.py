@@ -61,7 +61,7 @@ def summary(root):
     return result
 
 
-def export(sources, output, stream, *, run_id=None, repo=None, source_ids=None):
+def export(sources, output, stream, *, run_id=None, repo=None, source_ids=None, summary_roots=None):
     """Catalog exact artifact-relative paths, including hidden original records."""
     if stream not in STREAMS:
         raise ValueError('Unknown local export stream')
@@ -73,6 +73,7 @@ def export(sources, output, stream, *, run_id=None, repo=None, source_ids=None):
     records, summaries, embedded = [], {}, {}
     embedded_bytes = 0
     source_ids = source_ids or {}
+    summary_roots = summary_roots or {}
     for artifact_name, folder, patterns in sources:
         root = Path(folder).resolve()
         if output == root or output.is_relative_to(root) or root.is_relative_to(output):
@@ -105,7 +106,15 @@ def export(sources, output, stream, *, run_id=None, repo=None, source_ids=None):
                     embedded_bytes + file['size_bytes'] <= 8 * 1024 ** 2):
                 embedded[file['sha256']] = (root / file['path']).read_bytes()
                 embedded_bytes += file['size_bytes']
-        summaries[artifact_name] = summary(root)
+        summary_root = Path(summary_roots.get(artifact_name, root)).resolve()
+        if summary_root != root:
+            manifest = json.loads((root/'state-pack-manifest.json').read_text(encoding='utf-8'))
+            original = summary_root/'state.json'
+            if sha(original) != manifest['files']['state.json']['sha256']:
+                raise ValueError('Summary ledger differs from packed original')
+            record['summary_original_state_sha256'] = sha(original)
+            record['summary_role'] = 'projection_of_same_hash_verified_packed_original'
+        summaries[artifact_name] = summary(summary_root)
     if not records:
         raise ValueError('No local synchronization material to publish')
     output.mkdir(parents=True, exist_ok=True)
@@ -134,6 +143,7 @@ def main():
     parser.add_argument('--source', action='append', required=True, help='ARTIFACT_NAME=DIRECTORY')
     parser.add_argument('--pattern', action='append', help='Optional glob applied to each source root')
     parser.add_argument('--source-id', action='append', default=[], help='ARTIFACT_NAME=EXACT_ID')
+    parser.add_argument('--summary-root', action='append', default=[], help='ARTIFACT_NAME=HASH_VERIFIED_UNPACKED_DIRECTORY')
     parser.add_argument('--stream', choices=STREAMS, required=True)
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
@@ -149,7 +159,13 @@ def main():
         if not separator or not ident.isdecimal():
             parser.error('--source-id requires ARTIFACT_NAME=EXACT_ID')
         source_ids[name] = ident
-    print(json.dumps(export(sources, args.output, args.stream, source_ids=source_ids)))
+    summary_roots = {}
+    for value in args.summary_root:
+        name, separator, folder = value.partition('=')
+        if not separator or not folder:
+            parser.error('--summary-root requires ARTIFACT_NAME=DIRECTORY')
+        summary_roots[name] = folder
+    print(json.dumps(export(sources, args.output, args.stream, source_ids=source_ids, summary_roots=summary_roots)))
 
 
 if __name__ == '__main__':

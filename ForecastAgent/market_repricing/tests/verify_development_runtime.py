@@ -19,7 +19,10 @@ class DevelopmentRuntime(unittest.TestCase):
         from ForecastAgent.market_repricing.worker import request_for
         from ForecastAgent.market_repricing.venues import normalize
         from ForecastAgent.market_repricing.tests.test_repricing import raw_poly
-        market = normalize('polymarket', raw_poly())
+        raw = raw_poly()
+        # This fixture exercises future heads, not an elapsed historical launch.
+        raw['createdAt'] = now()
+        market = normalize('polymarket', raw)
         text = ('Federal Reserve meeting notice. December 10, 2026 is the scheduled meeting date. '
                 'The target range is currently unchanged. This notice does not announce a rate cut.\n') * 30
         bundle = {'request': request_for(market), 'pages': {'https://example.org/fed': {'content': text,
