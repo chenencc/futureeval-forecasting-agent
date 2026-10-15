@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 
 from ForecastAgent.local_sync import GitHub,GitHubReadError
-from ForecastAgent.local_transfer import TrafficBudget
+from ForecastAgent.local_transfer import TrafficBudget,RangeFile,SignedRanges,ArtifactZip,MAX_RANGE
 from .store import append,digest,encoded,ingest_summary
 
 REPO='chenencc/futureeval-forecasting-agent'
@@ -16,6 +16,24 @@ HISTORY_WORKFLOW='market_price_history.yaml'
 HISTORY_ARTIFACT='market-price-history-v1'
 CATALOGS={'market-worker':'market_research_worker.yaml','market-monitor':'market_research_monitor.yaml'}
 MAX_DATABASE=512*1024**2
+
+
+class BlockFetch:
+    """Amortize small ZIP member headers over verified one-MiB cached blocks."""
+    def __init__(self,directory,metadata,fetch,budget=None):
+        self.reader=RangeFile(directory,metadata,fetch,budget)
+
+    def __call__(self,start,stop):
+        chunks=[]
+        while start<stop:
+            aligned=start//MAX_RANGE*MAX_RANGE
+            end=min(aligned+MAX_RANGE,self.reader.size)
+            self.reader.seek(aligned)
+            block=self.reader.read(end-aligned)
+            take=min(stop,end)
+            chunks.append(block[start-aligned:take-aligned])
+            start=take
+        return b''.join(chunks)
 
 
 class Archives:
@@ -47,6 +65,10 @@ class Archives:
         return None
 
     def open(self,artifact):
+        if artifact.get('name')==HISTORY_ARTIFACT or artifact.get('name','').startswith('forecast-local-catalog-v1-'):
+            fetch=SignedRanges(self.client.executable,self.repo,artifact['id'],artifact,self.traffic)
+            fetch=BlockFetch(self.root/'blocks'/str(artifact['id']),artifact,fetch,self.traffic)
+            return ArtifactZip(RangeFile(self.root/'downloads'/str(artifact['id']),artifact,fetch,self.traffic))
         return self.client.open_zip(self.root,self.repo,artifact,self.traffic)
 
     def read(self,artifact,name,maximum=32*1024**2):

@@ -1,9 +1,9 @@
 name: Incremental local archive gates
 on:
   push:
-    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', '.github/workflows/local_sync_tests.yaml']
+    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
   pull_request:
-    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', '.github/workflows/local_sync_tests.yaml']
+    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
   workflow_dispatch:
 permissions:
   contents: read

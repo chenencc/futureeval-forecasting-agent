@@ -22,15 +22,19 @@ def import_revisions(db,data_root):
             if not original.is_relative_to(root) or original.stat().st_size>8*1024**2:
                 raise ValueError('Local revision must be a bounded market data file')
             raw=original.read_bytes()
-            if hashlib.sha256(raw).hexdigest()!=row['result_sha256']:
-                raise ValueError('Local revision content hash mismatch')
             value=json.loads(raw)
+            # Native material-revision v1 hashes canonical JSON values, not the
+            # pretty-printed file bytes. Preserve both schemes explicitly.
+            if digest(value)!=row['result_sha256']:
+                raise ValueError('Local revision content hash mismatch')
             if value['key']!=key or value['revision_id']!=row['revision_id']:
                 raise ValueError('Local revision identity mismatch')
             observed=value.get('completed_at') or registry['archived_at']
             token=digest({'kind':'revision','key':key,'sha256':row['result_sha256']})
             if not db.execute('SELECT 1 FROM records WHERE id=?',(token,)).fetchone():
-                imported+=append(db,'revision',key,{**row,'payload':value},observed,ident=token)
+                imported+=append(db,'revision',key,{**row,'payload':value,
+                    'result_hash_scheme':'native_canonical_json_utf8_v1',
+                    'original_file_byte_sha256':hashlib.sha256(raw).hexdigest()},observed,ident=token)
             forecast=value.get('forecast') or {}
             for arm,arm_value in forecast.get('arms',{}).items():
                 data={'arm':arm,'sealed_at':forecast.get('sealed_at'),'anchor_at':forecast.get('anchor_at'),
