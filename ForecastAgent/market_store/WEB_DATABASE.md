@@ -63,6 +63,7 @@ Acceptance report: `E:/metaculus_data/reports/market-web-database-contract-20261
 |---|---|
 | Prediction-market SQLite | `E:/metaculus_data/prediction_markets/store/market.sqlite3` |
 | Independent mirror health | Same directory, `latest-sync.json` |
+| Installed reader runtime | Same directory, `reader-runtime.json`; verified code path and commit, not a browser asset |
 | Web hydration policy | Same directory, `web-material-policy.json` |
 | Public/native verified objects | Same directory, `objects/<sha-prefix>/<byte-sha256>` |
 | Existing general native blob archive | `E:/metaculus_data/blobs/sha256/<prefix>/<byte-sha256>` |
@@ -148,13 +149,25 @@ model ran. Display a model name only if saved metadata records it; otherwise use
 
 Import from `ForecastAgent.market_store.web_read`:
 
+The implemented reader is installed in an immutable local runtime, independent
+of the Web worktree and the dirty root development checkout. Resolve its current
+location through the local `reader-runtime.json` pointer. Do not import an older
+root checkout merely because it is already on `PYTHONPATH`.
+
 ```python
+import json
+from pathlib import Path
+import sys
+
+root = 'E:/metaculus_data/prediction_markets/store'
+runtime = json.loads((Path(root) / 'reader-runtime.json').read_bytes())
+sys.path.insert(0, runtime['path'])  # resolve before importing ForecastAgent
+
 from ForecastAgent.market_store.web_read import (
     open_readonly, read_watermark, read_index, read_task,
     read_history, read_body, publish_snapshot,
 )
 
-root = 'E:/metaculus_data/prediction_markets/store'
 db = open_readonly(root)  # SQLite mode=ro and PRAGMA query_only=ON
 try:
     db.execute('BEGIN')  # coherent short WAL read transaction
@@ -217,6 +230,7 @@ refresh is independent of an immutable prediction batch; it does not change the
 batch's evidence clock. A consistent read transaction supplies each export.
 
 ```powershell
+$env:PYTHONPATH = (Get-Content E:/metaculus_data/prediction_markets/store/reader-runtime.json -Raw | ConvertFrom-Json).path
 python -m ForecastAgent.market_store.web_read export `
   --root E:/metaculus_data/prediction_markets/store `
   --output D:/metaculus/.tmp/market-web-preview
@@ -489,6 +503,7 @@ graph; retain the named provenance rather than comparing unrelated hash inputs.
 Hydration is an explicit local maintenance operation, never an HTTP handler:
 
 ```powershell
+$env:PYTHONPATH = (Get-Content E:/metaculus_data/prediction_markets/store/reader-runtime.json -Raw | ConvertFrom-Json).path
 python -m ForecastAgent.market_store.web_read hydrate `
   --root E:/metaculus_data/prediction_markets/store
 ```
