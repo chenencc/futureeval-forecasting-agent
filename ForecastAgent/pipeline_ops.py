@@ -84,6 +84,11 @@ def inspect_database(root, domain):
             result['import_heads']=[dict(r) for r in db.execute(
                 'SELECT stream,run_id,observed_at,imported_at FROM imports WHERE run_id IS NOT NULL ORDER BY imported_at DESC LIMIT 4')]
             if result['material_reference_availability'].get('missing'):result['gaps'].append('historical_native_objects_missing')
+        from ForecastAgent import pipeline_readiness,pipeline_health
+        result['replay']=getattr(pipeline_readiness,domain)(db)
+        if result['replay']['not_ready']:result['gaps'].append('snapshots_not_ready_for_replay')
+        result['operational_alerts']=pipeline_health.alerts(db,domain)+pipeline_health.replay_alerts(result['replay'],domain)
+        if result['operational_alerts']:result['gaps'].append('operational_attention_required')
         result['status']='failed' if result['errors'] else 'ok_with_gaps' if result['gaps'] else 'ok'
     except (sqlite3.Error,ValueError,TypeError) as exc:
         result.update(status='failed',errors=[*result['errors'],type(exc).__name__+': '+str(exc)[:200]])
@@ -98,9 +103,18 @@ def audit(root):
         ('market','prediction_markets/store'),('competition','competitions/store'))}
     status='failed' if any(x['status']=='failed' for x in domains.values()) else (
         'ok_with_gaps' if any(x['status']=='ok_with_gaps' for x in domains.values()) else 'ok')
+    trigger_file=root/'pipeline-trigger-status.json'
+    try:
+        triggers=json.loads(trigger_file.read_bytes()) if trigger_file.is_file() else {'status':'not_observed','alerts':[]}
+        from ForecastAgent.pipeline_readiness import instant
+        checked=instant(triggers.get('observed_at'))
+        if checked and (datetime.now(timezone.utc)-checked).total_seconds()>2700:
+            triggers.setdefault('alerts',[]).append({'code':'local_trigger_observation_stale'})
+    except (ValueError,TypeError):triggers={'status':'invalid','alerts':[{'code':'trigger_receipt_invalid'}]}
+    if triggers.get('alerts') and status=='ok':status='ok_with_gaps'
     return {'schema':'forecast-pipeline-operations-v1','observed_at':datetime.now(timezone.utc).isoformat(),
             'status':status,'domains':domains,'scope':'Local projection consistency, not global discovery recall or forecast accuracy',
-            'model_requests':0,'search_requests':0,'submissions':0}
+            'trigger_health':triggers,'model_requests':0,'search_requests':0,'submissions':0}
 
 
 def main():

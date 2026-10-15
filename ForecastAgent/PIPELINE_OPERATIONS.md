@@ -95,6 +95,86 @@ recollecting evidence, reopening completed tasks, resetting budgets or resubmitt
 Freshness checks concern the local mirror, not forecast accuracy. Production
 discovery, active worker and external cron cadence must be checked separately.
 
+## P0: processing completion is not replay readiness
+
+`pipeline_readiness.py` validates each selected saved snapshot independently of
+the worker's completion flag. It checks frozen rules, exact selected input and
+output binding, hash-verified native material objects, readable local source
+bytes, source identities and capture clocks. A displayed score or an optional
+map never substitutes for a missing original input. Zero probabilities remain
+valid. Another route, revision or later capture cannot fill a missing binding.
+
+Both normalized databases retain these derived tables:
+
+| Table | Purpose |
+| --- | --- |
+| `replay_manifests` | Immutable content-addressed per-snapshot validation receipts, dependency hashes and explicit gaps |
+| `replay_heads` | Latest checked receipt for each question; earlier receipts remain available |
+| `pipeline_alerts` | Stable alert identity, first/last observation, resolution time and details |
+| `pipeline_observations` (market) | Saved monitor discovery coverage and intake-health receipts |
+| `native_recovery_receipts` (competition) | Original file-reference/hash and later local recovery time |
+
+`replay_ready` means the recorded input can be replayed locally. It does not
+establish factual relevance, causality, historical cutoff compliance, event
+resolution or forecast accuracy. A live competition input may intentionally
+have no retrospective cutoff. Its latest recorded capture is labeled as a
+derived information clock, never as the question opening time. Historical
+evaluation eligibility remains a separate check.
+
+Missing raw objects, source timestamps, model bindings or readable bodies keep
+the snapshot explicitly not ready. These are visible gaps and durable alerts;
+they do not erase a saved forecast or stop other questions from being imported.
+The acceptance report continues to distinguish database corruption and invalid
+completion claims from recoverable material gaps.
+
+## P0: repair saved originals, not historical facts
+
+`python -m ForecastAgent.pipeline_recovery --root E:/metaculus_data` searches
+only recorded task-pack locations and bounded trusted official worker archives.
+Each recovered member must match its exact prior path, byte length and SHA-256.
+Different historical hashes of one path remain different objects. No models,
+searches, new website captures, submissions or budget resets are permitted.
+
+Recovery defaults to a two-minute slice, 256 MiB of reserved uncompressed reads
+(including unsuccessful reads) and twelve official archives. A large interrupted
+pack resumes from cached one-MiB ranges on the next turn. Recovery has its own
+owner lock and does not overwrite database records or original capture clocks.
+Successful original bytes use the existing content-addressed object store.
+
+The competition mirror revisits previously missing references even when the
+catalog was already imported. It reconstructs bindings with that same source's
+original files and observation time, records recovery, and leaves the original
+import receipt unchanged. Missing or expired archives remain explicit gaps.
+
+Enable bounded recovery and metadata-only trigger checks in local
+`E:/metaculus_data/pipeline-policy.json`:
+
+```json
+{"recover_saved_originals": true, "observe_triggers": true}
+```
+
+The normalized mirror imports current heads before recovery and continues with
+the independent competition mirror. Recovery of an individual archived member
+can fail without suppressing later material/score ingestion.
+
+## P0: durable operational alerts
+
+Alert checks retain declared API coverage scope. A worker or listener success
+never proves global recall. Alerts cover discovery lag over thirty minutes,
+explicit page failures, retained historical coverage gaps, blocked tasks,
+admitted tasks overdue by thirty minutes after their recorded retry deadline,
+and completed snapshots missing replay dependencies. Future retry deadlines
+are honored; task budgets and study clocks never restart.
+
+Optional trigger checks read five recent workflow metadata receipts per lane:
+competition listener, market listener and price history. They distinguish a
+recent dispatch, a completed success and a failure. Listener dispatch gaps over
+twenty-five minutes and price-history gaps over three hours remain visible.
+`pipeline-trigger-status.json` is the latest view; `pipeline-control.sqlite3`
+retains `trigger_observations` and alert lifecycles. No notification service or
+new scheduler is created. The existing hidden mirror performs these checks.
+This observes external cron health; it cannot make GitHub runners punctual.
+
 ## Verification gates
 
 The local-sync workflow runs on Linux and Windows without providers. Gates cover
