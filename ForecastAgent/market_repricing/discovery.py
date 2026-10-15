@@ -1,5 +1,6 @@
 """Resumable contract discovery. Coverage refers to a declared API window only."""
 import copy
+from collections import Counter
 from datetime import timedelta
 
 from .common import digest, instant
@@ -120,8 +121,9 @@ def scan(http, venue, cfg, clock, saved, consume):
     def receive(window, kind):
         rows, following, done, receipt, count = page(http, venue, window)
         # Consume before acknowledgement; a failed row never loses its cursor.
-        consume(rows, receipt['received_at'])
-        pages.append(dict(receipt, role=kind, rows=count, ingested_rows=len(rows)))
+        ingestion = consume(rows, receipt['received_at'])
+        pages.append(dict(receipt, role=kind, rows=count, unique_window_rows=len(rows),
+                          ingestion=ingestion if isinstance(ingestion, dict) else None))
         return following, done
 
     # Latest launches must not wait behind the older continuation. Keep at least
@@ -159,6 +161,9 @@ def scan(http, venue, cfg, clock, saved, consume):
     saved['gaps'] = saved['gaps'][-24:]
     saved['windows'] = saved['windows'][-24:]
     saved['last_attempt_at'] = clock
+    exclusions = Counter()
+    for receipt in pages:
+        exclusions.update((receipt.get('ingestion') or {}).get('new_hard_exclusions', {}))
     audit = {'version': VERSION, 'complete': complete and not errors,
              'reason': 'window_complete' if complete and not errors else 'error' if errors else 'page_budget_yield',
              'scope': 'polymarket_open_contracts_with_minimum_close_buffer' if venue == 'polymarket' else 'kalshi_non_combo_contracts',
@@ -168,6 +173,7 @@ def scan(http, venue, cfg, clock, saved, consume):
              'pending_window': bool(saved.get('active')),
              'pending_cursor': bool(saved.get('active') and saved['active']['cursor']), 'pages': pages, 'errors': errors,
              'historical_gap_count': saved['gap_count'] + len(saved['gaps']),
+             'new_hard_exclusion_observations': dict(exclusions),
              'completed_windows_this_dispatch': completed_this_dispatch,
              'platform_wide_completeness_claimed': False}
     saved['last_audit'] = {k: v for k, v in audit.items() if k != 'pages'}

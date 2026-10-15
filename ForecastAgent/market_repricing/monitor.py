@@ -107,6 +107,22 @@ def ingest(ledger, venue, rows, cfg, clock):
                                  'selection': screen(market, clock, cfg)}
 
 
+def ingest_window(ledger, venue, rows, cfg, clock):
+    """Retain raw HTTP evidence, without expanding state for new hard exclusions."""
+    retained, exclusions = [], Counter()
+    for raw in rows:
+        market = normalize(venue, raw)
+        selection = screen(market, clock, cfg)
+        if (selection['status'] == 'excluded' and market['key'] not in ledger['markets']
+                and market['key'] not in ledger['tasks']):
+            exclusions[selection['reason']] += 1
+        else:
+            retained.append(raw)
+    ingest(ledger, venue, retained, cfg, clock)
+    return {'retained_rows': len(retained), 'new_hard_exclusions': dict(exclusions),
+            'original_response_retained': True}
+
+
 def admission_window(ledger, cfg, clock):
     """Count immutable admissions, including blocked/failed tasks, across midnight."""
     current = instant(clock)
@@ -266,7 +282,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                 #40metadata+40book+20resolution follow-up allowances.
                 window_cfg = cfg | {'maximum_discovery_pages_per_venue': max(1, cfg['maximum_discovery_pages_per_venue'] - 1)}
                 scan = scan_creation_window(http, venue, window_cfg, clock, saved,
-                    lambda rows, observed: ingest(ledger, venue, rows, cfg, max((clock, observed), key=instant)))
+                    lambda rows, observed: ingest_window(ledger, venue, rows, cfg, max((clock, observed), key=instant)))
                 scan['event_seed'] = seed
                 scans[venue] = scan
                 errors.extend(dict(error, venue=venue) for error in scan['errors'])

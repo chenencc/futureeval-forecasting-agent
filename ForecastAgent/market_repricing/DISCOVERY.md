@@ -49,6 +49,12 @@ ledger. A hard process kill before publication can replay a page; it cannot save
 a cursor that acknowledges rows absent from that checkpoint. Raw public-response
 receipts retain their actual observation times.
 
+New hard-excluded contracts (for example sports) retain their complete raw API
+responses, per-page exclusion counts and seen IDs, without creating a normalized
+waiting-pool record for each contract. Relevant and incomplete-rule candidates
+remain in the native waiting pool. Existing records, frozen tasks and evidence
+are never deleted or reclassified to reduce storage.
+
 The next completed window overlaps the preceding watermark by20minutes. A resumed
 window reserves one fresh head request when its page budget permits, so newly
 created contracts can be considered before old pagination finishes. That head

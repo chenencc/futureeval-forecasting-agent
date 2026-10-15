@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from ForecastAgent.market_repricing.common import digest, instant, policy, read, state, write
 from ForecastAgent.market_repricing.discovery import scan, new_window, VERSION
-from ForecastAgent.market_repricing.monitor import ingest, run
+from ForecastAgent.market_repricing.monitor import ingest, ingest_window, run
 
 CLOCK = '2026-10-15T04:00:00Z'
 
@@ -179,6 +179,39 @@ class Discovery(unittest.TestCase):
         audit = self.go(HTTP(poly(raw)), consume=lambda rows, receipt: ingest(ledger, 'polymarket', rows, self.cfg, receipt))
         self.assertTrue(audit['complete'])
         self.assertEqual(ledger['markets']['polymarket:child']['family'], 'polymarket:old-parent')
+
+    def test_new_hard_exclusions_do_not_expand_state_and_old_records_survive(self):
+        from ForecastAgent.market_repricing.tests.test_repricing import raw_poly
+        excluded = raw_poly() | {'id': 'sports', 'createdAt': CLOCK, 'question': 'Will the NBA match have an overtime?'}
+        ledger = {'markets': {}, 'tasks': {}}
+        original = copy.deepcopy(excluded)
+        audit = ingest_window(ledger, 'polymarket', [excluded], self.cfg, CLOCK)
+        self.assertFalse(ledger['markets'])
+        self.assertEqual(excluded, original)
+        self.assertEqual(audit['new_hard_exclusions'], {'gambling_or_mentions_excluded': 1})
+        ingest(ledger, 'polymarket', [excluded], self.cfg, CLOCK)
+        self.assertIn('polymarket:sports', ledger['markets'])
+        audit = ingest_window(ledger, 'polymarket', [excluded], self.cfg, CLOCK)
+        self.assertEqual(audit['retained_rows'], 1)
+        self.assertIn('polymarket:sports', ledger['markets'])
+
+    def test_waiting_rules_and_relevant_candidates_are_not_dropped(self):
+        from ForecastAgent.market_repricing.tests.test_repricing import raw_poly
+        ledger = {'markets': {}, 'tasks': {}}
+        rows = [raw_poly() | {'id': 'good', 'createdAt': CLOCK},
+                raw_poly() | {'id': 'rules', 'createdAt': CLOCK, 'description': ''}]
+        audit = ingest_window(ledger, 'polymarket', rows, self.cfg, CLOCK)
+        self.assertEqual(audit['retained_rows'], 2)
+        self.assertEqual(len(ledger['markets']), 2)
+
+    def test_page_ingestion_receipt_records_exclusion_counts_without_body_loss(self):
+        raw = contract('sport') | {'question': 'An NBA game'}
+        ledger = {'tasks': {}, 'markets': {}}
+        audit = self.go(HTTP(poly(raw)), consume=lambda rows, at: ingest_window(ledger, 'polymarket', rows, self.cfg, at))
+        self.assertTrue(audit['complete'])
+        self.assertEqual(audit['pages'][0]['ingestion']['new_hard_exclusions']['gambling_or_mentions_excluded'], 1)
+        self.assertTrue(audit['pages'][0]['response_sha256'])
+        self.assertFalse(ledger['markets'])
 
     def test_unknown_protocol_is_not_silently_reset(self):
         self.saved = {'version': 'future-protocol'}
