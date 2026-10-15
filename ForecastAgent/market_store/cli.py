@@ -9,15 +9,14 @@ import sqlite3
 import tempfile
 
 from ForecastAgent.local_sync import task_lock
+from ForecastAgent.local_transfer import atomic_json
 from .store import SCHEMA,append,clock,connect,encoded,records_since,stats
 from .github_io import Archives,HISTORY_ARTIFACT,HISTORY_WORKFLOW,MAX_DATABASE,bounded_gunzip,import_catalog
 from .collector import collect
 
 
 def write(path,value):
-    path=Path(path)
-    path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_bytes(encoded(value))
+    atomic_json(path,value)
 
 
 def restore(archives,root,artifact=None):
@@ -183,28 +182,37 @@ def mirror(args):
                     report['web_materials']={'packets':len(result['packets']),'new_documents':result['new_documents'],
                         'states':{state:sum(p['status']==state for p in result['packets'])
                             for state in sorted({p['status'] for p in result['packets']})}}
+            report.update(market_status='ok',stats=stats(db))
+        except Exception as exc:
+            report.update(market_status='failed',error_type=type(exc).__name__,reason=str(exc)[:200])
+        finally:
+            db.close()
+        report['competition']={'status':'disabled'}
+        try:
             competition_policy=root/'competition-policy.json'
             if competition_policy.is_file():
                 settings=json.loads(competition_policy.read_bytes())
                 if settings.get('enabled') is True:
                     from ForecastAgent.competition_store.ingest import sync as competition_sync
                     competition_root=Path(settings.get('root') or root.parent.parent/'competitions/store')
-                    try:
-                        result=competition_sync(competition_root,archive_root=root.parent.parent)
-                        report['competition']={k:result[k] for k in ('status','finished_at','stats')}
-                    except Exception as exc:
-                        # Separate mirror failures do not invalidate an already
-                        # completed market import. Each database has its own health.
-                        report['competition']={'status':'failed','error_type':type(exc).__name__,'reason':str(exc)[:200]}
-            report.update(finished_at=clock(),stats=stats(db),status='ok')
-            write(root/'latest-sync.json',report)
+                    result=competition_sync(competition_root,archive_root=root.parent.parent)
+                    report['competition']={k:result[k] for k in ('status','finished_at','stats')}
         except Exception as exc:
-            report.update(finished_at=clock(),status='failed',error_type=type(exc).__name__,reason=str(exc)[:200])
+            report['competition']={'status':'failed','error_type':type(exc).__name__,'reason':str(exc)[:200]}
+        failed=report['market_status']!='ok' or report['competition']['status'] not in {'ok','disabled'}
+        report.update(finished_at=clock(),status='partial_failure' if failed else 'ok')
+        write(root/'latest-sync.json',report)
+        if report['competition']['status']!='disabled':
+            from ForecastAgent.pipeline_ops import audit
+            acceptance=audit(root.parent.parent)
+            write(root.parent.parent/'pipeline-status.json',acceptance)
+            report['acceptance']={'status':acceptance['status'],
+                'path':str(root.parent.parent/'pipeline-status.json')}
+            failed=failed or acceptance['status']=='failed'
+            if failed:report['status']='partial_failure'
             write(root/'latest-sync.json',report)
-            raise
-        finally:
-            db.close()
     print(json.dumps(report,ensure_ascii=False))
+    if failed: raise RuntimeError('Database synchronization incomplete; inspect latest-sync.json')
 
 
 def main():

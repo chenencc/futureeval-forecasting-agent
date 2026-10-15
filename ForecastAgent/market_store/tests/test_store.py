@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from ForecastAgent.market_store.store import append,connect,ingest_summary,records_since,stats
+from ForecastAgent.market_store.store import append,connect,ingest_summary,records_since,stats,digest
 from ForecastAgent.market_store.collector import collect
 from ForecastAgent.market_store.providers import normalize_poly,normalize_kalshi,Retryable,history,venue_status
 
@@ -45,6 +45,37 @@ class StoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'identity changed'):
             with self.db: append(self.db,'market',KEY,{**MARKET,'yes_token':'999'},AT)
         self.assertEqual(stats(self.db)['markets'],1)
+
+    def test_content_reobservation_keeps_original_and_independent_receipt(self):
+        value={'status':'completed','id':KEY}
+        ident=digest({'kind':'task_payload','key':KEY,'sha256':digest(value)})
+        with self.db:
+            append(self.db,'task_payload',KEY,value,AT,ident=ident)
+            self.assertFalse(append(self.db,'task_payload',KEY,value,'2026-10-15T07:25:52Z',ident=ident))
+            self.assertFalse(append(self.db,'task_payload',KEY,value,'2026-10-15T07:25:52Z',ident=ident))
+        self.assertEqual(self.db.execute('SELECT observed_at FROM records WHERE id=?',(ident,)).fetchone()[0],AT)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM replication_receipts').fetchone()[0],1)
+        with self.assertRaisesRegex(ValueError,'collision'):
+            append(self.db,'task_payload',KEY,dict(value,status='different'),'2026-10-15T07:25:52Z',ident=ident)
+
+    def test_same_content_reference_retains_both_publication_locations(self):
+        value={'path':'tasks/a/body.json','sha256':'a'*64,'size_bytes':100,'source':{'run_id':'first'}}
+        ident=digest({'kind':'ref','key':KEY,'path':value['path'],'sha256':value['sha256']})
+        later=dict(value,source={'run_id':'later'})
+        with self.db:
+            append(self.db,'ref',KEY,value,AT,ident=ident)
+            self.assertTrue(append(self.db,'ref',KEY,later,'2026-10-15T07:25:52Z',ident=ident))
+            self.assertFalse(append(self.db,'ref',KEY,later,'2026-10-15T07:25:52Z',ident=ident))
+        self.assertEqual(self.db.execute('SELECT count(*) FROM material_refs').fetchone()[0],2)
+        self.assertEqual(json.loads(self.db.execute('SELECT data FROM records WHERE id=?',(ident,)).fetchone()[0]),value)
+        with self.assertRaisesRegex(ValueError,'collision'):
+            append(self.db,'ref',KEY,dict(later,size_bytes=101),AT,ident=ident)
+
+    def test_arbitrary_replication_ids_still_reject_changed_observation_clocks(self):
+        with self.db:
+            append(self.db,'task_payload',KEY,{'id':KEY},AT,ident='arbitrary')
+        with self.assertRaisesRegex(ValueError,'collision'):
+            append(self.db,'task_payload',KEY,{'id':KEY},'2026-10-15T03:00:00Z',ident='arbitrary')
 
     def test_stale_pipeline_import_does_not_overwrite(self):
         with self.db:

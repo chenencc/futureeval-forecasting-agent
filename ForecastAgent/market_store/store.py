@@ -42,6 +42,9 @@ def connect(path):
     CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS records(seq INTEGER PRIMARY KEY,id TEXT UNIQUE NOT NULL,
       kind TEXT NOT NULL,market_key TEXT,observed_at TEXT NOT NULL,data TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS replication_receipts(id TEXT PRIMARY KEY,original_record_id TEXT NOT NULL,
+      projected_record_id TEXT NOT NULL,kind TEXT NOT NULL,market_key TEXT,observed_at TEXT NOT NULL,
+      payload_sha256 TEXT NOT NULL,resolution TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS markets(key TEXT PRIMARY KEY,venue TEXT NOT NULL,venue_id TEXT NOT NULL,
       yes_token TEXT,family TEXT,condition_id TEXT,created_at TEXT NOT NULL,identity_sha256 TEXT NOT NULL,
       question TEXT,url TEXT,rules TEXT,rules_sha256 TEXT);
@@ -134,9 +137,37 @@ def append(db, kind, key, data, observed_at, *, ident=None):
     ident = ident or digest(payload)
     old = db.execute('SELECT data,kind,market_key,observed_at FROM records WHERE id=?', (ident,)).fetchone()
     if old:
-        if (old['data'], old['kind'], old['market_key'], old['observed_at']) != (encoded(data).decode(), kind, key, observed_at):
+        if (old['data'], old['kind'], old['market_key'], old['observed_at']) == (encoded(data).decode(), kind, key, observed_at):
+            return False
+        # Content identity and publication observation are separate. Cloud history
+        # and direct catalogs can first observe the same immutable payload at
+        # different times. Only explicitly defined content IDs can be reconciled.
+        if kind == 'task_payload':
+            expected = digest({'kind':kind,'key':key,'sha256':digest(data)})
+        elif kind in {'forecast','quote'}:
+            expected = digest({'kind':kind,'key':key,'data':data})
+        elif kind == 'ref':
+            expected = digest({'kind':kind,'key':key,'path':data['path'],'sha256':data['sha256']})
+        else:
+            expected = None
+        if ident != expected or old['kind'] != kind or old['market_key'] != key:
             raise ValueError('Replication record collision')
-        return False
+        previous = json.loads(old['data'])
+        if previous == data:
+            resolution, projected = 'content_reobserved', ident
+            added = False
+        elif kind == 'ref' and {k:v for k,v in previous.items() if k!='source'} == {k:v for k,v in data.items() if k!='source'}:
+            # Preserve additional archive locations; never overwrite the first
+            # reference or discard the later source's provenance.
+            resolution = 'additional_reference_location'
+            projected = digest({'kind':'ref_observation','record_id':ident,'data':data,'observed_at':observed_at})
+            added = append(db,kind,key,data,observed_at,ident=projected)
+        else:
+            raise ValueError('Replication record collision')
+        receipt = digest({'record_id':ident,'projected_id':projected,'observed_at':observed_at,'data':data})
+        db.execute('INSERT OR IGNORE INTO replication_receipts VALUES(?,?,?,?,?,?,?,?)',
+            (receipt,ident,projected,kind,key,observed_at,digest(data),resolution))
+        return added
     text = encoded(data).decode()
     if kind == 'market':
         bound = identity(data)

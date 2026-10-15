@@ -17,8 +17,12 @@ $env:GH_PROMPT_DISABLED = '1'
 $env:GH_NO_UPDATE_NOTIFIER = '1'
 try {
     "$(Get-Date -Format o) Sync started" | Out-File -LiteralPath $logPath -Append -Encoding utf8
+    # Windows PowerShell must drain stderr before checking the native exit code.
+    $ErrorActionPreference = 'Continue'
     & $PythonPath -m ForecastAgent.local_sync sync --root $DataRoot 2>&1 | Out-File -LiteralPath $logPath -Append -Encoding utf8
-    if ($LASTEXITCODE -ne 0) { throw 'Local synchronization failed; inspect the database sync events.' }
+    $syncExitCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($syncExitCode -ne 0) { throw 'Local synchronization failed; inspect the database sync events.' }
 } catch {
     "$(Get-Date -Format o) $($_.Exception.Message)" | Out-File -LiteralPath $logPath -Append -Encoding utf8
     exit 1

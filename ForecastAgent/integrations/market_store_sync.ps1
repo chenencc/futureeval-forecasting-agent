@@ -17,8 +17,12 @@ if ((Test-Path -LiteralPath $logPath) -and (Get-Item -LiteralPath $logPath).Leng
 }
 try {
     "$(Get-Date -Format o) Market store sync started" | Out-File -LiteralPath $logPath -Append -Encoding utf8
+    # Windows PowerShell must drain stderr before checking the native exit code.
+    $ErrorActionPreference = 'Continue'
     & $PythonPath -X utf8 -m ForecastAgent.market_store.cli sync --root $DataRoot 2>&1 | Out-File -LiteralPath $logPath -Append -Encoding utf8
-    if ($LASTEXITCODE -ne 0) { throw 'Market store synchronization failed; inspect latest-sync.json.' }
+    $syncExitCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($syncExitCode -ne 0) { throw 'Market store synchronization failed; inspect latest-sync.json.' }
 } catch {
     "$(Get-Date -Format o) $($_.Exception.Message)" | Out-File -LiteralPath $logPath -Append -Encoding utf8
     exit 1

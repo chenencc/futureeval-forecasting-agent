@@ -171,7 +171,7 @@ def import_catalog(root, db, client, repo, metadata, budget):
             if hashlib.sha256(content).hexdigest() != digest:
                 raise ValueError('Embedded control original failed its catalog hash')
             embedded[path] = content
-        summary_data = archive.read('summary.json', maximum=2 * 1024 * 1024)
+        summary_data = archive.read('summary.json', maximum=32 * 1024 * 1024)
     if (catalog.get('schema') != SCHEMA or catalog.get('repo') != repo or catalog.get('run_id') != run_id or
             catalog.get('stream') not in STREAMS or metadata['name'] != PREFIX + catalog['stream']):
         raise ValueError('Local catalog provenance does not match its Actions artifact')

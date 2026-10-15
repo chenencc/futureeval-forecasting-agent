@@ -505,6 +505,8 @@ def main():
         result = status(args.root)
     publish_status(args.root)
     print(json.dumps(result, ensure_ascii=False))
+    if args.action=='sync' and result.get('status')!='success':
+        raise SystemExit(3 if result.get('status')=='transfer_wait' else 1)
 
 
 if __name__ == '__main__':

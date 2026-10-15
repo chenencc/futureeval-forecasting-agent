@@ -1,15 +1,18 @@
 name: Incremental local archive gates
 on:
   push:
-    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
+    paths: ['ForecastAgent/pipeline_ops.py', 'ForecastAgent/tests/test_pipeline_ops.py', 'ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
   pull_request:
-    paths: ['ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
+    paths: ['ForecastAgent/pipeline_ops.py', 'ForecastAgent/tests/test_pipeline_ops.py', 'ForecastAgent/local_sync.py', 'ForecastAgent/local_transfer.py', 'ForecastAgent/incremental_sync.py', 'ForecastAgent/infrastructure/local_sync_export.py', 'ForecastAgent/tests/test_*sync.py', 'ForecastAgent/integrations/*local_sync*', 'ForecastAgent/integrations/*market_store*', 'ForecastAgent/market_store/**', 'ForecastAgent/competition_store/**', '.github/workflows/market_price_history.yaml', '.github/workflows/local_sync_tests.yaml']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   gates:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,13 +21,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Verify incremental transfer, hidden launch and original import compatibility
-        run: python -m unittest ForecastAgent.tests.test_local_sync ForecastAgent.tests.test_incremental_sync -v
+        run: python -m unittest ForecastAgent.tests.test_local_sync ForecastAgent.tests.test_incremental_sync ForecastAgent.tests.test_pipeline_ops -v
       - name: Verify independent public history storage and replication
         run: python -m unittest discover -s ForecastAgent/market_store/tests -v
       - name: Verify competition archive and receipt-bound Web projections
         run: python -m unittest discover -s ForecastAgent/competition_store/tests -v
       - name: Build isolated artifact transport rehearsal
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && runner.os == 'Linux'
         run: |
           python - <<'PY'
           import json, random
@@ -37,14 +40,14 @@ jobs:
           export([('bandwidth-rehearsal-source', root, None)], 'snapshots/transport-catalog', 'market-worker')
           PY
       - name: Publish isolated transport source
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: bandwidth-rehearsal-source
           path: snapshots/transport-source/
           retention-days: 3
       - name: Publish isolated transport catalog
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: forecast-local-catalog-v1-market-worker
