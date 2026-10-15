@@ -62,7 +62,11 @@ readers; source, manifest, embedding and expanded-archive bounds remain enforced
 Both PowerShell wrappers drain stdout/stderr before checking the native exit code.
 Aligned one-MiB cached blocks amortize tiny member requests. Signed URLs refresh
 before their expiry; payload failures still wait for the next scheduled run.
-Their hidden launch and existing task schedules must be preserved.
+The installed tasks use the base interpreter pythonw.exe with
+`integrations/local_sync_runner.py`, executing the mirror in the scheduler-owned
+process. A scheduler timeout cannot leave a detached PowerShell/Python writer.
+Existing triggers, principals, limits and IgnoreNew settings remain unchanged.
+The PowerShell wrappers remain compatible with manual Windows operation.
 
 ## Acceptance and recovery
 
