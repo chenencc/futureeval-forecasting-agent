@@ -1,5 +1,10 @@
 # ForecastAgent
 
+For the current two-lane listener, worker, checkpoint and local database contract,
+see [pipeline operations and acceptance](PIPELINE_OPERATIONS.md). The shared
+acquisition selector and competition delivery selector are independently pinned;
+the historical release descriptions below do not override live selectors.
+
 The official competition worker is pinned to [release 1.0.5](https://github.com/chenencc/futureeval-forecasting-agent/releases/tag/v1.0.5): bounded V3 acquisition recovery → independent supplement → unchanged 1.0.4 original-context delivery → frozen release 1.0.1 Mercury conditional rereading → validated automatic submission. It runs `ForecastAgent.releases.v1_0_5` from the immutable tag, at most five questions per dispatch. Super remains the collector; Exa credit failover remains separate infrastructure. Empty exports are explicitly blocked before analysis, and confirmed receipts and existing task budgets are retained. See [1.0.5 collection changes and rollback](docs/RELEASE_1_0_5.md) and the [tagged release contracts](https://github.com/chenencc/futureeval-forecasting-agent/blob/v1.0.5/ForecastAgent/releases/README.md).
 
 For bounded current-information queues of up to 100 questions, see [collection campaigns](docs/COLLECTION_CAMPAIGNS.md). Closed packages with gaps are reported separately from complete acquisition; these campaigns do not submit forecasts.

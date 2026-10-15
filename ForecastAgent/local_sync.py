@@ -289,9 +289,11 @@ class GitHub:
         temporary.replace(target)
 
     def open_zip(self, root, repo, metadata, budget):
-        from ForecastAgent.local_transfer import ArtifactZip, RangeFile, SignedRanges
-        return ArtifactZip(RangeFile(Path(root) / 'downloads' / str(metadata['id']), metadata,
-            SignedRanges(self.executable, repo, metadata['id'], metadata, budget), budget))
+        from ForecastAgent.local_transfer import ArtifactZip, RangeFile, SignedRanges, CachedBlocks
+        directory=Path(root)/'downloads'/str(metadata['id'])
+        fetch=CachedBlocks(directory/'blocks',metadata,
+            SignedRanges(self.executable,repo,metadata['id'],metadata,budget),budget)
+        return ArtifactZip(RangeFile(directory,metadata,fetch,budget))
 
 
 def sync(root=DEFAULT_ROOT, repo=DEFAULT_REPO, client=None, max_downloads=20, *, mode=None,
@@ -505,6 +507,8 @@ def main():
         result = status(args.root)
     publish_status(args.root)
     print(json.dumps(result, ensure_ascii=False))
+    if args.action=='sync' and result.get('status')!='success':
+        raise SystemExit(3 if result.get('status')=='transfer_wait' else 1)
 
 
 if __name__ == '__main__':

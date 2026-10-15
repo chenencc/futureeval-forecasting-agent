@@ -5,12 +5,13 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
+from unittest.mock import patch,MagicMock
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from ForecastAgent import local_sync
 from ForecastAgent.incremental_sync import import_members, import_catalog, validate_expected, execute
 from ForecastAgent.infrastructure.local_sync_export import export, PREFIX
-from ForecastAgent.local_transfer import ArtifactZip, RangeFile, TrafficBudget, TransferDeferred
+from ForecastAgent.local_transfer import ArtifactZip, RangeFile, TrafficBudget, TransferDeferred,SignedRanges,CachedBlocks
 
 REPO = 'chenencc/futureeval-forecasting-agent'
 
@@ -55,6 +56,43 @@ class Client:
 
 
 class RangeTests(TestCase):
+    def test_many_small_members_share_one_verified_block_and_survive_restart(self):
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            files={f'tasks/{i}/receipt.json':json.dumps({'id':i}).encode() for i in range(200)}
+            raw=zip_bytes(root,'many',files)
+            info={'id':1,'size_in_bytes':len(raw),'digest':hashlib.sha256(raw).hexdigest()}
+            calls=[]
+            def fetch(start,stop):
+                calls.append((start,stop));return raw[start:stop]
+            for _ in range(2):
+                blocks=CachedBlocks(root/'blocks',info,fetch)
+                with ArtifactZip(RangeFile(root/'ranges',info,blocks)) as archive:
+                    for name,data in files.items():self.assertEqual(archive.read(name),data)
+            self.assertEqual(calls,[(0,len(raw))])
+
+    def test_old_signed_redirect_refreshes_before_payload_without_hidden_retry(self):
+        with TemporaryDirectory() as directory:
+            budget=TrafficBudget(directory,100)
+            reader=SignedRanges('gh',REPO,1,{'size_in_bytes':10},budget)
+            reader.url='https://example.blob.core.windows.net/saved'
+            reader.refresh_at=10
+            response=MagicMock()
+            response.status=206
+            response.headers={'Content-Range':'bytes 0-0/10'}
+            response.read.return_value=b'x'
+            opener=MagicMock()
+            opener.open.return_value.__enter__.return_value=response
+            with patch('ForecastAgent.local_transfer.time.monotonic',return_value=11), \
+                 patch.object(reader,'resolve') as resolve, \
+                 patch('ForecastAgent.local_transfer.build_opener',return_value=opener):
+                self.assertEqual(reader(0,1),b'x')
+            resolve.assert_called_once()
+            opener.open.assert_called_once()
+            self.assertEqual(budget.downloaded,1)
+            request=opener.open.call_args.args[0]
+            self.assertNotIn('Authorization',request.headers)
+
     def test_resume_uses_exact_cached_bytes_after_interruption(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -118,6 +156,38 @@ class RangeTests(TestCase):
 
 
 class IncrementalTests(TestCase):
+    def test_partial_sync_returns_nonzero_for_scheduled_task_health(self):
+        with patch('sys.argv',['sync','sync']), \
+             patch('ForecastAgent.local_sync.sync',return_value={'status':'partial','failed':1}), \
+             patch('ForecastAgent.local_sync.publish_status'),patch('builtins.print'):
+            with self.assertRaises(SystemExit) as exited:local_sync.main()
+        self.assertEqual(exited.exception.code,1)
+
+    def test_large_valid_summary_imports_and_wrong_identity_still_fails(self):
+        with TemporaryDirectory() as directory:
+            temp=Path(directory)
+            source=temp/'source';source.mkdir()
+            (source/'state.json').write_text('{"tasks":{}}')
+            export([('market-repricing-v2-worker-state',source,None)],temp/'catalog',
+                   'market-worker',run_id='100',repo=REPO)
+            summary_path=temp/'catalog/summary.json'
+            summary=json.loads(summary_path.read_bytes())
+            summary['test_padding']='x'*(2*1024**2+1)
+            summary_path.write_text(json.dumps(summary))
+            files={p.relative_to(temp/'catalog').as_posix():p.read_bytes()
+                   for p in (temp/'catalog').rglob('*') if p.is_file()}
+            client=Client(zip_bytes(temp,'catalog',files),name=PREFIX+'market-worker')
+            root=temp/'local'
+            with local_sync.connect(root) as db:
+                # A later source error proves the complete >2MiB summary passed
+                # its bound; catalog provenance must still reject a changed run.
+                with self.assertRaisesRegex(RuntimeError,'source is missing'):
+                    import_catalog(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,10000000))
+                self.assertTrue((root/'sync-catalogs/market-worker/latest-summary.json').is_file())
+                client.metadata['1']['workflow_run']['id']=101
+                with self.assertRaisesRegex(ValueError,'provenance'):
+                    import_catalog(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,10000000))
+
     def test_known_body_is_not_transferred_and_files_remain_readable(self):
         with TemporaryDirectory() as directory:
             temp = Path(directory)

@@ -4,6 +4,7 @@ import io
 import json
 import re
 import subprocess
+import time
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
@@ -82,6 +83,7 @@ class SignedRanges:
         self.gh, self.repo, self.artifact_id = gh, repo, str(artifact_id)
         self.size, self.budget = metadata['size_in_bytes'], budget
         self.url = None
+        self.refresh_at = 0
 
     def resolve(self):
         token = subprocess.check_output([self.gh, 'auth', 'token', '--hostname', 'github.com'],
@@ -103,9 +105,24 @@ class SignedRanges:
         if (parsed.scheme != 'https' or parsed.username or parsed.password or parsed.port not in (None, 443) or
                 not (host.endswith('.blob.core.windows.net') or host.endswith('.actions.githubusercontent.com'))):
             raise ValueError('Unexpected signed artifact storage host')
+        # Azure redirects currently expire after ten minutes. Long incremental
+        # imports must renew before expiry, not wait for a storage 403. This is
+        # a new metadata lookup, not a retry or duplicate payload request.
+        from datetime import datetime, timezone
+        from urllib.parse import parse_qs
+        ttl=480.0
+        expiry=parse_qs(parsed.query).get('se',[None])[0]
+        if expiry:
+            expires=datetime.fromisoformat(expiry.replace('Z','+00:00'))
+            if expires.tzinfo is None:raise ValueError('Signed expiry lacks timezone')
+            ttl=min(ttl,(expires-datetime.now(timezone.utc)).total_seconds()-60)
+            if ttl<=0:
+                self.url=None
+                raise RuntimeError('Artifact storage redirect already expired or near expiry')
+        self.refresh_at=time.monotonic()+ttl
 
     def __call__(self, start, stop):
-        if self.url is None:
+        if self.url is None or time.monotonic()>=self.refresh_at:
             self.resolve()
         size = stop - start
         self.budget.reserve(size)
@@ -205,6 +222,24 @@ class RangeFile(io.RawIOBase):
                 self.checked.add(name)
             chunks.append(data)
             self.position = end
+        return b''.join(chunks)
+
+
+class CachedBlocks:
+    """Amortize tiny ZIP member reads over bounded, verified cached blocks."""
+    def __init__(self,directory,metadata,fetch,budget=None):
+        self.reader=RangeFile(directory,metadata,fetch,budget)
+
+    def __call__(self,start,stop):
+        chunks=[]
+        while start<stop:
+            aligned=start//MAX_RANGE*MAX_RANGE
+            end=min(aligned+MAX_RANGE,self.reader.size)
+            self.reader.seek(aligned)
+            block=self.reader.read(end-aligned)
+            take=min(stop,end)
+            chunks.append(block[start-aligned:take-aligned])
+            start=take
         return b''.join(chunks)
 
 
