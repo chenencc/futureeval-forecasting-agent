@@ -88,7 +88,8 @@ class ObservationTests(unittest.TestCase):
 
     def test_worker_seals_model_result_without_requiring_live_book(self):
         from ForecastAgent.market_repricing.worker import execute
-        for book_result in ({'status': 'missing_two_sided_book', 'midpoint': None}, TimeoutError('book unavailable')):
+        for book_result in ({'status': 'missing_two_sided_book', 'midpoint': None},
+                            TimeoutError('book unavailable'), ValueError('YES asset identity mismatch')):
             with self.subTest(book_result=book_result), tempfile.TemporaryDirectory() as directory:
                 market = normalize('polymarket', raw_poly())
                 ledger = {'tasks': {market['key']: {'market': market, 'status': 'queued'}}}

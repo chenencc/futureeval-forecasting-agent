@@ -56,8 +56,10 @@ Before scoring, `anchor.json` freezes an analysis context clock. Its
 `quote_observed_at`; the verbatim observation is retained in `original_quote`.
 Valid two-sided shallow/wide books retain their status/flags and can supply a
 noisy observed midpoint. One-sided, failed, stale and crossed books supply null,
-never an invented 0.5, zero or old price. Identity/schema failures still surface
-as errors rather than being disguised as missing prices.
+never an invented 0.5, zero or old price. A book identity/schema failure is
+retained as an explicit `invalid_book` error and never supplies a price. Contract
+metadata identity/schema failures remain separate blocking errors; an invalid
+book alone does not reject research on an independently verified contract.
 
 The unchanged Mercury scoring inputs can carry that null price with the same
 original evidence. Event forecasts remain eligible for later resolution-based
