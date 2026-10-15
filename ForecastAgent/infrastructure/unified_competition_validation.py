@@ -31,6 +31,8 @@ def verify(root, core, engine, output):
     from ForecastAgent.analysis.distributions import payload
     v1_0_5.verify_release()
     root = Path(root)
+    core_sha = subprocess.check_output(['git', '-C', str(Path(core).resolve()),
+        'rev-parse', 'HEAD'], text=True).strip()
     before = {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
     pending = guard_pending(root)
     calls, cases = [], []
@@ -42,7 +44,7 @@ def verify(root, core, engine, output):
             'open_question_count': 0})
         env = dict(os.environ, FORECAST_ACQUISITION_CORE=str(Path(core).resolve()),
             FORECAST_ACQUISITION_ENGINE=str(Path(engine).resolve()),
-            FORECAST_ACQUISITION_SHA='1a88d3b3390a6d6b92172ccd223b5f8a7948bfce')
+            FORECAST_ACQUISITION_SHA=core_sha)
         env.pop('PYTHONPATH', None)
         output_text = subprocess.check_output([sys.executable, str(Path(__file__).with_name('unified_competition.py')),
             '--root', str(temp/'empty-campaign'), '--snapshots', str(empty)],
@@ -61,7 +63,7 @@ def verify(root, core, engine, output):
             save(job/'package.json', bundle)
             save(job/'package-integrity.json', {'sha256': sha(job/'package.json')})
             return {'status': 'completed', 'returncode': 0}
-        collector = Collector(temp/'campaign', core, engine, '1a88d3b3390a6d6b92172ccd223b5f8a7948bfce', fake)
+        collector = Collector(temp/'campaign', core, engine, core_sha, fake)
         for request in fixtures():
             folder = temp/'campaign/tasks'/request['id']; retrieval = folder/'retrieval'
             first = collector.collect(request, retrieval)
@@ -82,7 +84,7 @@ def verify(root, core, engine, output):
     if len(calls) != 5: raise ValueError('Replay unexpectedly relaunched acquisition')
     after = {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
     if before != after: raise ValueError('Original competition checkpoint changed')
-    report = {'schema': 'unified-competition-preservation-v1', 'original_files_verified': len(before),
+    report = {'schema': 'unified-competition-preservation-v1', 'core_commit': core_sha, 'original_files_verified': len(before),
         'original_files_unchanged': True, 'task_compatibility': pending, 'typed_cases': cases,
         'actual_provider_calls': 0, 'model_calls': 0, 'search_calls': 0, 'submitted': False,
         'budgets_reset': False, 'accepted_tasks_reopened': False,

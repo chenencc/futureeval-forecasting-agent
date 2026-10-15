@@ -493,6 +493,13 @@ remain unchanged. Historical frozen tasks are not reopened or migrated.
 MARKET_ENGINE_DIRECTORY=/path/to/development python -m ForecastAgent.market_repricing.tests.verify_search_runtime -v
 ```
 
+## Current intake and discovery
+
+See [Intake README](INTAKE_README.md) for creation cursors, separate first-seen
+receipts, bounded unknown-event classification, protected new-book turns and
+explicit coverage warnings. Current admission cap is 50 families per rolling
+24 hours. The historical section below documents the original thirty-slot policy.
+
 ## Market-v0.3.3 rolling admission window
 
 Admission is limited to thirty distinct event-family tasks in any rolling

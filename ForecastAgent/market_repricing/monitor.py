@@ -9,6 +9,7 @@ from .common import PublicHTTP, digest, instant, now, policy, read, seal, state,
 from .tracking import creation_schedule, forecast_schedule, labels, targets_for, final_record
 from .venues import GAMMA, KALSHI, CRYPTO, GAMBLING, book, normalize, refresh, screen, final_resolution
 from .discovery import scan as scan_creation_window
+from . import intake
 
 
 def discover(http, venue, cfg, clock):
@@ -38,10 +39,22 @@ def discover(http, venue, cfg, clock):
     return rows, {'complete': False, 'reason': 'page_cap', 'pages': pages, 'window_start': start}
 
 
-def discover_events(http, venue, cfg, clock):
+def discover_events(http, venue, cfg, clock, saved=None, consume=None):
     """Event-level filtering avoids saturation by short crypto/sports contracts."""
     rows, pages, cursor = [], [], None
     close_min = instant(clock) + timedelta(hours=cfg['minimum_close_buffer_hours'])
+    # Event seeds are a separate latency path, never contract-window coverage.
+    # Continue Kalshi's frozen event query instead of repeating the same prefix.
+    if venue == 'kalshi' and saved is not None:
+        if saved and saved.get('version') != 'kalshi-event-seed-v1':
+            raise ValueError('Unknown event seed cursor protocol')
+        saved.setdefault('version', 'kalshi-event-seed-v1')
+        saved.setdefault('cursor_hashes', [])
+        if saved.get('cursor'):
+            cursor = saved['cursor']
+            close_min = instant(saved['close_min'])
+        else:
+            saved.update(close_min=close_min.isoformat(), cursor_hashes=[])
     excluded_tags = []
     if venue == 'polymarket':
         for slug in ('sports', 'crypto'):
@@ -62,7 +75,12 @@ def discover_events(http, venue, cfg, clock):
             if cursor: params['cursor'] = cursor
             response, receipt = http.get(KALSHI + 'events', params)
             events, next_cursor = response['events'], response.get('cursor')
+            if next_cursor and (next_cursor == cursor or saved is not None and digest(next_cursor) in saved['cursor_hashes']):
+                raise ValueError('Repeated event seed cursor')
+        if not isinstance(events, list):
+            raise ValueError('Unexpected event seed page shape')
         pages.append(receipt)
+        start_index = len(rows)
         for event in events:
             text = ' '.join(str(event.get(k) or '') for k in ('title', 'category', 'tags', 'ticker', 'event_ticker'))
             if CRYPTO.search(text) or GAMBLING.search(text):
@@ -76,12 +94,20 @@ def discover_events(http, venue, cfg, clock):
                 else:
                     market['category'] = event.get('category')
                 rows.append(market)
+        if consume is not None:
+            consume(rows[start_index:], receipt['received_at'])
+        if venue == 'kalshi' and saved is not None:
+            saved.update(cursor=next_cursor, last_received_at=receipt['received_at'])
+            if next_cursor:
+                saved['cursor_hashes'].append(digest(next_cursor))
+            saved['pages_total'] = saved.get('pages_total', 0) + 1
         complete = venue == 'polymarket' and len(events) < page_size or venue == 'kalshi' and not next_cursor
         if complete:
-            return rows, {'complete': True, 'pages': pages, 'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat()}
+            return rows, {'complete': True, 'pages': pages, 'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat(), 'platform_wide_completeness_claimed': False}
         cursor = next_cursor
     return rows, {'complete': False, 'reason': 'page_cap', 'pages': pages,
-                  'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat()}
+                  'scope': 'eligible_close_window_events', 'close_min': close_min.isoformat(),
+                  'pending_cursor': bool(cursor), 'platform_wide_completeness_claimed': False}
 
 
 def key_not_enrolled(ledger, market):
@@ -91,6 +117,7 @@ def key_not_enrolled(ledger, market):
 def ingest(ledger, venue, rows, cfg, clock):
     for raw in rows:
         market = normalize(venue, raw)
+        intake.observe(ledger, market, raw, clock)
         if market.get('created_at') and key_not_enrolled(ledger, market) and instant(market['created_at']) < instant(clock) - timedelta(hours=cfg['maximum_candidate_age_hours']):
             continue
         key = market['key']
@@ -112,6 +139,7 @@ def ingest_window(ledger, venue, rows, cfg, clock):
     retained, exclusions = [], Counter()
     for raw in rows:
         market = normalize(venue, raw)
+        intake.observe(ledger, market, raw, clock)
         selection = screen(market, clock, cfg)
         if (selection['status'] == 'excluded' and market['key'] not in ledger['markets']
                 and market['key'] not in ledger['tasks']):
@@ -194,10 +222,14 @@ def quote_turns(ledger, worker, candidates, cfg, clock):
     active.sort(key=age)
     urgent.sort(key=age)
     cap = cfg['maximum_quote_requests_per_dispatch']
-    turns = urgent[:cap]
+    # Protect a small fresh-intake share even when old label targets fill the cap.
+    fresh = [k for k in candidates if k not in ledger['tasks']]
+    protected = fresh[:min(4, max(1, cap // 4), cap)]
+    turns = [k for k in urgent if k not in protected][:cap-len(protected)] + protected
     # Reserve half of remaining turns for new families; neither class starves.
-    left = cap - len(turns)
-    turns.extend(candidates[:(left + 1) // 2])
+    # Existing fresh turns count towards half the non-urgent allowance.
+    fresh_target = (cap - len([k for k in turns if k in urgent]) + 1) // 2
+    turns.extend([k for k in candidates if k not in turns][:max(0, fresh_target-len(protected))])
     turns.extend(active[:cap - len(turns)])
     for key in candidates + active:
         if len(turns) >= cap:
@@ -223,9 +255,11 @@ def metadata_turns(ledger, worker, quote_keys, cfg, clock):
     due.sort(key=lambda k: (ledger['markets'][k].get('last_followup_check_at', ''), k))
     # Reserve half the metadata capacity for due final checks, even with new launches.
     cap = cfg['maximum_metadata_refresh_per_dispatch']
-    keys = [key for key in quote_keys if key in ledger['tasks'] and any(
+    fresh = [key for key in quote_keys if key not in ledger['tasks']]
+    keys = fresh[:min(4, max(1, cap // 4), cap)]
+    keys.extend([key for key in quote_keys if key in ledger['tasks'] and any(
         target - timedelta(minutes=cfg['label_window_minutes']) <= instant(clock) <= target
-        for target in targets_for(ledger['tasks'][key], worker.get('tasks', {}).get(key, {})))][:cap]
+        for target in targets_for(ledger['tasks'][key], worker.get('tasks', {}).get(key, {})))][:cap-len(keys)])
     final_slots = (cap - len(keys)) // 2
     keys.extend([key for key in due if key not in keys and key not in quote_keys][:final_slots])
     for key in quote_keys + due:
@@ -258,9 +292,10 @@ def save_followups(root, ledger, worker, cfg, clock):
         'observed_at': clock, 'tasks': ledger['followups']})
 
 
-def run(root, worker_root=None, http=None, cfg=None, clock=None):
+def run(root, worker_root=None, http=None, cfg=None, clock=None, intake_decide=None):
     root = Path(root); cfg = cfg or policy(); clock = clock or now()
     ledger = state(root, 'monitor', cfg)
+    before_tasks = len(ledger['tasks'])
     ledger.update(last_attempt_at=clock, last_run_id=__import__('os').environ.get('GITHUB_RUN_ID'))
     write(root / 'state.json', ledger)
     http = http or PublicHTTP(root / 'http', 120)
@@ -270,8 +305,9 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             seed = {}
             try:
                 # The event path is a bounded latency aid, not the coverage authority.
-                rows, seed = discover_events(http, venue, cfg, clock)
-                ingest(ledger, venue, rows, cfg, clock)
+                saved_seed = ledger.setdefault('event_seed_windows', {}).setdefault(venue, {})
+                rows, seed = discover_events(http, venue, cfg, clock, saved_seed,
+                    lambda rows, observed: ingest_window(ledger, venue, rows, cfg, max((clock, observed), key=instant)))
             except Exception as exc:
                 seed = {'complete': False, 'error_type': type(exc).__name__}
                 errors.append({'venue': venue, 'stage': 'event_seed', 'error': str(exc)})
@@ -298,6 +334,9 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
             observed_times.extend(p['received_at'] for p in scan.get('new_market_overlap', {}).get('pages', []))
             observed_times.extend(p['received_at'] for p in scan.get('event_seed', {}).get('pages', []))
         clock = max(observed_times, key=instant)
+        # Commit original discovery and cursor receipts before any model request.
+        write(root / 'state.json', ledger)
+        intake_review = intake.review(root, ledger, cfg, clock, decide=intake_decide)
         worker = state(worker_root, 'worker', cfg) if worker_root and (Path(worker_root) / 'state.json').exists() else {'tasks': {}}
         if worker.get('identity') and worker['identity']['policy_sha256'] != ledger['identity']['policy_sha256']:
             raise ValueError('Worker and monitor policy mismatch')
@@ -393,6 +432,11 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
         for market in ledger['markets'].values():
             market['selection'] = screen(market, clock, cfg)
         enroll(ledger, cfg, clock)
+        intake_health = intake.health(root, ledger, scans, clock, before_tasks)
+        if intake_review['status'] in {'failed', 'configuration_required', 'daily_intake_cap', 'lifetime_intake_cap', 'input_too_large'}:
+            intake_health['alerts'].append({'kind': 'semantic_intake_not_completed',
+                'status': intake_review['status'], 'pending_families': intake_review['eligible_unknown_families']})
+            intake_health['alerts_count'] = len(intake_health['alerts'])
         save_followups(root, ledger, worker, cfg, clock)
         ledger['enrollment_cutoff_utc'] = clock
         ledger['last_scan'] = scans
@@ -403,7 +447,9 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None):
                                'discovery_coverage': {venue: {k: v for k, v in scan.items() if k not in ('pages', 'event_seed')}
                                                       for venue, scan in scans.items()},
                                'waiting_or_excluded_distribution': dict(Counter(m['selection']['status'] for m in ledger['markets'].values())),
-                               'queued_families': len(ledger['tasks']), 'no_model_calls': True,
+                               'queued_families': len(ledger['tasks']),
+                               'no_model_calls': not bool(intake_review['http_attempts']),
+                               'intake_review': intake_review, 'intake_health': intake_health,
                                'candidate_age_limit_hours': cfg['maximum_candidate_age_hours'],
                                'minimum_resolution_hours': cfg['minimum_resolution_hours'],
                                'maximum_new_families_per_day': cfg['maximum_new_tasks_per_day'],
