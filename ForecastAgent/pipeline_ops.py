@@ -49,6 +49,9 @@ def inspect_database(root, domain):
                 "AND f.status='completed' AND f.probability_yes IS NOT NULL)")]
             if result['completed_without_original_score']:result['errors'].append('completed_task_missing_score')
             result['material_reference_availability']=distribution(db,'SELECT availability,count(*) FROM material_refs GROUP BY availability')
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='view' AND name='latest_web_packets'").fetchone():
+                result['local_material_packets']=distribution(db,
+                    'SELECT material_status,count(*) FROM latest_web_packets GROUP BY material_status')
             result['import_heads']=[dict(r) for r in db.execute('SELECT * FROM imports ORDER BY imported_at DESC LIMIT 6')]
             if result['awaiting_worker_checkpoint']:result['gaps'].append('admitted_tasks_awaiting_worker_checkpoint')
             if result['material_reference_availability'].get('remote_archive_reference'):
@@ -60,9 +63,17 @@ def inspect_database(root, domain):
             result['accepted_without_bound_receipt']=[r[0] for r in db.execute(
                 "SELECT t.question_key FROM latest_tasks t LEFT JOIN latest_receipts r ON r.question_key=t.question_key "
                 "WHERE t.stage='accepted' AND (r.status IS NULL OR r.status!='accepted' OR r.verified_binding!=1)")]
+            row=db.execute("SELECT value FROM metadata WHERE key='legacy_unbound_receipts'").fetchone()
+            legacy=set(json.loads(row[0])) if row else set()
+            result['new_accepted_without_bound_receipt']=[r[0] for r in db.execute(
+                "SELECT t.question_key,r.id FROM latest_tasks t LEFT JOIN latest_receipts r ON r.question_key=t.question_key "
+                "WHERE t.stage='accepted' AND (r.status IS NULL OR r.status!='accepted' OR r.verified_binding!=1)")
+                if r[1] not in legacy]
+            if result['new_accepted_without_bound_receipt']:result['errors'].append('new_accepted_task_missing_bound_receipt')
             # Historical receipts may predate the saved candidate. Keep this a
             # visible audit gap; do not fabricate bindings or resubmit questions.
-            if result['accepted_without_bound_receipt']:result['gaps'].append('historical_accepted_receipt_not_bound')
+            if set(result['accepted_without_bound_receipt'])-set(result['new_accepted_without_bound_receipt']):
+                result['gaps'].append('historical_accepted_receipt_not_bound')
             result['invalid_accepted_receipts']=[r[0] for r in db.execute(
                 "SELECT r.id FROM receipts r LEFT JOIN forecasts f ON f.id=r.forecast_id WHERE r.status='accepted' "
                 "AND (r.verified_binding!=1 OR r.confirmed_at IS NULL OR f.id IS NULL "

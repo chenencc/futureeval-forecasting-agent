@@ -64,6 +64,11 @@ def connect(path):
     ''')
     old=db.execute("SELECT value FROM metadata WHERE key='schema'").fetchone()
     if old and old[0]!=SCHEMA: raise ValueError('Unknown competition database version')
+    # Freeze pre-upgrade unbound legacy receipts once. Later delivery gaps must
+    # fail acceptance rather than becoming an ever-growing historical exemption.
+    legacy=[r[0] for r in db.execute("SELECT id FROM receipts WHERE status='accepted_unbound'")]
+    db.execute('INSERT OR IGNORE INTO metadata VALUES(?,?)',
+        ('legacy_unbound_receipts',encoded(legacy).decode()))
     db.execute("INSERT OR IGNORE INTO metadata VALUES('schema',?)",(SCHEMA,));db.commit()
     return db
 

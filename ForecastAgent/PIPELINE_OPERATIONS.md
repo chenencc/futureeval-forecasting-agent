@@ -70,6 +70,9 @@ Run `python -m ForecastAgent.pipeline_ops --root E:/metaculus_data` for a read-o
 audit. The normalized sync also writes `E:/metaculus_data/pipeline-status.json`.
 The report includes SQLite integrity, foreign keys, local sync age, import heads,
 worker states, missing completed scores, receipt binding and body availability.
+Pre-upgrade unbound receipt IDs are frozen once in database metadata. A new
+accepted task without an exact bound receipt fails acceptance; it cannot silently
+join the historical exemption on the next sync.
 
 - `ok`: checked local invariants pass.
 - `ok_with_gaps`: invariants pass, with pending work or explicit historical gaps.

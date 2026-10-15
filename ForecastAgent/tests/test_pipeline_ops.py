@@ -61,5 +61,18 @@ class PipelineAcceptanceTests(unittest.TestCase):
         self.assertEqual(result['status'],'failed')
         self.assertIn('last_domain_sync_not_successful',result['domains']['market']['errors'])
 
+    def test_new_unbound_delivery_cannot_be_excused_as_historical(self):
+        db=competition.connect(self.competition/'competition.sqlite3')
+        with db:
+            competition.task(db,'12',{'stage':'accepted'},AT,'fixture')
+            competition.receipt(db,'12',{'status':'accepted','confirmed_at_utc':AT,
+                'payload':{'question':12,'probability_yes':0.3}},AT,'fixture')
+        db.close()
+        # Reopening must not grow the frozen legacy exemption.
+        competition.connect(self.competition/'competition.sqlite3').close()
+        result=pipeline_ops.audit(self.root)
+        self.assertEqual(result['status'],'failed')
+        self.assertEqual(result['domains']['competition']['new_accepted_without_bound_receipt'],['metaculus:12'])
+
 
 if __name__=='__main__':unittest.main()
