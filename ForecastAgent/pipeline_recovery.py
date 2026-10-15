@@ -7,6 +7,8 @@ import re
 import sqlite3
 import tempfile
 import time
+from datetime import timedelta
+from urllib.parse import quote
 
 from ForecastAgent.market_store.github_io import Archives,BlockFetch
 from ForecastAgent.market_store.store import clock
@@ -108,6 +110,13 @@ def recover(root, *, archives=None, max_bytes=256*1024**2, max_archives=12, mark
     competition = sqlite3.connect((root/'competitions/store/competition.sqlite3').as_uri()+'?mode=ro', uri=True)
     wanted = {(r[0],r[1]): {'path': safe_path(r[0]), 'sha256': r[1], 'size': r[2]} for r in competition.execute(
         "SELECT DISTINCT path,sha256,size_bytes FROM file_refs WHERE availability='missing'")}
+    windows=[]
+    from ForecastAgent.pipeline_readiness import instant
+    for row in competition.execute('SELECT question_key,data FROM latest_tasks'):
+        if not any(path.startswith('tasks/'+row[0].split(':',1)[1]+'/') for path,_ in wanted):continue
+        task=json.loads(row[1]);start=instant(task.get('discovered_at_utc'))
+        end=instant(task.get('accepted_at_utc'))
+        if start and end:windows.append((start-timedelta(minutes=15),end+timedelta(minutes=15)))
     competition.close()
     for ident,item in list(wanted.items()):
         saved=root/'blobs/sha256'/item['sha256'][:2]/item['sha256']
@@ -115,7 +124,20 @@ def recover(root, *, archives=None, max_bytes=256*1024**2, max_archives=12, mark
             del wanted[ident]
     # Inventory paths can have multiple historical hashes. Never silently choose
     # a conflicting version; different bytes are retained under different hashes.
-    candidates = archives.client.api(f'repos/{archives.repo}/actions/workflows/official_competition.yaml/runs?branch=main&per_page=30')['workflow_runs'] if wanted else []
+    # The original discovery/submission clocks locate older evidence directly.
+    # A bounded scan of only the newest runs would starve older gaps forever.
+    merged=[]
+    for start,end in sorted(windows):
+        if merged and start<=merged[-1][1]:merged[-1]=(merged[-1][0],max(end,merged[-1][1]))
+        else:merged.append((start,end))
+    candidates=[];seen_runs=set()
+    for start,end in merged[:12] if wanted else []:
+        selected=quote(start.isoformat()+'..'+end.isoformat(),safe='')
+        runs=archives.client.api(f'repos/{archives.repo}/actions/workflows/official_competition.yaml/runs?branch=main&per_page=30&created={selected}')['workflow_runs']
+        for run in runs:
+            if run['id'] not in seen_runs:candidates.append(run);seen_runs.add(run['id'])
+    if wanted and not candidates:
+        candidates=archives.client.api(f'repos/{archives.repo}/actions/workflows/official_competition.yaml/runs?branch=main&per_page=30')['workflow_runs']
     inspected = 0
     for run in candidates:
         if not wanted or inspected >= max_archives or time.monotonic()>=deadline:

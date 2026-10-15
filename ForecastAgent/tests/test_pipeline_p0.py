@@ -158,6 +158,16 @@ class RecoveryTests(unittest.TestCase):
             self.assertEqual(len(report['remaining_competition_objects']),1)
             self.assertEqual(report['recovered'],[])
 
+    def test_old_gaps_use_original_task_clocks_instead_of_latest_run_horizon(self):
+        with TemporaryDirectory() as folder:
+            root=Path(folder);fake=self.remote_fixture(root,[b'{"old":true}'])
+            db=competition.connect(root/'competitions/store/competition.sqlite3')
+            with db:competition.task(db,'101',{'stage':'accepted','discovered_at_utc':AT,'accepted_at_utc':SEAL},AT,'saved')
+            db.close()
+            report=recover(root,archives=fake)
+            self.assertEqual(report['remaining_competition_objects'],[])
+            self.assertTrue(any('&created=' in call for call in fake.calls))
+
     def test_only_exact_hashes_and_safe_members_can_be_recovered(self):
         with TemporaryDirectory() as folder:
             raw=b'original';sha=hashlib.sha256(raw).hexdigest()
