@@ -9,7 +9,7 @@ from unittest.mock import patch,MagicMock
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from ForecastAgent import local_sync
-from ForecastAgent.incremental_sync import import_members, import_catalog, validate_expected, execute
+from ForecastAgent.incremental_sync import import_members, import_catalog, validate_expected, execute,fresh_pack_order
 from ForecastAgent.infrastructure.local_sync_export import export, PREFIX
 from ForecastAgent.local_transfer import ArtifactZip, RangeFile, TrafficBudget, TransferDeferred,SignedRanges,CachedBlocks
 
@@ -156,6 +156,23 @@ class RangeTests(TestCase):
 
 
 class IncrementalTests(TestCase):
+    def test_fresh_case_pack_precedes_cold_historical_packs_without_omitting_files(self):
+        summary={'sources':{'state':{'state.json':{'tasks':[
+            {'id':'old','forecast':{'completed_at':'2026-10-14T00:00:00Z'}},
+            {'id':'new','forecast':{'completed_at':'2026-10-15T00:00:00Z'}}]}}}}
+        ordered=fresh_pack_order(summary,{'artifact_name':'state'})
+        newest='packs/'+hashlib.sha256(b'"new"').hexdigest()+'.tar.xz'
+        self.assertEqual(ordered[0],newest)
+        with TemporaryDirectory() as directory:
+            temp=Path(directory);root=temp/'local'
+            files={'packs/000-old.tar.xz':b'old',newest:b'new','market-http/a.json':b'{}'}
+            client=Client(zip_bytes(temp,'fresh',files))
+            saved=[];original=local_sync.blob
+            def record(root,data):saved.append(data);return original(root,data)
+            with local_sync.connect(root) as db,patch('ForecastAgent.local_sync.blob',side_effect=record):
+                import_members(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,0),expected(files),ordered)
+            self.assertEqual(saved,[b'new',b'old',b'{}'])
+
     def test_body_packs_are_persisted_before_http_cache_inside_worker(self):
         with TemporaryDirectory() as directory:
             temp=Path(directory);root=temp/'local'

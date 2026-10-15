@@ -61,7 +61,9 @@ SHA-256 and resumable ranges. Its catalog summary bound is 32 MiB, matching nati
 readers; source, manifest, embedding and expanded-archive bounds remain enforced.
 Both PowerShell wrappers drain stdout/stderr before checking the native exit code.
 Each lane gets its latest eligible catalog before historical catch-up; worker
-body packs precede discovery caches. Verified file-index transactions commit in
+body packs precede discovery caches. Within worker packs, the saved completion
+clock puts newly scored cases before cold historical packs; this changes transfer
+order only, never forecast inputs, study clocks or which files are retained. Verified file-index transactions commit in
 batches of 64, with per-file savepoints and completed progress committed on a
 transfer failure. A killed batch replays from existing verified SHA objects.
 Aligned one-MiB cached blocks amortize tiny member requests. Signed URLs refresh
