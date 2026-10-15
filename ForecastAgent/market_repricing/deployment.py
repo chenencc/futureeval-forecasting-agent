@@ -8,11 +8,14 @@ import subprocess
 from . import ENGINE_SHA
 from .common import digest, now, read, write
 
-VERSION = 'market-v0.3.8-shared.1'
+VERSION = 'market-v0.3.9-discovery.1'
 BUDGET_PREDECESSOR = '0f3101af9b574194620baa54826654d122483361'
 FROZEN_DAILY_LIMITS = {BUDGET_PREDECESSOR: 400,
                        'd00bc630300a22ee84d1f6064892f261894d833b': 900,
-                       '7690c6a94ebfcada8f024de53f842ec44d74466d': 1500}
+                       '7690c6a94ebfcada8f024de53f842ec44d74466d': 1500,
+                       # Discovery-only successor retains this deployed capture,
+                       # search, analysis and policy; pending tasks keep all quotas.
+                       'f154a406a9611ebd4a64fc4077bb74778659b808': 1500}
 PENDING = {'queued', 'running', 'retry_wait', 'budget_wait'}
 
 

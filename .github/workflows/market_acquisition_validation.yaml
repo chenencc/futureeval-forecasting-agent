@@ -1,7 +1,7 @@
 name: Market acquisition saved-state promotion gates
 on:
   push:
-    branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0]
+    branches: [codex/market-acquisition-p0, codex/acquisition-shared-p0, codex/market-discovery-windows]
     paths: ['ForecastAgent/market_repricing/**', 'ForecastAgent/acquisition_shared/**', '.github/workflows/market_acquisition_validation.yaml']
   workflow_dispatch:
   pull_request:
@@ -32,6 +32,10 @@ jobs:
         run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/worker --branch main
       - name: Verify exact task, quota and original-file preservation
         run: python -m ForecastAgent.market_repricing.tests.verify_acquisition_promotion --root snapshots/worker --output snapshots/receipts/acquisition-promotion.json
+      - name: Restore production monitor without provider access
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/monitor --branch main
+      - name: Verify creation-window discovery without changing restored originals
+        run: python -m ForecastAgent.market_repricing.tests.verify_discovery_preservation --root snapshots/monitor --output snapshots/receipts/discovery-preservation.json
       - uses: actions/upload-artifact@v4
         with:
           name: market-acquisition-promotion
