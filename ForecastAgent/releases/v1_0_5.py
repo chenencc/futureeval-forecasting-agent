@@ -264,7 +264,8 @@ def deliver(client,task,candidate,comment,folder,*,enabled=False):
     validate_payload(load(Path(folder)/'analysis-input.json')['request'],candidate)
     task.update(worker_release_version=VERSION,analysis_release_version=VERSION,
                 analysis_core_release_version=CORE_VERSION)
-    return live.deliver(client,task,candidate,comment,folder,enabled=enabled)
+    from ForecastAgent.integrations.submission_recovery import deliver as recover_delivery
+    return recover_delivery(client,task,candidate,comment,folder,enabled=enabled)
 
 
 def collect_for_worker(request, retrieval):

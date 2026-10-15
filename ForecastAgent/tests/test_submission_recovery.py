@@ -4,7 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
-from ForecastAgent.competition import platform
+from ForecastAgent.integrations import submission_recovery as platform
 from ForecastAgent.competition.queue import load, utc
 from ForecastAgent.tests.test_official_competition import FakePlatform
 
