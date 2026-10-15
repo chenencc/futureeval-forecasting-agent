@@ -84,7 +84,7 @@ def fallback_manifest(archive, name):
     raise ValueError('Automatic artifact has no verifiable file catalog')
 
 
-def import_members(root, db, client, repo, metadata, budget, expected=None):
+def import_members(root, db, client, repo, metadata, budget, expected=None, priority_paths=()):
     from ForecastAgent.local_sync import add_records, blob, utc
     ident = str(metadata['id'])
     run_id = str(metadata['workflow_run']['id'])
@@ -111,10 +111,12 @@ def import_members(root, db, client, repo, metadata, budget, expected=None):
             if set(expected) != set(archive.members):
                 raise ValueError('Catalog does not cover exact source artifact members')
         report.update(expected_files=len(expected), assurance=assurance)
+        priority={path:index for index,path in enumerate(priority_paths)}
         pending=0
         try:
             for path, info in sorted(expected.items(),key=lambda item:(
-                    0 if item[0].startswith(('packs/','tasks/')) else 1,item[0])):
+                    0 if item[0] in priority else 1 if item[0].startswith(('packs/','tasks/')) else 2,
+                    priority.get(item[0],0),item[0])):
                 if path not in archive.members and path not in documents:
                     raise ValueError('Source member is unavailable')
                 if path in archive.members and archive.members[path].file_size != info['size_bytes']:
@@ -165,6 +167,24 @@ def import_members(root, db, client, repo, metadata, budget, expected=None):
                    (repo, ident, utc(), 'complete_files', json.dumps(report)))
         db.commit()
     return report
+
+
+def fresh_pack_order(summary,source):
+    """Use saved completion clocks only for archive scheduling, never scoring."""
+    content=summary.get('sources',{}).get(source['artifact_name'],{})
+    tasks=content.get('state.json',{}).get('tasks',[])
+    if not isinstance(tasks,list):return []
+    def completed(task):
+        forecast=task.get('forecast') or {}
+        value=forecast.get('completed_at') or forecast.get('sealed_at')
+        try:return datetime.fromisoformat(value.replace('Z','+00:00')).timestamp()
+        except (ValueError,TypeError,AttributeError):return 0
+    result=[]
+    for task in sorted((t for t in tasks if isinstance(t,dict) and isinstance(t.get('id'),str)),
+                       key=completed,reverse=True):
+        key=json.dumps(task['id'],ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
+        result.append('packs/'+hashlib.sha256(key).hexdigest()+'.tar.xz')
+    return result
 
 
 def import_catalog(root, db, client, repo, metadata, budget):
@@ -246,7 +266,7 @@ def import_catalog(root, db, client, repo, metadata, budget):
                 raise ValueError('Catalog differs from already imported source members')
             reports.append({'artifact_id': str(info['id']), 'cached': True})
         else:
-            reports.append(import_members(root, db, client, repo, info, budget, source['files']))
+            reports.append(import_members(root, db, client, repo, info, budget, source['files'],fresh_pack_order(summary,source)))
     db.execute('INSERT OR REPLACE INTO artifacts VALUES(?,?,?,?,?,?,?,?)',
                (repo, ident, run_id, metadata['name'], 'files_imported', None, utc(), None))
     db.execute('INSERT OR REPLACE INTO transfer_imports VALUES(?,?,?,?,?)',
