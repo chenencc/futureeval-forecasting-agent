@@ -136,6 +136,47 @@ class CheckpointTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 transport.zip_members(archive)
 
+    def test_large_legacy_ledger_migrates_to_chunked_control_without_byte_changes(self):
+        with patch.object(transport,'MAX_FILE',10000),patch.object(transport,'COMPRESS_CONTROL_AT',100),patch.object(transport,'CONTROL_CHUNK',4096):
+            raw=b'{"tasks":{},"padding":"'+b'ledger-'*2200+b'"}'
+            (self.root/'state.json').write_bytes(raw)
+            # Non-control bodies retain their finite original bound.
+            for name in ('analysis-input.json','reading-input.json'):
+                (self.folder/name).write_bytes(b'body')
+            seal(self.root)
+            migrated=self.base/'legacy-restored'
+            transport.extract_file(self.zipped(self.root),migrated)
+            transport.publish(migrated,self.base/'control-packed')
+            encoded=json.loads((self.base/'control-packed/state-pack-manifest.json').read_text())
+            self.assertEqual(encoded['schema'],transport.SCHEMA)
+            self.assertGreater(len(encoded['encoded_controls']['state.json']['chunks']),1)
+            self.assertFalse((self.base/'control-packed/state.json').exists())
+            dest=self.base/'control-restored'
+            transport.extract_file(self.zipped(self.base/'control-packed','controls.zip'),dest)
+            self.assertEqual((dest/'state.json').read_bytes(),raw)
+            from ForecastAgent.infrastructure.local_sync_export import export
+            export([('state',self.base/'control-packed',None)],self.base/'catalog','market-monitor',
+                run_id='42',repo='owner/repo',summary_roots={'state':dest})
+            summary=json.loads((self.base/'catalog/summary.json').read_text())
+            self.assertEqual(summary['sources']['state']['state.json']['task_count'],0)
+
+    def test_corrupt_encoded_control_fails_atomically(self):
+        with patch.object(transport,'COMPRESS_CONTROL_AT',1):
+            transport.publish(self.root,self.base/'encoded')
+            chunk=next((self.base/'encoded/control-chunks').glob('*.xz'))
+            raw=chunk.read_bytes()
+            chunk.write_bytes(raw[:-1]+bytes([raw[-1]^1]))
+            with self.assertRaisesRegex(ValueError,'hash'):
+                transport.extract_file(self.zipped(self.base/'encoded'),self.base/'failed')
+            self.assertFalse((self.base/'failed/state.json').exists())
+
+    def test_large_body_is_still_rejected_by_both_writer_and_reader(self):
+        with patch.object(transport,'MAX_FILE',10000):
+            with self.assertRaisesRegex(ValueError,'declaration'):
+                transport.publish(self.root,self.base/'rejected')
+            with self.assertRaisesRegex(ValueError,'file bound'):
+                transport.extract_file(self.zipped(self.root),self.base/'rejected-restore')
+
 
 if __name__ == '__main__':
     unittest.main()

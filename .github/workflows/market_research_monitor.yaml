@@ -56,13 +56,22 @@ jobs:
             python -m ForecastAgent.market_repricing.deployment --record-root snapshots/market-monitor
             python -c "from ForecastAgent.market_repricing.common import seal; seal('snapshots/market-monitor')"
           fi
-      - name: Publish independent monitor checkpoint
+      - name: Build bounded lossless monitor checkpoint
+        id: monitor_pack
         if: always()
+        run: |
+          if [ -f snapshots/market-monitor/state.json ]; then
+            python .transport/ForecastAgent/infrastructure/market_checkpoint.py publish --root snapshots/market-monitor --output snapshots/market-monitor-packed
+          else
+            exit 1
+          fi
+      - name: Publish independent monitor checkpoint
+        if: always() && steps.monitor_pack.outcome == 'success'
         id: checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: market-repricing-v2-monitor-state
-          path: snapshots/market-monitor
+          path: snapshots/market-monitor-packed
           if-no-files-found: error
           retention-days: 90
           include-hidden-files: true
@@ -70,7 +79,7 @@ jobs:
         id: local_catalog
         if: always() && steps.checkpoint.outcome == 'success'
         continue-on-error: true
-        run: python -m ForecastAgent.infrastructure.local_sync_export --stream market-monitor --source market-repricing-v2-monitor-state=snapshots/market-monitor --source-id market-repricing-v2-monitor-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
+        run: python .transport/ForecastAgent/infrastructure/local_sync_export.py --stream market-monitor --source market-repricing-v2-monitor-state=snapshots/market-monitor-packed --summary-root market-repricing-v2-monitor-state=snapshots/market-monitor --source-id market-repricing-v2-monitor-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'
         continue-on-error: true

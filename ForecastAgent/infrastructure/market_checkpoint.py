@@ -19,12 +19,67 @@ import tempfile
 from urllib.request import Request, build_opener
 import zipfile
 
-SCHEMA = 'market-lossless-checkpoint-v1'
+SCHEMA = 'market-lossless-checkpoint-v2'
+LEGACY_SCHEMA = 'market-lossless-checkpoint-v1'
 MAX_EXPANDED = 16 * 1024 ** 3
 MAX_COMPRESSED = 2 * 1024 ** 3
 MAX_FILE = 128 * 1024 ** 2
+MAX_CONTROL_FILE = 512 * 1024 ** 2
+CONTROL_CHUNK = 16 * 1024 ** 2
+COMPRESS_CONTROL_AT = 1024 ** 2
 MAX_FILES = 50000
 ZERO = hashlib.sha256(b'0').hexdigest()
+
+
+def original_limit(name):
+    # Large ledgers are a specific control class, never a relaxed body limit.
+    return MAX_CONTROL_FILE if name == 'state.json' else MAX_FILE
+
+
+def encode_control(path, output):
+    chunks = []
+    with path.open('rb') as source:
+        for raw in iter(lambda: source.read(CONTROL_CHUNK), b''):
+            digest = hashlib.sha256(raw).hexdigest()
+            name = 'control-chunks/' + digest + '.xz'
+            target = output / name
+            target.parent.mkdir(exist_ok=True)
+            if not target.exists():
+                with lzma.open(target, 'wb', preset=6) as compressed:
+                    compressed.write(raw)
+            chunks.append({'path': name, 'sha256': sha(target), 'size': target.stat().st_size,
+                           'original_size': len(raw), 'original_sha256': digest})
+    return {'codec': 'xz-chunks-v1', 'chunks': chunks}
+
+
+def decode_control(archive, members, name, row, original, staging):
+    if row.get('codec') != 'xz-chunks-v1' or not isinstance(row.get('chunks'), list):
+        raise ValueError('Unknown control encoding')
+    if not 0 < len(row['chunks']) <= (MAX_CONTROL_FILE // CONTROL_CHUNK + 1):
+        raise ValueError('Control chunk count exceeds bound')
+    target = staging / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    total = 0
+    with target.open('wb') as dest:
+        for chunk in row['chunks']:
+            path = safe(chunk['path'])
+            if (not re.fullmatch('control-chunks/[0-9a-f]{64}\\.xz', path) or
+                type(chunk.get('original_size')) is not int or not 0 < chunk['original_size'] <= CONTROL_CHUNK or
+                members[path].file_size != chunk['size'] or chunk['size'] > MAX_FILE):
+                raise ValueError('Invalid control chunk declaration')
+            packed = archive.read(members[path])
+            if hashlib.sha256(packed).hexdigest() != chunk['sha256']:
+                raise ValueError('Control compressed hash differs')
+            with lzma.open(io.BytesIO(packed), 'rb') as stream:
+                raw = stream.read(CONTROL_CHUNK + 1)
+            if len(raw) != chunk['original_size'] or hashlib.sha256(raw).hexdigest() != chunk['original_sha256']:
+                raise ValueError('Control chunk original differs')
+            total += len(raw)
+            if total > original['size'] or total > original_limit(name):
+                raise ValueError('Control expansion exceeds bound')
+            dest.write(raw)
+    if total != original['size'] or sha(target) != original['sha256']:
+        raise ValueError('Control original integrity differs')
 
 
 def sha(path):
@@ -75,7 +130,7 @@ def validate_index(files):
     for name, row in files.items():
         safe(name)
         if (not isinstance(row, dict) or not re.fullmatch('[0-9a-f]{64}', row.get('sha256', '')) or
-                type(row.get('size')) is not int or not 0 <= row['size'] <= MAX_FILE):
+                type(row.get('size')) is not int or not 0 <= row['size'] <= original_limit(name)):
             raise ValueError('Invalid checkpoint object declaration')
         total += row['size']
     if total > MAX_EXPANDED:
@@ -104,12 +159,15 @@ def publish(root, output):
             groups.setdefault(group, []).append(name)
     total = validate_index(files)
     output.mkdir(parents=True, exist_ok=True)
-    manifest = {'schema': SCHEMA, 'files': files, 'packs': {}, 'original_bytes': total,
+    manifest = {'schema': SCHEMA, 'files': files, 'packs': {}, 'encoded_controls': {}, 'original_bytes': total,
                 'original_inventory_sha256': files['inventory.json']['sha256'],
                 'lossless': True, 'budgets_reset': False,
                 'control_names': [name for name in files if selected(name, True)]}
     for name in files:
         if selected(name, True):
+            if name == 'state.json' and files[name]['size'] >= COMPRESS_CONTROL_AT:
+                manifest['encoded_controls'][name] = encode_control(root / name, output)
+                continue
             target = output / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(root / name, target)
@@ -159,7 +217,7 @@ def zip_members(archive):
         safe(info.filename)
         if info.filename in rows or stat.S_ISLNK(info.external_attr >> 16) or info.flag_bits & 1:
             raise ValueError('Duplicate, encrypted or symlink checkpoint member')
-        if info.file_size > MAX_FILE:
+        if info.file_size > original_limit(info.filename):
             raise ValueError('Checkpoint member exceeds file bound')
         rows[info.filename] = info
         total += info.file_size
@@ -231,7 +289,7 @@ def extract_file(source, root, projection=False):
             packed = 'state-pack-manifest.json' in members
             if packed:
                 manifest = json.loads(archive.read(members['state-pack-manifest.json']))
-                if manifest.get('schema') != SCHEMA:
+                if manifest.get('schema') not in {SCHEMA, LEGACY_SCHEMA}:
                     raise ValueError('Unknown checkpoint codec')
                 files = manifest['files']
                 validate_index(files)
@@ -239,15 +297,22 @@ def extract_file(source, root, projection=False):
                 if root_names != {name for name in files if selected(name, True)}:
                     raise ValueError('Checkpoint projection controls are incomplete')
                 packs = manifest['packs']
+                controls = manifest.get('encoded_controls', {})
+                if not isinstance(controls, dict) or set(controls)-{'state.json'} or not set(controls).issubset(root_names):
+                    raise ValueError('Unexpected encoded controls')
                 assigned = [name for row in packs.values() for name in row['files']]
                 if len(set(assigned)) != len(assigned) or set(assigned) != set(files) - root_names:
                     raise ValueError('Pack partition is incomplete or duplicated')
                 if any(not name.startswith(group + '/') for group, row in packs.items() for name in row['files']):
                     raise ValueError('Task pack crosses its partition')
-                wanted = root_names | {safe(row['path']) for row in packs.values()} | {'state-pack-manifest.json'}
-                if set(members) != wanted or len(wanted) != len(root_names) + len(packs) + 1:
+                chunk_names = {safe(c['path']) for row in controls.values() for c in row['chunks']}
+                wanted = (root_names-set(controls)) | chunk_names | {safe(row['path']) for row in packs.values()} | {'state-pack-manifest.json'}
+                if set(members) != wanted:
                     raise ValueError('Checkpoint transport member set differs')
                 for name in root_names:
+                    if name in controls:
+                        decode_control(archive, members, name, controls[name], files[name], staging)
+                        continue
                     if members[name].file_size != files[name]['size']:
                         raise ValueError('Control original size differs')
                     copy_member(archive, members[name], staging / name, files[name]['sha256'])

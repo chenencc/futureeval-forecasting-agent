@@ -57,3 +57,18 @@ identity, and tests a monitor projection. It publishes only a small preservation
 receipt. No model/search calls, submissions, trades or budget resets occur.
 Production acceptance additionally requires successful external discovery,
 automatic worker startup, restoration and a new checkpoint publication.
+# Oversized control-ledger recovery
+
+The v2 transport retains the exact state.json bytes and original hash. Ledgers
+larger than1MiB are stored as deterministic16MiB XZ control chunks; native task
+packs remain independent. Reader and writer share a512MiB state-only bound,
+128MiB original body bound,2GiB published payload bound and16GiB expansion bound.
+Legacy v1 and ordinary monitor ZIPs remain readable under the same named-file
+policy. Integrity failures cannot publish partial restored state.
+
+Both monitor and worker publish through the validated codec. Local catalogs
+project the hash-verified unpacked originals while indexing the actual packed
+payload. Historical discovery and price observations are retained; the codec
+does not prune or reset any ledger. Lifecycle growth beyond these finite bounds
+still needs explicit archival migration, never silent deletion or bootstrap.
+
