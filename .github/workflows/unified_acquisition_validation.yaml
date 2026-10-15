@@ -1,0 +1,91 @@
+name: Unified acquisition production preservation gates
+on:
+  push:
+    branches: [codex/unified-acquisition]
+  pull_request:
+    paths:
+      - 'ForecastAgent/infrastructure/unified*'
+      - 'ForecastAgent/infrastructure/verify_unified_engine.py'
+      - 'ForecastAgent/infrastructure/test_unified_acquisition.py'
+      - 'ForecastAgent/infrastructure/provider_failover.py'
+      - '.github/workflows/unified_acquisition_validation.yaml'
+      - '.github/workflows/official_competition.yaml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      FORECAST_ACQUISITION_SHA: 1a88d3b3390a6d6b92172ccd223b5f8a7948bfce
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 1a88d3b3390a6d6b92172ccd223b5f8a7948bfce
+          path: .core
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .engine
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 751145e604406278d6d39d75135668bf30a93b78
+          path: .release
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install offline integration dependencies
+        run: python -m pip install -r .core/ForecastAgent/market_repricing/requirements-official-map.txt
+      - name: Verify replay, transport, storage and typed contracts
+        run: |
+          python -m unittest discover -s ForecastAgent/infrastructure -p 'test_*failover.py' -v
+          python -m unittest discover -s ForecastAgent/infrastructure -p test_unified_acquisition.py -v
+          python -m unittest ForecastAgent.infrastructure.test_storage_monitor -v
+      - name: Exercise actual selected acquisition and repair callable without providers
+        run: python ForecastAgent/infrastructure/verify_unified_engine.py --core .core --engine .engine --expected "$FORECAST_ACQUISITION_SHA" --output snapshots/receipts/selected-engine.json
+      - name: Find latest exact official checkpoint
+        id: official
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            for(let page=1;page<=10;page++) {
+              const {data}=await github.rest.actions.listArtifactsForRepo({owner,repo,per_page:100,page});
+              const state=data.artifacts.find(a=>a.name==='futureeval-official-state'&&!a.expired);
+              if(state){core.setOutput('run',String(state.workflow_run.id));return;}
+              if(data.artifacts.length<100)break;
+            }
+            throw new Error('No original production checkpoint available; refusing synthetic substitute');
+      - uses: actions/download-artifact@v4
+        with:
+          name: futureeval-official-state
+          run-id: ${{ steps.official.outputs.run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: snapshots/official
+      - name: Verify original competition receipts and full typed bridge
+        run: |
+          python ForecastAgent/infrastructure/storage.py verify --root snapshots/official
+          python ForecastAgent/infrastructure/unified_competition_validation.py --release .release --core .core --engine .engine --root snapshots/official --output snapshots/receipts/competition.json
+      - name: Restore current original market checkpoint without provider access
+        run: python ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/market --branch main
+      - name: Verify unchanged market task, quota and file identities
+        working-directory: .core
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.core
+        run: python -m ForecastAgent.market_repricing.tests.verify_acquisition_promotion --root ../snapshots/market --output ../snapshots/receipts/market.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-acquisition-preservation
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30

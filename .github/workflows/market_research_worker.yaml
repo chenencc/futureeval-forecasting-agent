@@ -48,6 +48,7 @@ jobs:
       VERIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_only }}
       RETRY_NOT_BEFORE: ${{ inputs.not_before }}
       MARKET_PIPELINE_SHA: ${{ vars.MARKET_REPRICING_SHA }}
+      FORECAST_ACQUISITION_SHA: ${{ vars.FORECAST_ACQUISITION_SHA }}
       PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +71,9 @@ jobs:
       - name: Install official map core dependencies
         run: python -m pip install -r ForecastAgent/market_repricing/requirements-official-map.txt
       - name: Verify independent immutable market release
-        run: python -m ForecastAgent.market_repricing.deployment
+        run: |
+          python -m ForecastAgent.market_repricing.deployment
+          python .transport/ForecastAgent/infrastructure/unified_acquisition.py --core . --engine .development --expected-core "$FORECAST_ACQUISITION_SHA" --verify-only
       - name: Run independent sidecar regression gates
         run: python -m unittest discover -s ForecastAgent/market_repricing/tests -v
       - name: Wait within recorded retry deadline without provider calls

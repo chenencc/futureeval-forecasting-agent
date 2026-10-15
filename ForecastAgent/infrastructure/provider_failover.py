@@ -267,14 +267,16 @@ def main():
     parser.add_argument("--setup", action="store_true")
     parser.add_argument("--root")
     parser.add_argument("--exa-root")
-    parser.add_argument("--module")
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument("--module")
+    target.add_argument("--script")
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     options = parser.parse_args()
     setup_bootstrap()
     if options.setup:
         return
-    if not options.module:
-        parser.error("--module is required")
+    if not options.module and not options.script:
+        parser.error("--module or --script is required")
     os.environ["FORECAST_PROVIDER_FAILOVER_MODULE"] = str(Path(__file__).resolve())
     if options.root:
         os.environ["FORECAST_PROVIDER_TRANSPORT_ROOT"] = str(Path(options.root).resolve())
@@ -289,9 +291,12 @@ def main():
                           for p in urllib.request.urlopen.credentials},
         "exa_transport_installed": bool(getattr(urllib.request.urlopen, "_forecast_exa_transport", False))}))
     arguments = options.arguments[1:] if options.arguments[:1] == ["--"] else options.arguments
-    sys.argv = [options.module] + arguments
+    sys.argv = [options.module or str(Path(options.script).resolve())] + arguments
     sys.path.insert(0, os.getcwd())
-    runpy.run_module(options.module, run_name="__main__", alter_sys=True)
+    if options.script:
+        runpy.run_path(str(Path(options.script).resolve()), run_name="__main__")
+    else:
+        runpy.run_module(options.module, run_name="__main__", alter_sys=True)
 
 
 if __name__ == "__main__":
