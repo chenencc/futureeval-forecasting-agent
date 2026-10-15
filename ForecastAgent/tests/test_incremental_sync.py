@@ -156,6 +156,41 @@ class RangeTests(TestCase):
 
 
 class IncrementalTests(TestCase):
+    def test_worker_bodies_are_not_starved_by_newer_monitor_cache(self):
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            items={}
+            with local_sync.connect(root) as db:
+                for ident,run,stream,workflow in [('1','100','market-worker','market_research_worker.yaml'),
+                                                  ('2','200','market-monitor','market_research_monitor.yaml'),
+                                                  ('0','90','market-worker','market_research_worker.yaml'),
+                                                  ('3','95','official-worker','official_competition.yaml')]:
+                    name=PREFIX+stream
+                    items[ident]={'id':int(ident),'name':name,'workflow_run':{'id':int(run)}}
+                    db.execute('INSERT INTO artifacts VALUES(?,?,?,?,?,?,?,?)',(REPO,ident,run,name,'pending',None,None,None))
+                    db.execute('INSERT INTO run_observations VALUES(?,?,?,?)',(REPO,run,'2099',json.dumps({
+                        'head_branch':'main','head_repository':{'full_name':REPO},'path':'.github/workflows/'+workflow})))
+                client=MagicMock();client.api.side_effect=lambda endpoint:items[endpoint.rsplit('/',1)[-1]]
+                with patch('ForecastAgent.incremental_sync.import_catalog',return_value={}) as imported:
+                    execute(root,db,client,REPO,TrafficBudget(root,0),maximum=2)
+                self.assertEqual([str(call.args[4]['id']) for call in imported.call_args_list],['1','3'])
+
+    def test_batch_preserves_verified_files_and_rejects_the_bad_member(self):
+        with TemporaryDirectory() as directory:
+            temp=Path(directory);root=temp/'local'
+            files={f'{i:03}.json':json.dumps({'i':i}).encode() for i in range(80)}
+            client=Client(zip_bytes(temp,'batch',files))
+            declared=expected(files);declared[70]['sha256']='0'*64
+            with local_sync.connect(root) as db:
+                with self.assertRaisesRegex(ValueError,'hash mismatch'):
+                    import_members(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,0),declared)
+            with local_sync.connect(root) as db:
+                self.assertEqual(db.execute('SELECT count(*) FROM files').fetchone()[0],70)
+                self.assertEqual(db.execute('SELECT count(*) FROM artifacts').fetchone()[0],0)
+                result=import_members(root,db,client,REPO,client.metadata['1'],TrafficBudget(root,0),expected(files))
+                self.assertEqual(db.execute('SELECT count(*) FROM files').fetchone()[0],80)
+                self.assertEqual(result['expected_files'],80)
+
     def test_partial_sync_returns_nonzero_for_scheduled_task_health(self):
         with patch('sys.argv',['sync','sync']), \
              patch('ForecastAgent.local_sync.sync',return_value={'status':'partial','failed':1}), \
