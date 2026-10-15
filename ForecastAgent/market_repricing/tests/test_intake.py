@@ -104,6 +104,8 @@ class IntakeTests(unittest.TestCase):
             self.assertEqual(two['http_attempts'], 1)
             last = intake.review(root, self.ledger, self.cfg, '2026-10-12T01:02:00Z', fail)
             self.assertEqual(last['http_attempts'], 0)
+            self.assertEqual(last['status'], 'lifetime_intake_cap')
+            self.assertEqual(last['deferred_inputs']['lifetime_cap'], 1)
             self.assertEqual(len(read(Path(root)/'intake/review-state.json')['requests']), 2)
             self.assertFalse(self.ledger['tasks'])
 

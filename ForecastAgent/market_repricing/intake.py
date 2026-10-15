@@ -99,7 +99,7 @@ def review(root, ledger, cfg, clock, decide=None, api_key=None):
     current = instant(clock)
     if any(instant(r['reserved_at']) > current for r in saved['requests']):
         raise ValueError('Intake review clock regressed')
-    candidates, cached = [], 0
+    candidates, cached, deferred = [], 0, Counter()
     families = {t['market']['family'] for t in ledger['tasks'].values()}
     for market in sorted(ledger['markets'].values(), key=lambda m: m.get('created_at') or '', reverse=True):
         if market['key'] in ledger['tasks']:
@@ -110,7 +110,10 @@ def review(root, ledger, cfg, clock, decide=None, api_key=None):
         if existing:
             market['intake_review'] = existing
             cached += 1
-        if screen(market, clock, cfg)['status'] != 'waiting_relevance' or existing or market['family'] in families:
+        selection = screen(market, clock, cfg)
+        if existing and selection['status'] == 'waiting_relevance':
+            deferred['cached_uncertain'] += 1
+        if selection['status'] != 'waiting_relevance' or existing or market['family'] in families:
             continue
         input_hash = fingerprint(market)
         # Policy/prompt changes invalidate decisions, never input lifetime usage.
@@ -118,9 +121,11 @@ def review(root, ledger, cfg, clock, decide=None, api_key=None):
         attempts = [r for r in saved['requests'] if input_hash in r.get('input_fingerprints', [])
                     or ident in r['inputs'] or related.intersection(r['inputs'])]
         if len(attempts) >= MAX_ATTEMPTS_PER_INPUT:
+            deferred['lifetime_cap'] += 1
             continue
         if (attempts and attempts[-1]['status'] != 'received'
                 and current < instant(attempts[-1]['reserved_at']) + timedelta(minutes=RETRY_MINUTES)):
+            deferred['retry_wait'] += 1
             continue
         if market['family'] in families:
             continue
@@ -132,9 +137,13 @@ def review(root, ledger, cfg, clock, decide=None, api_key=None):
     dispatch_used = sum(r.get('dispatch_id') == dispatch for r in saved['requests'])
     summary = {'policy': REVIEW_POLICY, 'http_attempts': 0, 'cached_results': cached,
         'eligible_unknown_families': len(candidates), 'requests_reserved_today': used,
+        'deferred_inputs': dict(deferred),
         'native_collection_budgets_reset': False}
     if not candidates:
-        return summary | {'status': 'no_review_needed'}
+        status = ('lifetime_intake_cap' if deferred['lifetime_cap'] else
+                  'retry_wait' if deferred['retry_wait'] else
+                  'cached_uncertain' if deferred['cached_uncertain'] else 'no_review_needed')
+        return summary | {'status': status}
     if dispatch_used >= MAX_REQUESTS_PER_DISPATCH:
         return summary | {'status': 'dispatch_intake_cap'}
     if used >= MAX_REQUESTS_PER_UTC_DAY:

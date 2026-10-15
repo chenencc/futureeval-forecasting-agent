@@ -433,7 +433,7 @@ def run(root, worker_root=None, http=None, cfg=None, clock=None, intake_decide=N
             market['selection'] = screen(market, clock, cfg)
         enroll(ledger, cfg, clock)
         intake_health = intake.health(root, ledger, scans, clock, before_tasks)
-        if intake_review['status'] in {'failed', 'configuration_required', 'daily_intake_cap', 'input_too_large'}:
+        if intake_review['status'] in {'failed', 'configuration_required', 'daily_intake_cap', 'lifetime_intake_cap', 'input_too_large'}:
             intake_health['alerts'].append({'kind': 'semantic_intake_not_completed',
                 'status': intake_review['status'], 'pending_families': intake_review['eligible_unknown_families']})
             intake_health['alerts_count'] = len(intake_health['alerts'])
