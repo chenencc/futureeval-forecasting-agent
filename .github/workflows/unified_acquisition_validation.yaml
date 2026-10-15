@@ -75,6 +75,9 @@ jobs:
         run: |
           python ForecastAgent/infrastructure/storage.py verify --root snapshots/official
           python ForecastAgent/infrastructure/unified_competition_validation.py --release .release --core .core --engine .engine --root snapshots/official --output snapshots/receipts/competition.json
+      - name: Verify frozen release original-state guard before deployment writes
+        working-directory: .release
+        run: python -m ForecastAgent.integrations.shared_preservation --root ../snapshots/official --output ../snapshots/receipts/release-originals.json --allow-delivery-only
       - name: Restore current original market checkpoint without provider access
         run: python -m ForecastAgent.infrastructure.market_checkpoint restore --role worker --root snapshots/market --branch main
       - name: Verify unchanged market task, quota and file identities
