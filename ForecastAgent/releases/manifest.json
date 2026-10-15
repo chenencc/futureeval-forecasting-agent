@@ -102,7 +102,7 @@
     "ForecastAgent/competition/live.py": "fc6b3c47c1ba76b0291da6ae44afe9aaacfccfec18a539c59d4552fadc35f298",
     "ForecastAgent/competition/mercury.py": "b144fe6786ac4859f37dc139e34308fc502265aa81358fc229b3935477a26aa7",
     "ForecastAgent/competition/nonbinary_debug.py": "3d806b1ce2111686bdb996f820f2c4da6cbc4ab56a7574f23d2023ab6cb3446c",
-    "ForecastAgent/competition/platform.py": "0994d94b44b916fd7d4e9a1e73be06651466bbf79a794c4e47592eb8c8dd4b5b",
+    "ForecastAgent/competition/platform.py": "cf8d33ab1d541060e5b9a57de902f7b7e08fbffde4a738ed83ce3496d2a2b110",
     "ForecastAgent/competition/queue.py": "4ba3e5ad0a38ad5f105dc6da63634090f8df0c0eff0256d776ce6408090c7148",
     "ForecastAgent/competition/recovery_policy.py": "de7deb1b92a893b1bb27a12ca4d44362236fbfbd2c7bcfb418539b5860e00a35",
     "ForecastAgent/competition/recovery_store.py": "fcd7528efd04c9bdf2d4a923dcd835210652df32e02306015a2e985d745eebc1",
@@ -152,7 +152,7 @@
     "ForecastAgent/inspect_resolved_access.py": "3a802c0bde43f64b74559a9bc57db98997189078eb801547cf70ce6b49837d4a",
     "ForecastAgent/integrations/main_lightningrod_eval.py": "70629705a0d59392cd41d07b082e6e9fdae5586b1dce2d282fe3c303b1984581",
     "ForecastAgent/integrations/shared_acquisition.py": "3fad023e353e4041e6324ae434eedcc0475f6b3c65224f7f7d00197c31c3f93b",
-    "ForecastAgent/integrations/shared_preservation.py": "1801fcd509ba5340795c1cfd127d7b05f85fea17026bc485bee384e82af691b8",
+    "ForecastAgent/integrations/shared_preservation.py": "ed935ce73ff5e73fcdd728e0ca961b9661a8520f659eab3ca0a908143bcc41ba",
     "ForecastAgent/live_collection_trial.py": "6e98ff2b5f6b193438cb50316d136956d028025e0a9fe75974ebba3042bd6145",
     "ForecastAgent/local_sync.py": "0a30fe313235e84635d899c5dc583bd50858f0974830a0382c82c4bfc7915690",
     "ForecastAgent/main.py": "a0920ed3c83732c830e82eb25afd4b1780b725b5138dd51f59d7139399fa6fd8",
@@ -277,7 +277,8 @@
     "ForecastAgent/verify_functions.py": "5e77f7351ba8f871b4a495f14bd86722539d8fd14ed50d760526bc8631181722",
     "ForecastAgent/verify_polymarket.py": "90366ad6e869eea7db3260e517d1243decde5cd60b114740bb0fb61fdc22c642",
     "ForecastAgent/vision_comparison.py": "ebc18b6da8fee583bd1a725863053210fbd62cac5bd2c72920d1cf86a34f3ecf",
-    "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027"
+    "ForecastAgent/vision_replay.py": "1c43e6b58d99b819c286215defd4b59b9ea1f9b9688024a59c3c16e1088ee027",
+    "ForecastAgent/competition/DELIVERY_RECOVERY.md": "a630c5b970e8a37f09444e9a20f65a11154d48ae0db725504150d0e0a53f44bd"
   },
   "source_reading_policy": "crawl4ai_v1",
   "base_release_tag": "v1.0.5",
@@ -295,5 +296,6 @@
       "tool_output.py": "c296699d3688c1dae9189b17cb06578e19bfac045ee5a2e6a9f8b57825224e40"
     }
   },
-  "acquisition_variant": "v1.0.5-shared.1"
+  "acquisition_variant": "v1.0.5-shared.1",
+  "delivery_variant": "v1.0.5-delivery.1"
 }

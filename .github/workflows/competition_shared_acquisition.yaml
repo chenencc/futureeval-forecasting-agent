@@ -1,7 +1,7 @@
 name: Competition shared acquisition promotion gates
 on:
   push:
-    branches: [codex/competition-shared-p0]
+    branches: [codex/competition-shared-p0, codex/competition-delivery-recovery]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
       - name: Verify exact release and shared capability manifests
         run: python -m ForecastAgent.releases.manifest
       - name: Native acquisition and unchanged analysis delivery gates
-        run: python -m unittest ForecastAgent.tests.test_shared_acquisition_adapter ForecastAgent.tests.test_eager_capture ForecastAgent.tests.test_release_1_0_5 ForecastAgent.tests.test_supplement ForecastAgent.tests.test_nonbinary_distributions ForecastAgent.tests.test_competition_mercury -v
+        run: python -m unittest ForecastAgent.tests.test_submission_recovery ForecastAgent.tests.test_official_competition ForecastAgent.tests.test_shared_acquisition_adapter ForecastAgent.tests.test_eager_capture ForecastAgent.tests.test_release_1_0_5 ForecastAgent.tests.test_supplement ForecastAgent.tests.test_nonbinary_distributions ForecastAgent.tests.test_competition_mercury -v
       - name: Find exact latest production checkpoint
         id: source
         uses: actions/github-script@v7
@@ -44,7 +44,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: snapshots/official
       - name: Preserve task budgets and accepted submission receipts
-        run: python -m ForecastAgent.integrations.shared_preservation --root snapshots/official --output snapshots/receipts/competition-preservation.json
+        run: python -m ForecastAgent.integrations.shared_preservation --root snapshots/official --output snapshots/receipts/competition-preservation.json --allow-delivery-only
       - uses: actions/upload-artifact@v4
         with:
           name: competition-shared-acquisition-preservation
