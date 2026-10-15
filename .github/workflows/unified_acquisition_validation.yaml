@@ -1,7 +1,7 @@
 name: Unified acquisition production preservation gates
 on:
   push:
-    branches: [codex/unified-acquisition, codex/market-intake-vnext]
+    branches: [codex/unified-acquisition]
   pull_request:
     paths:
       - 'ForecastAgent/infrastructure/unified*'

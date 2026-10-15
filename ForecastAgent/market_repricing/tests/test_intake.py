@@ -33,6 +33,8 @@ def answer(choice='event', confidence=.99):
 
 class IntakeTests(unittest.TestCase):
     def setUp(self):
+        env = patch.dict('os.environ', {'GITHUB_RUN_ID': ''})
+        env.start(); self.addCleanup(env.stop)
         self.cfg = policy()
         self.ledger = {'markets': {}, 'tasks': {}, 'identity': {'policy_sha256': digest(self.cfg)}}
         ingest(self.ledger, 'polymarket', [unknown()], self.cfg, CLOCK)
@@ -122,6 +124,14 @@ class IntakeTests(unittest.TestCase):
             write(Path(root)/'intake/review-state.json', {'schema': intake.VERSION, 'results': {},
                 'requests': [{'reserved_at': CLOCK, 'inputs': [], 'dispatch_id': str(i)} for i in range(40)]})
             self.assertEqual(intake.review(root, self.ledger, self.cfg, CLOCK, answer())['status'], 'daily_intake_cap')
+
+    def test_same_github_dispatch_keeps_its_cap_when_clock_advances(self):
+        with tempfile.TemporaryDirectory() as root, patch.dict('os.environ', {'GITHUB_RUN_ID': 'one'}):
+            intake.review(root, self.ledger, self.cfg, CLOCK, answer())
+            ingest(self.ledger, 'polymarket', [unknown('second')], self.cfg, CLOCK)
+            self.assertEqual(intake.review(root, self.ledger, self.cfg, '2026-10-12T00:31:00Z', answer())['status'], 'dispatch_intake_cap')
+            with patch.dict('os.environ', {'GITHUB_RUN_ID': 'two'}):
+                self.assertEqual(intake.review(root, self.ledger, self.cfg, '2026-10-12T00:31:00Z', answer())['http_attempts'], 1)
 
     def test_duplicate_families_use_one_review_slot_and_existing_tasks_none(self):
         with tempfile.TemporaryDirectory() as root:
