@@ -1,12 +1,17 @@
 name: Competition context envelope acceptance
 on:
+  workflow_dispatch:
   push:
     paths: ['ForecastAgent/infrastructure/*competition*', 'ForecastAgent/infrastructure/*boundary*', 'ForecastAgent/infrastructure/*checkpoint*', 'ForecastAgent/infrastructure/market_runtime.py', '.github/workflows/competition_context_tests.yaml']
   pull_request:
     paths: ['ForecastAgent/infrastructure/*competition*', 'ForecastAgent/infrastructure/*boundary*', 'ForecastAgent/infrastructure/*checkpoint*', 'ForecastAgent/infrastructure/market_runtime.py', '.github/workflows/competition_context_tests.yaml']
 permissions:
   contents: read
+  actions: read
 jobs:
+  real_original_recovery:
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+    uses: ./.github/workflows/market_recovery_acceptance.yaml
   offline:
     strategy:
       matrix:

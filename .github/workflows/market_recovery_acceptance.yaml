@@ -1,6 +1,7 @@
 name: Audited market checkpoint recovery acceptance
 on:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
   actions: read
