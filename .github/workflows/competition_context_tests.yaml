@@ -1,0 +1,28 @@
+name: Competition context envelope acceptance
+on:
+  push:
+    paths: ['ForecastAgent/infrastructure/*competition*', '.github/workflows/competition_context_tests.yaml']
+  pull_request:
+    paths: ['ForecastAgent/infrastructure/*competition*', '.github/workflows/competition_context_tests.yaml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 751145e604406278d6d39d75135668bf30a93b78
+          path: .release
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen analysis, preserved originals and no budget reset
+        run: python ForecastAgent/infrastructure/test_competition_context.py --release .release -v

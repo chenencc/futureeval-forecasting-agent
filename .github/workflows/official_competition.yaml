@@ -216,6 +216,8 @@ jobs:
               'frozen_release_collection_baseline':capture,
                 'collection_enhancement':__import__('json').loads(Path('snapshots/official/unified-acquisition-runtime.json').read_text()), 'analysis_core_tag':m['analysis_core_tag']})
           PY
+      - name: Reconcile diagnosed analysis context holds without provider calls
+        run: python .infrastructure/ForecastAgent/infrastructure/competition_context.py --root snapshots/official
       - name: Acquire analyze and submit eligible questions
         run: |
           if [ "$SUBMIT_FORECASTS" != "true" ]; then

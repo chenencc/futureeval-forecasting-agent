@@ -208,7 +208,9 @@ def main():
             if previous is None: os.environ.pop('FORECAST_TASK_PROCESS_DEADLINE_EPOCH', None)
             else: os.environ['FORECAST_TASK_PROCESS_DEADLINE_EPOCH'] = previous
     original_classify = release.classify
-    with patch.object(release, 'supplement', collector.supplement), patch.object(release, 'classify',
+    from competition_context import wrap_analyze, reconcile
+    context_recovery = reconcile(args.root)
+    with patch.object(release.context_decisions, 'analyze', wrap_analyze(release.context_decisions.analyze)), patch.object(release, 'supplement', collector.supplement), patch.object(release, 'classify',
             lambda exc, task, now: classify_budget_hold(exc, task, now, original_classify)):
         if args.once:
             report = release.once(args.root, args.snapshots, enabled=args.submit,
@@ -218,7 +220,8 @@ def main():
                 limit=args.limit, task_seconds=1800, batch_seconds=6600, process_runner=runner)
     report['unified_acquisition'] = {'core_commit': expected, 'compatibility': compatibility,
         'collector': 'ForecastAgent.market_repricing.worker.acquire',
-        'analysis_and_delivery': 'unchanged v1.0.5-delivery.1', 'budgets_reset': False}
+        'analysis_and_delivery': 'v1.0.5-delivery.1 with official-decision-envelope-v1',
+        'context_recovery': context_recovery, 'budgets_reset': False}
     save(Path(args.root)/'unified-worker-report.json', report)
     print(json.dumps(report))
 
