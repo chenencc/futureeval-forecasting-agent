@@ -50,6 +50,8 @@ jobs:
         run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role worker --root snapshots/market-worker --branch "$GITHUB_REF_NAME" --projection
       - name: Validate pending market version compatibility
         run: python -m ForecastAgent.market_repricing.deployment --worker-root snapshots/market-worker --monitor-root snapshots/market-monitor
+      - name: Reserve checkpoint capacity before discovery
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py preflight --root snapshots/market-monitor
       - name: Run research monitor
         env:
           # Intake classification only; collection/analysis budgets stay native.
@@ -81,11 +83,35 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           include-hidden-files: true
+      - name: Preserve original monitor state if packed publication fails
+        if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/market-monitor/state.json') != ''
+        id: emergency
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-repricing-v2-monitor-emergency-state
+          path: snapshots/market-monitor/
+          if-no-files-found: error
+          retention-days: 90
+          include-hidden-files: true
       - name: Build lightweight local synchronization catalog
         id: local_catalog
-        if: always() && steps.checkpoint.outcome == 'success'
+        if: always() && (steps.checkpoint.outcome == 'success' || steps.emergency.outcome == 'success')
         continue-on-error: true
-        run: python .transport/ForecastAgent/infrastructure/local_sync_export.py --stream market-monitor --source market-repricing-v2-monitor-state=snapshots/market-monitor-packed --summary-root market-repricing-v2-monitor-state=snapshots/market-monitor --source-id market-repricing-v2-monitor-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
+        env:
+          PACKED_OK: ${{ steps.checkpoint.outcome == 'success' }}
+          PACKED_ID: ${{ steps.checkpoint.outputs.artifact-id }}
+          EMERGENCY_ID: ${{ steps.emergency.outputs.artifact-id }}
+        run: |
+          if [ "$PACKED_OK" = 'true' ]; then
+            source=market-repricing-v2-monitor-state
+            directory=snapshots/market-monitor-packed
+            artifact="$PACKED_ID"
+          else
+            source=market-repricing-v2-monitor-emergency-state
+            directory=snapshots/market-monitor
+            artifact="$EMERGENCY_ID"
+          fi
+          python .transport/ForecastAgent/infrastructure/local_sync_export.py --stream market-monitor --source "$source=$directory" --summary-root "$source=snapshots/market-monitor" --source-id "$source=$artifact" --output snapshots/local-catalog
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'
         continue-on-error: true

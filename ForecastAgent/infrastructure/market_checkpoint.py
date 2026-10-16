@@ -27,7 +27,11 @@ MAX_FILE = 128 * 1024 ** 2
 MAX_CONTROL_FILE = 512 * 1024 ** 2
 CONTROL_CHUNK = 16 * 1024 ** 2
 COMPRESS_CONTROL_AT = 1024 ** 2
-MAX_FILES = 50000
+if __package__:
+    from .checkpoint_limits import MAX_FILES
+else:
+    from checkpoint_limits import MAX_FILES
+RESERVED_NEW_FILES = 10000
 ZERO = hashlib.sha256(b'0').hexdigest()
 
 
@@ -138,6 +142,15 @@ def validate_index(files):
     return total
 
 
+def preflight(root):
+    """Reserve checkpoint index space before any discovery or research call."""
+    count = sum(p.is_file() and not p.name.endswith('.tmp') for p in Path(root).rglob('*'))
+    if count + RESERVED_NEW_FILES > MAX_FILES:
+        raise ValueError('Checkpoint index capacity requires archival before new work: ' + str(count))
+    return {'checkpoint_files': count, 'file_bound': MAX_FILES,
+        'reserved_new_files': RESERVED_NEW_FILES, 'provider_calls': 0}
+
+
 def publish(root, output):
     from ForecastAgent.market_repricing.common import verify
     root, output = Path(root).resolve(), Path(output).resolve()
@@ -205,6 +218,8 @@ def publish(root, output):
             'published_bytes': sum(p.stat().st_size for p in output.rglob('*') if p.is_file()),
             'unique_task_object_bytes': sum(sum(p['objects'].values()) for p in manifest['packs'].values()),
             'unchanged_task_packs_reused': reused,
+            'index_usage': {'files': len(files), 'bound': MAX_FILES,
+                            'warning': len(files) >= MAX_FILES * .8},
             'budget_reset': False}
 
 
@@ -273,7 +288,7 @@ def unpack_pack(path, row, files, output, projection=False):
         raise ValueError('Task pack objects are incomplete')
 
 
-def extract_file(source, root, projection=False):
+def extract_file(source, root, projection=False, expected_state_sha256=None):
     """Atomic restoration: failed integrity checks cannot publish partial state."""
     from ForecastAgent.market_repricing.common import read, verify, seal
     from ForecastAgent.market_repricing.github_state import recover_omitted_mutexes
@@ -353,6 +368,8 @@ def extract_file(source, root, projection=False):
             # No reset or JSON regeneration of any original ledger or provider file.
             report = {'packed_source': packed, 'projection': projection, 'files_verified': verify(staging),
                       'state_sha256': sha(staging / 'state.json'), 'budget_reset': False}
+        if expected_state_sha256 and sha(staging/'state.json') != expected_state_sha256:
+            raise ValueError('Audited recovery original state differs')
         if root.exists():
             root.rmdir()
         os.replace(staging, root)
@@ -360,8 +377,14 @@ def extract_file(source, root, projection=False):
 
 
 def restore(role, root, branch, exact_run=None, projection=False):
-    from ForecastAgent.market_repricing.github_state import find, ArtifactRedirect
-    artifact = find(role, branch, exact_run)
+    from ForecastAgent.market_repricing.github_state import ArtifactRedirect
+    # Controller-owned transport can recover a specifically audited publication
+    # gap without weakening the immutable worker's general no-reset policy.
+    if __package__:
+        from .checkpoint_recovery import find_checkpoint
+    else:
+        from checkpoint_recovery import find_checkpoint
+    artifact = find_checkpoint(role, branch, exact_run)
     if artifact is None:
         return {'bootstrap': True, 'role': role}
     if artifact['size_in_bytes'] > MAX_COMPRESSED:
@@ -381,14 +404,24 @@ def restore(role, root, branch, exact_run=None, projection=False):
                 dest.write(block)
         if total != artifact['size_in_bytes'] or artifact.get('digest') and artifact['digest'] != 'sha256:' + sha(path):
             raise ValueError('Actions checkpoint digest differs')
-        result = extract_file(path, root, projection)
+        recovery = artifact.get('_audited_recovery')
+        result = extract_file(path, root, projection,
+            expected_state_sha256=recovery['source_state_sha256'] if recovery else None)
+    recovery = artifact.get('_audited_recovery')
+    if recovery:
+        if sha(Path(root)/'state.json') != recovery['source_state_sha256']:
+            raise ValueError('Audited recovery original state differs')
+        from ForecastAgent.market_repricing.common import seal
+        write(Path(root)/'checkpoint-recovery-38811619270.json', recovery)
+        seal(root)
+        result['audited_discovery_gap'] = recovery
     return result | {'bootstrap': False, 'artifact_id': artifact['id'], 'role': role,
                      'cloud_download_bytes': total, 'local_download_bytes': 0}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=['restore', 'publish'])
+    parser.add_argument('operation', choices=['restore', 'publish', 'preflight'])
     parser.add_argument('--root', required=True)
     parser.add_argument('--output')
     parser.add_argument('--role', choices=['monitor', 'worker'])
@@ -396,7 +429,9 @@ def main():
     parser.add_argument('--run-id')
     parser.add_argument('--projection', action='store_true')
     args = parser.parse_args()
-    if args.operation == 'publish':
+    if args.operation == 'preflight':
+        result = preflight(args.root)
+    elif args.operation == 'publish':
         if not args.output:
             parser.error('publish requires --output')
         result = publish(args.root, args.output)

@@ -7,25 +7,13 @@ import copy
 from datetime import datetime, timezone
 from pathlib import Path
 
-FIELDS = frozenset({
-    'id', 'post_id', 'question_id', 'question', 'question_type', 'type',
-    'resolution_criteria', 'fine_print', 'background', 'options', 'scaling',
-    'inbound_outcome_count', 'open_lower_bound', 'open_upper_bound', 'unit',
-    'official_competition', 'mode', 'as_of_utc', 'historical_cutoff_utc',
-    'open_time', 'market_info_open_datetime', 'forecast_due_date', 'close_time',
-    'scheduled_close_time', 'scheduled_resolve_time', 'spot_scoring_time',
-})
+from scoring_boundary import project_bundle, LOCAL_METADATA_FIELDS
 ERROR = 'ValueError: Existing state exceeds decision byte bound'
-POLICY = 'official-decision-envelope-v1'
+POLICY = 'official-decision-envelope-v2-market'
 
 
 def project(bundle):
-    from ForecastAgent.acquisition.pipeline import reject_outcomes
-    # Check the unprojected input too; projection must never conceal labels.
-    reject_outcomes(bundle['request'])
-    projected = dict(bundle)
-    projected['request'] = {k: copy.deepcopy(v) for k, v in bundle['request'].items() if k in FIELDS}
-    return projected
+    return project_bundle(bundle)
 
 
 def wrap_analyze(original):
@@ -34,6 +22,13 @@ def wrap_analyze(original):
         from ForecastAgent.competition.mercury import packet_for
         folder = Path(folder)
         bundle = load(source)
+        prior = folder/'official-decision-envelope-v1'
+        if (prior/'input.json').exists():
+            # Already frozen v1 work keeps its original input and request budget.
+            receipt = load(prior/'projection.json')
+            if receipt['original_input_sha256'] != digest(bundle):
+                raise ValueError('Prior decision envelope original identity changed')
+            return original(prior/'input.json', prior, ident)
         projected = project(bundle)
         if projected['request'] == bundle['request']:
             return original(source, folder, ident)
@@ -51,7 +46,7 @@ def wrap_analyze(original):
         receipt = {'policy': POLICY, 'original_input_sha256': digest(bundle),
             'projected_input_sha256': digest(projected),
             'retained_question_fields': sorted(projected['request']),
-            'omitted_internal_fields': sorted(set(bundle['request'])-FIELDS),
+            'omitted_internal_fields': sorted(set(bundle['request']) & set(LOCAL_METADATA_FIELDS)),
             'original_materials_unchanged': projected.get('pages') == bundle.get('pages'),
             'previous_model_attempts': 0, 'budgets_reset': False}
         path = target/'input.json'

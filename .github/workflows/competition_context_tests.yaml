@@ -1,12 +1,17 @@
 name: Competition context envelope acceptance
 on:
+  workflow_dispatch:
   push:
-    paths: ['ForecastAgent/infrastructure/*competition*', '.github/workflows/competition_context_tests.yaml']
+    paths: ['ForecastAgent/infrastructure/*competition*', 'ForecastAgent/infrastructure/*boundary*', 'ForecastAgent/infrastructure/*checkpoint*', 'ForecastAgent/infrastructure/market_runtime.py', '.github/workflows/competition_context_tests.yaml']
   pull_request:
-    paths: ['ForecastAgent/infrastructure/*competition*', '.github/workflows/competition_context_tests.yaml']
+    paths: ['ForecastAgent/infrastructure/*competition*', 'ForecastAgent/infrastructure/*boundary*', 'ForecastAgent/infrastructure/*checkpoint*', 'ForecastAgent/infrastructure/market_runtime.py', '.github/workflows/competition_context_tests.yaml']
 permissions:
   contents: read
+  actions: read
 jobs:
+  real_original_recovery:
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+    uses: ./.github/workflows/market_recovery_acceptance.yaml
   offline:
     strategy:
       matrix:
@@ -18,6 +23,11 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
+          ref: c17c1ec4ee3e2458108031a324b45853aa9e7502
+          path: .engine
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
           ref: 751145e604406278d6d39d75135668bf30a93b78
           path: .release
           persist-credentials: false
@@ -26,3 +36,7 @@ jobs:
           python-version: '3.11'
       - name: Verify frozen analysis, preserved originals and no budget reset
         run: python ForecastAgent/infrastructure/test_competition_context.py --release .release -v
+      - name: Verify identical market states, shared question fields and bounded recovery
+        run: |
+          python ForecastAgent/infrastructure/test_scoring_boundary.py --engine .engine -v
+          python -m unittest ForecastAgent.infrastructure.test_checkpoint_recovery ForecastAgent.infrastructure.test_market_checkpoint -v

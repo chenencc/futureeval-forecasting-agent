@@ -177,6 +177,12 @@ class CheckpointTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'file bound'):
                 transport.extract_file(self.zipped(self.root),self.base/'rejected-restore')
 
+    def test_audited_state_identity_checked_before_restored_tree_is_published(self):
+        destination = self.base/'identity-mismatch'
+        with self.assertRaisesRegex(ValueError, 'original state differs'):
+            transport.extract_file(self.zipped(self.root), destination, expected_state_sha256='f'*64)
+        self.assertFalse(destination.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -11,10 +11,11 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 import zipfile
+from ForecastAgent.infrastructure.checkpoint_limits import MAX_FILES, MAX_ZIP_DIRECTORY
 
 
 MAX_RANGE = 1024 * 1024
-MAX_DIRECTORY = 16 * 1024 * 1024
+MAX_DIRECTORY = MAX_ZIP_DIRECTORY
 
 
 class TransferDeferred(RuntimeError):
@@ -271,12 +272,12 @@ class ArtifactZip:
             if record[:4] != b'PK\x06\x06' or zip64_disk or total_disks != 1:
                 raise ValueError('Unsupported ZIP64 archive')
             entries, directory_size, directory_offset = struct.unpack_from('<QQQ', record, 32)
-        if entries > 50000 or directory_size > MAX_DIRECTORY or directory_offset + directory_size > reader.size:
+        if entries > MAX_FILES or directory_size > MAX_DIRECTORY or directory_offset + directory_size > reader.size:
             raise ValueError('Artifact directory exceeds bounds')
         self.reader = reader
         self.archive = zipfile.ZipFile(reader)
         infos = [info for info in self.archive.infolist() if not info.is_dir()]
-        if len(infos) > 50000 or sum(info.file_size for info in infos) > 2 * 1024 ** 3:
+        if len(infos) > MAX_FILES or sum(info.file_size for info in infos) > 2 * 1024 ** 3:
             raise ValueError('Expanded artifact exceeds bounds')
         from pathlib import PurePosixPath
         paths = set()

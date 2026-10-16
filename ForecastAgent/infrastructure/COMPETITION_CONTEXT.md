@@ -1,6 +1,13 @@
 # Competition decision envelope
 
 The immutable acquisition and forecasting releases remain selected independently.
+The current policy is `official-decision-envelope-v2-market`, using the exact
+shared `scoring_boundary.project_bundle` function installed at the market seam.
+It removes only `capability_code_identity` and `predictive_information_contract`.
+Unknown platform extensions are retained verbatim. Previously frozen v1 envelopes
+retain their exact input and request allowance; they are not silently upgraded.
+
+The following describes the original v1 repair and its historical acceptance.
 The competition host applies `official-decision-envelope-v1` at the boundary
 between a saved acquisition package and the existing Mercury evidence reader.
 
