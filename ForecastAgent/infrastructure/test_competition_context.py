@@ -105,5 +105,27 @@ class ContextTests(unittest.TestCase):
             self.assertEqual(reconcile(root), [])
             self.assertEqual(load(root/'campaign.json')['tasks']['7'], task)
 
+    def test_unknown_platform_contract_is_not_silently_dropped(self):
+        original = bundle()
+        original['request']['unknown_platform_condition'] = 'A literal new condition.'
+        original['request']['capability_code_identity'] = {'internal': 'x'*30000}
+        self.assertEqual(project(original)['request']['unknown_platform_condition'], 'A literal new condition.')
+
+    def test_prior_envelope_keeps_its_exact_input_and_existing_allowance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); original = bundle()
+            original['request']['capability_code_identity'] = {'internal': 'large'}
+            save(root/'input.json', original)
+            prior = root/'analysis/official-decision-envelope-v1'
+            clean = copy.deepcopy(original); clean['request'].pop('capability_code_identity')
+            save(prior/'input.json', clean)
+            save(prior/'projection.json', {'original_input_sha256': context_decisions.digest(original)})
+            save(prior/'mercury-v1.0.1/first/http/001.json', {'status': 'reserved'})
+            calls = []
+            wrapped = wrap_analyze(lambda source, folder, ident: calls.append((source,folder)))
+            wrapped(root/'input.json', root/'analysis', '7')
+            self.assertEqual(calls, [(prior/'input.json', prior)])
+            self.assertFalse((root/'analysis'/POLICY).exists())
+
 
 if __name__ == '__main__': unittest.main()

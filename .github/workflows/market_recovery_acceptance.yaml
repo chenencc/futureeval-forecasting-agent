@@ -1,0 +1,39 @@
+name: Audited market checkpoint recovery acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  originals:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_STATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONPATH: ${{ github.workspace }}/.core
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: d7173ff12fb2f4db41ca0d9a17d26b69cd19fc3e
+          path: .core
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover original monitor bytes without discovery or models
+        run: python ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/original --branch main
+      - name: Verify exact task and provider state plus explicit missing observations
+        run: python ForecastAgent/infrastructure/verify_recovered_checkpoint.py --root snapshots/original --output snapshots/receipts/original-recovery.json
+      - name: Verify bounded publication can preserve the full original checkpoint
+        run: python ForecastAgent/infrastructure/market_checkpoint.py publish --root snapshots/original --output snapshots/repacked
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audited-market-recovery-receipts
+          path: snapshots/receipts
+          if-no-files-found: error
+          retention-days: 30

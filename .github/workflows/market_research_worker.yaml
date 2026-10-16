@@ -92,10 +92,12 @@ jobs:
         run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py restore --role monitor --root snapshots/market-monitor --branch "$GITHUB_REF_NAME" --run-id "$SOURCE_RUN"
       - name: Validate pending market version compatibility
         run: python -m ForecastAgent.market_repricing.deployment --worker-root snapshots/market-worker --monitor-root snapshots/market-monitor
+      - name: Reserve checkpoint capacity before research
+        run: python .transport/ForecastAgent/infrastructure/market_checkpoint.py preflight --root snapshots/market-worker
       - name: Verify queue before installing model and browser dependencies
         id: inventory
         run: |
-          python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor --verification-only
+          python .transport/ForecastAgent/infrastructure/market_runtime.py --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor --verification-only
           python - <<'PY'
           import os
           from ForecastAgent.market_repricing.common import read, instant, now, policy
@@ -119,7 +121,7 @@ jobs:
         run: |
           args=()
           if [ "$VERIFY_ONLY" = 'true' ]; then args+=(--verification-only); fi
-          python -m ForecastAgent.market_repricing.runtime --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor "${args[@]}"
+          python .transport/ForecastAgent/infrastructure/market_runtime.py --engine .development --root snapshots/market-worker --monitor snapshots/market-monitor "${args[@]}"
       - name: Evaluate due paired labels
         if: always()
         run: |
@@ -154,11 +156,35 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           include-hidden-files: true
+      - name: Preserve original worker state if packed publication fails
+        if: always() && steps.checkpoint.outcome != 'success' && hashFiles('snapshots/market-worker/state.json') != ''
+        id: emergency
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-repricing-v2-worker-emergency-state
+          path: snapshots/market-worker/
+          if-no-files-found: error
+          retention-days: 90
+          include-hidden-files: true
       - name: Build lightweight local synchronization catalog
         id: local_catalog
-        if: always() && steps.checkpoint.outcome == 'success'
+        if: always() && (steps.checkpoint.outcome == 'success' || steps.emergency.outcome == 'success')
         continue-on-error: true
-        run: python .transport/ForecastAgent/infrastructure/local_sync_export.py --stream market-worker --source market-repricing-v2-worker-state=snapshots/market-worker-packed --summary-root market-repricing-v2-worker-state=snapshots/market-worker --source-id market-repricing-v2-worker-state=${{ steps.checkpoint.outputs.artifact-id }} --output snapshots/local-catalog
+        env:
+          PACKED_OK: ${{ steps.checkpoint.outcome == 'success' }}
+          PACKED_ID: ${{ steps.checkpoint.outputs.artifact-id }}
+          EMERGENCY_ID: ${{ steps.emergency.outputs.artifact-id }}
+        run: |
+          if [ "$PACKED_OK" = 'true' ]; then
+            source=market-repricing-v2-worker-state
+            directory=snapshots/market-worker-packed
+            artifact="$PACKED_ID"
+          else
+            source=market-repricing-v2-worker-emergency-state
+            directory=snapshots/market-worker
+            artifact="$EMERGENCY_ID"
+          fi
+          python .transport/ForecastAgent/infrastructure/local_sync_export.py --stream market-worker --source "$source=$directory" --summary-root "$source=snapshots/market-worker" --source-id "$source=$artifact" --output snapshots/local-catalog
       - name: Publish lightweight local synchronization catalog
         if: always() && steps.local_catalog.outcome == 'success'
         continue-on-error: true
