@@ -27,7 +27,10 @@ MAX_FILE = 128 * 1024 ** 2
 MAX_CONTROL_FILE = 512 * 1024 ** 2
 CONTROL_CHUNK = 16 * 1024 ** 2
 COMPRESS_CONTROL_AT = 1024 ** 2
-MAX_FILES = 500000
+if __package__:
+    from .checkpoint_limits import MAX_FILES
+else:
+    from checkpoint_limits import MAX_FILES
 RESERVED_NEW_FILES = 10000
 ZERO = hashlib.sha256(b'0').hexdigest()
 

@@ -87,5 +87,11 @@ class RecoveryTests(unittest.TestCase):
             with patch.object(market_checkpoint, 'MAX_FILES', 2), patch.object(market_checkpoint, 'RESERVED_NEW_FILES', 2):
                 with self.assertRaisesRegex(ValueError, 'before new work'): market_checkpoint.preflight(folder)
 
+    def test_local_readers_share_the_same_index_bound(self):
+        from ForecastAgent import local_transfer, incremental_sync
+        self.assertEqual(local_transfer.MAX_FILES, market_checkpoint.MAX_FILES)
+        self.assertEqual(incremental_sync.MAX_FILES, market_checkpoint.MAX_FILES)
+        self.assertTrue(incremental_sync.automatic('market-repricing-v2-monitor-emergency-state'))
+
 
 if __name__ == '__main__': unittest.main()

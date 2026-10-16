@@ -6,10 +6,12 @@ from pathlib import Path, PurePosixPath
 import re
 
 from ForecastAgent.local_transfer import atomic_json, TransferDeferred
+from ForecastAgent.infrastructure.checkpoint_limits import MAX_FILES
 from ForecastAgent.infrastructure.local_sync_export import PREFIX, SCHEMA, STREAMS
 
 
 LEGACY_CHECKPOINTS = {'market-repricing-v2-worker-state', 'market-repricing-v2-monitor-state',
+                      'market-repricing-v2-worker-emergency-state', 'market-repricing-v2-monitor-emergency-state',
                       'futureeval-official-state', 'futureeval-monitor-state'}
 LIVE_WORKFLOWS = {'market_research_worker.yaml', 'market_research_monitor.yaml',
                   'official_competition.yaml', 'run_bot_on_tournament.yaml'}
@@ -32,7 +34,7 @@ def validate_expected(expected):
                 digest is not None and not re.fullmatch('[0-9a-f]{64}', digest)):
             raise ValueError('Invalid local catalog member')
         result[name] = {'size_bytes': size, 'sha256': digest}
-    if len(result) > 50000 or sum(item['size_bytes'] for item in result.values()) > 2 * 1024 ** 3:
+    if len(result) > MAX_FILES or sum(item['size_bytes'] for item in result.values()) > 2 * 1024 ** 3:
         raise ValueError('Local catalog exceeds import bounds')
     return result
 
