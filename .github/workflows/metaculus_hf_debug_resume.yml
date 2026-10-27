@@ -1,0 +1,51 @@
+name: Metaculus saved third-case capture retry
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: futureeval-official-worker
+  cancel-in-progress: false
+jobs:
+  retry:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: metaculus_hf
+    env:
+      HF_DATASET: chchen13/forecastagent-data
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      OPENROUTER_API_KEY2: ${{ secrets.OPENROUTER2 }}
+      EXA_API_KEY: ${{ secrets.EXA_API }}
+      EXA_API_KEY2: ${{ secrets.EXA_API2 }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_KEY3 }}
+      TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY4 }}
+      METACULUS_SUBMIT_ENABLED: 'false'
+      FORECAST_MODEL: nvidia/nemotron-3.5-super-vl:free
+      METACULUS_DECISION_MODEL: baseten/mammoth-1:free
+      PYTHONUNBUFFERED: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      DEBUG_SESSION: ${{ inputs.session }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: metaculus_hf/requirements.txt
+      - run: python -m pip install -r requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m metaculus_agent.doctor
+      - name: Resume only saved third-case capture; no platform POSTs
+        run: python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 3 --resume-capture
+      - name: Read saved diagnostics only
+        if: always()
+        run: python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 3 --inspect

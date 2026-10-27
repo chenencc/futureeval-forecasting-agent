@@ -99,5 +99,37 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(report['status'],'debug_stopped_on_failure');self.assertEqual(int(backend.head)-before,1)
         with self.assertRaisesRegex(RuntimeError,'DEBUG_PREDECESSOR_NOT_PASSED'):
             batched_case(backend,self.root/'two',session,2,Native(),collector=capture,analyzer=analyze)
+    def test_only_failed_third_capture_resumes_same_run_and_budget_once(self):
+        backend=seed();session='2'*32
+        for i in (1,2):batched_case(backend,self.root/str(i),session,i,Native(),collector=capture,analyzer=analyze)
+        def interrupted(task,p,root,checkpoint):
+            task['capture_run_id']='saved-capture-run'
+            f=root/'capture/saved-source.json';f.parent.mkdir(parents=True);f.write_text('{"saved":true}')
+            path=Path(os.environ['FORECAST_V2_SHARED_BUDGET_ROOT'])/'control/provider-budget.jsonl'
+            budget=json.loads(path.read_bytes());budget['days']['2026-10-27']['model']+=3;path.write_bytes(dumps(budget));checkpoint()
+            raise RuntimeError('HF_PREVIOUS_INTERRUPTION_FIXTURE')
+        fail=batched_case(backend,self.root/'failed',session,3,Native(),collector=interrupted,analyzer=analyze)
+        self.assertEqual(fail['status'],'debug_stopped_on_failure')
+        scoped=DebugStore(backend,session);before=json.loads(scoped.read(KEY));first_two={k:before['tasks'][k] for k in ('46432','46431')}
+        def resumed(task,p,root,checkpoint):
+            self.assertEqual(task['capture_run_id'],'saved-capture-run');self.assertEqual(task['attempts']['capture'],2)
+            self.assertTrue((root/'capture/saved-source.json').exists())
+            budget=json.loads((Path(os.environ['FORECAST_V2_SHARED_BUDGET_ROOT'])/'control/provider-budget.jsonl').read_bytes())
+            self.assertEqual(budget['days']['2026-10-27']['model'],20)
+            return capture(task,p,root,checkpoint)
+        count=int(backend.head)
+        passed=batched_case(backend,self.root/'retried',session,3,Native(),collector=resumed,analyzer=analyze,resume_capture=True)
+        self.assertEqual(passed['status'],'debug_case_passed',passed);self.assertTrue(passed['resumed_capture'])
+        self.assertEqual(passed['capture_run_id'],'saved-capture-run');self.assertEqual(int(backend.head)-count,1)
+        after=json.loads(scoped.read(KEY));self.assertEqual({k:after['tasks'][k] for k in first_two},first_two)
+        self.assertTrue(scoped.exists('metaculus/case-3/previous-capture-failure.json'))
+        self.assertTrue(scoped.exists('metaculus/case-3/capture-recovery-origin.json'))
+    def test_capture_retry_rejects_absent_saved_capture_before_calls(self):
+        backend=seed();session='3'*32
+        for i in (1,2):batched_case(backend,self.root/str(i),session,i,Native(),collector=capture,analyzer=analyze)
+        native=Native()
+        with self.assertRaisesRegex(RuntimeError,'DEBUG_SAVED_CAPTURE_REQUIRED'):
+            batched_case(backend,self.root/'retry',session,3,native,collector=capture,analyzer=analyze,resume_capture=True)
+        self.assertEqual(native.calls,[])
 
 if __name__=='__main__':unittest.main()
