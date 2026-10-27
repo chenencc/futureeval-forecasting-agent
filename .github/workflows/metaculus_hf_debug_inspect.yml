@@ -26,45 +26,49 @@ jobs:
       - name: Encrypted readback of saved predictions, zero provider calls
         run: |
           python -B - <<'PY'
-          import base64,hashlib,json,os,tempfile
+          import base64,hashlib,io,json,os,tempfile
           from pathlib import Path
-          from datetime import datetime,timedelta,timezone
+          from collections import Counter
+          import pyarrow as pa,pyarrow.parquet as pq
           from huggingface_hub import HfApi,hf_hub_download
           from nacl.public import PublicKey,SealedBox
-          import requests
           session='1044847f98034a4f86e871811b75f8c5';pre='metaculus/_debug/'+session
-          repo='chchen13/forecastagent-data';token=os.environ['HF_TOKEN'];api=HfApi(token=token);info=api.repo_info(repo,repo_type='dataset');assert info.private
-          reads=[]
-          def read(key,rev=info.sha):
+          repo='chchen13/forecastagent-data';api=HfApi(token=os.environ['HF_TOKEN']);info=api.repo_info(repo,repo_type='dataset');assert info.private
+          refs=[]
+          def read(key,revision=info.sha):
            with tempfile.TemporaryDirectory() as d:
-            raw=Path(hf_hub_download(repo,key,repo_type='dataset',revision=rev,token=token,local_dir=d,force_download=True)).read_bytes();reads.append(dict(key=key,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest()));return raw
-          state=json.loads(read(pre+'/_control/checkpoint.json'));task=state['tasks']['46430'];files=[]
-          allowed={'status','code','error','error_code','error_type','message','http_status','status_code','stage','started_at','finished_at','created_at','model','first_external_request_at','usage','request_kind','kind','attempt','updated_at','first_http_at','response_received_at'}
-          def safe(v,depth=0):
-           if depth>10:return None
-           if isinstance(v,dict):
-            out={}
-            for k,x in v.items():
-             if k in {'request_body','response_body','content','text','prompt','messages','body','html','markdown','raw_html','raw_markdown','readable_text','snippet'}:continue
-             if k in allowed and (not isinstance(x,str) or len(x)<500):out[k]=x
-             elif isinstance(x,(dict,list)):
-              z=safe(x,depth+1)
-              if z:out[k]=z
-            return out
-           if isinstance(v,list):return [z for x in v[:100] if (z:=safe(x,depth+1))]
-           return None
-          for name,h in state.get('runtime',{}).items():
-           if '/46430/' not in name and not name.startswith('budgets/'):continue
-           raw=read(pre+'/_control/objects/'+h);assert hashlib.sha256(raw).hexdigest()==h
-           try:obj=json.loads(raw)
-           except ValueError:obj=None
-           files.append(dict(path=name,sha256=h,bytes=len(raw),keys=list(obj)[:30] if isinstance(obj,dict) else None,signals=safe(obj)))
-          r=requests.get('https://huggingface.co/api/datasets/'+repo+'/commits/main',headers={'Authorization':'Bearer '+token},params={'limit':100},timeout=30);r.raise_for_status();commits=r.json()
-          near=[dict(id=x.get('id'),date=x.get('date'),title=x.get('title')) for x in commits if '2026-10-27T15:'<=x.get('date','')<'2026-10-27T16:15']
-          reports=[]
-          for i in [1,2,3]:
-           key=pre+'/case-'+str(i)+'/audit.json'
-           if api.file_exists(repo,key,repo_type='dataset',revision=info.sha):reports.append(json.loads(read(key)))
-          value=dict(session=session,revision=info.sha,checkpoint_updated_at=state.get('updated_at'),task={k:task.get(k) for k in ['id','status','started_at','context_key','capture_run_id','last_error','attempts','snapshot_id']},title=task.get('request',{}).get('question'),runtime=files,reports=reports,commit_count_returned=len(commits),commits_near_failure=near,provider_calls=0,submissions=0)
-          encrypted=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(json.dumps(value).encode());print('PRIVATE_FORECAST_READBACK='+base64.b64encode(encrypted).decode())
+            raw=Path(hf_hub_download(repo,key,repo_type='dataset',revision=revision,token=os.environ['HF_TOKEN'],local_dir=d,force_download=True)).read_bytes()
+            refs.append(dict(key=key,revision=revision,sha256=hashlib.sha256(raw).hexdigest(),bytes=len(raw)));return raw
+          state=json.loads(read(pre+'/_control/checkpoint.json'));rows=[]
+          for qid in ['46432','46431','46430']:
+           task=state['tasks'][qid];revision=task.get('analysis_revision') or info.sha
+           physical=lambda k:pre+'/'+k[len('metaculus/'):]
+           key=physical(task['analysis_key']);manifest=json.loads(read(key.rsplit('/',1)[0]+'/manifest.json',revision));products={};formats={}
+           for kind in ['context','analysis']:
+            raw=read(physical(task[kind+'_key']),revision)
+            assert hashlib.sha256(raw).hexdigest()==manifest['files'][kind+'.parquet']['sha256']
+            pf=pq.ParquetFile(pa.BufferReader(raw),page_checksum_verification=True);table=pf.read();formats[kind]=dict(rows=table.num_rows,columns=table.column_names,bytes=len(raw))
+            products[kind]=json.loads(table.to_pylist()[0]['payload'])
+           c=products['context'];an=products['analysis'];request=c['request'];intel=c['intelligence'];ev=intel['evidence'];snap=next(x for x in ev['snapshots'] if x['snapshot_id']==c['snapshot_id'])
+           assert an['snapshot_id']==c['snapshot_id'] and an['run_id']==c['run_id']
+           searches=[]
+           for sr in intel['searches']:
+            searches.append(dict(search_id=sr.get('search_id'),provider=sr.get('provider'),query=sr.get('query'),phase=sr.get('phase'),status=sr.get('status'),requested_at=sr.get('requested_at'),received_at=sr.get('received_at'),request_params=sr.get('request_params'),provider_request_id_present=bool(sr.get('provider_request_id')),result_count=len(sr.get('results',[])),result_fields=sorted(set(k for x in sr.get('results',[]) for k in x)),all_saved_fields=sorted(sr),raw_response_fields=[k for k in sr if k in ['raw','raw_response','raw_body','response_body','response','response_headers']],candidate_example=[{k:x.get(k) for k in ['url','title','provider_score','published_at']}|{'snippet_characters':len(x.get('snippet') or '')} for x in sr.get('results',[])[:1]]))
+           texts=ev['texts'];bodies=[]
+           for src in ev['sources']:
+            text=texts.get(src.get('text_sha256'));valid=(hashlib.sha256(text.encode()).hexdigest()==src['text_sha256']) if text is not None else None
+            if valid is False:raise ValueError('BODY_HASH')
+            bodies.append(dict(source_id=src.get('source_id'),url=src.get('source_url'),status=src.get('status'),http_status=src.get('http_status'),evidence_kind=src.get('evidence_kind'),extraction_version=src.get('extraction_version'),requested_at=src.get('requested_at'),captured_at=src.get('captured_at'),extracted_at=src.get('extracted_at'),published_at=src.get('published_at'),search_id=src.get('search_id'),search_result_rank=src.get('search_result_rank'),text_characters=len(text or ''),text_hash_verified=valid,fields=sorted(src)))
+           records=an.get('records',{});rkeys=sorted(records)
+           snapshots=[dict(snapshot_id=x.get('snapshot_id'),question_version_id=x.get('question_version_id'),sealed_at=x.get('sealed_at'),evidence_cutoff_at=x.get('evidence_cutoff_at'),temporal_policy=x.get('temporal_policy'),material_count=len(x.get('materials',[])),material_bindings=x.get('materials'),gap_codes=[g.get('code') for g in x.get('gaps',[])]) for x in ev['snapshots']]
+           definition_rows=[dict(version_id=k,observed_at=v.get('observed_at'),fields=sorted(v.get('definition',{})),title=v.get('definition',{}).get('title'),rule_characters=len(v.get('definition',{}).get('resolution_criteria') or ''),scale=v.get('definition',{}).get('scale')) for k,v in intel['definitions'].items()]
+           archive=None
+           if task.get('runtime_archive_key'):
+            archive=json.loads(read(physical(task['runtime_archive_key']),revision));archive=dict(key=task['runtime_archive_key'],schema=archive.get('schema'),runtime_files=len(archive.get('runtime',{})),runtime_paths=sorted(archive.get('runtime',{})))
+           request_summary={k:request.get(k) for k in ['id','question','question_type','open_time','close_time','scheduled_close_time','scheduled_resolve_time','spot_scoring_time','inbound_outcome_count','open_lower_bound','open_upper_bound','unit','options']}
+           request_summary.update(fields=sorted(request),resolution_criteria_characters=len(request.get('resolution_criteria') or ''),resolution_criteria_sha256=hashlib.sha256((request.get('resolution_criteria') or '').encode()).hexdigest(),fine_print_characters=len(request.get('fine_print') or ''),background_characters=len(request.get('background') or ''),scaling_fields=sorted(request.get('scaling') or {}),grid_points=len((request.get('scaling') or {}).get('continuous_range') or []))
+           analysis_records=[dict(path=k,fields=sorted(v) if isinstance(v,dict) else [],model=v.get('model') if isinstance(v,dict) else None) for k,v in records.items() if k.endswith(('request.json','response.json','identity.json','result.json','first-input-audit.json','routing.json','distribution-spec.json'))]
+           rows.append(dict(question_id=qid,prefix=key.rsplit('/',1)[0],read_revision=revision,context_fields=sorted(c),formats=formats,request=request_summary,definitions=definition_rows,searches=searches,sources=bodies,snapshots=snapshots,text_object_count=len(texts),total_text_characters=sum(map(len,texts.values())),final_review_count=len(intel.get('final_reviews',[])),intelligence_fields=sorted(intel),analysis=dict(fields=sorted(an),release=an.get('analysis_release'),decision_model=an.get('decision_model'),collection_model=an.get('collection_model'),started_at=an.get('started_at'),finished_at=an.get('finished_at'),original_reading=an.get('original_reading'),record_count=len(records),records=analysis_records),runtime_archive=archive,task_fields=sorted(task),test_only=c.get('test_only'),run_purpose=c.get('run_purpose'),evidence_cutoff_at=c.get('evidence_cutoff_at'),started_at=c.get('started_at')))
+          value=dict(session=session,revision=info.sha,cases=rows,read_receipts=refs,provider_calls=0,submissions=0)
+          sealed=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(json.dumps(value).encode());print('PRIVATE_FORECAST_READBACK='+base64.b64encode(sealed).decode())
           PY
