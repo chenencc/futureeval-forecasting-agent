@@ -12,7 +12,7 @@ from ForecastAgent.competition import platform
 from ForecastAgent.competition.queue import questions,descriptor
 from .runner import Runner,initial_state,blind_post
 from .platform_adapter import live_request
-from .storage import Store,RuntimeCheckpoint,dumps,sha,safe
+from .storage import Store,QuestionBatch,RuntimeCheckpoint,dumps,sha,safe
 from .products import verify_context,prefix,bundle
 from .collect import collect
 from .analyze import analyze
@@ -28,6 +28,12 @@ class DebugStore:
     def physical(self,key):return self.base+'/'+safe(key)[len('metaculus/'):]
     @property
     def head(self):return self.backend.head
+    @property
+    def batched(self):return getattr(self.backend,'batched',False)
+    @property
+    def autoflush(self):return False
+    def is_staged(self,key):return getattr(self.backend,'is_staged',lambda key:False)(self.physical(key))
+    def check_owner(self):return self.backend.check_owner()
     def exists(self,key):return self.backend.exists(self.physical(key))
     def read(self,key,revision=None):return self.backend.read(self.physical(key),revision)
     def publish(self,updates):
@@ -81,12 +87,16 @@ class SimulatedSubmission:
         self.comment=body['comments'][0]['text'];self.posts+=1
         return dict(status=201)
 
-def run_case(backend,root,session,index,native,*,collector=collect,analyzer=analyze):
+def run_case(backend,root,session,index,native,*,collector=collect,analyzer=analyze,resume_analysis=False):
     if type(index)!=int or not 1<=index<=3:raise ValueError('DEBUG_CASE_INDEX')
     root=Path(root);store=DebugStore(backend,session);report_key=f'metaculus/case-{index}/audit.json'
     post_id,qid=CASES[index-1];client=HistoricalClient(native,post_id,qid)
     cp=RuntimeCheckpoint(store,root/'writer',key=KEY);state=None
-    if index==1:
+    if resume_analysis:
+        state=cp.restore();saved=state.get('tasks',{}).get(qid,{})
+        if state.get('debug',{}).get('completed')!=list(range(1,index)) or saved.get('status')!='analyzing' or not saved.get('context_key'):raise RuntimeError('DEBUG_SAVED_ANALYSIS_REQUIRED')
+        previous=store.read(report_key);store.publish({f'metaculus/case-{index}/previous-failure.json':previous})
+    elif index==1:
         if store.exists(KEY):raise RuntimeError('DEBUG_SESSION_ALREADY_STARTED')
         # Carry known historical consumption as a floor; never reset per question.
         production=json.loads(backend.read(KEY));budget_name='budgets/control/provider-budget.jsonl'
@@ -105,7 +115,8 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         state=cp.restore()
         if state.get('debug',{}).get('completed')!=list(range(1,index)):raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
         prior=json.loads(store.read(f'metaculus/case-{index-1}/audit.json'))
-        if prior.get('status')!='debug_case_passed':raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
+        if prior.get('status') not in {'debug_case_passed','debug_case_prepared'}:raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
+        if prior.get('status')=='debug_case_prepared':verify_case_products(store,prior,store.head)
     try:
         baseline=json.loads((cp.root/'budgets/control/provider-budget.jsonl').read_bytes())
         def analyzed(value,folder,checkpoint):
@@ -113,16 +124,32 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
             return {**result,'test_only':True,'run_purpose':'historical-listener-simulation'}
         runner=Runner(cp,client,writer=state['writer'],live=False,limit=1,collector=collector,analyzer=analyzed)
         os.environ['FORECAST_V2_ONCE_NAMESPACE']='metaculus-debug-'+session
-        simulated=client.post(post_id);runner.ingest([simulated]);task=runner.state['tasks'].get(qid)
-        if not task or task['status']!='discovered':raise RuntimeError('DEBUG_ADMISSION_FAILED')
-        task.update(test_only=True,run_purpose='historical-listener-simulation',post=client.original,
-            request=live_request(client.original,client.original['question']))
+        simulated=client.post(post_id)
+        if not resume_analysis:runner.ingest([simulated])
+        task=runner.state['tasks'].get(qid)
+        if not task or task['status']!=('analyzing' if resume_analysis else 'discovered'):raise RuntimeError('DEBUG_ADMISSION_FAILED')
+        if resume_analysis:
+            raw=store.read(task['context_key'],task.get('context_revision'))
+            if sha(raw)!=task['context_bytes_sha256']:raise RuntimeError('DEBUG_RESUME_CONTEXT_HASH')
+            task['resumed_analysis_only']=True
+            def no_collection(*args,**kwargs):raise RuntimeError('DEBUG_RECOLLECTION_FORBIDDEN')
+            runner.collector=no_collection
+        else:
+            task.update(test_only=True,run_purpose='historical-listener-simulation',post=client.original,
+                request=live_request(client.original,client.original['question']))
         simulation=dict(test_only=True,original_descriptor=client.original_descriptor,simulated_deadline=client.until,
             admission_status_and_own_history_simulated=True,model_input_original_clocks_preserved=True,
             temporal_policy='current-evidence-for-historical-question-not-historical-asof',new_opening_claimed=False)
-        runner.checkpoint({f'metaculus/case-{index}/simulation.json':dumps(simulation)})
+        runner.checkpoint({f'metaculus/case-{index}/'+('analysis-resume.json' if resume_analysis else 'simulation.json'):dumps(simulation)})
         with patch.object(platform,'deliver',side_effect=RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')):
-            outcome=runner.run([])
+            if resume_analysis:
+                from pipeline_v2.providers import Budget
+                reserve=Budget.reserve
+                def analysis_only(self,kind,*args,**kwargs):
+                    if kind in {'search','fetch'}:raise RuntimeError('DEBUG_RECOLLECTION_FORBIDDEN')
+                    return reserve(self,kind,*args,**kwargs)
+                with patch.object(Budget,'reserve',analysis_only):outcome=runner.run([])
+            else:outcome=runner.run([])
         if outcome['failures'] or task['status']!='analyzed':raise RuntimeError('DEBUG_CASE_PIPELINE_FAILED')
         sink=SimulatedSubmission(simulated,task,cp);candidate=task['candidate'];native_save=platform.save
         def durable(path,value):native_save(path,value);runner.checkpoint()
@@ -157,6 +184,7 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         raw_budget=json.loads((final.root/ledger).read_bytes())
         source=bundle(value)
         consumption={kind:sum(v.get(kind,0) for v in raw_budget['days'].values())-sum(v.get(kind,0) for v in baseline['days'].values()) for kind in ['model','search','fetch']}
+        if resume_analysis and (consumption['search'] or consumption['fetch']):raise RuntimeError('DEBUG_RESUME_ACQUISITION_OCCURRED')
         report=dict(status='debug_case_passed',session=session,case_index=index,question_id=qid,post_id=post_id,
             question_title=value['request'].get('question'),question_type=value['request'].get('question_type'),test_only=True,
             hf_prefix=store.physical(pre),snapshot_id=value['snapshot_id'],context_sha256=sha(context_raw),analysis_sha256=sha(analysis_raw),
@@ -167,6 +195,7 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
             unverified_reading_sources=len(source['original_reading'].get('unverified_source_ids',[])),
             source_http_status_counts=dict(Counter(str(m.get('source',{}).get('http_status')) for m in snapshot['materials'])),
             provider_budget_increment=consumption,
+            resumed_analysis_only=resume_analysis,new_search_requests=consumption['search'] if resume_analysis else None,new_fetch_requests=consumption['fetch'] if resume_analysis else None,
             local_payloads_retired=True,completed_cases=final_state['debug']['completed'],submissions=0,new_opening_claimed=False,
             simulated_submission_readback=True,simulated_duplicate_posts=0,actual_submission_acceptance_claimed=False,
             historical_asof_claimed=False,finished_at=now())
@@ -186,8 +215,44 @@ def public(report):
     keys=('status','session','case_index','question_id','post_id','question_title','question_type','stage','code','hf_prefix','snapshot_id',
           'products_revision','exact_revision_readback','restart_restored','duplicate_discovery_processed','budget_restored','material_count',
           'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
-          'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment','finished_at')
+          'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment',
+          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy')
     return {k:report[k] for k in keys if k in report}
+
+def verify_case_products(store,report,revision):
+    state=json.loads(store.read(KEY,revision));task=state['tasks'][report['question_id']]
+    pre=prefix(task);manifest=json.loads(store.read(pre+'/manifest.json',revision))
+    values={}
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ('context','analysis'):
+            raw=store.read(pre+'/'+name+'.parquet',revision)
+            if sha(raw)!=report[name+'_sha256'] or sha(raw)!=manifest['files'][name+'.parquet']['sha256']:raise RuntimeError('DEBUG_FINAL_PRODUCT_HASH')
+            path=Path(tmp)/(name+'.parquet');path.write_bytes(raw);values[name]=load(path)
+    context_value,result=values['context'],values['analysis'];verify_context(context_value)
+    if result['snapshot_id']!=report['snapshot_id'] or result['context_sha256']!=digest(context_value) or result['run_id']!=task['run_id']:raise RuntimeError('DEBUG_FINAL_BINDING')
+    return state
+
+def batched_case(backend,root,session,index,native,**kwargs):
+    """The whole finite case has exactly one cloud write boundary."""
+    root=Path(root);batch=QuestionBatch(backend,root/'hf-staging',autoflush=False)
+    report=run_case(batch,root/'case',session,index,native,**kwargs)
+    if report['status']=='debug_case_passed':
+        prepared={**report,'status':'debug_case_prepared','exact_revision_readback':False,
+                  'restart_restored':False,'local_payloads_retired':False,'budget_restored':False,
+                  'checkpoint_policy':'one-commit-per-question',
+                  'verification_policy':'GitHub job must cold-read this exact commit before reporting success.'}
+        batch.publish({f'metaculus/_debug/{session}/case-{index}/audit.json':dumps(prepared)})
+    receipt=batch.flush()
+    if report['status']=='debug_case_passed':
+        store=DebugStore(backend,session);state=verify_case_products(store,report,receipt['revision'])
+        restored=RuntimeCheckpoint(store,root/'cloud-restored',key=KEY);restored_state=restored.restore()
+        if restored_state['debug']['completed']!=list(range(1,index+1)) or any((restored.root/'tasks').rglob('*')):raise RuntimeError('DEBUG_FINAL_RESTART')
+        if not (restored.root/'budgets/control/provider-budget.jsonl').is_file():raise RuntimeError('DEBUG_FINAL_BUDGET')
+        target=root/'case'/'writer'/'tasks'/report['question_id']
+        if target.exists():shutil.rmtree(target)
+        report.update(products_revision=receipt['revision'],exact_revision_readback=True,restart_restored=True,local_payloads_retired=not target.exists(),
+                      hf_successful_commits=batch.successful_commits,checkpoint_policy='one-commit-per-question')
+    return report
 
 def diagnostics(backend,session,index):
     store=DebugStore(backend,session)
@@ -207,7 +272,7 @@ def diagnostics(backend,session,index):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--case-index',type=int,required=True);p.add_argument('--inspect',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--case-index',type=int,required=True);p.add_argument('--inspect',action='store_true');p.add_argument('--resume-analysis',action='store_true');args=p.parse_args()
     if not 1<=args.case_index<=3:raise ValueError('DEBUG_CASE_INDEX')
     backend=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN'])
     if args.inspect:return diagnostics(backend,args.session,args.case_index)
@@ -218,7 +283,7 @@ def main():
         if method!='GET':raise RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')
         return original(method,path,data)
     with tempfile.TemporaryDirectory(prefix='metaculus-three-debug-') as tmp,patch.object(native,'request',readonly):
-        return run_case(backend,Path(tmp),args.session,args.case_index,native)
+        return batched_case(backend,Path(tmp),args.session,args.case_index,native,resume_analysis=args.resume_analysis)
 
 if __name__=='__main__':
     try:
@@ -226,4 +291,4 @@ if __name__=='__main__':
         print(json.dumps(result if result['status']=='debug_diagnostics' else public(result)))
         if result['status'] not in {'debug_case_passed','debug_diagnostics'}:raise SystemExit(1)
     except Exception as exc:
-        code=getattr(exc,'code',type(exc).__name__);print(json.dumps(dict(status='debug_blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,100}',str(code)) else 'INTERNAL_ERROR')));raise SystemExit(1)
+        code=getattr(exc,'code',type(exc).__name__);print(json.dumps(dict(status='debug_blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,100}',str(code)) else 'INTERNAL_ERROR',storage_phase=getattr(exc,'phase',None),http_status=getattr(exc,'http_status',None),retry_after=getattr(exc,'retry_after',None))));raise SystemExit(1)

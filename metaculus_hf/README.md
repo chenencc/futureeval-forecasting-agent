@@ -12,7 +12,7 @@ server handoff. Installing or running tests never enables submission.
 
 Discover eligible tournament questions -> shared current evidence collection
 -> body review and immutable snapshot -> private HF context -> existing
-official Mercury analysis with the authorized reasoning fallback -> private
+Mammoth typed-decision analysis with bounded original-evidence rereading -> private
 HF analysis -> current-rule validation -> forecast/comment submission ->
 authenticated readback -> durable receipt -> guarded local cleanup.
 
@@ -116,3 +116,66 @@ its own increments between all three machines. Credentials still share actual
 provider allowances. The debug workflow uses the production concurrency group
 to avoid overlapping paid work; ordinary cron dispatches can wait behind it.
 It does not reset or mutate the production budget or submit the old questions.
+
+### Analysis route recovery
+
+Collection uses `nvidia/nemotron-3.5-super-vl:free`; decision analysis uses
+`baseten/mammoth-1:free` through the typed Decisions endpoint, not chat or
+generated JSON. Model metadata must confirm a decisions output modality,
+available endpoints, observed context limits and zero input/output prices.
+No other decision model or paid fallback is selected implicitly.
+
+The adapter retains the pinned original-evidence selector and conditional
+rereading criteria. It validates exact question/option identity, finite
+probabilities, distribution sums and ordinal expectations before converting to
+the native binary/categorical/CDF payload. Diagnostic sufficiency is never
+multiplied into event probability. The 16K observed context uses conservative
+UTF8 envelope budgets, retaining complete question rules and exact source spans;
+this is not an exact tokenizer count. At most two logical decision stages run.
+All physical HTTP attempts, including explicit credential-quota failover, are
+still durably counted. The analysis records the actual Mammoth identity and
+protocol, not a Mercury label. A failed second read retains a valid first
+decision with an explicit reread gap; failed first decisions stop the task.
+
+Authentication/access failures, account quota, route absence, and temporary
+provider outages have distinct codes and persisted retry times. They do not
+consume the invalid-analysis attempt cap or mark the question invalid. Physical
+HTTP reservations and the shared lifetime run budget still accumulate. New
+attempt folders preserve all prior failures and frozen evidence inputs.
+
+For the failed first debug case, dispatch the same session with
+`resume_first_analysis=true`. It restores and hashes the existing context,
+forbids search/fetch reservations and skips collection. Case 2 and 3 remain
+dependent on a durable successful first-case receipt. Metaculus POSTs remain
+prohibited; only the in-memory delivery simulation runs.
+
+### One HF commit per question
+
+The production runner and three-question debug runner checkpoint to the
+GitHub-hosted machine during collection, analysis and submission. Local files
+are flushed before external-call reservations or submission intents proceed;
+these local checkpoints are explicitly not HF receipts. No intermediate stage
+creates an HF commit, and an empty discovery poll creates none.
+
+At a question boundary, its context, analysis, submission receipt (when present),
+current raw runtime journal, provider budget and updated queue state are sent
+in one atomic HF commit. A normal failed attempt archives its partial state in
+one failure batch. Superseded intermediate object versions are not uploaded.
+The task's dated `question-runtime.json` references its archived journal hashes;
+accepted task payloads are omitted from the active restore index. Exact-revision
+cloud readback must succeed before local task files are removed. A failed flush
+retains the local batch; retrying delivery does not repeat provider work or the
+platform POST. A lost commit acknowledgement is reconciled against target bytes
+before a retry, so it cannot create a duplicate successful commit.
+
+The debug HF audit is `debug_case_prepared` inside that single commit. The job
+reports `debug_case_passed` only after exact-revision cold readback and a fresh
+state/budget restore; it does not create another commit merely to mark that
+verification. A later debug case independently verifies the previous products
+before accepting that prepared boundary.
+
+Normal exceptions retain their partial question in the final batch. If the
+GitHub machine is forcibly lost before that batch, its local-only phase is not
+recoverable from HF, including unflushed budget increments. Platform own-forecast
+readback still precedes another submission; this is not a promise of remote
+mid-question recovery or exactly-once provider usage after abrupt machine loss.
