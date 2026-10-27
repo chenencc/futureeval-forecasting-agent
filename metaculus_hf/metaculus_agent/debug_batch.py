@@ -44,8 +44,8 @@ def known_ids(backend):
         if backend.exists(key):used.update(str(x).split(':')[-1] for x in json.loads(backend.read(key)).get('tasks',{}))
     return used
 
-def select(native,used,*,clock=None,candidate_posts=range(46202,46142,-1),sleep=time.sleep):
-    """Only old, unused, unforecasted leaves; no outcome labels enter inputs."""
+def select(native,used,*,clock=None,candidate_posts=range(46202,46142,-1),sleep=time.sleep,require_unused=True):
+    """Old leaves outside the previous trio; optional strict prior-use checks."""
     clock=clock or datetime.now(timezone.utc);selected=[];skips=defaultdict(int)
     for pid in candidate_posts:
         # The production reader shares the platform account's rate window.
@@ -58,11 +58,12 @@ def select(native,used,*,clock=None,candidate_posts=range(46202,46142,-1),sleep=
         if not created or utc(created)>clock-timedelta(hours=24):skips['not_old']+=1;continue
         for q in questions(post):
             qid=str(q['id'])
-            if qid in used or qid in EXCLUDE:skips['previously_used']+=1;continue
+            if qid in EXCLUDE or (require_unused and qid in used):skips['previously_used']+=1;continue
             if q.get('type') not in {'binary','numeric','discrete','date','multiple_choice'}:continue
-            try:already=platform.has_existing_forecast(q)
-            except RuntimeError:skips['own_history_unreadable']+=1;continue
-            if already:skips['already_forecasted']+=1;continue
+            if require_unused:
+                try:already=platform.has_existing_forecast(q)
+                except RuntimeError:skips['own_history_unreadable']+=1;continue
+                if already:skips['already_forecasted']+=1;continue
             clean=blind_post(post,q)
             try:live_request(clean,clean['question'])
             except (ValueError,KeyError,TypeError):skips['unsupported_metadata']+=1;continue
@@ -92,10 +93,11 @@ def sizes(backend,session,reports):
                 session_shared_control_and_history_bytes=total-exclusive,physical_billing_claimed=False,
                 measurement='Current-revision file byte sizes; shared hashes counted once. Excludes Git history/compression/physical HF billing.')
 
-def run(backend,root,session,native,*,collector=sequence.collect,analyzer=sequence.analyze,used=None,candidate_posts=range(46202,46142,-1)):
+def run(backend,root,session,native,*,collector=sequence.collect,analyzer=sequence.analyze,used=None,candidate_posts=range(46202,46142,-1),require_unused=False):
     if not re.fullmatch('[0-9a-f]{32}',session):raise ValueError('DEBUG_SESSION_ID')
     if backend.exists('metaculus/_debug/'+session+'/_control/checkpoint.json'):raise RuntimeError('DEBUG_SESSION_ALREADY_STARTED')
-    selected,skips=select(native,set(used) if used is not None else known_ids(backend),candidate_posts=candidate_posts)
+    previous=set(used) if used is not None else known_ids(backend) if require_unused else set()
+    selected,skips=select(native,previous,candidate_posts=candidate_posts,require_unused=require_unused)
     cases=tuple((x['post_id'],x['question_id']) for x in selected);reports=[]
     with patch.object(sequence,'CASES',cases):
         for i in range(1,4):
@@ -103,7 +105,7 @@ def run(backend,root,session,native,*,collector=sequence.collect,analyzer=sequen
             reports.append(report)
             if report['status']!='debug_case_passed':return dict(status='debug_batch_stopped',selected=selected,selection_skips=skips,reports=[sequence.public(r) for r in reports],submissions=0)
     usage=sizes(backend,session,reports)
-    return dict(status='debug_batch_passed',session=session,selected=selected,selection_skips=skips,reports=[sequence.public(r) for r in reports],
+    return dict(status='debug_batch_passed',session=session,selected=selected,selection_skips=skips,require_unused=require_unused,reports=[sequence.public(r) for r in reports],
                 hf_successful_commits=sum(r['hf_successful_commits'] for r in reports),storage=usage,submissions=0)
 
 def main():

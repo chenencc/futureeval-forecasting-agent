@@ -204,13 +204,16 @@ with `byte_exact=false`. Authorization/request headers and cookies are never
 archived. Old saved snapshots have no new raw responses retroactively; they are
 left unchanged and remain readable.
 
-### One job, three unused historical questions
+### One job, three historical questions
 
 `metaculus_hf_debug_batch.yml` accepts one fresh 32-hex session and runs three
-questions sequentially in one hosted job. It excludes the previous three debug
-IDs, all tasks in production/debug/acceptance checkpoints, and any authenticated
-existing own forecast. Unknown own history is skipped, not called unused. Only
-posts at least 24 hours old qualify. Each case retains its own final HF commit;
+questions sequentially in one hosted job. As requested for debug, it excludes
+the previous three debug IDs but permits other old questions even if previously
+forecasted. Existing own forecasts are hidden only by the debug simulation and
+no real POST is permitted. Optional internal strict selection can exclude all
+production/debug/acceptance task IDs and existing own forecasts; it is not the
+default and does not trigger a broad history scan. Only posts at least 24 hours
+old qualify. Each case retains its own final HF commit;
 the first failure stops subsequent acquisition. Production cron inputs remain
 unchanged and all debug Metaculus POSTs remain prohibited.
 

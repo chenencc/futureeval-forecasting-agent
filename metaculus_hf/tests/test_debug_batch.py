@@ -74,6 +74,13 @@ class BatchTests(unittest.TestCase):
         native=Native();native.posts['46202']['created_at']='2099-01-01T00:00:00Z';native.posts['46201']['question'].pop('my_forecasts')
         rows,skips=select(native,set(),candidate_posts=range(46202,46197,-1),sleep=lambda _:None)
         self.assertEqual(len(rows),3);self.assertEqual(skips['not_old'],1);self.assertEqual(skips['own_history_unreadable'],1)
+    def test_relaxed_debug_uses_first_three_old_posts_even_with_prior_forecasts(self):
+        native=Native()
+        for p in native.posts.values():p['question']['my_forecasts']={'latest':{'author_id':309450},'history':[]}
+        rows,skips=select(native,{'46429','46428','46427'},candidate_posts=range(46202,46199,-1),sleep=lambda _:None,require_unused=False)
+        self.assertEqual([r['question_id'] for r in rows],['46429','46428','46427'])
+        self.assertEqual(len(native.calls),3);self.assertTrue(all(r['question_id'] not in EXCLUDE for r in rows))
+        self.assertEqual(skips,{})
     def test_429_honors_retry_after_on_same_read_and_never_calls_models(self):
         calls=[];waits=[]
         class Limited:
