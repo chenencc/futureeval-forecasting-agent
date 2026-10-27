@@ -12,16 +12,23 @@ def prefix(task):
     date=datetime.fromisoformat(task['started_at'].replace('Z','+00:00')).astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat()
     if not str(task['id']).isdecimal() or not task['run_id'].isalnum():raise ValueError('PRODUCT_IDENTITY')
     return f"metaculus/start_date={date}/question_id={task['id']}/run_id={task['run_id']}"
-def context(task,package,snapshot_id):
+def context(task,package,snapshot_id,*,raw_search_responses=None):
     snap=snapshot_from_payload(package,snapshot_id)
     if package['question_id']!='metaculus:'+str(task['id']):raise ValueError('CONTEXT_QUESTION_MISMATCH')
-    return dict(schema='metaculus-context/1',question_id=package['question_id'],post_id=task['post_id'],run_id=task['run_id'],
+    value=dict(schema='metaculus-context/1',question_id=package['question_id'],post_id=task['post_id'],run_id=task['run_id'],
         started_at=task['started_at'],partition_timezone='Asia/Shanghai',snapshot_id=snapshot_id,
         evidence_cutoff_at=snap['evidence_cutoff_at'],rule_identity=task['rule_identity'],
         request=task['request'],execution_profile=task['execution_profile'],intelligence=package,
         run_purpose=task.get('run_purpose','live'),test_only=bool(task.get('test_only',False)))
+    if raw_search_responses:
+        from .raw_search import validate
+        validate(raw_search_responses);value['raw_search_responses']=raw_search_responses
+    return value
 def verify_context(value):
     if value.get('schema')!='metaculus-context/1':raise ValueError('CONTEXT_SCHEMA')
+    if 'raw_search_responses' in value:
+        from .raw_search import validate
+        validate(value['raw_search_responses'])
     snap=snapshot_from_payload(value['intelligence'],value['snapshot_id'])
     if value['question_id']!=value['intelligence']['question_id'] or value['evidence_cutoff_at']!=snap['evidence_cutoff_at']:raise ValueError('CONTEXT_BINDING')
     return snap

@@ -77,7 +77,8 @@ class Runner:
             task['attempts']['capture']=task['attempts'].get('capture',0)+1
             task.setdefault('started_at',now());task['status']='capturing';self.checkpoint()
             package=self.collector(task,task['post'],root,self.checkpoint)
-            value=context(task,package,task['snapshot_id']);raw=product('context',value)
+            from .raw_search import saved as saved_searches
+            value=context(task,package,task['snapshot_id'],raw_search_responses=saved_searches(root));raw=product('context',value)
             task['context_key']=prefix(task)+'/context.parquet';task['context_hash']=digest(value)
             task['status']='sealed';task['context_bytes_sha256']=__import__('hashlib').sha256(raw).hexdigest()
             task['context_revision']=self.checkpoint({task['context_key']:raw,prefix(task)+'/manifest.json':dumps(manifest(task,{'context.parquet':raw}))})['revision']

@@ -12,6 +12,7 @@ from pipeline_v2.platforms import metaculus
 from pipeline_v2.intelligence_package import load,export
 from pipeline_v2.review_recovery import recover_review
 from pipeline_v2.review_lifecycle import all_terminal
+from .raw_search import installed as archive_search
 
 class Browser:
     def __init__(self,root):self.root=Path(root);self.process=None
@@ -57,7 +58,7 @@ def collect(task,post,root,checkpoint,*,capture_fn=capture,browser=True):
     def reserve(self,*args,**kwargs):
         result=original(self,*args,**kwargs);checkpoint();return result
     from contextlib import nullcontext
-    with patch.object(Budget,'reserve',reserve), (Browser(root/'browser') if browser else nullcontext()):
+    with patch.object(Budget,'reserve',reserve), archive_search(root), (Browser(root/'browser') if browser else nullcontext()):
         sid=run['snapshot_id'] or capture_fn(engine,qid,rid)
         checkpoint()
         if not all_terminal(repo,repo.get_runtime(qid)):
