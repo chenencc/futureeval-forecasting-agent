@@ -1,0 +1,39 @@
+name: Metaculus read-only key and model health
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER }}
+      OPENROUTER_API_KEY2: ${{ secrets.OPENROUTER2 }}
+    steps:
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Validate existing keys and model catalog without inference
+        run: |
+          python -B - <<'PY'
+          import json,os
+          from urllib.request import Request,urlopen
+          from urllib.error import HTTPError
+          def get(path,key=None):
+              headers={'Authorization':'Bearer '+key} if key else {}
+              try:
+                  with urlopen(Request('https://openrouter.ai'+path,headers=headers),timeout=35) as r:return r.status,json.load(r)
+              except HTTPError as e:return e.code,{}
+          rows=[]
+          for role,name in [('primary','OPENROUTER_API_KEY'),('backup','OPENROUTER_API_KEY2')]:
+              key=os.environ.get(name,'');status,obj=get('/api/v1/key',key) if key else (None,{})
+              data=obj.get('data',{})
+              rows.append(dict(role=role,configured=bool(key),http_status=status,authenticated=status==200,is_free_tier=data.get('is_free_tier'),is_management_key=data.get('is_management_key'),limited=data.get('limit') is not None,remaining_positive=data.get('limit_remaining') is None or data.get('limit_remaining',0)>0))
+          models=['inception/mercury-decide:free','nvidia/nemotron-3-super-120b-a12b:free','nvidia/nemotron-3.5-super-vl:free']
+          status,catalog=get('/api/v1/models');catalog={x['id']:x for x in catalog.get('data',[]) if x.get('id') in models};routes=[]
+          for model in models:
+              row=catalog.get(model);code,endpoints=get('/api/v1/models/'+model+'/endpoints')
+              routes.append(dict(model=model,in_catalog=row is not None,pricing=(row or {}).get('pricing'),supported_parameters=(row or {}).get('supported_parameters'),endpoints_http=code,endpoint_count=len(endpoints.get('data',{}).get('endpoints',[]))))
+          print(json.dumps(dict(status='metaculus_key_and_route_health',keys=rows,distinct_keys=os.environ.get('OPENROUTER_API_KEY')!=os.environ.get('OPENROUTER_API_KEY2'),catalog_http=status,routes=routes,inference_calls=0)))
+          PY
