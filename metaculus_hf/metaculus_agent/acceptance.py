@@ -7,7 +7,7 @@ from pipeline_v2.intelligence_package import load
 from pipeline_v2.routing import configure_credentials
 from ForecastAgent.competition.platform import Client
 from ForecastAgent.competition.queue import questions
-from ForecastAgent.competition.live import live_request,rule_identity
+from .platform_adapter import live_request,rule_identity
 from .storage import Store,RuntimeCheckpoint,dumps,sha
 from .runner import initial_state,blind_post
 from .products import context,product,manifest
@@ -30,7 +30,7 @@ def storage(store,root):
     if not cp_path.is_relative_to(cp.root):raise RuntimeError('UNSAFE_ACCEPTANCE_CLEANUP')
     path.unlink();cp.save(state)
     result=dict(status='storage_acceptance_passed',test_only=True,run_id=identity,exact_revision_readback=True,
-        parquet_readback=True,restart_restored=True,budget_restored=True,local_payloads_retired=not path.exists() and not target.exists(),revision=receipt['revision'],provider_calls=0,submissions=0)
+        parquet_readback=True,restart_restored=True,budget_restored=True,local_payloads_retired=not path.exists() and not target.exists(),revision=receipt['revision'],acquisition_provider_calls=0,submissions=0)
     store.publish({'metaculus/_acceptance/'+identity+'/acceptance.json':dumps(result)})
     return result
 

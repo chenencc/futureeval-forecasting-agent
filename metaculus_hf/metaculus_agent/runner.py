@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pipeline_v2.contracts import now,digest
 from pipeline_v2.routing import configure_credentials
 from ForecastAgent.competition import platform
-from ForecastAgent.competition.live import live_request,rule_identity,current
+from .platform_adapter import live_request,rule_identity,current
 from ForecastAgent.competition.queue import descriptor,questions,utc
 from ForecastAgent.monitor_tournament import collect_questions
 from .storage import Store,RuntimeCheckpoint,dumps,Conflict,PersistenceError
@@ -19,7 +19,7 @@ def initial_state(writer):return dict(schema='metaculus-checkpoint/1',writer=wri
 def blind_post(post,question):
     """No community forecasts, outcome labels or other users' comments."""
     parent={k:post.get(k) for k in ('id','title','description','resolution_criteria','fine_print','created_at','status','user_permission')}
-    keys=('id','title','description','resolution_criteria','fine_print','type','status','options','scaling','inbound_outcome_count','open_lower_bound','open_upper_bound','unit','open_time','close_time','actual_close_time','scheduled_close_time','spot_scoring_time','scheduled_resolve_time')
+    keys=('id','title','description','resolution_criteria','fine_print','type','status','options','scaling','forecast_grid','inbound_outcome_count','open_lower_bound','open_upper_bound','unit','open_time','close_time','actual_close_time','scheduled_close_time','spot_scoring_time','scheduled_resolve_time')
     return {**parent,'question':{k:question[k] for k in keys if k in question}}
 def eligible(post,q):
     desc=descriptor(post,q)

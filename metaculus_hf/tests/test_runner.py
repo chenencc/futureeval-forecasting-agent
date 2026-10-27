@@ -9,7 +9,7 @@ from pipeline_v2.intelligence_package import load
 from metaculus_agent.storage import RuntimeCheckpoint,dumps,sha,Conflict
 from metaculus_agent.products import context,bundle,prefix,product,verify_context
 from metaculus_agent.runner import Runner,initial_state,blind_post
-from ForecastAgent.competition.live import live_request,rule_identity
+from metaculus_agent.platform_adapter import live_request,rule_identity
 from ForecastAgent.competition import mercury,platform
 from ForecastAgent.analysis.distributions import payload
 
@@ -65,6 +65,13 @@ class Client:
         return dict(status=201)
 
 class ProductTests(unittest.TestCase):
+    def test_exact_nonuniform_platform_grid_survives_and_changes_identity(self):
+        p=post('numeric');q=p['question'];q['inbound_outcome_count']=3;q['forecast_grid']=[0,4,30,100]
+        request=live_request(p,q);self.assertEqual(request['scaling']['continuous_range'],[0,4,30,100])
+        item=metaculus(blind_post(p,q))[0];self.assertEqual(item['definition']['scale']['grid'],[0,4,30,100])
+        identity=rule_identity(p,q);q['forecast_grid']=[0,5,30,100];self.assertNotEqual(rule_identity(p,q),identity)
+        q['forecast_grid']=[0,100]
+        with self.assertRaises(ValueError):live_request(p,q)
     def test_four_question_types_are_blind_and_roundtrip(self):
         for kind in ('binary','multiple_choice','numeric','date'):
             with self.subTest(kind=kind),tempfile.TemporaryDirectory() as folder:

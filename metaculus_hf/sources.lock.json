@@ -629,6 +629,14 @@
       "source": "public-official-release",
       "sha256": "0994d94b44b916fd7d4e9a1e73be06651466bbf79a794c4e47592eb8c8dd4b5b",
       "normalized_sha256": "0994d94b44b916fd7d4e9a1e73be06651466bbf79a794c4e47592eb8c8dd4b5b"
+    },
+    "metaculus_agent/vendor/provider_failover.py": {
+      "source": "already-public-controller-transport",
+      "source_repository": "chenencc/futureeval-forecasting-agent",
+      "source_path": "ForecastAgent/infrastructure/provider_failover.py",
+      "source_commit": "786f7ccaf38eb33ffc4d006a9bc44c6a916a6eee",
+      "sha256": "cbe4fba4f7c54e17949acd957466687c86d7ff7d9bf54e2fdbae07f60c324b5f",
+      "normalized_sha256": "cbe4fba4f7c54e17949acd957466687c86d7ff7d9bf54e2fdbae07f60c324b5f"
     }
   },
   "line_ending_policy": "lf-normalized-source-v1"

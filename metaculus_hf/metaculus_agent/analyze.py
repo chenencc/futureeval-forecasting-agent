@@ -9,13 +9,16 @@ def analyze(value,root,checkpoint):
     from ForecastAgent.competition.live import analyze as existing
     from ForecastAgent.analysis.pilot import Journal,save
     from ForecastAgent.providers import model
+    from .analysis_transport import installed
     root=Path(root);root.mkdir(parents=True,exist_ok=True);source=bundle(value)
     path=root/'input.json';save(path,source);checkpoint()
     original=Journal.__call__
     def persist(self,*a,**kw):
         result=original(self,*a,**kw);checkpoint();return result
     started=now()
-    with patch.object(Journal,'__call__',persist):candidate=existing(path,root/'official',value['question_id'].split(':')[1])
+    budget_root=Path(os.environ.get('FORECAST_V2_SHARED_BUDGET_ROOT',root/'budgets'))
+    with patch.object(Journal,'__call__',persist),installed(budget_root,'analysis-'+value['run_id'],checkpoint):
+        candidate=existing(path,root/'official',value['question_id'].split(':')[1])
     records={p.relative_to(root).as_posix():json.loads(p.read_text()) for p in root.rglob('*.json') if p.name!='input.json'}
     result=dict(schema='metaculus-analysis/1',question_id=value['question_id'],run_id=value['run_id'],snapshot_id=value['snapshot_id'],
         context_sha256=digest(value),analysis_input_sha256=digest(source),analysis_release='751145e604406278d6d39d75135668bf30a93b78',
