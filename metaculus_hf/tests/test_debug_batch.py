@@ -2,7 +2,8 @@ import copy,json,os,tempfile,unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from metaculus_agent.debug_batch import select,run,known_ids,EXCLUDE
+from metaculus_agent.debug_batch import select,run,known_ids,EXCLUDE,old_post,SelectionError
+from urllib.error import HTTPError
 from test_runner import post
 from test_debug_sequence import seed,capture,analyze
 
@@ -34,9 +35,11 @@ class BatchTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
         env=patch.dict(os.environ,dict(os.environ));env.start();self.addCleanup(env.stop)
         self.backend=seed();self.backend.api=Api(self.backend);self.backend.repo_id='fixture/dataset'
+        # Skip only fixed pacing in fixtures; explicit 429 tests inject their own clock.
+        pacing=patch('metaculus_agent.debug_batch.select',side_effect=lambda *a,**kw:select(*a,**kw,sleep=lambda _:None));pacing.start();self.addCleanup(pacing.stop)
     def test_selection_excludes_previously_used_and_existing_actual_forecasts(self):
         native=Native();native.posts['46201']['question']['my_forecasts']={'latest':{'author_id':309450},'history':[]}
-        rows,skips=select(native,{'46429'},candidate_posts=range(46202,46196,-1))
+        rows,skips=select(native,{'46429'},candidate_posts=range(46202,46196,-1),sleep=lambda _:None)
         self.assertEqual([r['question_id'] for r in rows],['46427','46426','46425'])
         self.assertEqual(skips['previously_used'],1);self.assertEqual(skips['already_forecasted'],1)
         self.assertTrue(all(r['question_id'] not in EXCLUDE for r in rows))
@@ -69,7 +72,29 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(native.calls,[])
     def test_recent_or_unreadable_history_question_is_not_called_unused(self):
         native=Native();native.posts['46202']['created_at']='2099-01-01T00:00:00Z';native.posts['46201']['question'].pop('my_forecasts')
-        rows,skips=select(native,set(),candidate_posts=range(46202,46197,-1))
+        rows,skips=select(native,set(),candidate_posts=range(46202,46197,-1),sleep=lambda _:None)
         self.assertEqual(len(rows),3);self.assertEqual(skips['not_old'],1);self.assertEqual(skips['own_history_unreadable'],1)
+    def test_relaxed_debug_uses_first_three_old_posts_even_with_prior_forecasts(self):
+        native=Native()
+        for p in native.posts.values():p['question']['my_forecasts']={'latest':{'author_id':309450},'history':[]}
+        rows,skips=select(native,{'46429','46428','46427'},candidate_posts=range(46202,46199,-1),sleep=lambda _:None,require_unused=False)
+        self.assertEqual([r['question_id'] for r in rows],['46429','46428','46427'])
+        self.assertEqual(len(native.calls),3);self.assertTrue(all(r['question_id'] not in EXCLUDE for r in rows))
+        self.assertEqual(skips,{})
+    def test_429_honors_retry_after_on_same_read_and_never_calls_models(self):
+        calls=[];waits=[]
+        class Limited:
+            def post(self,pid):
+                calls.append(pid)
+                if len(calls)==1:raise HTTPError('https://www.metaculus.com/api/posts/1/',429,'fixture',{'Retry-After':'7'},None)
+                return {'id':pid}
+        self.assertEqual(old_post(Limited(),1,sleep=waits.append),{'id':1});self.assertEqual(calls,[1,1]);self.assertEqual(waits,[7])
+    def test_persistent_or_excessive_rate_wait_stops_with_safe_details(self):
+        class Limited:
+            def post(self,pid):raise HTTPError('https://www.metaculus.com/api/posts/1/',429,'fixture',{'Retry-After':'999'},None)
+        waits=[]
+        with self.assertRaises(SelectionError) as caught:old_post(Limited(),1,sleep=waits.append)
+        self.assertEqual(waits,[]);self.assertEqual(caught.exception.http_status,429);self.assertEqual(caught.exception.retry_after,999)
+        self.assertEqual(caught.exception.phase,'historical_question_selection')
 
 if __name__=='__main__':unittest.main()
