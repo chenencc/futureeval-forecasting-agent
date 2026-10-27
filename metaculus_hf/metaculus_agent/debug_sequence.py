@@ -1,5 +1,6 @@
 """Three finite historical arrivals, isolated HF state, no platform submissions."""
 import argparse,contextlib,io,json,os,re,shutil,tempfile
+from collections import Counter
 from copy import deepcopy
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
@@ -12,7 +13,7 @@ from ForecastAgent.competition.queue import questions,descriptor
 from .runner import Runner,initial_state,blind_post
 from .platform_adapter import live_request
 from .storage import Store,RuntimeCheckpoint,dumps,sha,safe
-from .products import verify_context,prefix
+from .products import verify_context,prefix,bundle
 from .collect import collect
 from .analyze import analyze
 
@@ -106,6 +107,7 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         prior=json.loads(store.read(f'metaculus/case-{index-1}/audit.json'))
         if prior.get('status')!='debug_case_passed':raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
     try:
+        baseline=json.loads((cp.root/'budgets/control/provider-budget.jsonl').read_bytes())
         def analyzed(value,folder,checkpoint):
             result=analyzer(value,folder,checkpoint)
             return {**result,'test_only':True,'run_purpose':'historical-listener-simulation'}
@@ -153,12 +155,18 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         final=RuntimeCheckpoint(store,root/'after-retirement',key=KEY);final_state=final.restore()
         if any((final.root/'tasks').rglob('*')) or not (final.root/ledger).is_file():raise RuntimeError('DEBUG_RETIREMENT_OR_BUDGET_RESTORE')
         raw_budget=json.loads((final.root/ledger).read_bytes())
+        source=bundle(value)
+        consumption={kind:sum(v.get(kind,0) for v in raw_budget['days'].values())-sum(v.get(kind,0) for v in baseline['days'].values()) for kind in ['model','search','fetch']}
         report=dict(status='debug_case_passed',session=session,case_index=index,question_id=qid,post_id=post_id,
             question_title=value['request'].get('question'),question_type=value['request'].get('question_type'),test_only=True,
             hf_prefix=store.physical(pre),snapshot_id=value['snapshot_id'],context_sha256=sha(context_raw),analysis_sha256=sha(analysis_raw),
             products_revision=task['analysis_revision'],exact_revision_readback=True,manifest_verified=True,analysis_binding_verified=True,
             restart_restored=True,duplicate_discovery_processed=0,duplicate_discovery_no_acquisition_calls=True,budget_restored=True,
             budget_days=raw_budget['days'],material_count=len(snapshot['materials']),evidence_gaps=snapshot['gaps'],
+            analysis_input_pages=len(source['pages']),analysis_input_characters=sum(len(p['content']) for p in source['pages'].values()),
+            unverified_reading_sources=len(source['original_reading'].get('unverified_source_ids',[])),
+            source_http_status_counts=dict(Counter(str(m.get('source',{}).get('http_status')) for m in snapshot['materials'])),
+            provider_budget_increment=consumption,
             local_payloads_retired=True,completed_cases=final_state['debug']['completed'],submissions=0,new_opening_claimed=False,
             simulated_submission_readback=True,simulated_duplicate_posts=0,actual_submission_acceptance_claimed=False,
             historical_asof_claimed=False,finished_at=now())
@@ -177,7 +185,8 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
 def public(report):
     keys=('status','session','case_index','question_id','post_id','question_title','question_type','stage','code','hf_prefix','snapshot_id',
           'products_revision','exact_revision_readback','restart_restored','duplicate_discovery_processed','budget_restored','material_count',
-          'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts','finished_at')
+          'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
+          'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment','finished_at')
     return {k:report[k] for k in keys if k in report}
 
 def diagnostics(backend,session,index):
