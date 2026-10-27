@@ -86,11 +86,16 @@ def resume(store,root,source_prefix):
     result=analyze(value,taskroot/'analysis',checkpoint);analysis=product('analysis',result)
     task['status']='analyzed';receipt=cp.save(state,extra={pre+'/analysis.parquet':analysis,pre+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis}))})
     if not taskroot.resolve().is_relative_to(cp.root) or taskroot.is_symlink():raise RuntimeError('UNSAFE_ACCEPTANCE_CLEANUP')
-    shutil.rmtree(taskroot);p.unlink();checkpoint()
+    shutil.rmtree(taskroot);p.unlink()
+    source_task=source_cp.root/'tasks'/task['id']
+    if source_task.exists():
+        if not source_task.resolve().is_relative_to(source_cp.root) or source_task.is_symlink():raise RuntimeError('UNSAFE_SOURCE_RESTORE_CLEANUP')
+        shutil.rmtree(source_task)
+    checkpoint()
     report=dict(status='saved_context_analysis_acceptance_passed',test_only=True,run_id=identity,resumed_from=source_prefix,source_revision=source_revision,
         original_run_id=value['run_id'],snapshot_id=value['snapshot_id'],context_sha256=sha(raw),analysis_sha256=sha(analysis),
         exact_revision_readback=True,revision=receipt['revision'],new_search_requests=0,new_fetch_requests=0,submissions=0,
-        local_payloads_retired=not taskroot.exists() and not p.exists(),finished_at=now())
+        local_payloads_retired=not taskroot.exists() and not source_task.exists() and not p.exists(),finished_at=now())
     store.publish({pre+'/acceptance.json':dumps(report)});return report
 
 def main():

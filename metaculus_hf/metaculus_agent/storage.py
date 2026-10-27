@@ -41,7 +41,9 @@ class Store:
                 latest=self.api.repo_info(self.repo_id,repo_type='dataset').sha
                 if not self.guards:raise Conflict('HF_HEAD_CHANGED') from None
                 for key,old in self.guards.items():
-                    if self.read(key,latest)!=old:raise Conflict('HF_WRITER_CHANGED') from None
+                    if old is None:
+                        if self.api.file_exists(self.repo_id,safe(key),repo_type='dataset',revision=latest):raise Conflict('HF_WRITER_CHANGED') from None
+                    elif self.read(key,latest)!=old:raise Conflict('HF_WRITER_CHANGED') from None
                 self.head=latest
         if result is None:raise Conflict('HF_HEAD_BUSY')
         revision=result.oid

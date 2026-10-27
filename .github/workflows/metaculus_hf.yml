@@ -7,7 +7,7 @@ on:
       mode:
         type: choice
         default: collect-analyze
-        options: [collect-analyze, live]
+        options: [inspect, collect-analyze, live]
       limit:
         type: choice
         default: '1'
