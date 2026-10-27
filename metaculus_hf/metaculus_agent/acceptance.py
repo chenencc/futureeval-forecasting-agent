@@ -1,5 +1,6 @@
 """Finite non-submitting acceptance using the real private HF transport."""
 import argparse,contextlib,io,json,os,re,shutil,tempfile,uuid
+from copy import deepcopy
 from pathlib import Path
 from pipeline_v2.contracts import now,digest
 from pipeline_v2.delivery import parquet_payload
@@ -63,11 +64,42 @@ def full(store,root,post_id,question_id):
         selected_historical_question=True,new_opening_claimed=False,finished_at=now())
     store.publish({pre+'/acceptance.json':dumps(report)});return report
 
+def resume(store,root,source_prefix):
+    """Continue analysis from one saved test snapshot; never collect or submit."""
+    if not isinstance(source_prefix,str) or not re.fullmatch(r'metaculus/_acceptance/[0-9a-f]{32}',source_prefix):raise ValueError('ACCEPTANCE_SOURCE_PREFIX')
+    source_cp=RuntimeCheckpoint(store,root/'source',key=source_prefix+'/checkpoint.json');source=source_cp.restore()
+    if not source['writer'].startswith(('full-acceptance-','resume-acceptance-')) or len(source['tasks'])!=1:raise RuntimeError('SAVED_FINITE_ACCEPTANCE_REQUIRED')
+    raw=store.read(source_prefix+'/context.parquet');saved=store.read(source_prefix+'/manifest.json');source_revision=store.head
+    if json.loads(saved)['files']['context.parquet']['sha256']!=sha(raw):raise RuntimeError('SAVED_CONTEXT_MANIFEST_HASH')
+    p=root/'context.parquet';p.write_bytes(raw);value=load(p)
+    if not value.get('test_only'):raise RuntimeError('PRODUCTION_CONTEXT_NOT_ACCEPTANCE')
+    identity=uuid.uuid4().hex;pre='metaculus/_acceptance/'+identity;state=deepcopy(source);state['writer']='resume-acceptance-'+identity;state['resumed_from']=source_prefix
+    task=next(iter(state['tasks'].values()));task['status']='analyzing'
+    if value['snapshot_id']!=task['snapshot_id'] or value['run_id']!=task['run_id']:raise RuntimeError('SAVED_ACCEPTANCE_IDENTITY')
+    cp=RuntimeCheckpoint(store,root/'runtime',key=pre+'/checkpoint.json')
+    store.publish({cp.key:dumps(state)});cp.restore()
+    os.environ['FORECAST_V2_SHARED_BUDGET_ROOT']=str(cp.root/'budgets')
+    os.environ.setdefault('FORECAST_MODEL','nvidia/nemotron-3-super-120b-a12b:free')
+    def checkpoint():return cp.save(state)
+    cp.save(state,extra={pre+'/context.parquet':raw,pre+'/manifest.json':saved})
+    taskroot=cp.root/'tasks'/task['id'];taskroot.mkdir(parents=True,exist_ok=True)
+    result=analyze(value,taskroot/'analysis',checkpoint);analysis=product('analysis',result)
+    task['status']='analyzed';receipt=cp.save(state,extra={pre+'/analysis.parquet':analysis,pre+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis}))})
+    if not taskroot.resolve().is_relative_to(cp.root) or taskroot.is_symlink():raise RuntimeError('UNSAFE_ACCEPTANCE_CLEANUP')
+    shutil.rmtree(taskroot);p.unlink();checkpoint()
+    report=dict(status='saved_context_analysis_acceptance_passed',test_only=True,run_id=identity,resumed_from=source_prefix,source_revision=source_revision,
+        original_run_id=value['run_id'],snapshot_id=value['snapshot_id'],context_sha256=sha(raw),analysis_sha256=sha(analysis),
+        exact_revision_readback=True,revision=receipt['revision'],new_search_requests=0,new_fetch_requests=0,submissions=0,
+        local_payloads_retired=not taskroot.exists() and not p.exists(),finished_at=now())
+    store.publish({pre+'/acceptance.json':dumps(report)});return report
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--kind',choices=['storage','full'],default='storage');p.add_argument('--post-id');p.add_argument('--question-id');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--kind',choices=['storage','full','resume'],default='storage');p.add_argument('--post-id');p.add_argument('--question-id');p.add_argument('--source-prefix');a=p.parse_args()
     store=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN'])
     with tempfile.TemporaryDirectory(prefix='metaculus-acceptance-') as tmp:
-        return storage(store,Path(tmp)) if a.kind=='storage' else full(store,Path(tmp),a.post_id,a.question_id)
+        if a.kind=='storage':return storage(store,Path(tmp))
+        if a.kind=='resume':return resume(store,Path(tmp),a.source_prefix)
+        return full(store,Path(tmp),a.post_id,a.question_id)
 if __name__=='__main__':
     try:
         with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):result=main()

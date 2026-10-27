@@ -14,7 +14,7 @@ from .products import context,product,prefix,manifest
 from .collect import collect
 from .analyze import analyze
 
-TERMINAL={'accepted','already_forecasted','closed','deadline_missed','legacy_terminal','ambiguous_submission'}
+TERMINAL={'accepted','already_forecasted','closed','deadline_missed','legacy_terminal','ambiguous_submission','collection_exhausted','analysis_exhausted','blocked_integrity'}
 def initial_state(writer):return dict(schema='metaculus-checkpoint/1',writer=writer,migration_complete=False,tasks={},runtime={},updated_at=now())
 def blind_post(post,question):
     """No community forecasts, outcome labels or other users' comments."""
@@ -109,13 +109,19 @@ class Runner:
         shutil.rmtree(target);task.pop('post',None);task.pop('candidate',None);self.checkpoint()
     def run(self,posts):
         self.client.account();self.ingest(posts);done=0;failures=0
-        tasks=sorted((t for t in self.state['tasks'].values() if t['status'] not in TERMINAL),key=lambda t:t['deadline_utc'])
+        tasks=sorted((t for t in self.state['tasks'].values() if t['status'] not in TERMINAL and (self.live or t['status']!='analyzed')),key=lambda t:t['deadline_utc'])
         for task in tasks:
             if done>=self.limit or time.monotonic()+180>=self.until:break
             try:self.process(task)
             except (Conflict,PersistenceError):raise
             except Exception as exc:
-                task['last_error']=getattr(exc,'code',type(exc).__name__);self.checkpoint();failures+=1
+                code=getattr(exc,'code',type(exc).__name__);task['last_error']=code
+                if code in {'QUESTION_IDENTITY_CHANGED','QUESTION_RULES_OR_SCALE_CHANGED'}:task['status']='blocked_integrity'
+                elif code=='QUESTION_CLOSED_OR_PERMISSION':task['status']='closed'
+                elif code=='QUESTION_DEADLINE':task['status']='deadline_missed'
+                elif task['status']=='capturing' and task['attempts'].get('capture',0)>=3:task['status']='collection_exhausted'
+                elif task['status']=='analyzing' and task['attempts'].get('analysis',0)>=3:task['status']='analysis_exhausted'
+                self.checkpoint();failures+=1
             done+=1
         return dict(processed=done,failures=failures,tasks=len(self.state['tasks']),live=self.live)
 

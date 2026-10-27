@@ -5,7 +5,10 @@ on:
       kind:
         type: choice
         default: storage
-        options: [storage, full]
+        options: [storage, full, resume]
+      source_prefix:
+        type: string
+        default: ''
       post_id:
         type: string
         default: ''
@@ -53,4 +56,5 @@ jobs:
           KIND: ${{ inputs.kind }}
           POST_ID: ${{ inputs.post_id }}
           QUESTION_ID: ${{ inputs.question_id }}
-        run: python -B -m metaculus_agent.acceptance --kind "$KIND" --post-id "$POST_ID" --question-id "$QUESTION_ID"
+          SOURCE_PREFIX: ${{ inputs.source_prefix }}
+        run: python -B -m metaculus_agent.acceptance --kind "$KIND" --post-id "$POST_ID" --question-id "$QUESTION_ID" --source-prefix "$SOURCE_PREFIX"

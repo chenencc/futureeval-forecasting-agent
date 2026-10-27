@@ -6,8 +6,13 @@ from unittest.mock import patch
 import requests
 from huggingface_hub.errors import HfHubHTTPError
 from metaculus_agent.storage import Store,Conflict,PersistenceError
-from metaculus_agent.acceptance import storage
-from test_runner import MemoryStore
+from metaculus_agent.acceptance import storage,resume
+from metaculus_agent.products import context,product,manifest
+from metaculus_agent.storage import RuntimeCheckpoint,dumps,sha
+from test_runner import MemoryStore,post,sealed
+from metaculus_agent.runner import initial_state
+from metaculus_agent.platform_adapter import live_request,rule_identity
+from pipeline_v2.contracts import now
 
 class Api:
     def __init__(self,private=True):self.private=private;self.head='a';self.files={'a':{'metaculus/_control/checkpoint.json':b'owner1'}};self.conflict=False;self.calls=0
@@ -47,5 +52,21 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(result['status'],'storage_acceptance_passed');self.assertEqual(result['submissions'],0)
         self.assertTrue(result['local_payloads_retired']);self.assertTrue(result['budget_restored'])
         self.assertEqual(store.read('metaculus/_control/checkpoint.json'),b'production-owner-unchanged')
+    def test_resume_reuses_exact_snapshot_without_collection(self):
+        store=MemoryStore();pre='metaculus/_acceptance/'+'a'*32;p=post()
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);state=initial_state('full-acceptance-'+'a'*32)
+            task=dict(id='100',post_id=str(p['id']),post=p,request=live_request(p,p['question']),rule_identity=rule_identity(p,p['question']),
+                run_id='a'*32,started_at=now(),test_only=True,status='sealed')
+            cp=RuntimeCheckpoint(store,root/'original',key=pre+'/checkpoint.json');store.publish({cp.key:dumps(state)});cp.restore()
+            package=sealed(task,cp.root/'tasks/100/capture');state['tasks']['100']=task
+            value=context(task,package,task['snapshot_id']);raw=product('context',value)
+            cp.save(state,extra={pre+'/context.parquet':raw,pre+'/manifest.json':dumps(manifest(task,{'context.parquet':raw}))})
+            seen=[]
+            def analyzed(value,*args):seen.append(value['snapshot_id']);return dict(schema='fixture-analysis',snapshot_id=value['snapshot_id'])
+            with patch('metaculus_agent.acceptance.analyze',side_effect=analyzed),patch('metaculus_agent.acceptance.collect',side_effect=AssertionError('recollection forbidden')):
+                result=resume(store,root/'resume',pre)
+            self.assertEqual(seen,[task['snapshot_id']]);self.assertEqual(result['new_search_requests'],0);self.assertEqual(result['new_fetch_requests'],0)
+            self.assertEqual(result['context_sha256'],sha(raw));self.assertTrue(result['local_payloads_retired']);self.assertEqual(result['submissions'],0)
 
 if __name__=='__main__':unittest.main()
