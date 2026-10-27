@@ -90,3 +90,29 @@ and `NOTICE.md` for provenance. This repository does not require a private
 GitHub checkout or a running Vultr server.
 
 Repository credentials are reused with explicit workflow aliases: OPENROUTER/OPENROUTER2, TAVILY_KEY3/TAVILY_KEY4, EXA_API/EXA_API2 and METACULUS_TOKEN. Only HF_TOKEN is an additional repository secret when absent. Existing workflows and their enable flags are unchanged.
+
+## Three historical arrival debug
+
+`metaculus_hf_debug.yml` runs exactly three explicit historical questions in
+sequential dependent jobs. Each job starts on a new GitHub-hosted machine.
+Any failed case skips all later cases. A unique 32-hex session scopes every
+checkpoint, content-addressed object, dated product, analysis and audit under
+`metaculus/_debug/<session>/`; production data/control are never written.
+
+The harness reuses `Runner.ingest`, shared collection, the official analyzer,
+exact-revision cloud verification and native delivery serialization. Only
+eligibility and prior-own-forecast visibility are simulated at the debug
+client boundary. Original question rules and model-input clocks are retained.
+Evidence is collected now; this is not a historical-as-of forecast test.
+
+Actual platform POSTs are prohibited. Delivery/readback and duplicate delivery
+are exercised using an in-memory API sink with a durable intent; that does not
+prove real platform acceptance. Each case verifies product/manifest bindings,
+fresh-root state and budget recovery, duplicate discovery without recollection,
+and local retirement. Failed inputs remain in the debug checkpoint.
+
+The debug ledger starts from the known production consumption floor and carries
+its own increments between all three machines. Credentials still share actual
+provider allowances. The debug workflow uses the production concurrency group
+to avoid overlapping paid work; ordinary cron dispatches can wait behind it.
+It does not reset or mutate the production budget or submit the old questions.
