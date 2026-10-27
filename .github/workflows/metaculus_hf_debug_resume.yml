@@ -42,7 +42,22 @@ jobs:
           cache: pip
           cache-dependency-path: metaculus_hf/requirements.txt
       - run: python -m pip install -r requirements.txt
-      - run: python -m playwright install --with-deps chromium
+      - name: Install Chromium without redundant system upgrades
+        timeout-minutes: 5
+        run: python -m playwright install chromium
+      - name: Verify Chromium launches on the runner
+        timeout-minutes: 2
+        run: |
+          python -B - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
+              page=browser.new_page()
+              page.set_content('<title>Metaculus browser readiness</title>')
+              assert page.title()=='Metaculus browser readiness'
+              browser.close()
+          print('Chromium launch verified; no external page requests')
+          PY
       - run: python -m metaculus_agent.doctor
       - name: Resume only saved third-case capture; no platform POSTs
         run: python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 3 --resume-capture
