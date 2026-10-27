@@ -23,6 +23,7 @@ def context(task,package,snapshot_id,*,raw_search_responses=None):
     if raw_search_responses:
         from .raw_search import validate
         validate(raw_search_responses);value['raw_search_responses']=raw_search_responses
+    if task.get('collection_failure'):value['collection_failure']=task['collection_failure']
     return value
 def verify_context(value):
     if value.get('schema')!='metaculus-context/1':raise ValueError('CONTEXT_SCHEMA')
