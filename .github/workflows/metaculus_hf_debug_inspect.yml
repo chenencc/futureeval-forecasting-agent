@@ -5,6 +5,9 @@ on:
       session:
         type: string
         required: true
+      reader_public_key:
+        type: string
+        required: true
 permissions:
   contents: read
 jobs:
@@ -13,51 +16,37 @@ jobs:
     timeout-minutes: 10
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      DEBUG_SESSION: ${{ inputs.session }}
+      READER_PUBLIC_KEY: ${{ inputs.reader_public_key }}
       HF_HUB_DISABLE_PROGRESS_BARS: '1'
     steps:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
-      - run: python -m pip install huggingface-hub==1.33.0
-      - name: Read saved first-case diagnostics, no collection or models
+      - run: python -m pip install huggingface-hub==1.33.0 pyarrow==21.0.0 PyNaCl==1.6.0
+      - name: Encrypted readback of saved predictions, zero provider calls
         run: |
           python -B - <<'PY'
-          import hashlib,json,os,re,tempfile
+          import base64,hashlib,io,json,os,tempfile
           from pathlib import Path
+          import pyarrow.parquet as pq
           from huggingface_hub import HfApi,hf_hub_download
-          session=os.environ['DEBUG_SESSION']
-          if not re.fullmatch('[0-9a-f]{32}',session):raise ValueError('SESSION')
-          repo='chchen13/forecastagent-data';token=os.environ['HF_TOKEN'];api=HfApi(token=token);info=api.repo_info(repo,repo_type='dataset')
-          if not info.private:raise ValueError('PRIVATE_REPO_REQUIRED')
-          pre='metaculus/_debug/'+session;revision=info.sha
-          def read(key):
-              with tempfile.TemporaryDirectory() as tmp:
-                  return Path(hf_hub_download(repo,key,repo_type='dataset',revision=revision,token=token,local_dir=tmp,force_download=True)).read_bytes()
-          state=json.loads(read(pre+'/_control/checkpoint.json'));rows=[]
-          for name,hashed in state.get('runtime',{}).items():
-              if not name.endswith('.json') or not ('/analysis/' in name or '/analysis-provider-transport/' in name):continue
-              if name.endswith(('/input.json','/packet.json','/first-state.json','/second-state.json','/bundle.json')):continue
-              raw=read(pre+'/_control/objects/'+hashed)
-              if hashlib.sha256(raw).hexdigest()!=hashed:raise ValueError('RUNTIME_OBJECT_HASH')
-              obj=json.loads(raw);row=dict(path=name,bytes=len(raw),top_keys=list(obj)[:25] if isinstance(obj,dict) else [],signals=[])
-              def scan(value,path=''):
-                  if isinstance(value,dict):
-                      for k,v in value.items():
-                          label=path+'/'+k
-                          if k in ('http_status','status_code','provider_error_status') and type(v)==int:row['signals'].append(dict(field=label,status=v))
-                          if k in ('error','code','error_type','detail','finish_reason','message') and isinstance(v,str):
-                              terms=['404','429','502','503','504','401','402','403','quota','budget','credit','rate limit','json','schema','parse','timeout','context','token','evidence','citation','distribution','date','numeric','fallback','reasoning','missing','unavailable','unreadable','valid','no endpoints','not found','does not exist','privacy','data policy','provider','region','tool use','model']
-                              flags=[x for x in terms if x in v.lower()]
-                              row['signals'].append(dict(field=label,text_bytes=len(v.encode()),sha256=hashlib.sha256(v.encode()).hexdigest(),flags=flags))
-                          if k=='model' and isinstance(v,str) and re.fullmatch('[A-Za-z0-9_.:/-]{1,150}',v):row['model']=v
-                          if k=='endpoint' and isinstance(v,str) and v.startswith('https://openrouter.ai/api/'):row['endpoint']=v
-                          if k=='response_body' and isinstance(v,str):
-                              try:scan(json.loads(v),label)
-                              except ValueError:row['response_body_json']=False
-                          if k not in ('messages','prompt','content','request_body','body','text'):scan(v,label)
-                  elif isinstance(value,list):
-                      for i,v in enumerate(value[:5]):scan(v,path+'/'+str(i))
-              scan(obj);rows.append(row)
-          print(json.dumps(dict(status='debug_readonly_diagnostics',session=session,revision=revision,task_states={k:v['status'] for k,v in state['tasks'].items()},runtime_paths=sorted(state.get('runtime',{})),records=rows,provider_calls=0,submissions=0)))
+          from nacl.public import PublicKey,SealedBox
+          session='1044847f98034a4f86e871811b75f8c5'
+          pre='metaculus/_debug/'+session
+          token=os.environ['HF_TOKEN'];repo='chchen13/forecastagent-data';api=HfApi(token=token)
+          info=api.repo_info(repo,repo_type='dataset');assert info.private
+          def read(key,rev):
+           with tempfile.TemporaryDirectory() as d:return Path(hf_hub_download(repo,key,repo_type='dataset',revision=rev,token=token,local_dir=d,force_download=True)).read_bytes()
+          state=json.loads(read(pre+'/_control/checkpoint.json',info.sha));rows=[]
+          for qid in ['46432','46431']:
+           task=state['tasks'][qid];rev=task['analysis_revision'];key=pre+'/'+task['analysis_key'][len('metaculus/'):]
+           raw=read(key,rev);manifest=json.loads(read(key.rsplit('/',1)[0]+'/manifest.json',rev))
+           assert hashlib.sha256(raw).hexdigest()==manifest['files']['analysis.parquet']['sha256']
+           result=json.loads(pq.read_table(io.BytesIO(raw)).to_pylist()[0]['payload'])
+           assert result['question_id']=='metaculus:'+qid and result['run_id']==task['run_id']
+           candidate=result['candidate'];request=task['request']
+           rows.append(dict(question_id=qid,question=request.get('question'),question_type=request.get('question_type'),scaling=request.get('scaling'),inbound_outcome_count=request.get('inbound_outcome_count'),open_lower_bound=request.get('open_lower_bound'),open_upper_bound=request.get('open_upper_bound'),payload=candidate['payload'],selection=candidate['selection'],decision_model=result['decision_model'],analysis_revision=rev,analysis_sha256=hashlib.sha256(raw).hexdigest(),snapshot_id=result['snapshot_id'],finished_at=result['finished_at'],verified=True))
+          data=json.dumps(dict(session=session,cases=rows,provider_calls=0,submissions=0)).encode()
+          encrypted=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(data)
+          print('PRIVATE_FORECAST_READBACK='+base64.b64encode(encrypted).decode())
           PY
