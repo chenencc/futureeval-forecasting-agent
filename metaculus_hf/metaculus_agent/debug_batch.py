@@ -1,5 +1,5 @@
 """Three unused historical questions in one hosted job; read-only size accounting."""
-import argparse,contextlib,io,json,os,re,tempfile
+import argparse,contextlib,io,json,os,re,tempfile,time
 from collections import defaultdict
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
@@ -15,6 +15,22 @@ from . import debug_sequence as sequence
 
 EXCLUDE={'46432','46431','46430'}
 
+class SelectionError(RuntimeError):
+    def __init__(self,code,status=None,retry_after=None):
+        super().__init__(code);self.code=code;self.http_status=status;self.retry_after=retry_after;self.phase='historical_question_selection'
+
+def old_post(native,pid,*,sleep=time.sleep):
+    for attempt in range(3):
+        try:return native.post(pid)
+        except HTTPError as exc:
+            if exc.code!=429:raise
+            from email.utils import parsedate_to_datetime
+            value=exc.headers.get('Retry-After') if exc.headers else None
+            try:delay=max(0,int(value)) if value and value.isdecimal() else max(0,(parsedate_to_datetime(value)-datetime.now(timezone.utc)).total_seconds()) if value else 60
+            except (ValueError,TypeError):delay=60
+            if attempt==2 or delay>120:raise SelectionError('METACULUS_SELECTION_RATE_LIMIT',429,delay) from None
+            sleep(max(1,delay))
+
 def known_ids(backend):
     used=set(EXCLUDE);keys=['metaculus/_control/checkpoint.json']
     for folder,suffix in [('metaculus/_debug','/_control/checkpoint.json'),('metaculus/_acceptance','/checkpoint.json')]:
@@ -28,11 +44,13 @@ def known_ids(backend):
         if backend.exists(key):used.update(str(x).split(':')[-1] for x in json.loads(backend.read(key)).get('tasks',{}))
     return used
 
-def select(native,used,*,clock=None,candidate_posts=range(46202,46142,-1)):
+def select(native,used,*,clock=None,candidate_posts=range(46202,46142,-1),sleep=time.sleep):
     """Only old, unused, unforecasted leaves; no outcome labels enter inputs."""
     clock=clock or datetime.now(timezone.utc);selected=[];skips=defaultdict(int)
     for pid in candidate_posts:
-        try:post=native.post(pid)
+        # The production reader shares the platform account's rate window.
+        sleep(1.1)
+        try:post=old_post(native,pid,sleep=sleep)
         except HTTPError as exc:
             if exc.code==404:skips['not_found']+=1;continue
             raise
@@ -102,4 +120,4 @@ if __name__=='__main__':
         print(json.dumps(result));raise SystemExit(0 if result['status']=='debug_batch_passed' else 1)
     except Exception as exc:
         code=getattr(exc,'code',None) or (str(exc) if re.fullmatch('[A-Z][A-Z0-9_]{1,99}',str(exc)) else type(exc).__name__)
-        print(json.dumps(dict(status='debug_batch_blocked',code=code,http_status=getattr(exc,'http_status',None),phase=getattr(exc,'phase',None))));raise SystemExit(1)
+        print(json.dumps(dict(status='debug_batch_blocked',code=code,http_status=getattr(exc,'http_status',None),phase=getattr(exc,'phase',None),retry_after=getattr(exc,'retry_after',None))));raise SystemExit(1)
