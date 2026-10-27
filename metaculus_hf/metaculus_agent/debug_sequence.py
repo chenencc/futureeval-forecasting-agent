@@ -208,6 +208,9 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
             analysis_input_pages=len(source['pages']),analysis_input_characters=sum(len(p['content']) for p in source['pages'].values()),
             unverified_reading_sources=len(source['original_reading'].get('unverified_source_ids',[])),
             source_http_status_counts=dict(Counter(str(m.get('source',{}).get('http_status')) for m in snapshot['materials'])),
+            raw_search_response_count=len(value.get('raw_search_responses',[])),
+            raw_search_response_bytes=sum(r['body_bytes'] for r in value.get('raw_search_responses',[])),
+            raw_search_complete_count=sum(r['body_complete'] for r in value.get('raw_search_responses',[])),
             provider_budget_increment=consumption,
             resumed_capture=resume_capture,capture_attempts=task.get('attempts',{}).get('capture',0),capture_run_id=task.get('capture_run_id'),
             resumed_analysis_only=resume_analysis,new_search_requests=consumption['search'] if resume_analysis else None,new_fetch_requests=consumption['fetch'] if resume_analysis else None,
@@ -231,7 +234,8 @@ def public(report):
           'products_revision','exact_revision_readback','restart_restored','duplicate_discovery_processed','budget_restored','material_count',
           'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
           'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment',
-          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy','resumed_capture','capture_attempts','capture_run_id')
+          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy','resumed_capture','capture_attempts','capture_run_id',
+          'raw_search_response_count','raw_search_response_bytes','raw_search_complete_count')
     return {k:report[k] for k in keys if k in report}
 
 def verify_case_products(store,report,revision):

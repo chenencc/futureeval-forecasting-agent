@@ -203,3 +203,19 @@ a response. Credential echoes are redacted and marked `credential_redacted`,
 with `byte_exact=false`. Authorization/request headers and cookies are never
 archived. Old saved snapshots have no new raw responses retroactively; they are
 left unchanged and remain readable.
+
+### One job, three unused historical questions
+
+`metaculus_hf_debug_batch.yml` accepts one fresh 32-hex session and runs three
+questions sequentially in one hosted job. It excludes the previous three debug
+IDs, all tasks in production/debug/acceptance checkpoints, and any authenticated
+existing own forecast. Unknown own history is skipped, not called unused. Only
+posts at least 24 hours old qualify. Each case retains its own final HF commit;
+the first failure stops subsequent acquisition. Production cron inputs remain
+unchanged and all debug Metaculus POSTs remain prohibited.
+
+The terminal log includes per-question context/analysis sizes, direct metadata,
+exclusive runtime-object bytes and a shared session remainder without double
+counting. These are current-revision file sizes from HF metadata, not Git history,
+compressed physical storage or a billing estimate. Size inspection is read-only
+and does not add an HF commit. Results/evidence remain in private HF debug.
