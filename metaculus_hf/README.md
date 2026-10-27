@@ -148,3 +148,34 @@ For the failed first debug case, dispatch the same session with
 forbids search/fetch reservations and skips collection. Case 2 and 3 remain
 dependent on a durable successful first-case receipt. Metaculus POSTs remain
 prohibited; only the in-memory delivery simulation runs.
+
+### One HF commit per question
+
+The production runner and three-question debug runner checkpoint to the
+GitHub-hosted machine during collection, analysis and submission. Local files
+are flushed before external-call reservations or submission intents proceed;
+these local checkpoints are explicitly not HF receipts. No intermediate stage
+creates an HF commit, and an empty discovery poll creates none.
+
+At a question boundary, its context, analysis, submission receipt (when present),
+current raw runtime journal, provider budget and updated queue state are sent
+in one atomic HF commit. A normal failed attempt archives its partial state in
+one failure batch. Superseded intermediate object versions are not uploaded.
+The task's dated `question-runtime.json` references its archived journal hashes;
+accepted task payloads are omitted from the active restore index. Exact-revision
+cloud readback must succeed before local task files are removed. A failed flush
+retains the local batch; retrying delivery does not repeat provider work or the
+platform POST. A lost commit acknowledgement is reconciled against target bytes
+before a retry, so it cannot create a duplicate successful commit.
+
+The debug HF audit is `debug_case_prepared` inside that single commit. The job
+reports `debug_case_passed` only after exact-revision cold readback and a fresh
+state/budget restore; it does not create another commit merely to mark that
+verification. A later debug case independently verifies the previous products
+before accepting that prepared boundary.
+
+Normal exceptions retain their partial question in the final batch. If the
+GitHub machine is forcibly lost before that batch, its local-only phase is not
+recoverable from HF, including unflushed budget increments. Platform own-forecast
+readback still precedes another submission; this is not a promise of remote
+mid-question recovery or exactly-once provider usage after abrupt machine loss.

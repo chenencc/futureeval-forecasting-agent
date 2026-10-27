@@ -54,6 +54,34 @@ class StoreTests(unittest.TestCase):
     def test_exact_revision_readback_mismatch_blocks_retirement(self):
         api=Api();s=self.store(api);s.read=lambda *a:b'tampered'
         with self.assertRaises(PersistenceError):s.publish({'metaculus/test/context.parquet':b'actual'})
+    def test_429_retries_one_batch_without_more_than_one_successful_commit(self):
+        api=Api();s=self.store(api);original=api.create_commit;attempts=[]
+        def limited(*args,**kwargs):
+            attempts.append(1)
+            if len(attempts)==1:
+                response=requests.Response();response.status_code=429;response.headers['Retry-After']='2'
+                raise HfHubHTTPError('fixture rate limit',response=response)
+            return original(*args,**kwargs)
+        api.create_commit=limited
+        with patch('metaculus_agent.storage.time.sleep') as sleep:receipt=s.publish({'metaculus/_control/checkpoint.json':b'next'})
+        self.assertTrue(receipt['verified']);self.assertEqual(api.calls,1);self.assertEqual(len(attempts),2);sleep.assert_called_once_with(2)
+    def test_lost_commit_acknowledgement_is_reconciled_without_duplicate_commit(self):
+        api=Api();s=self.store(api);original=api.create_commit
+        def lost(*args,**kwargs):
+            original(*args,**kwargs);response=requests.Response();response.status_code=503
+            raise HfHubHTTPError('fixture lost response after commit',response=response)
+        api.create_commit=lost
+        receipt=s.publish({'metaculus/_control/checkpoint.json':b'next'})
+        self.assertTrue(receipt['verified']);self.assertTrue(receipt['reconciled_commit']);self.assertEqual(api.calls,1)
+    def test_safe_http_failure_details_survive_without_secret_response_body(self):
+        api=Api();s=self.store(api)
+        def refused(*args,**kwargs):
+            response=requests.Response();response.status_code=403
+            raise HfHubHTTPError('private arbitrary fixture response',response=response)
+        api.create_commit=refused
+        with self.assertRaises(PersistenceError) as caught:s.publish({'metaculus/_control/checkpoint.json':b'next'})
+        self.assertEqual(caught.exception.code,'HF_COMMIT_FAILED');self.assertEqual(caught.exception.http_status,403)
+        self.assertEqual(caught.exception.phase,'commit');self.assertNotIn('private arbitrary',str(caught.exception))
     def test_acceptance_isolated_from_live_state_and_restores_budget(self):
         store=MemoryStore();store.publish({'metaculus/_control/checkpoint.json':b'production-owner-unchanged'})
         with tempfile.TemporaryDirectory() as root:result=storage(store,Path(root))

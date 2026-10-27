@@ -12,7 +12,7 @@ from ForecastAgent.competition import platform
 from ForecastAgent.competition.queue import questions,descriptor
 from .runner import Runner,initial_state,blind_post
 from .platform_adapter import live_request
-from .storage import Store,RuntimeCheckpoint,dumps,sha,safe
+from .storage import Store,QuestionBatch,RuntimeCheckpoint,dumps,sha,safe
 from .products import verify_context,prefix,bundle
 from .collect import collect
 from .analyze import analyze
@@ -28,6 +28,12 @@ class DebugStore:
     def physical(self,key):return self.base+'/'+safe(key)[len('metaculus/'):]
     @property
     def head(self):return self.backend.head
+    @property
+    def batched(self):return getattr(self.backend,'batched',False)
+    @property
+    def autoflush(self):return False
+    def is_staged(self,key):return getattr(self.backend,'is_staged',lambda key:False)(self.physical(key))
+    def check_owner(self):return self.backend.check_owner()
     def exists(self,key):return self.backend.exists(self.physical(key))
     def read(self,key,revision=None):return self.backend.read(self.physical(key),revision)
     def publish(self,updates):
@@ -109,7 +115,8 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         state=cp.restore()
         if state.get('debug',{}).get('completed')!=list(range(1,index)):raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
         prior=json.loads(store.read(f'metaculus/case-{index-1}/audit.json'))
-        if prior.get('status')!='debug_case_passed':raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
+        if prior.get('status') not in {'debug_case_passed','debug_case_prepared'}:raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
+        if prior.get('status')=='debug_case_prepared':verify_case_products(store,prior,store.head)
     try:
         baseline=json.loads((cp.root/'budgets/control/provider-budget.jsonl').read_bytes())
         def analyzed(value,folder,checkpoint):
@@ -209,8 +216,43 @@ def public(report):
           'products_revision','exact_revision_readback','restart_restored','duplicate_discovery_processed','budget_restored','material_count',
           'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
           'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment',
-          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at')
+          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy')
     return {k:report[k] for k in keys if k in report}
+
+def verify_case_products(store,report,revision):
+    state=json.loads(store.read(KEY,revision));task=state['tasks'][report['question_id']]
+    pre=prefix(task);manifest=json.loads(store.read(pre+'/manifest.json',revision))
+    values={}
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ('context','analysis'):
+            raw=store.read(pre+'/'+name+'.parquet',revision)
+            if sha(raw)!=report[name+'_sha256'] or sha(raw)!=manifest['files'][name+'.parquet']['sha256']:raise RuntimeError('DEBUG_FINAL_PRODUCT_HASH')
+            path=Path(tmp)/(name+'.parquet');path.write_bytes(raw);values[name]=load(path)
+    context_value,result=values['context'],values['analysis'];verify_context(context_value)
+    if result['snapshot_id']!=report['snapshot_id'] or result['context_sha256']!=digest(context_value) or result['run_id']!=task['run_id']:raise RuntimeError('DEBUG_FINAL_BINDING')
+    return state
+
+def batched_case(backend,root,session,index,native,**kwargs):
+    """The whole finite case has exactly one cloud write boundary."""
+    root=Path(root);batch=QuestionBatch(backend,root/'hf-staging',autoflush=False)
+    report=run_case(batch,root/'case',session,index,native,**kwargs)
+    if report['status']=='debug_case_passed':
+        prepared={**report,'status':'debug_case_prepared','exact_revision_readback':False,
+                  'restart_restored':False,'local_payloads_retired':False,'budget_restored':False,
+                  'checkpoint_policy':'one-commit-per-question',
+                  'verification_policy':'GitHub job must cold-read this exact commit before reporting success.'}
+        batch.publish({f'metaculus/_debug/{session}/case-{index}/audit.json':dumps(prepared)})
+    receipt=batch.flush()
+    if report['status']=='debug_case_passed':
+        store=DebugStore(backend,session);state=verify_case_products(store,report,receipt['revision'])
+        restored=RuntimeCheckpoint(store,root/'cloud-restored',key=KEY);restored_state=restored.restore()
+        if restored_state['debug']['completed']!=list(range(1,index+1)) or any((restored.root/'tasks').rglob('*')):raise RuntimeError('DEBUG_FINAL_RESTART')
+        if not (restored.root/'budgets/control/provider-budget.jsonl').is_file():raise RuntimeError('DEBUG_FINAL_BUDGET')
+        target=root/'case'/'writer'/'tasks'/report['question_id']
+        if target.exists():shutil.rmtree(target)
+        report.update(products_revision=receipt['revision'],exact_revision_readback=True,restart_restored=True,local_payloads_retired=not target.exists(),
+                      hf_successful_commits=batch.successful_commits,checkpoint_policy='one-commit-per-question')
+    return report
 
 def diagnostics(backend,session,index):
     store=DebugStore(backend,session)
@@ -241,7 +283,7 @@ def main():
         if method!='GET':raise RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')
         return original(method,path,data)
     with tempfile.TemporaryDirectory(prefix='metaculus-three-debug-') as tmp,patch.object(native,'request',readonly):
-        return run_case(backend,Path(tmp),args.session,args.case_index,native,resume_analysis=args.resume_analysis)
+        return batched_case(backend,Path(tmp),args.session,args.case_index,native,resume_analysis=args.resume_analysis)
 
 if __name__=='__main__':
     try:
@@ -249,4 +291,4 @@ if __name__=='__main__':
         print(json.dumps(result if result['status']=='debug_diagnostics' else public(result)))
         if result['status'] not in {'debug_case_passed','debug_diagnostics'}:raise SystemExit(1)
     except Exception as exc:
-        code=getattr(exc,'code',type(exc).__name__);print(json.dumps(dict(status='debug_blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,100}',str(code)) else 'INTERNAL_ERROR')));raise SystemExit(1)
+        code=getattr(exc,'code',type(exc).__name__);print(json.dumps(dict(status='debug_blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,100}',str(code)) else 'INTERNAL_ERROR',storage_phase=getattr(exc,'phase',None),http_status=getattr(exc,'http_status',None),retry_after=getattr(exc,'retry_after',None))));raise SystemExit(1)

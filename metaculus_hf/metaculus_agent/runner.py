@@ -9,7 +9,7 @@ from ForecastAgent.competition import platform
 from .platform_adapter import live_request,rule_identity,current
 from ForecastAgent.competition.queue import descriptor,questions,utc
 from ForecastAgent.monitor_tournament import collect_questions
-from .storage import Store,RuntimeCheckpoint,dumps,Conflict,PersistenceError
+from .storage import Store,QuestionBatch,RuntimeCheckpoint,dumps,Conflict,PersistenceError
 from .products import context,product,prefix,manifest
 from .collect import collect
 from .analyze import analyze
@@ -30,12 +30,13 @@ class Runner:
     def __init__(self,checkpoint,client,*,writer,live=False,limit=1,seconds=3000,collector=collect,analyzer=analyze):
         self.cp,self.client=checkpoint,client;self.root=checkpoint.root;self.writer,self.live=writer,live
         self.limit,self.until=limit,time.monotonic()+seconds;self.collector,self.analyzer=collector,analyzer
+        self.retirement_roots=[]
         self.state=checkpoint.restore()
         if self.state['writer']!=writer:raise RuntimeError('WRITER_OWNER_MISMATCH')
         if live and self.state.get('migration_complete') is not True:raise RuntimeError('SERVER_HANDOFF_REQUIRED')
         os.environ['FORECAST_V2_SHARED_BUDGET_ROOT']=str(self.root/'budgets')
         os.environ['FORECAST_V2_ONCE_NAMESPACE']='metaculus-public-v1'
-        os.environ.setdefault('FORECAST_MODEL','nvidia/nemotron-3-super-120b-a12b:free')
+        os.environ.setdefault('FORECAST_MODEL','nvidia/nemotron-3.5-super-vl:free')
     def checkpoint(self,extra=None):
         self.state['updated_at']=now();return self.cp.save(self.state,extra=extra)
     def ingest(self,posts):
@@ -56,6 +57,7 @@ class Runner:
                 self.state['tasks'][ident]=task;changed=True
         if changed:self.checkpoint()
     def process(self,task):
+        if getattr(self.cp.store,'batched',False):self.cp.store.check_owner()
         root=self.root/'tasks'/task['id'];root.mkdir(parents=True,exist_ok=True)
         ident=task['id'];status=task['status']
         pending_receipt=root/'submission'/'submission.json'
@@ -95,6 +97,7 @@ class Runner:
             for k in ['last_error','analysis_retry_at','provider_failure_category','operator_action_required']:task.pop(k,None)
             task['analysis_revision']=self.checkpoint({task['analysis_key']:analysis_raw,prefix(task)+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis_raw}))})['revision']
         if task['status'] in {'analyzed','submitting'} and self.live:
+            if getattr(self.cp.store,'batched',False):self.cp.store.check_owner()
             current(self.client,task);candidate=task['candidate'];task['status']='submitting';self.checkpoint()
             save=platform.save
             def durable_save(path,value):save(path,value);self.checkpoint()
@@ -108,7 +111,23 @@ class Runner:
     def retire(self,task,root):
         self.checkpoint();target=root.resolve()
         if target.parent!=(self.root/'tasks').resolve() or root.is_symlink():raise RuntimeError('UNSAFE_RETIREMENT')
+        if getattr(self.cp.store,'batched',False):
+            owned={k:v for k,v in self.cp.state['runtime'].items() if k.startswith('tasks/'+task['id']+'/')}
+            key=prefix(task)+'/question-runtime.json'
+            task.update(payloads_archived=True,runtime_archive_key=key)
+            task.pop('post',None);task.pop('candidate',None)
+            self.checkpoint({key:dumps(dict(schema='metaculus-question-runtime/1',question_id=task['id'],runtime=owned))})
+            self.retirement_roots.append(target)
+            return
         shutil.rmtree(target);task.pop('post',None);task.pop('candidate',None);self.checkpoint()
+    def flush_question(self):
+        self.checkpoint();receipt=self.cp.store.flush()
+        if not receipt.get('verified'):raise PersistenceError('HF_QUESTION_NOT_VERIFIED')
+        self.cp.objects.difference_update(getattr(self.cp.store,'discarded_objects',set()))
+        for target in self.retirement_roots:
+            if target.exists():shutil.rmtree(target)
+        self.retirement_roots.clear()
+        return receipt
     def run(self,posts):
         self.client.account();self.ingest(posts);done=0;failures=0
         tasks=sorted((t for t in self.state['tasks'].values() if t['status'] not in TERMINAL and (self.live or t['status']!='analyzed') and (not t.get('analysis_retry_at') or utc(t['analysis_retry_at'])<=utc())),key=lambda t:t['deadline_utc'])
@@ -117,7 +136,7 @@ class Runner:
             try:self.process(task)
             except (Conflict,PersistenceError):raise
             except Exception as exc:
-                code=getattr(exc,'code',type(exc).__name__);task['last_error']=code
+                code=getattr(exc,'code',None) or (str(exc) if re.fullmatch('[A-Z][A-Z0-9_]{1,99}',str(exc)) else type(exc).__name__);task['last_error']=code
                 if getattr(exc,'provider_failure',False):
                     task['attempts']['analysis']=max(0,task['attempts'].get('analysis',0)-1)
                     task['analysis_provider_failures']=task.get('analysis_provider_failures',0)+1
@@ -129,8 +148,11 @@ class Runner:
                 elif task['status']=='capturing' and task['attempts'].get('capture',0)>=3:task['status']='collection_exhausted'
                 elif task['status']=='analyzing' and task['attempts'].get('analysis',0)>=3:task['status']='analysis_exhausted'
                 self.checkpoint();failures+=1
+            if getattr(self.cp.store,'autoflush',False):self.flush_question()
             done+=1
-        return dict(processed=done,failures=failures,tasks=len(self.state['tasks']),live=self.live)
+        result=dict(processed=done,failures=failures,tasks=len(self.state['tasks']),live=self.live)
+        if getattr(self.cp.store,'batched',False):result.update(checkpoint_policy='one-commit-per-question',hf_successful_commits=getattr(self.cp.store,'successful_commits',0))
+        return result
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--mode',choices=['inspect','collect-analyze','live'],default='collect-analyze');parser.add_argument('--limit',type=int,default=1)
@@ -140,7 +162,8 @@ def main():
     root=Path(os.environ.get('METACULUS_RUNTIME','runtime')).resolve();root.mkdir(parents=True,exist_ok=True)
     # A trusted workflow owns this directory; never restore onto arbitrary files.
     if any(root.iterdir()):raise RuntimeError('FRESH_RUNTIME_DIRECTORY_REQUIRED')
-    configure_credentials();store=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN'])
+    configure_credentials();backend=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN'])
+    store=QuestionBatch(backend,root/'hf-staging')
     cp=RuntimeCheckpoint(store,root,key=os.environ.get('METACULUS_CHECKPOINT','metaculus/_control/checkpoint.json'))
     client=platform.Client(os.environ['METACULUS_TOKEN'])
     runner=Runner(cp,client,writer=os.environ.get('METACULUS_WRITER','metaculus-agent-actions-v1'),live=a.mode=='live',limit=a.limit)
@@ -161,5 +184,6 @@ if __name__=='__main__':
         if result['failures']:raise SystemExit(1)
     except Exception as exc:
         code=getattr(exc,'code',type(exc).__name__)
-        print(json.dumps(dict(status='blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,80}',str(code)) else 'INTERNAL_ERROR')))
+        print(json.dumps(dict(status='blocked',code=code if re.fullmatch('[A-Za-z0-9_]{1,80}',str(code)) else 'INTERNAL_ERROR',
+                              storage_phase=getattr(exc,'phase',None),http_status=getattr(exc,'http_status',None),retry_after=getattr(exc,'retry_after',None))))
         raise SystemExit(1)
