@@ -47,10 +47,14 @@ jobs:
                           label=path+'/'+k
                           if k in ('http_status','status_code','provider_error_status') and type(v)==int:row['signals'].append(dict(field=label,status=v))
                           if k in ('error','code','error_type','detail','finish_reason','message') and isinstance(v,str):
-                              terms=['429','502','503','504','401','402','403','quota','budget','credit','rate limit','json','schema','parse','timeout','context','token','evidence','citation','distribution','date','numeric','fallback','reasoning','missing','unavailable','unreadable','valid']
+                              terms=['404','429','502','503','504','401','402','403','quota','budget','credit','rate limit','json','schema','parse','timeout','context','token','evidence','citation','distribution','date','numeric','fallback','reasoning','missing','unavailable','unreadable','valid','no endpoints','not found','does not exist','privacy','data policy','provider','region','tool use','model']
                               flags=[x for x in terms if x in v.lower()]
                               row['signals'].append(dict(field=label,text_bytes=len(v.encode()),sha256=hashlib.sha256(v.encode()).hexdigest(),flags=flags))
                           if k=='model' and isinstance(v,str) and re.fullmatch('[A-Za-z0-9_.:/-]{1,150}',v):row['model']=v
+                          if k=='endpoint' and isinstance(v,str) and v.startswith('https://openrouter.ai/api/'):row['endpoint']=v
+                          if k=='response_body' and isinstance(v,str):
+                              try:scan(json.loads(v),label)
+                              except ValueError:row['response_body_json']=False
                           if k not in ('messages','prompt','content','request_body','body','text'):scan(v,label)
                   elif isinstance(value,list):
                       for i,v in enumerate(value[:5]):scan(v,path+'/'+str(i))
