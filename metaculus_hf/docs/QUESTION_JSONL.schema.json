@@ -1,0 +1,1954 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "forecast-question-jsonl/1"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "question": {
+      "$ref": "#/$defs/question"
+    },
+    "searches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/search"
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "texts": {
+          "type": "object",
+          "patternProperties": {
+            "^[0-9a-f]{64}$": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/snapshot"
+          }
+        }
+      },
+      "required": [
+        "texts",
+        "sources",
+        "snapshots"
+      ],
+      "additionalProperties": false
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      }
+    },
+    "orderbook": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "sessions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/recording"
+              }
+            }
+          },
+          "required": [
+            "sessions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "record_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "revision",
+    "updated_at",
+    "question",
+    "searches",
+    "evidence",
+    "runs",
+    "orderbook",
+    "record_hash"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forecastagent:question-jsonl:1",
+  "title": "ForecastAgent self-contained question JSONL record (local design)",
+  "$defs": {
+    "prediction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "binary"
+              ]
+            },
+            "p_yes": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "kind",
+            "p_yes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "categorical"
+              ]
+            },
+            "probabilities": {
+              "type": "object",
+              "minProperties": 2,
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "probabilities"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "numeric"
+              ]
+            },
+            "unit": {
+              "type": "string"
+            },
+            "cdf": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "p"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "unit",
+            "cdf"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "date"
+              ]
+            },
+            "unit": {
+              "type": "string"
+            },
+            "cdf": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "Z$"
+                  },
+                  "p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "p"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "unit",
+            "cdf"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "definition": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "resolution_criteria": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_type": {
+          "enum": [
+            "binary",
+            "categorical",
+            "numeric",
+            "date"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "scale": {
+          "type": "object"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolution_source_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          }
+        },
+        "instrument_mapping": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "close_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_resolution_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "description",
+        "resolution_criteria",
+        "question_type",
+        "options",
+        "scale",
+        "condition",
+        "resolution_source_urls",
+        "instrument_mapping",
+        "close_at",
+        "expected_resolution_at"
+      ],
+      "additionalProperties": false
+    },
+    "question": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(polymarket|metaculus):[^:]+$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "post_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "first_observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "last_observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "first_open_observed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_status": {
+          "enum": [
+            "upcoming",
+            "open",
+            "closed",
+            "resolved",
+            "unknown"
+          ]
+        },
+        "current_version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "versions": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+            "^[0-9a-f]{64}$": {
+              "type": "object",
+              "properties": {
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "definition": {
+                  "$ref": "#/$defs/definition"
+                }
+              },
+              "required": [
+                "observed_at",
+                "definition"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "parent_event_id",
+        "post_id",
+        "created_at",
+        "first_observed_at",
+        "last_observed_at",
+        "first_open_observed_at",
+        "observed_status",
+        "current_version_id",
+        "versions"
+      ],
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snippet": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_rank": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "url",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "search": {
+      "type": "object",
+      "properties": {
+        "search_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "enum": [
+            "acquisition",
+            "supplement"
+          ]
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "query": {
+          "type": "string"
+        },
+        "request_params": {
+          "type": "object"
+        },
+        "effective_params": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "empty",
+            "failed",
+            "not_dispatched"
+          ]
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        },
+        "agent_visible_extras": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "adapter_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "search_id",
+        "run_id",
+        "phase",
+        "provider",
+        "query",
+        "request_params",
+        "effective_params",
+        "requested_at",
+        "received_at",
+        "status",
+        "results",
+        "agent_visible_extras",
+        "provider_request_id",
+        "adapter_version",
+        "error_code"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "final_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https?://"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publisher": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "discovered_via": {
+          "enum": [
+            "search",
+            "rule_url",
+            "channel_api",
+            "reused",
+            "page_link"
+          ]
+        },
+        "search_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "search_result_rank": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extracted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "extracted",
+            "no_text",
+            "failed",
+            "skipped"
+          ]
+        },
+        "evidence_kind": {
+          "enum": [
+            "full_text",
+            "search_snippet",
+            "api_text"
+          ]
+        },
+        "text_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extraction_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "http_status": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 599
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "run_id",
+        "source_url",
+        "final_url",
+        "title",
+        "publisher",
+        "discovered_via",
+        "search_id",
+        "search_result_rank",
+        "requested_at",
+        "captured_at",
+        "extracted_at",
+        "published_at",
+        "status",
+        "evidence_kind",
+        "text_sha256",
+        "extraction_version",
+        "locator",
+        "http_status",
+        "error_code"
+      ],
+      "additionalProperties": false
+    },
+    "material": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_role": {
+          "enum": [
+            "current_official",
+            "historical_baseline",
+            "background",
+            "unresolved"
+          ]
+        },
+        "inclusion": {
+          "enum": [
+            "core",
+            "supporting",
+            "gap_only",
+            "pending",
+            "excluded"
+          ]
+        },
+        "applicable_period": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relevance": {
+          "type": "object",
+          "properties": {
+            "entity": {
+              "enum": [
+                "match",
+                "mismatch",
+                "unknown"
+              ]
+            },
+            "metric": {
+              "enum": [
+                "match",
+                "mismatch",
+                "unknown"
+              ]
+            },
+            "period": {
+              "enum": [
+                "match",
+                "mismatch",
+                "unknown"
+              ]
+            },
+            "as_of_date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "span": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "entity",
+            "metric",
+            "period",
+            "span"
+          ],
+          "additionalProperties": false
+        },
+        "content_kind": {
+          "type": "string",
+          "enum": [
+            "factual_report",
+            "forecast_analysis",
+            "historical_data",
+            "reference_index",
+            "market_probability",
+            "irrelevant"
+          ]
+        },
+        "forecast_relevance": {
+          "enum": [
+            "direct",
+            "baseline",
+            "driver",
+            "context",
+            "none",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "source_role",
+        "inclusion"
+      ],
+      "additionalProperties": false
+    },
+    "gap": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "critical"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "search_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "question_version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "acquired_by_run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sealed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "evidence_cutoff_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "temporal_policy": {
+          "enum": [
+            "prospective",
+            "retrospective_unverified"
+          ]
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material"
+          }
+        },
+        "context": {
+          "type": "object"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gap"
+          }
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "question_version_id",
+        "acquired_by_run_id",
+        "sealed_at",
+        "evidence_cutoff_at",
+        "temporal_policy",
+        "materials",
+        "context",
+        "gaps"
+      ],
+      "additionalProperties": false
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "model_requests": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "search_requests": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fetch_requests": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "properties": {
+        "idempotency_key": {
+          "type": "string"
+        },
+        "submitted_payload_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "platform_prediction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmation_summary": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "attempt": {
+      "type": "object",
+      "properties": {
+        "final_review": {
+          "type": "object",
+          "properties": {
+            "policy": {"const": "final-review-handoff-v1"},
+            "citation_reference": {"const": "index"},
+            "status": {"enum": ["needs_recovery", "unconfirmed", "completed"]},
+            "recovery_required": {"type": "boolean"},
+            "pending_source_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+          },
+          "required": ["policy", "citation_reference", "status", "recovery_required", "pending_source_ids"],
+          "additionalProperties": false
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "retry_wait",
+            "succeeded",
+            "failed",
+            "skipped",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "queued_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "first_external_request_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner_token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lease_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_summary": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/usage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/receipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "worker_ready_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "attempt_id",
+        "status",
+        "queued_at",
+        "started_at",
+        "finished_at",
+        "first_external_request_at",
+        "owner_token",
+        "lease_until",
+        "error_code",
+        "error_summary",
+        "retryable",
+        "usage",
+        "receipt"
+      ],
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "prediction": {
+          "$ref": "#/$defs/prediction"
+        },
+        "actual_models": {
+          "type": "object",
+          "properties": {
+            "researcher": {
+              "type": "string",
+              "minLength": 1
+            },
+            "decider": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "decider"
+          ],
+          "additionalProperties": false
+        },
+        "produced_by_attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_summary": {
+          "type": "object",
+          "properties": {
+            "information_regime": {
+              "enum": [
+                "evidence_informed",
+                "prior_only"
+              ]
+            },
+            "delivered_source_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unverified_source_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limitation": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "information_regime",
+            "delivered_source_ids",
+            "unverified_source_ids",
+            "limitation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "prediction",
+        "actual_models",
+        "produced_by_attempt_id"
+      ],
+      "additionalProperties": false
+    },
+    "objective": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "event_outcome"
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "market_price"
+              ]
+            },
+            "anchor_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "target_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "price_kind": {
+              "enum": [
+                "midpoint",
+                "last_trade",
+                "bid",
+                "ask"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "anchor_at",
+            "target_at",
+            "price_kind"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "run": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "snapshot_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "based_on_run_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mode": {
+          "enum": [
+            "live",
+            "analysis_replay",
+            "acquisition_replay"
+          ]
+        },
+        "objective": {
+          "$ref": "#/$defs/objective"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "opening_received_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start_deadline_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "analysis_deadline_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "execution_profile": {
+          "type": "object",
+          "properties": {
+            "code_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "acquisition_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "models": {
+              "type": "object"
+            },
+            "methods": {
+              "type": "object"
+            },
+            "budget_policy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "parameters": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "code_version",
+            "acquisition_version",
+            "models",
+            "methods",
+            "budget_policy",
+            "parameters"
+          ],
+          "additionalProperties": false
+        },
+        "stages": {
+          "type": "object",
+          "properties": {
+            "admission": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            },
+            "acquisition": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            },
+            "official_graph": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            },
+            "original": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            },
+            "selection": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            },
+            "submission": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/attempt"
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "results": {
+          "type": "object",
+          "properties": {
+            "official_graph": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/result"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "original": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/result"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "official_graph",
+            "original"
+          ],
+          "additionalProperties": false
+        },
+        "selection": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "arm": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "official_graph",
+                        "original"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "arm",
+                "reason"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "run_id",
+        "question_version_id",
+        "snapshot_id",
+        "based_on_run_id",
+        "mode",
+        "objective",
+        "created_at",
+        "opening_received_at",
+        "start_deadline_at",
+        "analysis_deadline_at",
+        "execution_profile",
+        "stages",
+        "results",
+        "selection"
+      ],
+      "additionalProperties": false
+    },
+    "segment": {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "codec": {
+          "enum": [
+            "jsonl.zst",
+            "jsonl.gz",
+            "jsonl",
+            "parquet"
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "first_event_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_event_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sealed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        }
+      },
+      "required": [
+        "sequence",
+        "path",
+        "codec",
+        "sha256",
+        "first_event_at",
+        "last_event_at",
+        "event_count",
+        "sealed_at"
+      ],
+      "additionalProperties": false
+    },
+    "recording": {
+      "type": "object",
+      "properties": {
+        "recording_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "window_start_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "window_end_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "subscription_sent_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "first_snapshot_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_event_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "starting",
+            "recording",
+            "complete",
+            "partial",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "ended_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "end_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/segment"
+          }
+        }
+      },
+      "required": [
+        "recording_id",
+        "run_id",
+        "window_start_at",
+        "window_end_at",
+        "subscription_sent_at",
+        "first_snapshot_at",
+        "last_event_at",
+        "state",
+        "ended_at",
+        "end_reason",
+        "coverage",
+        "segments"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

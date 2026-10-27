@@ -1,0 +1,509 @@
+{
+  "schema": "metaculus-source-lock/1",
+  "acquisition_repository": "chenencc/forecastagent-server",
+  "acquisition_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
+  "analysis_repository": "chenencc/futureeval-forecasting-agent",
+  "analysis_commit": "751145e604406278d6d39d75135668bf30a93b78",
+  "files": {
+    "pipeline_v2/acquisition.py": {
+      "source": "shared-acquisition",
+      "sha256": "e29474bcbb795580e8a1c76e53e7f51a8802acdc64873dfea101bfd2b3fe8082"
+    },
+    "pipeline_v2/admission.py": {
+      "source": "shared-acquisition",
+      "sha256": "61b9a663a75b28f238ce234442f8da0a68ac0580a28111b2299bdbe59de94938"
+    },
+    "pipeline_v2/contracts.py": {
+      "source": "shared-acquisition",
+      "sha256": "80addf5e98a64f9263d5581bfe5d801927adc68d9079e9ed27bb75756df531aa"
+    },
+    "pipeline_v2/engine.py": {
+      "source": "shared-acquisition",
+      "sha256": "c8394e9dd0eaa7474f9498b2f86f695fd6621e441c99a7060650246f441e31c0"
+    },
+    "pipeline_v2/repository.py": {
+      "source": "shared-acquisition",
+      "sha256": "a3fe4c53d7d28c5de5e6fdebff4b5aa83c9c1191628b7262fd31f8340128abd3"
+    },
+    "pipeline_v2/providers.py": {
+      "source": "shared-acquisition",
+      "sha256": "f610a9e43ca59cf4857d654f660574cfa26a74bf943211e348a8a8de78215796"
+    },
+    "pipeline_v2/routing.py": {
+      "source": "shared-acquisition",
+      "sha256": "799f8a8cd10c1d1f51a87642c751234b9fb8cf3d9d26096d78e0791a72851d17"
+    },
+    "pipeline_v2/retrieval_plan.py": {
+      "source": "shared-acquisition",
+      "sha256": "918fdbf0e2e9b3bde3107a4183b50e17aff9b6942e89bb9a81a13659ea4b4551"
+    },
+    "pipeline_v2/source_trace.py": {
+      "source": "shared-acquisition",
+      "sha256": "89b79c3563fd65d4973ef19ad1b83a3cd978f426348e7eef7adf69b649cdaa5f"
+    },
+    "pipeline_v2/review_citations.py": {
+      "source": "shared-acquisition",
+      "sha256": "45648f2ea5f541341e277d0fcef2f3d4cb27b3a8fd4f1d8999448b26f37f86c2"
+    },
+    "pipeline_v2/review_lifecycle.py": {
+      "source": "shared-acquisition",
+      "sha256": "e6b2c9ccc945b9fbe6df3e52ed4fdab1ffa1dd1b3b05f9d862bf589f7134bdee"
+    },
+    "pipeline_v2/review_recovery.py": {
+      "source": "shared-acquisition",
+      "sha256": "0d9979d9c014577023992718b9ffc53b103547007eb09d0b2f900b8772bb2d64"
+    },
+    "pipeline_v2/review_worker.py": {
+      "source": "shared-acquisition",
+      "sha256": "d0f54775f513e7b483b79e9f2a223a7b7c36dfaa3b0d12b20acbcc206b11eb1f"
+    },
+    "pipeline_v2/intelligence_package.py": {
+      "source": "shared-acquisition",
+      "sha256": "5ed208890eca600c0abe08e0c9491ad2781d3895d1cead5199cf24c8f2503dc2"
+    },
+    "pipeline_v2/delivery.py": {
+      "source": "shared-acquisition",
+      "sha256": "eeab7c0f3d573929e8cec89d0678003c3d4252f42709bbaeb1175fd1c74f1c81"
+    },
+    "pipeline_v2/parquet_store.py": {
+      "source": "shared-acquisition",
+      "sha256": "877bfd46c9d49c49f6bc5c13fc6754cbf3aba44e6e1638b9621fc1cf29735523"
+    },
+    "pipeline_v2/parquet_stream.py": {
+      "source": "shared-acquisition",
+      "sha256": "e8a7b92a889b1fe92a1fe634debb9eef43cd0f30aa027560a517c068b4b4fa75"
+    },
+    "pipeline_v2/split_repository.py": {
+      "source": "shared-acquisition",
+      "sha256": "725925c9e7485a81dfad07e367be051926a6898e1979cfa26916f5f28298caa9"
+    },
+    "pipeline_v2/workflow.py": {
+      "source": "shared-acquisition",
+      "sha256": "52c5ced39a318043e49c0c9a29514ef6b38fa70be22af99a9c1f701e1f573816"
+    },
+    "pipeline_v2/platforms.py": {
+      "source": "shared-acquisition",
+      "sha256": "651c903e2f467651804aaf7e548867d5f005e03dd1d83bb2cdadc7e51fa1598a"
+    },
+    "pipeline_v2/browser_pool.py": {
+      "source": "shared-acquisition",
+      "sha256": "d750fe44d9f648208a3cf828a8e3e144ea1a7e5798cedd7bd092873449ae82ad"
+    },
+    "pipeline_v2/browser_render.py": {
+      "source": "shared-acquisition",
+      "sha256": "ed32529df976ca75be22b39af8d1cb1b2087787fc932605d7e7582acec363d49"
+    },
+    "pipeline_v2/ownership.py": {
+      "source": "shared-acquisition",
+      "sha256": "1873ff542aab3f510453750c2de28e4b7770a42981ebdac702b70f89244e935b"
+    },
+    "pipeline_v2/context.py": {
+      "source": "shared-acquisition",
+      "sha256": "5e8308769c56d390a329f0e57e006f4b1107061c7c7661beead82f7ddf71a110"
+    },
+    "pipeline_v2/decision_budget.py": {
+      "source": "shared-acquisition",
+      "sha256": "8cffa4e31c8bc0175e2cfb88cab86917bed3e5d2940cb66007d1f5e33970de83"
+    },
+    "pipeline_v2/__init__.py": {
+      "source": "shared-acquisition",
+      "sha256": "a3e18e15e6582790e361f0049b7122741024bcd436e2b6840eaadf54fe7a288a"
+    },
+    "docs/QUESTION_JSONL.schema.json": {
+      "source": "shared-contract",
+      "sha256": "d9434d3db5154d59c089780236abb5c3a81b9316c826abd8ad49d1e42b5db227"
+    },
+    "ForecastAgent/monitor_tournament.py": {
+      "source": "public-official-release",
+      "sha256": "6ffe99dd3b154c023ee688f3b0bfb9cf79e3248ee150d056e419f896a1970b56"
+    },
+    "ForecastAgent/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "409bd034bd5422de14fa1e5f96f385de27fcb139334e83467b0e84764a2740ef"
+    },
+    "ForecastAgent/competition/lifecycle.py": {
+      "source": "public-official-release",
+      "sha256": "ce0f377d2a928e4edcac46f46b3a3ca36f12a4380a14f2afdee8e694e34051ee"
+    },
+    "ForecastAgent/competition/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "4534fdff11bf435b29ff989e1a9be1276ad9f6e5cb5c4e222c7ff4ccd873472f"
+    },
+    "ForecastAgent/competition/queue.py": {
+      "source": "public-official-release",
+      "sha256": "4ba3e5ad0a38ad5f105dc6da63634090f8df0c0eff0256d776ce6408090c7148"
+    },
+    "ForecastAgent/runtime/task_lock.py": {
+      "source": "public-official-release",
+      "sha256": "8ac221cb16dc3adb9e6c229eaa6a128c3c59bf33f0756d9173051161452caa0c"
+    },
+    "ForecastAgent/runtime/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ForecastAgent/runtime/retrieval.py": {
+      "source": "public-official-release",
+      "sha256": "da4307079c1916864b2f687882cfe585e60109cb1f052481651089e1f90b211d"
+    },
+    "ForecastAgent/runtime/collection_actions.py": {
+      "source": "public-official-release",
+      "sha256": "f3222a37f224a74b4b3555c9dab59e18f7697610c115e133fbf704072d6bf6af"
+    },
+    "ForecastAgent/runtime/delivery.py": {
+      "source": "public-official-release",
+      "sha256": "0b005c144ee810fd7949f61d620e5f85d7c568235369265b5a20746f461c4adc"
+    },
+    "ForecastAgent/readers/saved.py": {
+      "source": "public-official-release",
+      "sha256": "c51e9a3233171cf65caaafa95cada0cec101fd9f1553d7fb8b32857f6b5f49dd"
+    },
+    "ForecastAgent/readers/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ForecastAgent/tavily_research.py": {
+      "source": "public-official-release",
+      "sha256": "121db471bbe295764a3c4f7119f33a3c9318066b66ec237e9dd315d6ef5e0f00"
+    },
+    "ForecastAgent/readers/datasets.py": {
+      "source": "public-official-release",
+      "sha256": "148c94352c22ceeb60ba2a45884f9aefe895aa957dbeec87015d4a1f4fc33622"
+    },
+    "ForecastAgent/readers/quality.py": {
+      "source": "public-official-release",
+      "sha256": "936777ae9a019947bf4e1793d0f9e63ae2b0ad90b2a17c06f98f0e4b37853cb4"
+    },
+    "ForecastAgent/runtime/collection_v2.py": {
+      "source": "public-official-release",
+      "sha256": "0c7e5d32b1d143f48424c7f5067db0b796ea82523820e04e4276139ddfae1070"
+    },
+    "ForecastAgent/readers/passages.py": {
+      "source": "public-official-release",
+      "sha256": "9263ce6fa83bf4ca83aada30c5df4ff71f9d1667af50fcaa274f1f06b979f7f5"
+    },
+    "ForecastAgent/runtime/progress.py": {
+      "source": "public-official-release",
+      "sha256": "bb2d27926d2554feb5b83249af2031c13185f96617aed98b2d802ddfc21407e4"
+    },
+    "ForecastAgent/runtime/needs.py": {
+      "source": "public-official-release",
+      "sha256": "5d4e58be450b66f0f1dc6410822bfa9bd7492fffe3e7deed610637e7bfb06ef6"
+    },
+    "ForecastAgent/evidence/acceptance.py": {
+      "source": "public-official-release",
+      "sha256": "3a915394c3f206fd453778f2c5f846bb912bc2612ae8846faa0e379119835c12"
+    },
+    "ForecastAgent/evidence/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ForecastAgent/evidence/raw_capture.py": {
+      "source": "public-official-release",
+      "sha256": "3f63fa93f4c313db5c4f1674648cede43c7696fa3463cead98ce64ef431b1d6a"
+    },
+    "ForecastAgent/evidence/acquisition_quality.py": {
+      "source": "public-official-release",
+      "sha256": "ee112a1fcf6869c80b4627229e5cbd7bd1dfde66765f6068c30188717b863b35"
+    },
+    "ForecastAgent/runtime/temporal_policy.py": {
+      "source": "public-official-release",
+      "sha256": "47a6040f3e3b162d881e3df564ab660aa49e440044dc74e2107476fff973c99a"
+    },
+    "ForecastAgent/runtime/acquisition.py": {
+      "source": "public-official-release",
+      "sha256": "6107ff733c85584a6aa9941dca9dc38c17629009d326f0a3d24b4444faab4c2b"
+    },
+    "ForecastAgent/runtime/search_policy.py": {
+      "source": "public-official-release",
+      "sha256": "20b7182fdb226423c2ae0f0fc397055e0e60fc8c5a250abf2939bc47d87f1556"
+    },
+    "ForecastAgent/runtime/contracts.py": {
+      "source": "public-official-release",
+      "sha256": "7ce5d4bbe6e52312d9661ad63eb15feb6d2dedb862bae6c017129bc03f74c8ad"
+    },
+    "ForecastAgent/runtime/material_protocol.py": {
+      "source": "public-official-release",
+      "sha256": "2e1831c4fdd147745a2e616ab86a81020ee408a6139591b25f575199a01446e3"
+    },
+    "ForecastAgent/runtime/intelligent_acquisition.py": {
+      "source": "public-official-release",
+      "sha256": "cf5f0e3d1ab48f3364e30a470302ee841fed86ad112ef8cf685e4bcade59ec5e"
+    },
+    "ForecastAgent/tools/registry.py": {
+      "source": "public-official-release",
+      "sha256": "c143f9737f579e2cb24fae0f8c7b61c0ef10e6807ee1e15755190e4fadee7355"
+    },
+    "ForecastAgent/tools/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ForecastAgent/runtime/task_protocol.py": {
+      "source": "public-official-release",
+      "sha256": "cb2809f789ec236c6d1d0e53f72a433ad46487fc37f2a9b14ffc2f487235234e"
+    },
+    "ForecastAgent/runtime/source_reading.py": {
+      "source": "public-official-release",
+      "sha256": "ba95b268b17367ffab939b3793e4c114e9178269eae107e2725469a61c6c1316"
+    },
+    "ForecastAgent/readers/crawl4ai.py": {
+      "source": "public-official-release",
+      "sha256": "819b71d5d163f282e7b9af5b950cd0b255bffc462956b0ae5d531701553fd260"
+    },
+    "ForecastAgent/readers/material_structure.py": {
+      "source": "public-official-release",
+      "sha256": "565c6579fe9993afa564dd1e70a84c6b41baac912d5687bd555ed4ff1e936854"
+    },
+    "ForecastAgent/readers/encoding.py": {
+      "source": "public-official-release",
+      "sha256": "5c1709f39dbc2c706a269da6d65e0f71f937b24ae52838f18d74217bfa845736"
+    },
+    "ForecastAgent/readers/network_data.py": {
+      "source": "public-official-release",
+      "sha256": "eed7c2035cea9b402a1431fe064764c1591598168e16608c1c3422d0067a2e8f"
+    },
+    "ForecastAgent/readers/loader.py": {
+      "source": "public-official-release",
+      "sha256": "e388e56910952d2d41d31ba6d9e6f7495e473fc2f0a043b84ec6e214cc90d929"
+    },
+    "ForecastAgent/readers/feed.py": {
+      "source": "public-official-release",
+      "sha256": "ad6bf4a37888db79ff0f7f00abd7881dae1b5002548c8d25240d1e75616d1dbb"
+    },
+    "ForecastAgent/readers/html.py": {
+      "source": "public-official-release",
+      "sha256": "93b7f4dc1abdadd75faad95b64579dd963a2f70934ed55183d8871693aa6c978"
+    },
+    "ForecastAgent/providers/tavily_search.py": {
+      "source": "public-official-release",
+      "sha256": "1178368db6713652a209bb01dacb574a74857aae7f2bab14f1a508a47e99ffde"
+    },
+    "ForecastAgent/providers/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ForecastAgent/tools/channels.py": {
+      "source": "public-official-release",
+      "sha256": "a8af5795f98d13163f258ee9b249d26edf7319a729f4eb9d4c9b1ab7af1ece5e"
+    },
+    "ForecastAgent/evidence/document.py": {
+      "source": "public-official-release",
+      "sha256": "84e6380cdb222690ddd48fef0e665c982bd5d4818a46560503f75ece6bc31f43"
+    },
+    "ForecastAgent/readers/structured.py": {
+      "source": "public-official-release",
+      "sha256": "aee0d3ae986e80cc62c737a1cad7cc4d037cc8e18801c1c56b8ac4dc74934601"
+    },
+    "ForecastAgent/readers/pdf.py": {
+      "source": "public-official-release",
+      "sha256": "0f66e52570fb29b4c80aae9f7353c03f945cad5a749eee1d2620dbadad8c5dcb"
+    },
+    "ForecastAgent/readers/browser.py": {
+      "source": "public-official-release",
+      "sha256": "5d5dee041dbe3a2053ebe3783c59963c2196f9ba486ff2a5285445f5ddd7f9e3"
+    },
+    "ForecastAgent/providers/ultra.py": {
+      "source": "public-official-release",
+      "sha256": "9679183a2f89c925a05fe50378b4c75bb3a6b4cb405a11dab6c43a9af0229533"
+    },
+    "ForecastAgent/providers/http.py": {
+      "source": "public-official-release",
+      "sha256": "b209d0d9ac92b356457b6a73428e7fb73f2fc9489557e9587b00134b3c236833"
+    },
+    "ForecastAgent/providers/model.py": {
+      "source": "public-official-release",
+      "sha256": "6efc3cec8c304e38aab944ad80f95cde13f1ef0af9ade0fe2f69e97475ce3f02"
+    },
+    "ForecastAgent/retrieval_sources.py": {
+      "source": "public-official-release",
+      "sha256": "d824d08e270a82e5682584cb35e65cbfde5cbda693cb03f76f737ef8bd832c1f"
+    },
+    "ForecastAgent/supplement/stage.py": {
+      "source": "public-official-release",
+      "sha256": "01d4622a459faedc6e37d94388e97357a7d2a5f9c057241716fdb7dd576b2dda"
+    },
+    "ForecastAgent/supplement/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "26e2a38744d8f523254d7a2932598a6a5bc816451dd70528be8dbe673b540cbf"
+    },
+    "ForecastAgent/runtime/gap_repair.py": {
+      "source": "public-official-release",
+      "sha256": "995ea4f7767ad7316fb95e535917497a70f86eae6f5275be3b4e690e1133d175"
+    },
+    "ForecastAgent/runtime/source_frontier.py": {
+      "source": "public-official-release",
+      "sha256": "e10af188ddaf9b93495ea04edb9719e84e3a8f70324d039d3d3b03ccfe75aac8"
+    },
+    "ForecastAgent/providers/financial.py": {
+      "source": "public-official-release",
+      "sha256": "ea670313b68ff8d7d76e5dfcc2ee0cdb68daee47954d527a1d104d6730bf07f6"
+    },
+    "ForecastAgent/runtime/budget.py": {
+      "source": "public-official-release",
+      "sha256": "5db37f78c03e05a522af3757c833ac82df3a754975732b6e76a0cff6546fd979"
+    },
+    "ForecastAgent/runtime/tool_selection.py": {
+      "source": "public-official-release",
+      "sha256": "60cbb9a889334edc9565c9ed5d28808d3071475a0d29473fc51e8dd79e4e6f8e"
+    },
+    "ForecastAgent/runtime/context.py": {
+      "source": "public-official-release",
+      "sha256": "d8256495b5de8bc62b5d899cef245299b7eae856f09b2baadd53470e5d524762"
+    },
+    "ForecastAgent/runtime/delivery_control.py": {
+      "source": "public-official-release",
+      "sha256": "868a82a2f801926e5d86dcb73c90cf41af7b787ae47b8838ad1d142b6d0fb55c"
+    },
+    "ForecastAgent/runtime/guidance.py": {
+      "source": "public-official-release",
+      "sha256": "636a34a08f44c71d27e1cfabba46a3b1e9102e348625b49658c488201f86d387"
+    },
+    "ForecastAgent/providers/source_parameters.py": {
+      "source": "public-official-release",
+      "sha256": "9bb2959051898a5418051f54f3d2a73e3421f9cda78cdfbfd8d30d8eabfc6da3"
+    },
+    "ForecastAgent/providers/dated_data.py": {
+      "source": "public-official-release",
+      "sha256": "a137c7eea3a182876f4885d16c8b4456c75caf0d52e68d2225e87dbdd524672b"
+    },
+    "ForecastAgent/runtime/parser_repair.py": {
+      "source": "public-official-release",
+      "sha256": "e2333edaa42a2b546edb0d7d655d40feb870b8c3365cc49222faa541ca309a39"
+    },
+    "ForecastAgent/providers/archive.py": {
+      "source": "public-official-release",
+      "sha256": "ba9c349e3c61e609cc92584cd45a9227c769ef0e90074af4925e64fb54db0763"
+    },
+    "ForecastAgent/runtime/session.py": {
+      "source": "public-official-release",
+      "sha256": "2ec5b6060153955f4201fc2884d0628dfd4626dae93fa82a58e4748127746b1c"
+    },
+    "ForecastAgent/runtime/telemetry.py": {
+      "source": "public-official-release",
+      "sha256": "de053ae40f5b9e17d48a0a25e4118a2b86ef6cdf1df2cb0c2fc04b4c31928314"
+    },
+    "ForecastAgent/providers/exa_search.py": {
+      "source": "public-official-release",
+      "sha256": "aa4dd9efc95327f1ad3adc7f6674baba14b3471b18ecd9590669f6e20374d5d9"
+    },
+    "ForecastAgent/providers/cache.py": {
+      "source": "public-official-release",
+      "sha256": "f6e077ead5fe02c30aca97422b02df6e91118f898db4e77de47d0823f8e13040"
+    },
+    "ForecastAgent/polymarket_match.py": {
+      "source": "public-official-release",
+      "sha256": "467b7b52867000e970ff59a2b3d85a3d4c066fb7e64909dfe318c11eb8f5012d"
+    },
+    "ForecastAgent/providers/official.py": {
+      "source": "public-official-release",
+      "sha256": "1f43ca054fe6ad100396bf541e757ddef36816a8fd56601f24ee8beb8fa6d1cb"
+    },
+    "ForecastAgent/evidence/intelligence.py": {
+      "source": "public-official-release",
+      "sha256": "c37a5bd2a00a3ed2c5846e437b0cd3270ae500800eaeb710d4f5889728c6a646"
+    },
+    "ForecastAgent/evidence/temporal.py": {
+      "source": "public-official-release",
+      "sha256": "1bf79d15671ce0d917d3d50664c4420d48023ae65ab1187b10168e735b1a9ddf"
+    },
+    "ForecastAgent/runtime/limits.py": {
+      "source": "public-official-release",
+      "sha256": "9548819ba25ef84c12c0f0d2fe5a367ac0058aaef98fbd9b720d709e87d13b80"
+    },
+    "ForecastAgent/ultra_research_agent.py": {
+      "source": "public-official-release",
+      "sha256": "b925873eff50722070a922922e77e3d4215495fef4da63b9a8989a7f9c9ba6f5"
+    },
+    "ForecastAgent/skill_loader.py": {
+      "source": "public-official-release",
+      "sha256": "c9085a50c580930f41c62714bf45be36f3bef462b75f18e649b20984d62690f9"
+    },
+    "ForecastAgent/tavily_extract.py": {
+      "source": "public-official-release",
+      "sha256": "166f145fa3f8906a631a148a7fa9bba8e49781d6d55f1b9b17ce2223137c0dc8"
+    },
+    "ForecastAgent/agent.py": {
+      "source": "public-official-release",
+      "sha256": "47da6b5d455c82a5b457f6813605fc7edbddb70061264537ea1e39a66b77649d"
+    },
+    "ForecastAgent/retrieval_agent.py": {
+      "source": "public-official-release",
+      "sha256": "03e2c074453a03f693541e6b71c3be43dd50d82819c888d3afe4a7b699736fa5"
+    },
+    "ForecastAgent/competition/nonbinary_debug.py": {
+      "source": "public-official-release",
+      "sha256": "3d806b1ce2111686bdb996f820f2c4da6cbc4ab56a7574f23d2023ab6cb3446c"
+    },
+    "ForecastAgent/readers/metaculus_rules.py": {
+      "source": "public-official-release",
+      "sha256": "8d29534f4b2a001200d032975d12166e754d9bf8376f51d08fde1f3108c73a0f"
+    },
+    "ForecastAgent/analysis/range_forecast.py": {
+      "source": "public-official-release",
+      "sha256": "e4ec3eda59945fb4752f549ff1d5f564690a8901532b534d7af06ad2ece3f2f4"
+    },
+    "ForecastAgent/analysis/__init__.py": {
+      "source": "public-official-release",
+      "sha256": "fe8adca115dc6a37fad755f083a22df5ab6cb20f4d096409717351b7a4ba6b0b"
+    },
+    "ForecastAgent/analysis/typed.py": {
+      "source": "public-official-release",
+      "sha256": "d53b1ba4e93c5e3a861e1a33a5e801e9bad81cf846eb8b08b88ea1e0819b28ca"
+    },
+    "ForecastAgent/providers/decisions.py": {
+      "source": "public-official-release",
+      "sha256": "f72564842eecec5b3801b888187c42a97da810f2b67aa90986d0fe1dc161d579"
+    },
+    "ForecastAgent/analysis/referenced.py": {
+      "source": "public-official-release",
+      "sha256": "7e44fccd3bb52884c0ea24910c41d415f66bb538c2e3c149c208083f49ea854e"
+    },
+    "ForecastAgent/analysis/output_compat.py": {
+      "source": "public-official-release",
+      "sha256": "d628277e6b16137105dc056943cbaa672f0b9fb856235fdd394a53c20eac0662"
+    },
+    "ForecastAgent/analysis/recovery.py": {
+      "source": "public-official-release",
+      "sha256": "3c7a470c6e3cfb1b978953859228f1cb62dd7b7b3cf6b5de050e6b1bd86d9d45"
+    },
+    "ForecastAgent/analysis/ensemble.py": {
+      "source": "public-official-release",
+      "sha256": "d7fe78a0f1cd218f427b2e9854a88f569320760b041ec5c3f4b918d2ee661f8e"
+    },
+    "ForecastAgent/analysis/inputs.py": {
+      "source": "public-official-release",
+      "sha256": "c366670a4053423d12dc4adf15efc88b5447140dd7bf4fdbb06cb3791067cbb4"
+    },
+    "ForecastAgent/analysis/pilot.py": {
+      "source": "public-official-release",
+      "sha256": "768e8c4f17bbcf7444fc656d4cb3e62c499f20f43874c9615d1ded01bdfba765"
+    },
+    "ForecastAgent/analysis/distributions.py": {
+      "source": "public-official-release",
+      "sha256": "7408aef4f8b15a7caca3bee0c8923f66f6432c8c7ef8e2917ed5fd78921b4391"
+    },
+    "ForecastAgent/analysis/categorical.py": {
+      "source": "public-official-release",
+      "sha256": "424ba04c2c2c0d543313c3d8fd08f3c57abdcfbaeb1c5e6a28a57141d0c15515"
+    },
+    "ForecastAgent/competition/mercury.py": {
+      "source": "public-official-release",
+      "sha256": "b144fe6786ac4859f37dc139e34308fc502265aa81358fc229b3935477a26aa7"
+    },
+    "ForecastAgent/analysis/mercury_nonbinary_trial.py": {
+      "source": "public-official-release",
+      "sha256": "79c5208ed96daa172df84603cda83094c961098ca46c34e156da51d7e7d3bcb9"
+    },
+    "ForecastAgent/analysis/mercury_evidence_chain.py": {
+      "source": "public-official-release",
+      "sha256": "6ef77c80b7cbc000cb5b1c18a59b72cd7d45f8f0ee6b4a43c5c517202fc1f467"
+    },
+    "ForecastAgent/competition/live.py": {
+      "source": "public-official-release",
+      "sha256": "fc6b3c47c1ba76b0291da6ae44afe9aaacfccfec18a539c59d4552fadc35f298"
+    },
+    "ForecastAgent/competition/platform.py": {
+      "source": "public-official-release",
+      "sha256": "0994d94b44b916fd7d4e9a1e73be06651466bbf79a794c4e47592eb8c8dd4b5b"
+    }
+  }
+}
