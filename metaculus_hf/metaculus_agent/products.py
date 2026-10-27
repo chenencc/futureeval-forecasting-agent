@@ -2,9 +2,10 @@
 import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from pipeline_v2.contracts import digest
+from pipeline_v2.contracts import digest,PipelineError
 from pipeline_v2.delivery import parquet_payload
 from pipeline_v2.intelligence_package import snapshot_from_payload,load
+from pipeline_v2.admission import decision_view
 from .storage import sha
 
 def prefix(task):
@@ -25,17 +26,19 @@ def verify_context(value):
     if value['question_id']!=value['intelligence']['question_id'] or value['evidence_cutoff_at']!=snap['evidence_cutoff_at']:raise ValueError('CONTEXT_BINDING')
     return snap
 def bundle(value):
-    snap=verify_context(value);pages={};bindings={}
-    for material in snap['materials']:
+    snap=verify_context(value);view=decision_view(snap,'original');pages={};bindings={}
+    for material in view['materials']:
         binding=material['binding'];source=material['source'];url=source['source_url'];text=material.get('text')
-        if binding['inclusion'] not in {'core','supporting'} or not text:continue
+        if not text:continue
         if url in pages and pages[url]['content']!=text:raise ValueError('AMBIGUOUS_SOURCE_BODY')
         pages[url]=dict(content=text,retrieved_at_utc=source.get('captured_at'),content_sha256=source['text_sha256'],
-            body_diagnostics=dict(usable_text=True),capture_metadata=source)
+            body_diagnostics=dict(usable_text=True,truth_verified=False,
+                review_status='unverified' if material.get('decision_reading') else 'reviewed'),capture_metadata=source)
         bindings[url]=binding
-    if not pages:raise RuntimeError('NO_REVIEWED_EVIDENCE')
-    return dict(request=value['request'],pages=pages,gaps=snap['gaps'],
-        result=dict(incomplete=False),collection_handoff=dict(protocol='shared-snapshot-to-official/1'),
+    if not pages:raise PipelineError('NO_USABLE_EVIDENCE')
+    reading=view['original_reading'];request={**value['request'],'original_evidence_reading':reading}
+    return dict(request=request,pages=pages,gaps=snap['gaps'],original_reading=reading,
+        result=dict(incomplete=False),collection_handoff=dict(protocol='shared-snapshot-to-official/2'),
         source_aliases={},source_bindings=bindings,source_snapshot_id=value['snapshot_id'],
         context_sha256=digest(value),evidence_cutoff_at=value['evidence_cutoff_at'])
 def product(kind,value):

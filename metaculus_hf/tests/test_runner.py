@@ -36,15 +36,15 @@ class MemoryStore:
         new=str(int(self.head)+1);self.history[new]={**self.history[self.head],**updates};self.head=new
         return dict(revision=new,verified=True,files={k:dict(sha256=sha(v),bytes=len(v)) for k,v in updates.items()})
 
-def sealed(task,root):
+def sealed(task,root,*,binding=None,url='https://example.org/official'):
     repo=Repository(root);engine=Engine(repo);item=metaculus(task['post'])[0];engine.question(**item)
     profile=collection_profile(offline=True);rid=engine.new_run(item['question_id'],profile)
     aid,owner=engine.start(item['question_id'],rid,'acquisition')
     text='Synthetic Example Alpha official report: the previous observation was 42 USD. This is a fixture only.'
-    source=engine.source(item['question_id'],rid,aid,owner,dict(source_url='https://example.org/official',
+    source=engine.source(item['question_id'],rid,aid,owner,dict(source_url=url,
         discovered_via='rule_url',status='extracted',evidence_kind='full_text',extraction_version='synthetic/1',
         requested_at=now(),captured_at=now(),extracted_at=now(),http_status=200),text)
-    sid=engine.seal(item['question_id'],rid,aid,owner,[dict(source_id=source,inclusion='supporting',source_role='historical_baseline')],
+    sid=engine.seal(item['question_id'],rid,aid,owner,[dict(source_id=source,**(binding or dict(inclusion='supporting',source_role='historical_baseline')))],
         context={'fixture_only':True},temporal_policy='retrospective_unverified')
     record=repo.get_question(item['question_id'])
     package=dict(schema='intelligence-package/1',question_id=item['question_id'],definitions=record['question']['versions'],
@@ -84,13 +84,27 @@ class ProductTests(unittest.TestCase):
                 raw=product('context',value);path=Path(folder)/'context.parquet';path.write_bytes(raw)
                 self.assertEqual(load(path),value);self.assertIn('start_date=2026-10-28',prefix(task))
                 adapted=bundle(value);packet=mercury.packet_for(adapted)
-                self.assertEqual(packet['question'],request)
+                for key,value1 in request.items():self.assertEqual(packet['question'][key],value1)
                 self.assertEqual(adapted['pages']['https://example.org/official']['content'],verify_context(value)['materials'][0]['text'])
                 if kind!='binary':self.assertEqual(mercury.distribution_spec(request)['kind'],kind)
                 broken=copy.deepcopy(value);broken['intelligence']['evidence']['texts'][next(iter(package['evidence']['texts']))]='tampered'
                 with self.assertRaises(Exception):verify_context(broken)
     def test_run_prefix_stays_on_original_start_date(self):
         self.assertEqual(prefix(dict(id='1',run_id='abc',started_at='2026-10-27T15:59:59Z')),'metaculus/start_date=2026-10-27/question_id=1/run_id=abc')
+    def test_soft_excluded_driver_is_readable_but_original_binding_is_unchanged(self):
+        p=post();task=dict(id='100',post_id=str(p['id']),post=p,request=live_request(p,p['question']),rule_identity=rule_identity(p,p['question']),run_id='driver1',started_at=now())
+        with tempfile.TemporaryDirectory() as root:
+            package=sealed(task,root,binding=dict(inclusion='excluded',source_role='unresolved',content_kind='factual_report',forecast_relevance='driver',coverage_note='Construction progress informs the forecast but does not establish the final outcome.'))
+            value=context(task,package,task['snapshot_id']);before=digest(value);adapted=bundle(value)
+            self.assertEqual(len(adapted['pages']),1);self.assertEqual(len(adapted['original_reading']['unverified_source_ids']),1)
+            self.assertIn('UNVERIFIED',adapted['request']['original_evidence_reading']['instruction'])
+            self.assertEqual(verify_context(value)['materials'][0]['binding']['inclusion'],'excluded');self.assertEqual(digest(value),before)
+            self.assertEqual(next(iter(adapted['pages'].values()))['body_diagnostics']['review_status'],'unverified')
+    def test_hard_excluded_odds_page_does_not_enter_analysis(self):
+        p=post();task=dict(id='100',post_id=str(p['id']),post=p,request=live_request(p,p['question']),rule_identity=rule_identity(p,p['question']),run_id='odds1',started_at=now())
+        with tempfile.TemporaryDirectory() as root:
+            package=sealed(task,root,url='https://polymarket.com/event/example',binding=dict(inclusion='excluded',source_role='unresolved',content_kind='market_probability',forecast_relevance='none',coverage_note='MARKET_PRICE_REFERENCE'))
+            with self.assertRaisesRegex(Exception,'NO_USABLE_EVIDENCE'):bundle(context(task,package,task['snapshot_id']))
 
 class RuntimeTests(unittest.TestCase):
     def setUp(self):
@@ -128,6 +142,33 @@ class RuntimeTests(unittest.TestCase):
         runner=Runner(self.checkpoint('a'),Client(post()),writer='test',collector=lambda *_:self.fail('provider must not run'))
         self.store.fail=True
         with self.assertRaises(Conflict):runner.run([post()])
+    def test_analyzed_dry_run_does_not_starve_next_question(self):
+        posts=[post(ident=100),post(ident=101)]
+        class MultiClient(Client):
+            def post(self,ident):return next(p for p in posts if str(p['id'])==str(ident))
+        client=MultiClient(posts[0]);seen=[]
+        def collector(task,p,root,checkpoint):seen.append(task['id']);return sealed(task,root/'capture')
+        def analyzer(value,*_):return dict(snapshot_id=value['snapshot_id'],context_sha256=digest(value),candidate=dict(payload=payload(value['request'],{'probability_yes':.6}),comment='fixture'))
+        runner=Runner(self.checkpoint('a'),client,writer='test',collector=collector,analyzer=analyzer)
+        runner.run(posts);runner.run(posts);self.assertEqual(seen,['100','101'])
+    def test_exhausted_analysis_is_terminal_and_cannot_starve_new_tasks(self):
+        posts=[post(ident=100),post(ident=101)]
+        class MultiClient(Client):
+            def post(self,ident):return next(p for p in posts if str(p['id'])==str(ident))
+        def collector(task,p,root,checkpoint):return sealed(task,root/'capture')
+        def analyzer(value,*_):
+            if value['question_id']=='metaculus:100':raise RuntimeError('injected analysis failure')
+            return dict(snapshot_id=value['snapshot_id'],context_sha256=digest(value),candidate=dict(payload=payload(value['request'],{'probability_yes':.6}),comment='fixture'))
+        runner=Runner(self.checkpoint('a'),MultiClient(posts[0]),writer='test',collector=collector,analyzer=analyzer)
+        for _ in range(3):runner.run(posts)
+        self.assertEqual(runner.state['tasks']['100']['status'],'analysis_exhausted')
+        self.assertEqual(runner.run(posts)['failures'],0);self.assertEqual(runner.state['tasks']['101']['status'],'analyzed')
+    def test_changed_grid_blocks_before_collection_without_retry_loop(self):
+        p=post('numeric');client=Client(p)
+        runner=Runner(self.checkpoint('a'),client,writer='test',collector=lambda *_:self.fail('collect after changed scale'))
+        runner.ingest([p]);p['question']['scaling']['range_max']=200
+        runner.run([p]);self.assertEqual(runner.state['tasks']['100']['status'],'blocked_integrity')
+        self.assertEqual(runner.run([p])['processed'],0)
     def test_server_handoff_required_before_live(self):
         self.state['migration_complete']=False;self.store.publish({'metaculus/_control/checkpoint.json':dumps(self.state)})
         with self.assertRaisesRegex(RuntimeError,'SERVER_HANDOFF_REQUIRED'):Runner(self.checkpoint('a'),Client(post()),writer='test',live=True)
