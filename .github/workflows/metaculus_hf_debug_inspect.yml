@@ -28,47 +28,41 @@ jobs:
           python -B - <<'PY'
           import base64,hashlib,io,json,os,tempfile
           from pathlib import Path
-          from collections import Counter
+          from collections import defaultdict
           import pyarrow as pa,pyarrow.parquet as pq
           from huggingface_hub import HfApi,hf_hub_download
           from nacl.public import PublicKey,SealedBox
-          session='1044847f98034a4f86e871811b75f8c5';pre='metaculus/_debug/'+session
-          repo='chchen13/forecastagent-data';api=HfApi(token=os.environ['HF_TOKEN']);info=api.repo_info(repo,repo_type='dataset');assert info.private
-          refs=[]
-          def read(key,revision=info.sha):
-           with tempfile.TemporaryDirectory() as d:
-            raw=Path(hf_hub_download(repo,key,repo_type='dataset',revision=revision,token=os.environ['HF_TOKEN'],local_dir=d,force_download=True)).read_bytes()
-            refs.append(dict(key=key,revision=revision,sha256=hashlib.sha256(raw).hexdigest(),bytes=len(raw)));return raw
-          state=json.loads(read(pre+'/_control/checkpoint.json'));rows=[]
-          for qid in ['46432','46431','46430']:
-           task=state['tasks'][qid];revision=task.get('analysis_revision') or info.sha
-           physical=lambda k:pre+'/'+k[len('metaculus/'):]
-           key=physical(task['analysis_key']);manifest=json.loads(read(key.rsplit('/',1)[0]+'/manifest.json',revision));products={};formats={}
-           for kind in ['context','analysis']:
-            raw=read(physical(task[kind+'_key']),revision)
-            assert hashlib.sha256(raw).hexdigest()==manifest['files'][kind+'.parquet']['sha256']
-            pf=pq.ParquetFile(pa.BufferReader(raw),page_checksum_verification=True);table=pf.read();formats[kind]=dict(rows=table.num_rows,columns=table.column_names,bytes=len(raw))
-            products[kind]=json.loads(table.to_pylist()[0]['payload'])
-           c=products['context'];an=products['analysis'];request=c['request'];intel=c['intelligence'];ev=intel['evidence'];snap=next(x for x in ev['snapshots'] if x['snapshot_id']==c['snapshot_id'])
-           assert an['snapshot_id']==c['snapshot_id'] and an['run_id']==c['run_id']
-           searches=[]
-           for sr in intel['searches']:
-            searches.append(dict(search_id=sr.get('search_id'),provider=sr.get('provider'),query=sr.get('query'),phase=sr.get('phase'),status=sr.get('status'),requested_at=sr.get('requested_at'),received_at=sr.get('received_at'),request_params=sr.get('request_params'),provider_request_id_present=bool(sr.get('provider_request_id')),result_count=len(sr.get('results',[])),result_fields=sorted(set(k for x in sr.get('results',[]) for k in x)),all_saved_fields=sorted(sr),raw_response_fields=[k for k in sr if k in ['raw','raw_response','raw_body','response_body','response','response_headers']],candidate_example=[{k:x.get(k) for k in ['url','title','provider_score','published_at']}|{'snippet_characters':len(x.get('snippet') or '')} for x in sr.get('results',[])[:1]]))
-           texts=ev['texts'];bodies=[]
-           for src in ev['sources']:
-            text=texts.get(src.get('text_sha256'));valid=(hashlib.sha256(text.encode()).hexdigest()==src['text_sha256']) if text is not None else None
-            if valid is False:raise ValueError('BODY_HASH')
-            bodies.append(dict(source_id=src.get('source_id'),url=src.get('source_url'),status=src.get('status'),http_status=src.get('http_status'),evidence_kind=src.get('evidence_kind'),extraction_version=src.get('extraction_version'),requested_at=src.get('requested_at'),captured_at=src.get('captured_at'),extracted_at=src.get('extracted_at'),published_at=src.get('published_at'),search_id=src.get('search_id'),search_result_rank=src.get('search_result_rank'),text_characters=len(text or ''),text_hash_verified=valid,fields=sorted(src)))
-           records=an.get('records',{});rkeys=sorted(records)
-           snapshots=[dict(snapshot_id=x.get('snapshot_id'),question_version_id=x.get('question_version_id'),sealed_at=x.get('sealed_at'),evidence_cutoff_at=x.get('evidence_cutoff_at'),temporal_policy=x.get('temporal_policy'),material_count=len(x.get('materials',[])),material_bindings=x.get('materials'),gap_codes=[g.get('code') for g in x.get('gaps',[])]) for x in ev['snapshots']]
-           definition_rows=[dict(version_id=k,observed_at=v.get('observed_at'),fields=sorted(v.get('definition',{})),title=v.get('definition',{}).get('title'),rule_characters=len(v.get('definition',{}).get('resolution_criteria') or ''),scale=v.get('definition',{}).get('scale')) for k,v in intel['definitions'].items()]
-           archive=None
-           if task.get('runtime_archive_key'):
-            archive=json.loads(read(physical(task['runtime_archive_key']),revision));archive=dict(key=task['runtime_archive_key'],schema=archive.get('schema'),runtime_files=len(archive.get('runtime',{})),runtime_paths=sorted(archive.get('runtime',{})))
-           request_summary={k:request.get(k) for k in ['id','question','question_type','open_time','close_time','scheduled_close_time','scheduled_resolve_time','spot_scoring_time','inbound_outcome_count','open_lower_bound','open_upper_bound','unit','options']}
-           request_summary.update(fields=sorted(request),resolution_criteria_characters=len(request.get('resolution_criteria') or ''),resolution_criteria_sha256=hashlib.sha256((request.get('resolution_criteria') or '').encode()).hexdigest(),fine_print_characters=len(request.get('fine_print') or ''),background_characters=len(request.get('background') or ''),scaling_fields=sorted(request.get('scaling') or {}),grid_points=len((request.get('scaling') or {}).get('continuous_range') or []))
-           analysis_records=[dict(path=k,fields=sorted(v) if isinstance(v,dict) else [],model=v.get('model') if isinstance(v,dict) else None) for k,v in records.items() if k.endswith(('request.json','response.json','identity.json','result.json','first-input-audit.json','routing.json','distribution-spec.json'))]
-           rows.append(dict(question_id=qid,prefix=key.rsplit('/',1)[0],read_revision=revision,context_fields=sorted(c),formats=formats,request=request_summary,definitions=definition_rows,searches=searches,sources=bodies,snapshots=snapshots,text_object_count=len(texts),total_text_characters=sum(map(len,texts.values())),final_review_count=len(intel.get('final_reviews',[])),intelligence_fields=sorted(intel),analysis=dict(fields=sorted(an),release=an.get('analysis_release'),decision_model=an.get('decision_model'),collection_model=an.get('collection_model'),started_at=an.get('started_at'),finished_at=an.get('finished_at'),original_reading=an.get('original_reading'),record_count=len(records),records=analysis_records),runtime_archive=archive,task_fields=sorted(task),test_only=c.get('test_only'),run_purpose=c.get('run_purpose'),evidence_cutoff_at=c.get('evidence_cutoff_at'),started_at=c.get('started_at')))
-          value=dict(session=session,revision=info.sha,cases=rows,read_receipts=refs,provider_calls=0,submissions=0)
-          sealed=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(json.dumps(value).encode());print('PRIVATE_FORECAST_READBACK='+base64.b64encode(sealed).decode())
+          repo='chchen13/forecastagent-data';session='eec3bd3fcd28430b862376553259e65a';base='metaculus/_debug/'+session
+          api=HfApi(token=os.environ['HF_TOKEN']);info=api.repo_info(repo,repo_type='dataset');assert info.private;revision=info.sha
+          files={x.path:x.size for x in api.list_repo_tree(repo,base,recursive=True,revision=revision,repo_type='dataset') if hasattr(x,'size')}
+          def read(key):
+           with tempfile.TemporaryDirectory() as d:return Path(hf_hub_download(repo,key,repo_type='dataset',revision=revision,token=os.environ['HF_TOKEN'],local_dir=d,force_download=True)).read_bytes()
+          state=json.loads(read(base+'/_control/checkpoint.json'));owners=defaultdict(set);rows=[]
+          for index,qid in enumerate(['46429','46428','46427'],1):
+           task=state['tasks'].get(qid);row=dict(case_index=index,question_id=qid,status=task.get('status') if task else 'not_run',context_bytes=0,analysis_bytes=0,direct_files_bytes=0,runtime_hashes=[],archive_files=0)
+           if task:
+            physical=lambda k:base+'/'+k[len('metaculus/'):]
+            pre=physical(task['context_key']).rsplit('/',1)[0] if task.get('context_key') else None
+            direct={k:v for k,v in files.items() if (pre and k.startswith(pre+'/')) or k.startswith(base+'/case-'+str(index)+'/')}
+            row.update(title=task.get('request',{}).get('question'),last_error=task.get('last_error'),prefix=pre,direct_files_bytes=sum(direct.values()),direct_file_sizes=direct,attempts=task.get('attempts'))
+            hashes=set()
+            if task.get('runtime_archive_key'):
+             archive=json.loads(read(physical(task['runtime_archive_key'])));hashes.update(archive['runtime'].values());row['archive_files']=len(archive['runtime'])
+            else:hashes.update(v for k,v in state['runtime'].items() if k.startswith('tasks/'+qid+'/'))
+            row['runtime_hashes']=sorted(hashes)
+            for h in hashes:owners[h].add(qid)
+            for name in ['context','analysis']:
+             if task.get(name+'_key'):row[name+'_bytes']=files[physical(task[name+'_key'])]
+            if pre and pre+'/context.parquet' in files:
+             raw=read(pre+'/context.parquet');manifest=json.loads(read(pre+'/manifest.json'));assert hashlib.sha256(raw).hexdigest()==manifest['files']['context.parquet']['sha256']
+             value=json.loads(pq.read_table(pa.BufferReader(raw)).to_pylist()[0]['payload']);intel=value['intelligence'];sources={x['source_id']:x for x in intel['evidence']['sources']};snap=next(x for x in intel['evidence']['snapshots'] if x['snapshot_id']==value['snapshot_id'])
+             row.update(snapshot_id=value['snapshot_id'],searches=[dict(provider=x['provider'],query=x['query'],status=x['status'],results=len(x['results'])) for x in intel['searches']],raw_search_responses=len(value.get('raw_search_responses',[])),raw_search_bytes=sum(x['body_bytes'] for x in value.get('raw_search_responses',[])),materials=[dict(binding=x,source={k:sources[x['source_id']].get(k) for k in ['source_id','source_url','status','http_status','error_code','evidence_kind','text_sha256']},text_characters=len(intel['evidence']['texts'].get(sources[x['source_id']].get('text_sha256'),''))) for x in snap['materials']],gap_codes=[x.get('code') for x in snap.get('gaps',[])],test_only=value.get('test_only'))
+           rows.append(row)
+          for row in rows:
+           hashes=row.pop('runtime_hashes');owned=[h for h in hashes if len(owners[h])==1];shared=[h for h in hashes if len(owners[h])>1]
+           row['exclusive_runtime_bytes']=sum(files[base+'/_control/objects/'+h] for h in owned)
+           row['shared_runtime_referenced_bytes']=sum(files[base+'/_control/objects/'+h] for h in shared)
+           row['exclusive_total_bytes']=row['direct_files_bytes']+row['exclusive_runtime_bytes']
+          total=sum(files.values());result=dict(session=session,revision=revision,cases=rows,session_current_bytes=total,session_current_files=len(files),session_shared_control_and_history_bytes=total-sum(x['exclusive_total_bytes'] for x in rows),completed_cases=state['debug']['completed'],physical_billing_claimed=False,provider_calls=0,submissions=0)
+          sealed=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(json.dumps(result).encode());print('PRIVATE_FORECAST_READBACK='+base64.b64encode(sealed).decode())
           PY
