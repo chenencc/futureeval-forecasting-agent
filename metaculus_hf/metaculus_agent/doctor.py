@@ -7,7 +7,13 @@ def check():
     failures=[]
     for name,ref in lock['files'].items():
         path=(root/name).resolve()
-        if not path.is_relative_to(root) or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=ref['sha256']:failures.append(name)
+        if not path.is_relative_to(root) or not path.is_file():failures.append(name);continue
+        raw=path.read_bytes()
+        # Python source/JSON newline conversion is the only allowed normalization.
+        # Original upstream byte hashes remain in sha256 for provenance.
+        expected=ref.get('normalized_sha256',ref['sha256'])
+        actual=hashlib.sha256(raw.replace(b'\r\n',b'\n') if 'normalized_sha256' in ref else raw).hexdigest()
+        if actual!=expected:failures.append(name)
     if failures:raise RuntimeError('SOURCE_LOCK_MISMATCH: '+','.join(failures))
     for path in root.rglob('*.py'):
         if path.relative_to(root).parts[0] in ('.venv','runtime'):continue
