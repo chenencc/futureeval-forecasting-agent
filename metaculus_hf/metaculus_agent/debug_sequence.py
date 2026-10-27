@@ -87,12 +87,21 @@ class SimulatedSubmission:
         self.comment=body['comments'][0]['text'];self.posts+=1
         return dict(status=201)
 
-def run_case(backend,root,session,index,native,*,collector=collect,analyzer=analyze,resume_analysis=False):
+def run_case(backend,root,session,index,native,*,collector=collect,analyzer=analyze,resume_analysis=False,resume_capture=False):
     if type(index)!=int or not 1<=index<=3:raise ValueError('DEBUG_CASE_INDEX')
+    if resume_analysis and resume_capture:raise ValueError('DEBUG_RESUME_MODE_CONFLICT')
     root=Path(root);store=DebugStore(backend,session);report_key=f'metaculus/case-{index}/audit.json'
     post_id,qid=CASES[index-1];client=HistoricalClient(native,post_id,qid)
     cp=RuntimeCheckpoint(store,root/'writer',key=KEY);state=None
-    if resume_analysis:
+    if resume_capture:
+        state=cp.restore();saved=state.get('tasks',{}).get(qid,{})
+        if state.get('debug',{}).get('completed')!=list(range(1,index)) or saved.get('status')!='capturing' or not saved.get('capture_run_id') or saved.get('context_key'):raise RuntimeError('DEBUG_SAVED_CAPTURE_REQUIRED')
+        prior=json.loads(store.read(f'metaculus/case-{index-1}/audit.json')) if index>1 else None
+        if prior and prior.get('status') not in {'debug_case_passed','debug_case_prepared'}:raise RuntimeError('DEBUG_PREDECESSOR_NOT_PASSED')
+        if prior and prior['status']=='debug_case_prepared':verify_case_products(store,prior,store.head)
+        store.publish({f'metaculus/case-{index}/capture-recovery-origin.json':dumps(dict(original_checkpoint=state,original_checkpoint_sha256=digest(state),source_revision=store.head,original_task_status=saved['status'],capture_run_id=saved['capture_run_id']))})
+        if store.exists(report_key):store.publish({f'metaculus/case-{index}/previous-capture-failure.json':store.read(report_key)})
+    elif resume_analysis:
         state=cp.restore();saved=state.get('tasks',{}).get(qid,{})
         if state.get('debug',{}).get('completed')!=list(range(1,index)) or saved.get('status')!='analyzing' or not saved.get('context_key'):raise RuntimeError('DEBUG_SAVED_ANALYSIS_REQUIRED')
         previous=store.read(report_key);store.publish({f'metaculus/case-{index}/previous-failure.json':previous})
@@ -125,22 +134,27 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         runner=Runner(cp,client,writer=state['writer'],live=False,limit=1,collector=collector,analyzer=analyzed)
         os.environ['FORECAST_V2_ONCE_NAMESPACE']='metaculus-debug-'+session
         simulated=client.post(post_id)
-        if not resume_analysis:runner.ingest([simulated])
+        if not (resume_analysis or resume_capture):runner.ingest([simulated])
         task=runner.state['tasks'].get(qid)
-        if not task or task['status']!=('analyzing' if resume_analysis else 'discovered'):raise RuntimeError('DEBUG_ADMISSION_FAILED')
+        expected='analyzing' if resume_analysis else 'capturing' if resume_capture else 'discovered'
+        if not task or task['status']!=expected:raise RuntimeError('DEBUG_ADMISSION_FAILED')
         if resume_analysis:
             raw=store.read(task['context_key'],task.get('context_revision'))
             if sha(raw)!=task['context_bytes_sha256']:raise RuntimeError('DEBUG_RESUME_CONTEXT_HASH')
             task['resumed_analysis_only']=True
             def no_collection(*args,**kwargs):raise RuntimeError('DEBUG_RECOLLECTION_FORBIDDEN')
             runner.collector=no_collection
+        elif resume_capture:
+            # Identity and original request/evidence clocks survive the retry.
+            if digest(task['request'])!=digest(live_request(client.original,client.original['question'])):raise RuntimeError('DEBUG_RESUME_CAPTURE_REQUEST_CHANGED')
+            task['resumed_capture']=True
         else:
             task.update(test_only=True,run_purpose='historical-listener-simulation',post=client.original,
                 request=live_request(client.original,client.original['question']))
         simulation=dict(test_only=True,original_descriptor=client.original_descriptor,simulated_deadline=client.until,
             admission_status_and_own_history_simulated=True,model_input_original_clocks_preserved=True,
             temporal_policy='current-evidence-for-historical-question-not-historical-asof',new_opening_claimed=False)
-        runner.checkpoint({f'metaculus/case-{index}/'+('analysis-resume.json' if resume_analysis else 'simulation.json'):dumps(simulation)})
+        runner.checkpoint({f'metaculus/case-{index}/'+('analysis-resume.json' if resume_analysis else 'capture-resume.json' if resume_capture else 'simulation.json'):dumps(simulation)})
         with patch.object(platform,'deliver',side_effect=RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')):
             if resume_analysis:
                 from pipeline_v2.providers import Budget
@@ -195,6 +209,7 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
             unverified_reading_sources=len(source['original_reading'].get('unverified_source_ids',[])),
             source_http_status_counts=dict(Counter(str(m.get('source',{}).get('http_status')) for m in snapshot['materials'])),
             provider_budget_increment=consumption,
+            resumed_capture=resume_capture,capture_attempts=task.get('attempts',{}).get('capture',0),capture_run_id=task.get('capture_run_id'),
             resumed_analysis_only=resume_analysis,new_search_requests=consumption['search'] if resume_analysis else None,new_fetch_requests=consumption['fetch'] if resume_analysis else None,
             local_payloads_retired=True,completed_cases=final_state['debug']['completed'],submissions=0,new_opening_claimed=False,
             simulated_submission_readback=True,simulated_duplicate_posts=0,actual_submission_acceptance_claimed=False,
@@ -216,7 +231,7 @@ def public(report):
           'products_revision','exact_revision_readback','restart_restored','duplicate_discovery_processed','budget_restored','material_count',
           'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
           'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment',
-          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy')
+          'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy','resumed_capture','capture_attempts','capture_run_id')
     return {k:report[k] for k in keys if k in report}
 
 def verify_case_products(store,report,revision):
@@ -272,7 +287,7 @@ def diagnostics(backend,session,index):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--case-index',type=int,required=True);p.add_argument('--inspect',action='store_true');p.add_argument('--resume-analysis',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--case-index',type=int,required=True);p.add_argument('--inspect',action='store_true');p.add_argument('--resume-analysis',action='store_true');p.add_argument('--resume-capture',action='store_true');args=p.parse_args()
     if not 1<=args.case_index<=3:raise ValueError('DEBUG_CASE_INDEX')
     backend=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN'])
     if args.inspect:return diagnostics(backend,args.session,args.case_index)
@@ -283,7 +298,7 @@ def main():
         if method!='GET':raise RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')
         return original(method,path,data)
     with tempfile.TemporaryDirectory(prefix='metaculus-three-debug-') as tmp,patch.object(native,'request',readonly):
-        return batched_case(backend,Path(tmp),args.session,args.case_index,native,resume_analysis=args.resume_analysis)
+        return batched_case(backend,Path(tmp),args.session,args.case_index,native,resume_analysis=args.resume_analysis,resume_capture=args.resume_capture)
 
 if __name__=='__main__':
     try:
