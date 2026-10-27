@@ -26,27 +26,45 @@ jobs:
       - name: Encrypted readback of saved predictions, zero provider calls
         run: |
           python -B - <<'PY'
-          import base64,hashlib,io,json,os,tempfile
+          import base64,hashlib,json,os,tempfile
           from pathlib import Path
-          import pyarrow.parquet as pq
+          from datetime import datetime,timedelta,timezone
           from huggingface_hub import HfApi,hf_hub_download
           from nacl.public import PublicKey,SealedBox
-          session='1044847f98034a4f86e871811b75f8c5'
-          pre='metaculus/_debug/'+session
-          token=os.environ['HF_TOKEN'];repo='chchen13/forecastagent-data';api=HfApi(token=token)
-          info=api.repo_info(repo,repo_type='dataset');assert info.private
-          def read(key,rev):
-           with tempfile.TemporaryDirectory() as d:return Path(hf_hub_download(repo,key,repo_type='dataset',revision=rev,token=token,local_dir=d,force_download=True)).read_bytes()
-          state=json.loads(read(pre+'/_control/checkpoint.json',info.sha));rows=[]
-          for qid in ['46432','46431']:
-           task=state['tasks'][qid];rev=task['analysis_revision'];key=pre+'/'+task['analysis_key'][len('metaculus/'):]
-           raw=read(key,rev);manifest=json.loads(read(key.rsplit('/',1)[0]+'/manifest.json',rev))
-           assert hashlib.sha256(raw).hexdigest()==manifest['files']['analysis.parquet']['sha256']
-           result=json.loads(pq.read_table(io.BytesIO(raw)).to_pylist()[0]['payload'])
-           assert result['question_id']=='metaculus:'+qid and result['run_id']==task['run_id']
-           candidate=result['candidate'];request=task['request']
-           rows.append(dict(question_id=qid,question=request.get('question'),question_type=request.get('question_type'),scaling=request.get('scaling'),inbound_outcome_count=request.get('inbound_outcome_count'),open_lower_bound=request.get('open_lower_bound'),open_upper_bound=request.get('open_upper_bound'),payload=candidate['payload'],selection=candidate['selection'],decision_model=result['decision_model'],analysis_revision=rev,analysis_sha256=hashlib.sha256(raw).hexdigest(),snapshot_id=result['snapshot_id'],finished_at=result['finished_at'],verified=True))
-          data=json.dumps(dict(session=session,cases=rows,provider_calls=0,submissions=0)).encode()
-          encrypted=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(data)
-          print('PRIVATE_FORECAST_READBACK='+base64.b64encode(encrypted).decode())
+          import requests
+          session='1044847f98034a4f86e871811b75f8c5';pre='metaculus/_debug/'+session
+          repo='chchen13/forecastagent-data';token=os.environ['HF_TOKEN'];api=HfApi(token=token);info=api.repo_info(repo,repo_type='dataset');assert info.private
+          reads=[]
+          def read(key,rev=info.sha):
+           with tempfile.TemporaryDirectory() as d:
+            raw=Path(hf_hub_download(repo,key,repo_type='dataset',revision=rev,token=token,local_dir=d,force_download=True)).read_bytes();reads.append(dict(key=key,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest()));return raw
+          state=json.loads(read(pre+'/_control/checkpoint.json'));task=state['tasks']['46430'];files=[]
+          allowed={'status','code','error','error_code','error_type','message','http_status','status_code','stage','started_at','finished_at','created_at','model','first_external_request_at','usage','request_kind','kind','attempt','updated_at','first_http_at','response_received_at'}
+          def safe(v,depth=0):
+           if depth>10:return None
+           if isinstance(v,dict):
+            out={}
+            for k,x in v.items():
+             if k in {'request_body','response_body','content','text','prompt','messages','body','html','markdown','raw_html','raw_markdown','readable_text','snippet'}:continue
+             if k in allowed and (not isinstance(x,str) or len(x)<500):out[k]=x
+             elif isinstance(x,(dict,list)):
+              z=safe(x,depth+1)
+              if z:out[k]=z
+            return out
+           if isinstance(v,list):return [z for x in v[:100] if (z:=safe(x,depth+1))]
+           return None
+          for name,h in state.get('runtime',{}).items():
+           if '/46430/' not in name and not name.startswith('budgets/'):continue
+           raw=read(pre+'/_control/objects/'+h);assert hashlib.sha256(raw).hexdigest()==h
+           try:obj=json.loads(raw)
+           except ValueError:obj=None
+           files.append(dict(path=name,sha256=h,bytes=len(raw),keys=list(obj)[:30] if isinstance(obj,dict) else None,signals=safe(obj)))
+          r=requests.get('https://huggingface.co/api/datasets/'+repo+'/commits/main',headers={'Authorization':'Bearer '+token},params={'limit':100},timeout=30);r.raise_for_status();commits=r.json()
+          near=[dict(id=x.get('id'),date=x.get('date'),title=x.get('title')) for x in commits if '2026-10-27T15:'<=x.get('date','')<'2026-10-27T16:15']
+          reports=[]
+          for i in [1,2,3]:
+           key=pre+'/case-'+str(i)+'/audit.json'
+           if api.file_exists(repo,key,repo_type='dataset',revision=info.sha):reports.append(json.loads(read(key)))
+          value=dict(session=session,revision=info.sha,checkpoint_updated_at=state.get('updated_at'),task={k:task.get(k) for k in ['id','status','started_at','context_key','capture_run_id','last_error','attempts','snapshot_id']},title=task.get('request',{}).get('question'),runtime=files,reports=reports,commit_count_returned=len(commits),commits_near_failure=near,provider_calls=0,submissions=0)
+          encrypted=SealedBox(PublicKey(base64.b64decode(os.environ['READER_PUBLIC_KEY']))).encrypt(json.dumps(value).encode());print('PRIVATE_FORECAST_READBACK='+base64.b64encode(encrypted).decode())
           PY
