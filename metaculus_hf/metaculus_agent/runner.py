@@ -126,7 +126,7 @@ class Runner:
         return dict(processed=done,failures=failures,tasks=len(self.state['tasks']),live=self.live)
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--mode',choices=['collect-analyze','live'],default='collect-analyze');parser.add_argument('--limit',type=int,default=1)
+    parser=argparse.ArgumentParser();parser.add_argument('--mode',choices=['inspect','collect-analyze','live'],default='collect-analyze');parser.add_argument('--limit',type=int,default=1)
     a=parser.parse_args()
     if not 1<=a.limit<=5:raise ValueError('BOUNDED_LIMIT_REQUIRED')
     if a.mode=='live' and os.environ.get('METACULUS_SUBMIT_ENABLED')!='true':raise RuntimeError('LIVE_NOT_ENABLED')
@@ -139,6 +139,12 @@ def main():
     runner=Runner(cp,client,writer=os.environ.get('METACULUS_WRITER','metaculus-agent-actions-v1'),live=a.mode=='live',limit=a.limit)
     posts,complete=collect_questions(os.environ['METACULUS_TOKEN'])
     if not complete:raise RuntimeError('INCOMPLETE_OPEN_SCAN')
+    if a.mode=='inspect':
+        client.account()
+        return dict(status='restored_checkpoint_inspected',live=False,processed=0,failures=0,tasks=len(runner.state['tasks']),
+            legacy_terminal_tasks=sum(t['status']=='legacy_terminal' for t in runner.state['tasks'].values()),
+            eligible_open_questions=sum(bool(eligible(post,q)) for post in posts for q in questions(post)),
+            budget_restored=(root/'budgets/control/provider-budget.jsonl').is_file(),migration_complete=runner.state.get('migration_complete') is True,submissions=0)
     return runner.run(posts)
 if __name__=='__main__':
     # Imported providers may print request excerpts. Only allowlisted counters escape.

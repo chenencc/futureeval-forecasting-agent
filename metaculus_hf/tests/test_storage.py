@@ -17,6 +17,7 @@ from pipeline_v2.contracts import now
 class Api:
     def __init__(self,private=True):self.private=private;self.head='a';self.files={'a':{'metaculus/_control/checkpoint.json':b'owner1'}};self.conflict=False;self.calls=0
     def repo_info(self,*a,**kw):return SimpleNamespace(private=self.private,sha=self.head)
+    def file_exists(self,repo,key,**kw):return key in self.files[kw.get('revision',self.head)]
     def create_commit(self,*a,**kw):
         self.calls+=1
         if kw['parent_commit']!=self.head:
@@ -43,6 +44,13 @@ class StoreTests(unittest.TestCase):
         api=Api();s=self.store(api);api.advance({'metaculus/_control/checkpoint.json':b'owner2'})
         with self.assertRaisesRegex(Conflict,'HF_WRITER_CHANGED'):s.publish({'metaculus/_control/checkpoint.json':b'old-writer-overwrite'})
         self.assertEqual(api.files[api.head]['metaculus/_control/checkpoint.json'],b'owner2')
+    def test_first_checkpoint_creation_rebases_only_when_still_absent(self):
+        api=Api();s=self.store(api);key='metaculus/_control/new-owner.json';s.guards={key:None}
+        api.advance({'studies/foreign':b'other writer'})
+        receipt=s.publish({key:b'new owner'});self.assertTrue(receipt['verified'])
+        self.assertEqual(api.files[api.head]['studies/foreign'],b'other writer')
+        api=Api();s=self.store(api);s.guards={key:None};api.advance({key:b'competing owner'})
+        with self.assertRaises(Conflict):s.publish({key:b'overwrite'})
     def test_exact_revision_readback_mismatch_blocks_retirement(self):
         api=Api();s=self.store(api);s.read=lambda *a:b'tampered'
         with self.assertRaises(PersistenceError):s.publish({'metaculus/test/context.parquet':b'actual'})
