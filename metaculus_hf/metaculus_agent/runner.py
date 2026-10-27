@@ -1,6 +1,6 @@
 """Bounded, single-writer orchestration. Live is fail-closed until migration."""
 import argparse,contextlib,io,json,os,re,shutil,time,uuid
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from unittest.mock import patch
 from pipeline_v2.contracts import now,digest
@@ -87,10 +87,12 @@ class Runner:
             value=json.loads(pq.read_table(pa.BufferReader(raw)).to_pylist()[0]['payload'])
             if digest(value)!=task['context_hash']:raise RuntimeError('RESTORED_CONTEXT_BINDING')
             task['status']='analyzing';task['attempts']['analysis']=task['attempts'].get('analysis',0)+1;self.checkpoint()
-            result=self.analyzer(value,root/'analysis',self.checkpoint)
+            task['analysis_executions']=task.get('analysis_executions',0)+1;self.checkpoint()
+            result=self.analyzer(value,root/'analysis'/('attempt-'+str(task['analysis_executions']).zfill(3)),self.checkpoint)
             if result['snapshot_id']!=task['snapshot_id'] or result['context_sha256']!=task['context_hash']:raise RuntimeError('ANALYSIS_CONTEXT_MISMATCH')
             candidate=result['candidate'];analysis_raw=product('analysis',result)
             task.update(status='analyzed',candidate=candidate,analysis_key=prefix(task)+'/analysis.parquet',analysis_hash=digest(result))
+            for k in ['last_error','analysis_retry_at','provider_failure_category','operator_action_required']:task.pop(k,None)
             task['analysis_revision']=self.checkpoint({task['analysis_key']:analysis_raw,prefix(task)+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis_raw}))})['revision']
         if task['status'] in {'analyzed','submitting'} and self.live:
             current(self.client,task);candidate=task['candidate'];task['status']='submitting';self.checkpoint()
@@ -109,14 +111,19 @@ class Runner:
         shutil.rmtree(target);task.pop('post',None);task.pop('candidate',None);self.checkpoint()
     def run(self,posts):
         self.client.account();self.ingest(posts);done=0;failures=0
-        tasks=sorted((t for t in self.state['tasks'].values() if t['status'] not in TERMINAL and (self.live or t['status']!='analyzed')),key=lambda t:t['deadline_utc'])
+        tasks=sorted((t for t in self.state['tasks'].values() if t['status'] not in TERMINAL and (self.live or t['status']!='analyzed') and (not t.get('analysis_retry_at') or utc(t['analysis_retry_at'])<=utc())),key=lambda t:t['deadline_utc'])
         for task in tasks:
             if done>=self.limit or time.monotonic()+180>=self.until:break
             try:self.process(task)
             except (Conflict,PersistenceError):raise
             except Exception as exc:
                 code=getattr(exc,'code',type(exc).__name__);task['last_error']=code
-                if code in {'QUESTION_IDENTITY_CHANGED','QUESTION_RULES_OR_SCALE_CHANGED'}:task['status']='blocked_integrity'
+                if getattr(exc,'provider_failure',False):
+                    task['attempts']['analysis']=max(0,task['attempts'].get('analysis',0)-1)
+                    task['analysis_provider_failures']=task.get('analysis_provider_failures',0)+1
+                    task['analysis_retry_at']=(datetime.now(timezone.utc)+timedelta(seconds=exc.retry_after)).isoformat()
+                    task['provider_failure_category']=exc.category;task['operator_action_required']=exc.category=='configuration'
+                elif code in {'QUESTION_IDENTITY_CHANGED','QUESTION_RULES_OR_SCALE_CHANGED'}:task['status']='blocked_integrity'
                 elif code=='QUESTION_CLOSED_OR_PERMISSION':task['status']='closed'
                 elif code=='QUESTION_DEADLINE':task['status']='deadline_missed'
                 elif task['status']=='capturing' and task['attempts'].get('capture',0)>=3:task['status']='collection_exhausted'

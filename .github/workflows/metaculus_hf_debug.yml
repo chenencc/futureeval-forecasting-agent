@@ -6,6 +6,10 @@ on:
         type: string
         required: true
         description: 'Unique 32-hex debug session; all output stays in HF _debug'
+      resume_first_analysis:
+        type: boolean
+        default: false
+        description: 'Restore the failed first case; never recollect its evidence'
 permissions:
   contents: read
 concurrency:
@@ -14,7 +18,7 @@ concurrency:
 jobs:
   case1:
     name: Historical arrival 1
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/metaculus-analysis-recovery'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -31,7 +35,8 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY3 }}
       TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY4 }}
       METACULUS_SUBMIT_ENABLED: 'false'
-      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL: nvidia/nemotron-3.5-super-vl:free
+      METACULUS_DECISION_MODEL: baseten/mammoth-1:free
       PYTHONUNBUFFERED: '1'
       PYTHONDONTWRITEBYTECODE: '1'
       DEBUG_SESSION: ${{ inputs.session }}
@@ -46,7 +51,14 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python -m metaculus_agent.doctor
       - name: One historical arrival, stop sequence on failure
-        run: python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 1
+        env:
+          RESUME_ANALYSIS: ${{ inputs.resume_first_analysis }}
+        run: |
+          if [ "$RESUME_ANALYSIS" = 'true' ]; then
+            python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 1 --resume-analysis
+          else
+            python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 1
+          fi
       - name: Read saved HF diagnostics only
         if: always()
         run: python -B -m metaculus_agent.debug_sequence --session "$DEBUG_SESSION" --case-index 1 --inspect
@@ -54,7 +66,7 @@ jobs:
   case2:
     name: Historical arrival 2
     needs: case1
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/metaculus-analysis-recovery'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -71,7 +83,8 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY3 }}
       TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY4 }}
       METACULUS_SUBMIT_ENABLED: 'false'
-      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL: nvidia/nemotron-3.5-super-vl:free
+      METACULUS_DECISION_MODEL: baseten/mammoth-1:free
       PYTHONUNBUFFERED: '1'
       PYTHONDONTWRITEBYTECODE: '1'
       DEBUG_SESSION: ${{ inputs.session }}
@@ -94,7 +107,7 @@ jobs:
   case3:
     name: Historical arrival 3
     needs: case2
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/metaculus-analysis-recovery'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -111,7 +124,8 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_KEY3 }}
       TAVILY_API_KEY2: ${{ secrets.TAVILY_KEY4 }}
       METACULUS_SUBMIT_ENABLED: 'false'
-      FORECAST_MODEL: nvidia/nemotron-3-super-120b-a12b:free
+      FORECAST_MODEL: nvidia/nemotron-3.5-super-vl:free
+      METACULUS_DECISION_MODEL: baseten/mammoth-1:free
       PYTHONUNBUFFERED: '1'
       PYTHONDONTWRITEBYTECODE: '1'
       DEBUG_SESSION: ${{ inputs.session }}
