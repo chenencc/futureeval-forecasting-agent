@@ -108,13 +108,63 @@ def run(backend,root,session,native,*,collector=sequence.collect,analyzer=sequen
     return dict(status='debug_batch_passed',session=session,selected=selected,selection_skips=skips,require_unused=require_unused,reports=[sequence.public(r) for r in reports],
                 hf_successful_commits=sum(r['hf_successful_commits'] for r in reports),storage=usage,submissions=0)
 
+def default_probe(value,root,checkpoint):
+    """Exercise operational fallback on saved real input without provider calls."""
+    import importlib
+    module=importlib.import_module('metaculus_agent.analyze')
+    from .analysis_policy import AnalysisProviderError
+    from .fallback import neutral
+    from pipeline_v2.providers import Budget
+    from pipeline_v2.contracts import digest
+    from ForecastAgent.analysis.pilot import save
+    original=digest(value)
+    with patch.object(module,'decision_route',side_effect=AnalysisProviderError('DEBUG_INJECTED_PROVIDER_OUTAGE')),patch.object(Budget,'reserve',side_effect=AssertionError('DEBUG_PROBE_PROVIDER_FORBIDDEN')):
+        result=module.analyze(value,Path(root)/'operational-probe',checkpoint)
+    if result['forecast_origin']!='operational_default' or result['decision_model_attempted'] or result['provider_events'] or result['candidate']['payload']!=neutral(value['request']) or digest(value)!=original:raise RuntimeError('DEBUG_OPERATIONAL_PROBE_FAILED')
+    proof=dict(status='operational_default_probe_passed',question_type=value['request']['question_type'],
+               trigger='DEBUG_INJECTED_PROVIDER_OUTAGE',provider_calls=0,submissions=0,input_unchanged=True,
+               payload_valid=True,payload_sha256=digest(result['candidate']['payload']))
+    save(Path(root)/'operational-default-probe.json',proof);checkpoint();return proof
+
+def resume_stopped(backend,root,session,native,*,collector=sequence.collect,analyzer=sequence.analyze,probe_default=False):
+    """Continue the failed analysis from saved context, then only later cases."""
+    scope=sequence.DebugStore(backend,session);state=json.loads(scope.read(sequence.KEY))
+    completed=state.get('debug',{}).get('completed',[]);plan=state.get('debug',{}).get('cases',[])
+    if len(plan)!=3 or completed!=list(range(1,len(completed)+1)) or not 0<len(completed)<3:raise RuntimeError('DEBUG_STOPPED_BATCH_REQUIRED')
+    start=len(completed)+1;qid=str(plan[start-1]['question_id']);task=state['tasks'].get(qid,{})
+    if task.get('status')!='analyzing' or not task.get('context_key'):raise RuntimeError('DEBUG_SAVED_ANALYSIS_REQUIRED')
+    cases=tuple((str(x['post_id']),str(x['question_id'])) for x in plan);reports=[]
+    with patch.object(sequence,'CASES',cases):
+        for index in completed:
+            prior=json.loads(scope.read(f'metaculus/case-{index}/audit.json'))
+            sequence.verify_case_products(scope,prior,backend.head)
+            reports.append({**prior,'status':'debug_case_passed','exact_revision_readback':True,'products_revision':backend.head,'reused_prior_pass':True})
+        for index in range(start,4):
+            selected_analyzer=analyzer
+            if probe_default and index==start:
+                def with_probe(value,folder,checkpoint):
+                    proof=default_probe(value,folder,checkpoint)
+                    result=analyzer(value,folder,checkpoint);result['operational_default_probe']=proof;return result
+                selected_analyzer=with_probe
+            report=sequence.batched_case(backend,Path(root)/str(index),session,index,native,
+                        collector=collector,analyzer=selected_analyzer,resume_analysis=index==start)
+            reports.append(report)
+            if report['status']!='debug_case_passed':return dict(status='debug_batch_stopped',reports=[sequence.public(r) for r in reports],submissions=0)
+    return dict(status='debug_batch_passed',session=session,resumed_from_case=start,prior_cases_recollected=False,
+                reports=[{**sequence.public(r),'reused_prior_pass':bool(r.get('reused_prior_pass'))} for r in reports],
+                new_hf_successful_commits=sum(r.get('hf_successful_commits',0) for r in reports if not r.get('reused_prior_pass')),
+                storage=sizes(backend,session,reports),submissions=0)
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--session',required=True);args=p.parse_args();configure_credentials()
+    p=argparse.ArgumentParser();p.add_argument('--session',required=True);p.add_argument('--resume-stopped',action='store_true');p.add_argument('--probe-default',action='store_true');args=p.parse_args();configure_credentials()
+    if args.probe_default and not args.resume_stopped:raise ValueError('DEBUG_PROBE_REQUIRES_SAVED_RESUME')
     backend=Store(os.environ.get('HF_DATASET','chchen13/forecastagent-data'),os.environ['HF_TOKEN']);native=platform.Client(os.environ['METACULUS_TOKEN']);original=native.request
     def readonly(method,path,data=None):
         if method!='GET':raise RuntimeError('DEBUG_SUBMISSION_FORBIDDEN')
         return original(method,path,data)
-    with tempfile.TemporaryDirectory(prefix='metaculus-three-unused-') as root,patch.object(native,'request',readonly):return run(backend,root,args.session,native)
+    with tempfile.TemporaryDirectory(prefix='metaculus-three-unused-') as root,patch.object(native,'request',readonly):
+        if args.resume_stopped:return resume_stopped(backend,root,args.session,native,probe_default=args.probe_default)
+        return run(backend,root,args.session,native)
 
 if __name__=='__main__':
     try:

@@ -27,7 +27,7 @@ def installed(root,run_id,checkpoint,*,opener=None):
             if getattr(exc,'code',None) in {'DAILY_BUDGET_LIMIT','RUN_BUDGET_LIMIT'}:
                 events.append(dict(model=identity(req),http_status=None,credential_role=role,code='ANALYSIS_LOCAL_BUDGET_LIMIT',category='quota',retry_after=3600))
             raise
-        checkpoint()  # A quota reservation must be remote-durable BEFORE HTTP.
+        checkpoint()  # Local fsync before HTTP; one remote batch at question end.
         model=identity(req)
         try:
             response=original(req,*a,**kw);events.append(dict(model=model,http_status=getattr(response,'status',200),credential_role=role));return response

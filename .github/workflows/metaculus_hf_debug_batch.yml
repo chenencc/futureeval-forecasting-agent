@@ -5,6 +5,9 @@ on:
       session:
         type: string
         required: true
+      resume_stopped:
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -12,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   retry:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/codex/metaculus-forecast-fallback'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -60,4 +63,11 @@ jobs:
           PY
       - run: python -m metaculus_agent.doctor
       - name: Three historical questions sequentially, stop on first failure
-        run: python -B -m metaculus_agent.debug_batch --session "$DEBUG_SESSION"
+        env:
+          RESUME_STOPPED: ${{ inputs.resume_stopped }}
+        run: |
+          if [ "$RESUME_STOPPED" = 'true' ]; then
+            python -B -m metaculus_agent.debug_batch --session "$DEBUG_SESSION" --resume-stopped --probe-default
+          else
+            python -B -m metaculus_agent.debug_batch --session "$DEBUG_SESSION"
+          fi

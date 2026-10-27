@@ -2,7 +2,7 @@ import copy,json,os,tempfile,unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from metaculus_agent.debug_batch import select,run,known_ids,EXCLUDE,old_post,SelectionError
+from metaculus_agent.debug_batch import select,run,known_ids,EXCLUDE,old_post,SelectionError,resume_stopped
 from urllib.error import HTTPError
 from test_runner import post
 from test_debug_sequence import seed,capture,analyze
@@ -59,9 +59,9 @@ class BatchTests(unittest.TestCase):
         total=sum(len(v) for k,v in self.backend.history[self.backend.head].items() if k.startswith('metaculus/_debug/'+session+'/'))
         self.assertEqual(space['session_current_bytes'],total)
         self.assertTrue(all(r['context_bytes']>0 and r['analysis_bytes']>0 for r in space['cases']))
-    def test_first_failure_stops_before_next_question_collection(self):
+    def test_first_integrity_failure_stops_before_next_question_collection(self):
         seen=[]
-        def fail(task,*args):seen.append(task['id']);raise RuntimeError('FIXTURE_CAPTURE_FAILURE')
+        def fail(task,*args):seen.append(task['id']);raise ValueError('BODY_HASH_MISMATCH')
         start=int(self.backend.head)
         report=run(self.backend,self.root,'b'*32,Native(),collector=fail,analyzer=analyze,used=set(),candidate_posts=range(46202,46199,-1))
         self.assertEqual(report['status'],'debug_batch_stopped');self.assertEqual(seen,['46429'])
@@ -96,5 +96,22 @@ class BatchTests(unittest.TestCase):
         with self.assertRaises(SelectionError) as caught:old_post(Limited(),1,sleep=waits.append)
         self.assertEqual(waits,[]);self.assertEqual(caught.exception.http_status,429);self.assertEqual(caught.exception.retry_after,999)
         self.assertEqual(caught.exception.phase,'historical_question_selection')
+    def test_resume_failed_analysis_probes_default_then_continues_third_without_recollecting(self):
+        session='d'*32
+        def fail_second(value,folder,checkpoint):
+            if value['question_id']=='metaculus:46428':raise RuntimeError('SAVED_SECOND_ANALYSIS_FAILURE')
+            return analyze(value,folder,checkpoint)
+        stopped=run(self.backend,self.root/'first',session,Native(),collector=capture,analyzer=fail_second,used=set(),candidate_posts=range(46202,46199,-1))
+        self.assertEqual(stopped['status'],'debug_batch_stopped');seen=[]
+        def only_third(task,*args):
+            seen.append(task['id']);self.assertEqual(task['id'],'46427');return capture(task,*args)
+        before=int(self.backend.head)
+        passed=resume_stopped(self.backend,self.root/'resume',session,Native(),collector=only_third,analyzer=analyze,probe_default=True)
+        self.assertEqual(passed['status'],'debug_batch_passed',passed);self.assertEqual(seen,['46427'])
+        self.assertEqual(int(self.backend.head)-before,2);self.assertEqual(passed['new_hf_successful_commits'],2)
+        second=passed['reports'][1];self.assertEqual(second['new_search_requests'],0);self.assertEqual(second['new_fetch_requests'],0)
+        self.assertTrue(second['reused_prior_pass'] is False);self.assertEqual(second['operational_default_probe']['provider_calls'],0)
+    def test_resume_requires_a_saved_failed_analysis_and_passed_predecessor(self):
+        with self.assertRaises(Exception):resume_stopped(self.backend,self.root,'e'*32,Native())
 
 if __name__=='__main__':unittest.main()

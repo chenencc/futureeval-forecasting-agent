@@ -196,7 +196,11 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
         final=RuntimeCheckpoint(store,root/'after-retirement',key=KEY);final_state=final.restore()
         if any((final.root/'tasks').rglob('*')) or not (final.root/ledger).is_file():raise RuntimeError('DEBUG_RETIREMENT_OR_BUDGET_RESTORE')
         raw_budget=json.loads((final.root/ledger).read_bytes())
-        source=bundle(value)
+        try:source=bundle(value)
+        except Exception as exc:
+            from .fallback import code,prior_source
+            if code(exc)!='NO_USABLE_EVIDENCE':raise
+            source=prior_source(value,snapshot)
         consumption={kind:sum(v.get(kind,0) for v in raw_budget['days'].values())-sum(v.get(kind,0) for v in baseline['days'].values()) for kind in ['model','search','fetch']}
         if resume_analysis and (consumption['search'] or consumption['fetch']):raise RuntimeError('DEBUG_RESUME_ACQUISITION_OCCURRED')
         report=dict(status='debug_case_passed',session=session,case_index=index,question_id=qid,post_id=post_id,
@@ -211,6 +215,10 @@ def run_case(backend,root,session,index,native,*,collector=collect,analyzer=anal
             raw_search_response_count=len(value.get('raw_search_responses',[])),
             raw_search_response_bytes=sum(r['body_bytes'] for r in value.get('raw_search_responses',[])),
             raw_search_complete_count=sum(r['body_complete'] for r in value.get('raw_search_responses',[])),
+            forecast_origin=result.get('forecast_origin',result['candidate'].get('forecast_origin','original_evidence')),
+            forecast_fallback=result.get('fallback',result['candidate'].get('fallback')),
+            collection_failure=value.get('collection_failure'),
+            operational_default_probe=result.get('operational_default_probe'),
             provider_budget_increment=consumption,
             resumed_capture=resume_capture,capture_attempts=task.get('attempts',{}).get('capture',0),capture_run_id=task.get('capture_run_id'),
             resumed_analysis_only=resume_analysis,new_search_requests=consumption['search'] if resume_analysis else None,new_fetch_requests=consumption['fetch'] if resume_analysis else None,
@@ -235,7 +243,7 @@ def public(report):
           'local_payloads_retired','completed_cases','submissions','simulated_submission_readback','simulated_duplicate_posts',
           'analysis_input_pages','analysis_input_characters','unverified_reading_sources','source_http_status_counts','provider_budget_increment',
           'resumed_analysis_only','new_search_requests','new_fetch_requests','finished_at','hf_successful_commits','checkpoint_policy','resumed_capture','capture_attempts','capture_run_id',
-          'raw_search_response_count','raw_search_response_bytes','raw_search_complete_count')
+          'raw_search_response_count','raw_search_response_bytes','raw_search_complete_count','forecast_origin','forecast_fallback','collection_failure','operational_default_probe')
     return {k:report[k] for k in keys if k in report}
 
 def verify_case_products(store,report,revision):

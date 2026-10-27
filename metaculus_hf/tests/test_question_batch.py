@@ -1,9 +1,9 @@
 import json,os,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from metaculus_agent.storage import QuestionBatch,RuntimeCheckpoint,dumps,Conflict,sha
+from metaculus_agent.storage import QuestionBatch,RuntimeCheckpoint,dumps,Conflict,PersistenceError,sha
 from metaculus_agent.runner import Runner,initial_state
-from metaculus_agent.debug_sequence import batched_case,DebugStore,KEY
+from metaculus_agent.debug_sequence import batched_case,run_case,DebugStore,KEY
 from pipeline_v2.contracts import digest
 from test_runner import MemoryStore,Client,post,sealed
 from test_debug_sequence import seed,Native,capture,analyze
@@ -54,15 +54,19 @@ class BatchTests(unittest.TestCase):
         # Retry the same staged batch, not collection/analysis/submission.
         self.backend.fail=False;runner.flush_question();self.assertFalse((runner.root/'tasks/100').exists())
         self.assertEqual(runner.client.posts,1);self.assertEqual(self.batch.successful_commits,1)
-    def test_capture_failure_saves_partial_runtime_once(self):
+    def test_capture_failure_saves_partial_runtime_and_failed_capture_provenance_once(self):
         def fail(task,p,root,checkpoint):
             path=root/'capture'/'receipt.json';path.parent.mkdir(parents=True);path.write_text('{"attempt":1}')
             checkpoint();self.assertEqual(self.backend.head,self.start);raise RuntimeError('CAPTURE_FIXTURE_FAILED')
         runner=self.runner(collector=fail)
-        self.assertEqual(runner.run([post()])['failures'],1);self.assertEqual(self.batch.successful_commits,1)
+        self.assertEqual(runner.run([post()])['failures'],0);self.assertEqual(self.batch.successful_commits,1)
         cp=RuntimeCheckpoint(self.backend,self.root/'recovery');state=cp.restore()
-        self.assertEqual(state['tasks']['100']['last_error'],'CAPTURE_FIXTURE_FAILED')
-        self.assertTrue((cp.root/'tasks/100/capture/receipt.json').exists());self.assertEqual(runner.client.posts,0)
+        self.assertEqual(state['tasks']['100']['collection_failure']['code'],'CAPTURE_FIXTURE_FAILED')
+        self.assertFalse(state['tasks']['100']['collection_failure']['capture_succeeded'])
+        archive=json.loads(self.backend.read(state['tasks']['100']['runtime_archive_key']))
+        hashed=archive['runtime']['tasks/100/capture/receipt.json']
+        self.assertEqual(json.loads(self.backend.read('metaculus/_control/objects/'+hashed)),{'attempt':1})
+        self.assertEqual(runner.client.posts,1)
     def test_empty_poll_has_no_commit(self):
         runner=self.runner();self.assertEqual(runner.run([])['processed'],0)
         self.assertEqual(self.backend.head,self.start);self.assertEqual(self.batch.successful_commits,0)
@@ -107,8 +111,10 @@ class BatchTests(unittest.TestCase):
             f=root/'capture/saved-source.json';f.parent.mkdir(parents=True);f.write_text('{"saved":true}')
             path=Path(os.environ['FORECAST_V2_SHARED_BUDGET_ROOT'])/'control/provider-budget.jsonl'
             budget=json.loads(path.read_bytes());budget['days']['2026-10-27']['model']+=3;path.write_bytes(dumps(budget));checkpoint()
-            raise RuntimeError('HF_PREVIOUS_INTERRUPTION_FIXTURE')
-        fail=batched_case(backend,self.root/'failed',session,3,Native(),collector=interrupted,analyzer=analyze)
+            raise PersistenceError('HF_PREVIOUS_INTERRUPTION_FIXTURE')
+        # Reproduce the old remotely checkpointed storage interruption, not a
+        # recoverable acquisition error under the new operational fallback.
+        fail=run_case(backend,self.root/'failed',session,3,Native(),collector=interrupted,analyzer=analyze)
         self.assertEqual(fail['status'],'debug_stopped_on_failure')
         scoped=DebugStore(backend,session);before=json.loads(scoped.read(KEY));first_two={k:before['tasks'][k] for k in ('46432','46431')}
         def resumed(task,p,root,checkpoint):

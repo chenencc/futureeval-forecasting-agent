@@ -222,3 +222,30 @@ exclusive runtime-object bytes and a shared session remainder without double
 counting. These are current-revision file sizes from HF metadata, not Git history,
 compressed physical storage or a billing estimate. Size inspection is read-only
 and does not add an HF commit. Results/evidence remain in private HF debug.
+
+### Forecast fallback policy
+
+Eligible questions with valid identity and platform metadata use three explicit
+levels: original-evidence Mammoth analysis; question/rules-only Mammoth prior if
+no usable independent body exists; then a deterministic operational distribution
+if collection/model/provider/format failures leave no valid model output. Binary
+defaults are 0.5, categorical defaults have equal option mass, and numeric/date/
+discrete defaults are uniform in authoritative platform-grid coordinates with
+2% mass per open tail. All pass the same native payload validators.
+
+`forecast_origin`, `fallback.level`, trigger code, model-generated/evidence-based
+flags and comment text identify the downgrade. A collection failure retains its
+partial searches/bodies plus `collection_failure.capture_succeeded=false`; it is
+never relabeled a successful collection. Provider errors/budgets remain recorded,
+and authentication/configuration faults retain operator-action flags. No extra
+retrieval or implicit alternate model is used for fallback. Question hashes,
+identity/rules/scale mismatches, unsafe paths, corrupted data and persistence
+failures still block rather than submit against unverified input. Platform
+closure/deadlines/permissions and unreadable submission receipts are unchanged;
+generating a score is not a guarantee that the platform accepted it.
+
+`resume_stopped=true` in the debug batch restores the failed saved analysis and
+then only later cases. A zero-provider-call injected outage probe validates the
+operational default on that same saved input before normal resumed analysis.
+The branch-only validation allowance is restricted to the named fallback branch;
+production cron continues to use main until the experiment passes and is merged.

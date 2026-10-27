@@ -13,6 +13,7 @@ from .storage import Store,QuestionBatch,RuntimeCheckpoint,dumps,Conflict,Persis
 from .products import context,product,prefix,manifest
 from .collect import collect
 from .analyze import analyze
+from .fallback import integrity_failure
 
 TERMINAL={'accepted','already_forecasted','closed','deadline_missed','legacy_terminal','ambiguous_submission','collection_exhausted','analysis_exhausted','blocked_integrity'}
 def initial_state(writer):return dict(schema='metaculus-checkpoint/1',writer=writer,migration_complete=False,tasks={},runtime={},updated_at=now())
@@ -76,7 +77,11 @@ class Runner:
             if task['attempts'].get('capture',0)>=3:raise RuntimeError('COLLECTION_ATTEMPTS_EXHAUSTED')
             task['attempts']['capture']=task['attempts'].get('capture',0)+1
             task.setdefault('started_at',now());task['status']='capturing';self.checkpoint()
-            package=self.collector(task,task['post'],root,self.checkpoint)
+            try:package=self.collector(task,task['post'],root,self.checkpoint)
+            except Exception as exc:
+                from .fallback import capture_package
+                package=capture_package(task,task['post'],root,exc)
+                self.checkpoint()
             from .raw_search import saved as saved_searches
             value=context(task,package,task['snapshot_id'],raw_search_responses=saved_searches(root));raw=product('context',value)
             task['context_key']=prefix(task)+'/context.parquet';task['context_hash']=digest(value)
@@ -94,8 +99,10 @@ class Runner:
             result=self.analyzer(value,root/'analysis'/('attempt-'+str(task['analysis_executions']).zfill(3)),self.checkpoint)
             if result['snapshot_id']!=task['snapshot_id'] or result['context_sha256']!=task['context_hash']:raise RuntimeError('ANALYSIS_CONTEXT_MISMATCH')
             candidate=result['candidate'];analysis_raw=product('analysis',result)
-            task.update(status='analyzed',candidate=candidate,analysis_key=prefix(task)+'/analysis.parquet',analysis_hash=digest(result))
-            for k in ['last_error','analysis_retry_at','provider_failure_category','operator_action_required']:task.pop(k,None)
+            task.update(status='analyzed',candidate=candidate,analysis_key=prefix(task)+'/analysis.parquet',analysis_hash=digest(result),
+                        forecast_origin=candidate.get('forecast_origin','original_evidence'),forecast_fallback=candidate.get('fallback'))
+            for k in ['last_error','analysis_retry_at','provider_failure_category']:task.pop(k,None)
+            task['operator_action_required']=bool((candidate.get('fallback') or {}).get('operator_action_required'))
             task['analysis_revision']=self.checkpoint({task['analysis_key']:analysis_raw,prefix(task)+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis_raw}))})['revision']
         if task['status'] in {'analyzed','submitting'} and self.live:
             if getattr(self.cp.store,'batched',False):self.cp.store.check_owner()
@@ -143,7 +150,7 @@ class Runner:
                     task['analysis_provider_failures']=task.get('analysis_provider_failures',0)+1
                     task['analysis_retry_at']=(datetime.now(timezone.utc)+timedelta(seconds=exc.retry_after)).isoformat()
                     task['provider_failure_category']=exc.category;task['operator_action_required']=exc.category=='configuration'
-                elif code in {'QUESTION_IDENTITY_CHANGED','QUESTION_RULES_OR_SCALE_CHANGED'}:task['status']='blocked_integrity'
+                elif integrity_failure(exc):task['status']='blocked_integrity'
                 elif code=='QUESTION_CLOSED_OR_PERMISSION':task['status']='closed'
                 elif code=='QUESTION_DEADLINE':task['status']='deadline_missed'
                 elif task['status']=='capturing' and task['attempts'].get('capture',0)>=3:task['status']='collection_exhausted'
