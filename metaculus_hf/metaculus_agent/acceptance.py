@@ -52,7 +52,8 @@ def full(store,root,post_id,question_id):
     os.environ.setdefault('FORECAST_MODEL','nvidia/nemotron-3-super-120b-a12b:free')
     def checkpoint():return cp.save(state)
     taskroot=cp.root/'tasks'/task['id'];taskroot.mkdir(parents=True,exist_ok=True)
-    captured=collect(task,clean,taskroot,checkpoint);value=context(task,captured,task['snapshot_id']);raw=product('context',value)
+    from .raw_search import saved as saved_searches
+    captured=collect(task,clean,taskroot,checkpoint);value=context(task,captured,task['snapshot_id'],raw_search_responses=saved_searches(taskroot));raw=product('context',value)
     task['status']='sealed';cp.save(state,extra={pre+'/context.parquet':raw,pre+'/manifest.json':dumps(manifest(task,{'context.parquet':raw}))})
     result=analyze(value,taskroot/'analysis',checkpoint);analysis=product('analysis',result)
     task['status']='analyzed';receipt=cp.save(state,extra={pre+'/analysis.parquet':analysis,pre+'/manifest.json':dumps(manifest(task,{'context.parquet':raw,'analysis.parquet':analysis}))})

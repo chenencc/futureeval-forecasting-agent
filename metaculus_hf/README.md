@@ -179,3 +179,27 @@ GitHub machine is forcibly lost before that batch, its local-only phase is not
 recoverable from HF, including unflushed budget increments. Platform own-forecast
 readback still precedes another submission; this is not a promise of remote
 mid-question recovery or exactly-once provider usage after abrupt machine loss.
+
+### Complete search responses
+
+New collections add `raw_search_responses` to `context.parquet`, alongside the
+unchanged normalized search records in `intelligence.searches`. Each Exa/Tavily
+physical search attempt retains the entire HTTP entity consumed by the existing
+transport: `body_base64`, SHA-256, byte count, status, safe response headers,
+credential-free query/parameters, actual dispatch/body-completion clocks and the
+original capture run ID. Unknown provider JSON fields, formatting, error bodies
+and invalid JSON are retained. Bytes are the requests-decoded HTTP entity, not a
+compressed network packet. Decode `body_base64` to read the original JSON.
+
+This is an observer of existing calls, not another search request. It does not
+change providers, quotas, failover, normalized candidates, source admission,
+snapshot identity, original question metadata or the analysis input selection.
+Bodies are excluded from model input and published in the same final question
+HF batch, with local per-attempt journals available on ordinary failures.
+
+Existing response caps and deadlines still apply. An interrupted/oversized body
+is explicitly incomplete; a connection or pre-dispatch failure cannot fabricate
+a response. Credential echoes are redacted and marked `credential_redacted`,
+with `byte_exact=false`. Authorization/request headers and cookies are never
+archived. Old saved snapshots have no new raw responses retroactively; they are
+left unchanged and remain readable.
