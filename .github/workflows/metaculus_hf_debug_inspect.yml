@@ -1,0 +1,59 @@
+name: Metaculus saved debug diagnostics
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      DEBUG_SESSION: ${{ inputs.session }}
+      HF_HUB_DISABLE_PROGRESS_BARS: '1'
+    steps:
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m pip install huggingface-hub==1.33.0
+      - name: Read saved first-case diagnostics, no collection or models
+        run: |
+          python -B - <<'PY'
+          import hashlib,json,os,re,tempfile
+          from pathlib import Path
+          from huggingface_hub import HfApi,hf_hub_download
+          session=os.environ['DEBUG_SESSION']
+          if not re.fullmatch('[0-9a-f]{32}',session):raise ValueError('SESSION')
+          repo='chchen13/forecastagent-data';token=os.environ['HF_TOKEN'];api=HfApi(token=token);info=api.repo_info(repo,repo_type='dataset')
+          if not info.private:raise ValueError('PRIVATE_REPO_REQUIRED')
+          pre='metaculus/_debug/'+session;revision=info.sha
+          def read(key):
+              with tempfile.TemporaryDirectory() as tmp:
+                  return Path(hf_hub_download(repo,key,repo_type='dataset',revision=revision,token=token,local_dir=tmp,force_download=True)).read_bytes()
+          state=json.loads(read(pre+'/_control/checkpoint.json'));rows=[]
+          for name,hashed in state.get('runtime',{}).items():
+              if not name.endswith('.json') or not ('/analysis/' in name or '/analysis-provider-transport/' in name):continue
+              if name.endswith(('/input.json','/packet.json','/first-state.json','/second-state.json','/bundle.json')):continue
+              raw=read(pre+'/_control/objects/'+hashed)
+              if hashlib.sha256(raw).hexdigest()!=hashed:raise ValueError('RUNTIME_OBJECT_HASH')
+              obj=json.loads(raw);row=dict(path=name,bytes=len(raw),top_keys=list(obj)[:25] if isinstance(obj,dict) else [],signals=[])
+              def scan(value,path=''):
+                  if isinstance(value,dict):
+                      for k,v in value.items():
+                          label=path+'/'+k
+                          if k in ('http_status','status_code','provider_error_status') and type(v)==int:row['signals'].append(dict(field=label,status=v))
+                          if k in ('error','code','error_type','detail','finish_reason','message') and isinstance(v,str):
+                              terms=['429','502','503','504','401','402','403','quota','budget','credit','rate limit','json','schema','parse','timeout','context','token','evidence','citation','distribution','date','numeric','fallback','reasoning','missing','unavailable','unreadable','valid']
+                              flags=[x for x in terms if x in v.lower()]
+                              row['signals'].append(dict(field=label,text_bytes=len(v.encode()),sha256=hashlib.sha256(v.encode()).hexdigest(),flags=flags))
+                          if k=='model' and isinstance(v,str) and re.fullmatch('[A-Za-z0-9_.:/-]{1,150}',v):row['model']=v
+                          if k not in ('messages','prompt','content','request_body','body','text'):scan(v,label)
+                  elif isinstance(value,list):
+                      for i,v in enumerate(value[:5]):scan(v,path+'/'+str(i))
+              scan(obj);rows.append(row)
+          print(json.dumps(dict(status='debug_readonly_diagnostics',session=session,revision=revision,task_states={k:v['status'] for k,v in state['tasks'].items()},runtime_paths=sorted(state.get('runtime',{})),records=rows,provider_calls=0,submissions=0)))
+          PY
