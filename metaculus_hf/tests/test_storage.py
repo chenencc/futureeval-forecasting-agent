@@ -1,9 +1,13 @@
 import json,unittest
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 import requests
 from huggingface_hub.errors import HfHubHTTPError
 from metaculus_agent.storage import Store,Conflict,PersistenceError
+from metaculus_agent.acceptance import storage
+from test_runner import MemoryStore
 
 class Api:
     def __init__(self,private=True):self.private=private;self.head='a';self.files={'a':{'metaculus/_control/checkpoint.json':b'owner1'}};self.conflict=False;self.calls=0
@@ -37,5 +41,11 @@ class StoreTests(unittest.TestCase):
     def test_exact_revision_readback_mismatch_blocks_retirement(self):
         api=Api();s=self.store(api);s.read=lambda *a:b'tampered'
         with self.assertRaises(PersistenceError):s.publish({'metaculus/test/context.parquet':b'actual'})
+    def test_acceptance_isolated_from_live_state_and_restores_budget(self):
+        store=MemoryStore();store.publish({'metaculus/_control/checkpoint.json':b'production-owner-unchanged'})
+        with tempfile.TemporaryDirectory() as root:result=storage(store,Path(root))
+        self.assertEqual(result['status'],'storage_acceptance_passed');self.assertEqual(result['submissions'],0)
+        self.assertTrue(result['local_payloads_retired']);self.assertTrue(result['budget_restored'])
+        self.assertEqual(store.read('metaculus/_control/checkpoint.json'),b'production-owner-unchanged')
 
 if __name__=='__main__':unittest.main()

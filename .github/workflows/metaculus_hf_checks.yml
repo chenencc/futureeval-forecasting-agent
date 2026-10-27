@@ -1,6 +1,7 @@
 name: Metaculus HF source and recovery checks
 on:
   push:
+    branches: [main]
     paths: ['metaculus_hf/**', '.github/workflows/metaculus_hf_checks.yml']
   pull_request:
     paths: ['metaculus_hf/**', '.github/workflows/metaculus_hf_checks.yml']

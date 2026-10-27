@@ -17,7 +17,8 @@ def context(task,package,snapshot_id):
     return dict(schema='metaculus-context/1',question_id=package['question_id'],post_id=task['post_id'],run_id=task['run_id'],
         started_at=task['started_at'],partition_timezone='Asia/Shanghai',snapshot_id=snapshot_id,
         evidence_cutoff_at=snap['evidence_cutoff_at'],rule_identity=task['rule_identity'],
-        request=task['request'],execution_profile=task['execution_profile'],intelligence=package)
+        request=task['request'],execution_profile=task['execution_profile'],intelligence=package,
+        run_purpose=task.get('run_purpose','live'),test_only=bool(task.get('test_only',False)))
 def verify_context(value):
     if value.get('schema')!='metaculus-context/1':raise ValueError('CONTEXT_SCHEMA')
     snap=snapshot_from_payload(value['intelligence'],value['snapshot_id'])
