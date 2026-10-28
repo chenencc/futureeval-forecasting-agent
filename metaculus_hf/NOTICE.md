@@ -15,3 +15,10 @@ acquisition, admission, retrieval planning and primary-source tracing to prevent
 platform FAQ/prediction pages and unrelated outlinks from becoming independent
 event evidence. Original upstream hashes and each installed local patch are
 recorded separately in the source lock; this does not claim an upstream release.
+
+`saved-body-quality-recovery-v1` is a further local acquisition patch. It permits
+bounded closing recovery when earlier reads/reviews left no usable body,
+recognizes the ClinicalTrials empty shell, rejects demonstrable season/value
+review contradictions, and excludes generic policy navigation. The narrow
+ClinicalTrials API adapter and period validator are new local modules, not
+claimed as upstream code. Original bodies and failed review receipts are kept.

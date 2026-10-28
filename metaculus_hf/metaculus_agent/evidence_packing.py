@@ -2,15 +2,16 @@
 from copy import deepcopy
 import hashlib,json,re
 from . import decision_model
+from . import evidence_structure as structure
 
-POLICY='review-bound-original-packing/1'
+POLICY='review-bound-original-packing/2'
 
 class PackingError(ValueError):
     category='configuration'
     def __init__(self,code):self.code=code;super().__init__(code)
 
 def measure(state,registry):
-    return len(json.dumps(dict(model=decision_model.MODEL,state=state,questions=registry)).encode())
+    return len(decision_model.encode(decision_model.request_payload(state,registry)))
 
 def lines(text):
     result=[];offset=0
@@ -56,6 +57,7 @@ def prepare(packet,source):
     entities={x.lower() for x in re.findall(r'\b[A-Z][A-Z0-9]{2,}\b',title)}
     for hashed,group in groups.items():
         item=group['item'];text=group['text'];body_lines,tables=layout(text)
+        designated=structure.primary(packet['question'],item['url'])
         # The full capture metadata remains in context and the saved packet audit.
         original=item.get('capture_metadata') or {}
         item['capture_metadata']={k:deepcopy(original[k]) for k in ('retrieved_at_utc','published_at','http_status','captured_at','extraction_version') if k in original}
@@ -71,9 +73,10 @@ def prepare(packet,source):
             if old:
                 if old['kind']=='document_header' and kind=='body':old['kind']='body'
                 old['priority']=min(priority,old['priority']);old['dependencies']=list(dict.fromkeys(old['dependencies']+list(deps)));return ident
-            library.append(span);words=set(re.findall(r'[a-z0-9]+',span['text'].lower()))
+            library.append(span);words=structure.words(span['text'])
             meta[ident]=dict(kind=kind,priority=priority,dependencies=list(deps),relevance=sum(4 if t in entities else 1 for t in terms if t in words),
-                source_id=item['source_id'],start=a,end=b,narrative_fraction=narrative)
+                source_id=item['source_id'],start=a,end=b,narrative_fraction=narrative,designated_source=designated,
+                navigation_fraction=structure.navigation_fraction(span['text']))
             return ident
         # Visible document dates are original text, never inferred from fetch time.
         date_ends=[]
@@ -88,6 +91,12 @@ def prepare(packet,source):
                     date_end=end
                 date_ends.append(date_end)
         if date_ends and max(date_ends)<=500:date_context=add(0,max(date_ends),'document_header')
+        if designated and len(text)<=3500 and structure.navigation_fraction(text)<.35:
+            add(0,len(text),'primary_document',-2)
+        for unit in structure.units(packet['question'],text,body_lines):
+            deps=[add(a,b,'structure_header') for a,b in unit['deps']]
+            ident=add(unit['start'],unit['end'],unit['kind'],unit['priority'],deps)
+            meta[ident].update(coverage_group=unit['group'],record_rows=unit['rows'])
         # Bound model reviews select original locations, not the reviewer's prose.
         review_ranges=[]
         for binding in group['bindings']:
@@ -102,7 +111,8 @@ def prepare(packet,source):
                     for x,y,_ in body_lines:
                         if x<=a<y and table['start']<=x<table['end']:a=x
                         if x<b<=y and table['start']<=x<table['end']:b=y
-            priority=0 if binding.get('forecast_relevance') in {'direct','baseline'} or binding.get('source_role')=='historical_baseline' else 2
+            priority=0 if binding.get('forecast_relevance') in {'direct','baseline'} or binding.get('source_role')=='historical_baseline' else 1 if designated else 2
+            if structure.navigation_fraction(text[a:b])>.2:continue
             review_ranges.append((a,b,priority))
         table_ids=[]
         for table in tables:
@@ -172,14 +182,16 @@ def select(packet,state,limit,registry,reasons=()):
         else:skipped.append(ident)
     # Strong model-bound baselines/direct facts precede navigation and lexical filler.
     for ident in sorted(meta,key=lambda x:(meta[x]['priority'],meta[x]['kind']!='review_table_window',-meta[x].get('review_table_rows',0),-meta[x]['relevance'],meta[x]['source_id'],meta[x]['start'],-meta[x]['end'])):
-        if meta[ident]['priority']==0:offer(ident)
+        if meta[ident]['priority']<=0:offer(ident)
     # Fair ranked turns, rather than giving each source's header first priority.
     groups={}
     for ident in meta:
-        if meta[ident]['kind'] in {'table_header','table_caption','table_note','document_header'}:continue
+        if meta[ident]['kind'] in {'table_header','table_caption','table_note','document_header','structure_header'}:continue
+        if meta[ident]['navigation_fraction']>.2:continue
+        if meta[ident]['kind']=='body' and meta[ident]['relevance']==0:continue
         groups.setdefault(meta[ident]['source_id'],[]).append(ident)
-    for group in groups.values():group.sort(key=lambda x:(-meta[x]['relevance'],meta[x]['priority'],meta[x]['start']))
-    ordered=sorted(groups.values(),key=lambda g:-meta[g[0]]['narrative_fraction'])
+    for group in groups.values():group.sort(key=lambda x:(meta[x]['priority'],-meta[x]['relevance'],meta[x]['start']))
+    ordered=sorted(groups.values(),key=lambda g:(not meta[g[0]]['designated_source'],meta[g[0]]['priority'],-meta[g[0]]['relevance']))
     for index in range(max((len(g) for g in groups.values()),default=0)):
         for group in ordered:
             if index<len(group):offer(group[index])
@@ -191,5 +203,7 @@ def select(packet,state,limit,registry,reasons=()):
     return state,dict(policy=POLICY,selected_ids=sorted(kept),omitted_ids=[x for x in meta if x not in kept],
         request_bytes=measure(state,registry),request_byte_limit=limit,routing_focus=list(reasons),budget_omitted_ids=skipped,
         review_coverage=review_coverage,table_rows_selected=sum(m['kind']=='table_row' and covered(by_id[i],delivered) for i,m in meta.items()),
+        structured_coverage={group:dict(available=sum(m.get('record_rows',0) for m in meta.values() if m.get('coverage_group')==group),
+            delivered=sum(m.get('record_rows',0) for i,m in meta.items() if m.get('coverage_group')==group and covered(by_id[i],delivered))) for group in {m['coverage_group'] for m in meta.values() if m.get('coverage_group')}},
         table_rows_available=sum(m['kind']=='table_row' for m in meta.values()),exact_body_duplicate_groups=[a for a in info['aliases'] if a['exact_body_duplicate_count']],
         selection='Bound review passages, complete table dependencies, then source-fair lexical original spans; no generated summaries.')

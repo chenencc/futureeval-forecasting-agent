@@ -8,16 +8,17 @@ from ForecastAgent.analysis.distributions import payload
 from ForecastAgent.analysis.pilot import Journal,save,load,digest
 from . import decision_model as client
 from . import evidence_packing
+from . import decision_input
 
-PROTOCOL='metaculus-mammoth-original-evidence/2'
+PROTOCOL='metaculus-mammoth-original-evidence/3'
 
-def envelope_bytes(state,registry):return len(json.dumps(dict(model=client.MODEL,state=state,questions=registry)).encode())
+def envelope_bytes(state,registry):return evidence_packing.measure(state,registry)
 
 def select(packet,state,limit,registry,reasons=()):
     return evidence_packing.select(packet,state,limit,registry,reasons)
 
 def call(state,registry,folder,checkpoint,limit):
-    request=dict(model=client.MODEL,state=state,questions=registry);identity=dict(request_sha256=digest(request),endpoint=client.ENDPOINT,validator=client.VALIDATOR)
+    request=client.request_payload(state,registry);identity=dict(request_sha256=digest(request),endpoint=client.ENDPOINT,validator=client.VALIDATOR)
     if envelope_bytes(state,registry)>limit:raise ValueError('DECISION_INPUT_BOUND')
     if (folder/'identity.json').exists() and load(folder/'identity.json')!=identity:raise ValueError('FROZEN_DECISION_STAGE_CHANGED')
     save(folder/'identity.json',identity);save(folder/'request.json',request);checkpoint()
@@ -32,14 +33,15 @@ def run(source,folder,route,checkpoint):
     packet=primitives.packet_for(source) if source.get('pages') else dict(question=deepcopy(q),sources=[],evidence=[],acquisition_gaps=source.get('gaps',[]))
     # The exact platform grid remains in context and native distribution conversion.
     # Prior-only and body-backed model views use the same compact scale metadata.
-    if packet['question'].get('scaling'):packet['question']['scaling'].pop('continuous_range',None)
+    packet['question']=decision_input.question_view(packet['question'])
     packet=evidence_packing.prepare(packet,source)
     packet.setdefault('collection_inspection',{})['original_reading']=source['original_reading']
     spec=None if kind=='binary' else primitives.distribution_spec(q)
-    registry=spans.questions() if kind=='binary' else typed.questions(spec)
+    registry=decision_input.registry(kind,spec)
     identity=dict(protocol=PROTOCOL,packet_sha256=digest(packet),spec_sha256=digest(spec),questions_sha256=digest(registry),model=client.MODEL,
         byte_limits=[route['first_byte_limit'],route['second_byte_limit']],logical_decision_stage_cap=2,implementation_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        packing_policy=evidence_packing.POLICY,packing_sha256=hashlib.sha256(Path(evidence_packing.__file__).read_bytes()).hexdigest())
+        packing_policy=evidence_packing.POLICY,packing_sha256=hashlib.sha256(Path(evidence_packing.__file__).read_bytes()).hexdigest(),
+        input_policy=decision_input.POLICY,input_sha256=hashlib.sha256(Path(decision_input.__file__).read_bytes()).hexdigest())
     if (folder/'identity.json').exists() and load(folder/'identity.json')!=identity:raise ValueError('FROZEN_DECISION_ANALYSIS_CHANGED')
     save(folder/'identity.json',identity);save(folder/'packet.json',packet);save(folder/'distribution-spec.json',spec);checkpoint()
     first=spans.initial_state(packet)

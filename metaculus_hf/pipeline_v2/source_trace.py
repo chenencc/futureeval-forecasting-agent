@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from .retrieval_plan import folded,rule_identifiers,candidate_exclusion
 
 POLICY='observed-primary-gap-search-v1'
-NAV=re.compile(r'/(?:login|signin|sign-in|subscribe|privacy|terms|contact|about|tamogatas|support|donate|newsletter|tags?|category|author|shop|feed)(?:/|$)',re.I)
+NAV=re.compile(r'/(?:login|signin|sign-in|subscribe|privacy|terms|policy|contact|about|tamogatas|support|donate|newsletter|tags?|category|author|shop|feed)(?:/|$)',re.I)
 
 
 def anchor_catalog(definition,sources,texts):

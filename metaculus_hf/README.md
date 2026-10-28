@@ -294,3 +294,36 @@ then only later cases. A zero-provider-call injected outage probe validates the
 operational default on that same saved input before normal resumed analysis.
 The branch-only validation allowance is restricted to the named fallback branch;
 production cron continues to use main until the experiment passes and is merged.
+
+### Development: body quality and evidence budget
+
+`metaculus-mammoth-original-evidence/3` reserves the existing byte limits for
+evidence by compacting diagnostic instructions, omitting redundant model-only
+grid/routing metadata and encoding the measured UTF-8 JSON envelope exactly as
+sent. Native forecast grids, option IDs, interval boundaries, original question
+rules/fine print and saved provenance remain intact. Span URL/hash references
+are carried once in the wire source map and fully in saved audit files.
+
+`review-bound-original-packing/2` prioritizes short resolution-designated bodies,
+literal recent season/year rows and complete repeated winner records. Recognized
+table labels, event identities and publication dates accompany selected spans.
+Navigation-heavy or zero-overlap filler is deprioritized. This is deterministic
+selection of original bytes, not a generated summary or a guarantee of exhaustive
+semantic coverage. All omitted bodies remain in the immutable context; selected
+offsets/hashes and available versus delivered row counts are audited.
+
+ClinicalTrials observed search links with exactly the supported intervention and
+`status:rec` filter use the official v2 studies endpoint. Unknown filters are not
+silently dropped. The adapter preserves the API response UTF-8 text, exact query,
+response SHA, request/receive clocks and the original page URL. Its first page is
+limited to 20 projected records (ID/title/status/intervention/update date); the
+official total count and record pagination completeness are separate. It checks
+recruiting status, study identity and count consistency. Current counts are not
+future resolution results or an as-of historical reconstruction.
+
+An unsupported affirmative season/value claim in a review cannot approve that
+claim; the original series remains available for independent reading. This
+narrow guard does not certify arbitrary review prose. If final review leaves no
+usable body, closing recovery may read at most two more saved candidates within
+the original page/deadline/provider budgets, even when an earlier planner
+handoff was used. It does not issue a new search or overwrite the old snapshot.

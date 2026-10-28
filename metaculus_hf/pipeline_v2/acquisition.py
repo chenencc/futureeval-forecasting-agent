@@ -272,6 +272,9 @@ class LiveTools:
             agent_visible_extras=extras or None,provider_request_id=value.get("request_id"),adapter_version=AGENT_VERSION,error_code=None)
     def page(self,url):
         public_url(url)
+        from .structured_sources import registry_request,registry_observation
+        structured=registry_request(url)
+        if structured is not None:return registry_observation(self.transport,url,structured)
         body,meta=self.transport.request("fetch","GET",url,headers={"User-Agent":"ForecastAgentResearch/0.1 (public evidence)"},timeout=35)
         public_url(meta["final_url"])
         text=extract_text(body,meta["content_type"])
@@ -678,7 +681,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
             else:gaps.append(dict(code="AGENT_ROUND_LIMIT",severity="warning",detail=phase))
             if retrieval_stalled:break
         review_pending_materials(engine.repo.get_question(qid),materials,definition,reviewer,gaps,citation_reference='index')
-        if reviewer is not None and not handoff_attempts and not any(m['inclusion'] in ACCEPTED for m in materials) and len(attempted)<max_pages:
+        if reviewer is not None and not readable_body_exists() and len(attempted)<max_pages:
             before=len(materials);read_next_candidate(closing=True)
             if len(materials)>before:
                 gaps.append(dict(code='CLOSING_DETAIL_HANDOFF',severity='info',detail='No admitted evidence after review; bounded read of saved independent candidates, no new search.'))

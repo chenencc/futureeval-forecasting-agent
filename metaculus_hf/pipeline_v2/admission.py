@@ -25,6 +25,9 @@ def rejection(source,text):
         if any(host==h or host.endswith('.'+h) for h in MARKET_HOSTS) and (MARKET_PATH.search(parts.path) or ('leading outcome price' in (text or '').lower())):return 'MARKET_PRICE_REFERENCE'
     if not text or not text.strip():return 'NO_READABLE_TEXT'
     if SHELL.fullmatch(normalized(text)):return 'EMPTY_PAGE_SHELL'
+    # A known dynamic registry shell contains no study observations.
+    if any((urlsplit(u or '').hostname or '').lower() in {'clinicaltrials.gov','www.clinicaltrials.gov'} for u in (source.get('source_url'),source.get('final_url'))) and len(text)<800 and all(x in text.lower() for x in ('show glossary','study record managers','data element definitions')):
+        return 'EMPTY_PAGE_SHELL'
     return None
 
 def assess(source,text,proposal=None,*,cutoff=None,stored=False,require_kind=False):
@@ -76,6 +79,9 @@ def assess(source,text,proposal=None,*,cutoff=None,stored=False,require_kind=Fal
             match=re.search(r'\s+'.join(re.escape(t) for t in quote.split()),text)
             if match and 12<=match.end()-match.start()<=1600:span=dict(start=match.start(),end=match.end())
     if not note or span is None:out['coverage_note']='UNBOUND_REVIEW';return out
+    from .review_periods import unsupported_series_assertion
+    if unsupported_series_assertion(text,note):
+        out['coverage_note']='REVIEW_PERIOD_VALUE_MISMATCH';return out
     asof=review.get('as_of_date')
     if asof is not None:
         try:
@@ -150,6 +156,10 @@ def forecast_reading_reason(material):
     actual=re.search(r'(?m)^\s*#\s*([A-Z0-9]+)/([A-Z0-9]+)\s*$',text or '')
     if requested and actual and tuple(x.upper() for x in requested.groups())!=tuple(x.upper() for x in actual.groups()):return None
     note=b.get('coverage_note') or 'REVIEW_REQUIRED'
+    # A legacy approved binding can fail a newer semantic guard. Retain the
+    # readable body as UNVERIFIED instead of silently turning it into a prior.
+    from .review_periods import unsupported_series_assertion
+    if b.get('content_kind') in {'factual_report','forecast_analysis','historical_data'} and unsupported_series_assertion(text,note):return 'REVIEW_PERIOD_VALUE_MISMATCH'
     if b.get('inclusion')=='pending' and note in UNFINISHED_REVIEW:return note
     if b.get('inclusion') in {'pending','excluded'} and (b.get('content_kind') in {'factual_report','forecast_analysis','historical_data'} or use in {'direct','baseline','driver','context'}):
         return 'FORECAST_RELEVANCE_REQUIRES_INDEPENDENT_READING'

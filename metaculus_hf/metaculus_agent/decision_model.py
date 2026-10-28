@@ -1,5 +1,6 @@
 """Typed Mammoth Decisions transport; never parse generated prose as a decision."""
 import json,math,re
+from copy import deepcopy
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 from .analysis_policy import DECISION_MODEL,classify
@@ -7,6 +8,18 @@ from .analysis_policy import DECISION_MODEL,classify
 MODEL=DECISION_MODEL
 ENDPOINT='https://openrouter.ai/api/alpha/decisions'
 VALIDATOR='mammoth-typed-probabilities/1'
+
+def request_payload(state,questions):
+    """Carry each source identity once; saved state retains full span provenance."""
+    wire=deepcopy(state)
+    sources={s['source_id']:s for s in wire.get('sources',[])}
+    for e in wire.get('evidence',[]):
+        source=sources.get(e.get('source_id'))
+        if source and e.get('url')==source.get('url') and e.get('body_sha256')==source.get('body_sha256'):
+            e.pop('url',None);e.pop('body_sha256',None)
+    return dict(model=MODEL,state=wire,questions=deepcopy(questions))
+
+def encode(payload):return json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
 
 class InvalidDecision(ValueError):
     code='DECISION_RESPONSE_INVALID'
@@ -39,10 +52,10 @@ def validate(response,questions):
 
 def decide(state,questions,api_key,observer):
     if not isinstance(questions,dict) or not 1<=len(questions)<=200:raise ValueError('DECISION_QUESTION_COUNT')
-    payload=dict(model=MODEL,state=state,questions=questions)
+    payload=request_payload(state,questions)
     record=dict(endpoint=ENDPOINT,request=payload,status='reserved',validator=VALIDATOR)
     token=observer('reserve',record)
-    req=Request(ENDPOINT,data=json.dumps(payload).encode(),headers={'Authorization':'Bearer '+api_key,'Content-Type':'application/json','X-Title':'Metaculus typed decision analysis'},method='POST')
+    req=Request(ENDPOINT,data=encode(payload),headers={'Authorization':'Bearer '+api_key,'Content-Type':'application/json','X-Title':'Metaculus typed decision analysis'},method='POST')
     try:
         with urlopen(req,timeout=120) as response:record.update(http_status=response.status,response_body=response.read().decode())
         try:record['response']=validate(json.loads(record['response_body']),questions)
