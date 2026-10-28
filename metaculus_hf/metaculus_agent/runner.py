@@ -84,6 +84,16 @@ class Runner:
                 self.checkpoint()
             from .raw_search import saved as saved_searches
             value=context(task,package,task['snapshot_id'],raw_search_responses=saved_searches(root));raw=product('context',value)
+            # Optional independent review owns its copied, hash-bound inputs. The
+            # normal capture/analysis/delivery path never waits for its model.
+            from .review_jobs import optional_enqueue
+            try:
+                review_handoff=optional_enqueue(value)
+                if review_handoff is not None:task['independent_review']=review_handoff
+            except Exception as review_error:
+                code=str(getattr(review_error,'code',str(review_error)))
+                task['independent_review']=dict(reviewed=False,status='enqueue_failed',
+                    error=code if re.fullmatch('[A-Z_0-9]{1,100}',code) else type(review_error).__name__)
             task['context_key']=prefix(task)+'/context.parquet';task['context_hash']=digest(value)
             task['status']='sealed';task['context_bytes_sha256']=__import__('hashlib').sha256(raw).hexdigest()
             task['context_revision']=self.checkpoint({task['context_key']:raw,prefix(task)+'/manifest.json':dumps(manifest(task,{'context.parquet':raw}))})['revision']

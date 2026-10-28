@@ -455,3 +455,57 @@ Decisions calls also matched their baseline answers exactly. This is a narrow
 input-stability result, not a population relevance guarantee or improved forecast
 accuracy. Changing from stable to canonical still changes probabilities, so
 promotion requires a separate held-out, time-clean forecasting evaluation.
+
+### Development: independent Ultra evidence review
+
+`metaculus_agent.independent_review` uses
+`nvidia/nemotron-3-ultra-550b-a55b:free` for a blind, optional source review.
+Its input contains only whitelisted question/rule fields and saved source text,
+retrieval time, and program-generated source-specific citation choices. It does
+not receive the first reviewer output, source relevance labels or probabilities.
+Ultra does not enforce `response_format`; the adapter requests JSON text and
+validates IDs, enums, structure, citation indices and literal fields locally.
+The body SHA and selected span are checked; paraphrased dates, values and units
+are not silently corrected. Model interpretations remain explicitly unverified.
+
+Each claim receives `bound_evidence`, `background_or_lead` or `unresolved`.
+`bound_evidence` means the model reports support and the required literal fields
+bind to the saved passage. It does NOT mean the program proved semantic
+entailment, factual truth, freshness or source independence. Disagreements with
+the first review are compared only after blind inference and downgrade the
+affected source's claims. All original sources remain; this module never deletes
+evidence or generates forecasts. Citation choices are bounded, not an exhaustive
+fact inventory. `complete` refers to the saved extracted body, not proof that the
+origin webpage or the topic was completely captured.
+
+The separately invoked `metaculus_agent.review_jobs` queue persists independent,
+hash-bound input copies, parsed results, failures, receipts and a local
+`review.parquet`. Enqueue performs no model/network call. It is idempotent by
+question/body/prompt/model and comparison identity; cached output is revalidated.
+A process interrupted in `running` becomes `interrupted` without another call.
+Explicit `--retry-failed` permits at most two job attempts; each provider call
+uses the existing shared budget and at most two bounded transport attempts.
+Oversize documents are listed as unreviewed instead of silently truncated.
+
+Default workflows are unchanged. An optional absolute
+`METACULUS_INDEPENDENT_REVIEW_QUEUE` enables only local enqueue after context
+sealing; an external worker invocation owns inference. Enqueue errors are
+recorded on the task without blocking base analysis/delivery. Place the queue
+outside task payload retirement directories, on durable storage; do not enable
+this on ephemeral Actions without separately designing its worker persistence
+and publication lifecycle. No new HF commit or automatic publication is added.
+
+```powershell
+python -m metaculus_agent.review_jobs --root D:/review-queue enqueue --bundle saved-input.json
+python -m metaculus_agent.review_jobs --root D:/review-queue run-one --id <job-sha256>
+```
+
+2026-10-28 bounded local trials established Ultra connectivity, not autonomous
+quality acceptance. The first free-quote probe rewrote source text. Switching to
+program-resolved citation indices bound all four claims from three real saved
+documents, but the model still invented/normalized literal fields and misread a
+NOAA historical value as ASO 2026. All those claims remained unresolved. A separate
+synthetic four-document control retained contrary evidence, a driver and a
+baseline, and recognized irrelevant text. These narrow controls do not negate
+the real failures. Keep this reviewer optional and unpromoted; do not interpret
+HTTP success, valid JSON or model agreement as marketable intelligence quality.
