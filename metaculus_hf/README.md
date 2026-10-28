@@ -25,6 +25,22 @@ and run the shared regression tests when updating either consuming project.
 
 ## Data
 
+Analysis now reuses the collector's saved Nemotron review bindings to prioritize
+exact original passages, with no additional selection-model call. The derived
+`review-bound-original-packing/1` reading library preserves whole Markdown table
+rows with their literal headers, captions, recognized notes and visible document
+dates. Identical body hashes share one model-input body while all source aliases,
+observation metadata and original context remain archived. Different bodies are
+never removed as near duplicates. Bound citations select locations; their review
+prose is not treated as evidence or rewritten into a summary.
+
+Budget checks apply to the full Mammoth envelope. A readable body that cannot fit
+produces an explicit input-budget error rather than being labeled missing evidence.
+Unselected rows and passages remain in the saved context and packing audits;
+selection is not a completeness or truth claim. Native numeric grids stay in the
+immutable context and forecast conversion, while the compact model view omits
+their redundant 201-point expansion, including on the prior-only path.
+
 Private dataset: `chchen13/forecastagent-data`.
 
 ```
