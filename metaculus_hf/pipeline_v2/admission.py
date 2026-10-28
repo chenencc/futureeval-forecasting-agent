@@ -16,7 +16,10 @@ SHELL=re.compile(r"(?:skip to (?:main )?content[.! ]*|loading[. …]*|please (?:
 
 def normalized(text):return ' '.join(text.split())
 def rejection(source,text):
+    from .candidate_policy import platform_exclusion
     for url in (source.get('source_url'),source.get('final_url')):
+        reference=platform_exclusion(url)
+        if reference:return reference
         try:parts=urlsplit(url or '');host=(parts.hostname or '').lower()
         except ValueError:host=''
         if any(host==h or host.endswith('.'+h) for h in MARKET_HOSTS) and (MARKET_PATH.search(parts.path) or ('leading outcome price' in (text or '').lower())):return 'MARKET_PRICE_REFERENCE'

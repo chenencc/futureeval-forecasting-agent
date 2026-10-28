@@ -8,18 +8,29 @@
     "pipeline_v2/acquisition.py": {
       "source": "shared-acquisition",
       "sha256": "e29474bcbb795580e8a1c76e53e7f51a8802acdc64873dfea101bfd2b3fe8082",
-      "normalized_sha256": "96275203005f0be1d9b428febfcd189e8312efcfc24c3ee6f8f5f830adb6248f",
+      "normalized_sha256": "9e18cd5b89d2f6ad7ba2f201cf5048aadf3c1b2f63e1faceb967c8d028269b7a",
       "upstream_normalized_sha256": "9aa2c5748f7af22bac4a1cfe12634872dc0afb8dfbc5f98db85f42db48676ea7",
       "local_patch": {
-        "policy": "mandatory-question-research-query-v1",
+        "policies": [
+          "mandatory-question-research-query-v1",
+          "topic-bound-independent-candidates-v1"
+        ],
         "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
-        "description": "Opt-in mandatory query hook, separate once-only Exa research slot, and exclusion of fixed research searches from later gap-search cap. Default legacy callers do not enable new query generation."
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained."
       }
     },
     "pipeline_v2/admission.py": {
       "source": "shared-acquisition",
       "sha256": "61b9a663a75b28f238ce234442f8da0a68ac0580a28111b2299bdbe59de94938",
-      "normalized_sha256": "0242557103eb39bc85242ca957d1a269a5e571a8edc94bb9c9cde1eb3246f1ba"
+      "normalized_sha256": "44e94e2a93a932d31006c356c4b24bdc13a0b67e578ba471c17c8555d7ada1fb",
+      "upstream_normalized_sha256": "0242557103eb39bc85242ca957d1a269a5e571a8edc94bb9c9cde1eb3246f1ba",
+      "local_patch": {
+        "policies": [
+          "topic-bound-independent-candidates-v1"
+        ],
+        "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained."
+      }
     },
     "pipeline_v2/contracts.py": {
       "source": "shared-acquisition",
@@ -49,12 +60,28 @@
     "pipeline_v2/retrieval_plan.py": {
       "source": "shared-acquisition",
       "sha256": "918fdbf0e2e9b3bde3107a4183b50e17aff9b6942e89bb9a81a13659ea4b4551",
-      "normalized_sha256": "918fdbf0e2e9b3bde3107a4183b50e17aff9b6942e89bb9a81a13659ea4b4551"
+      "normalized_sha256": "a1d6b7d298f2831d9d4ea0faf8fb8ab25a68986382ed548f4a567ef83f10f23a",
+      "upstream_normalized_sha256": "918fdbf0e2e9b3bde3107a4183b50e17aff9b6942e89bb9a81a13659ea4b4551",
+      "local_patch": {
+        "policies": [
+          "topic-bound-independent-candidates-v1"
+        ],
+        "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained."
+      }
     },
     "pipeline_v2/source_trace.py": {
       "source": "shared-acquisition",
       "sha256": "89b79c3563fd65d4973ef19ad1b83a3cd978f426348e7eef7adf69b649cdaa5f",
-      "normalized_sha256": "89b79c3563fd65d4973ef19ad1b83a3cd978f426348e7eef7adf69b649cdaa5f"
+      "normalized_sha256": "9cb6d468aa837714d6584c45b7d3fe780c56d3d3f4c6dda90706b4e9b4186349",
+      "upstream_normalized_sha256": "89b79c3563fd65d4973ef19ad1b83a3cd978f426348e7eef7adf69b649cdaa5f",
+      "local_patch": {
+        "policies": [
+          "topic-bound-independent-candidates-v1"
+        ],
+        "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained."
+      }
     },
     "pipeline_v2/review_citations.py": {
       "source": "shared-acquisition",

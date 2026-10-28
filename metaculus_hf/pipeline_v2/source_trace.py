@@ -13,7 +13,8 @@ def anchor_catalog(definition,sources,texts):
     """Bind real snippets in code; the planner selects an ID instead of transcribing text."""
     terms=set(re.findall(r'[a-z0-9]{4,}',folded(definition.get('title',''))))-{'will','would','this','that','before','after'}
     corpus=[('question',definition.get('title','')+'\n'+definition.get('resolution_criteria',''))]
-    corpus.extend((s['source_id'],texts.get(s.get('text_sha256')) or '') for s in sources if s.get('status')=='extracted')
+    from .candidate_policy import platform_exclusion
+    corpus.extend((s['source_id'],texts.get(s.get('text_sha256')) or '') for s in sources if s.get('status')=='extracted' and not platform_exclusion(s.get('source_url')))
     anchors=[]
     for sid,body in corpus:
         candidates=[]
@@ -41,10 +42,11 @@ def bind_search_anchor(definition,sources,texts,action):
 def primary_leads(definition,sources,attempted):
     """An observed link is a lead, never a verified official statement or fact."""
     from .acquisition import url_identity
-    rule_hosts={urlsplit(u).hostname for u in definition.get('resolution_source_urls',[])}
+    from .candidate_policy import platform_exclusion,topic_match
+    rule_hosts={urlsplit(u).hostname for u in definition.get('resolution_source_urls',[]) if not platform_exclusion(u)}
     seen={url_identity(u) for u in attempted};leads=[]
     for source in sources:
-        if source.get('status')!='extracted':continue
+        if source.get('status')!='extracted' or platform_exclusion(source.get('source_url')):continue
         for link in (source.get('locator') or {}).get('outgoing_links',[]):
             url=link.get('url');key=url_identity(url)
             if key is None or key in seen:continue
@@ -54,6 +56,7 @@ def primary_leads(definition,sources,attempted):
             document=bool(re.search(r'statement|release|report|document|filing|court|police|prosecut|bill|legislation|data|ugyesz|birosag|kozlemeny',label))
             exact_id=any(x.lower() in folded(url+' '+label) for x in rule_identifiers(definition))
             if not ((designated or government) and (document or exact_id or parts.path.lower().endswith('.pdf'))):continue
+            if not (exact_id or topic_match(definition,link) or topic_match(definition,dict(url=source.get('source_url'),title=source.get('title')))):continue
             seen.add(key);leads.append(dict(url=url,title=link.get('title'),parent_source_id=source['source_id'],
                 lead_kind='designated_source_link' if designated else 'government_domain_link',truth_verified=False))
     return leads[:8]

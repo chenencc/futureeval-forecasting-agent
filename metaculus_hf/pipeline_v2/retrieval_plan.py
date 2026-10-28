@@ -58,6 +58,9 @@ def candidate_exclusion(row):
     """Exclude explicit market-led navigation, not ordinary reporting that mentions a market."""
     from .admission import rejection
     url=row.get('url') or ''
+    from .candidate_policy import platform_exclusion
+    reference=platform_exclusion(url)
+    if reference:return reference
     if rejection(dict(source_url=url),'candidate')=='MARKET_PRICE_REFERENCE':return 'MARKET_PRICE_REFERENCE'
     lead=folded(url+' '+str(row.get('title') or ''))
     if re.search(r'polymarket|preduck|prediction.market|\bodds\b|traders?.*(?:price|bet)|\bbetting\b',lead):
@@ -112,7 +115,7 @@ def recovery_candidates(definition,rows,attempted,limit=2,*,policy=LEGACY_RULE_P
         url=row.get('url');key=url_identity(url)
         if key is None or key in seen:continue
         seen.add(key);parts=urlsplit(url);host=(parts.hostname or '').lower().removeprefix('www.')
-        blocked=candidate_exclusion(row) if subject else rejection(dict(source_url=url),'candidate')=='MARKET_PRICE_REFERENCE'
+        blocked=candidate_exclusion(row)
         if blocked:continue
         if re.search(r'\.(?:png|jpg|jpeg|gif|svg|css|js|woff2?)(?:$|/)',parts.path,re.I):continue
         if re.search(r'/(?:login|sign-in|signin|subscribe|privacy|terms|contact|about|tamogatas|support|donate|newsletter|tags?|category|author|szerzo|rovat|shop|feed)(?:/|$)',parts.path,re.I):continue

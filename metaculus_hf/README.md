@@ -39,6 +39,19 @@ unavailable or invalid, both search slots use an explicitly labeled deterministi
 degraded query; this never claims a successful model generation. This new search
 stage does not itself fix unrelated-link prioritization or prove body quality.
 
+The shared `topic-bound-independent-candidates-v1` policy separates Metaculus
+FAQ/help and prediction-question pages from independent event information.
+Their exact URLs and meaning remain in the original rules, but these pages are
+not fetched as evidence or expanded into unrelated primary-source leads. Ordinary
+subject-specific FAQs on other sites remain eligible. Background links explicitly
+present in the question are registered with their provenance; the existing coarse
+`rule_url` discovery enum is qualified by `locator.question_link_role=background`
+and `question_context=description`, without claiming official or factual approval.
+Observed primary links must match the topic/identifier or the targeted parent
+article, not merely share a domain and contain words such as report or data.
+Repeated searches reuse results and try eligible unread candidates before stopping,
+within the same page/search/deadline caps. Literal body admission remains separate.
+
 ## Data
 
 Analysis now reuses the collector's saved Nemotron review bindings to prioritize

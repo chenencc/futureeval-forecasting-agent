@@ -10,7 +10,7 @@ from .contracts import PipelineError, now
 from .engine import Engine, find_run
 from .providers import Budget, Router, Transport
 from .repository import ensure
-from .contracts import canonical
+from .contracts import canonical,digest
 from .routing import credential_names, ALIASES
 from .admission import assess,ACCEPTED,rejection,forecast_reading_reason,CONTENT_KINDS,FORECAST_USES,POLICY as ADMISSION_POLICY
 
@@ -379,11 +379,15 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
     materials=[assess(s,record["evidence"]["texts"].get(s.get("text_sha256"))) for s in previous]
     gaps=[dict(code=s.get("error_code") or "NO_READABLE_TEXT",severity="warning",source_id=s["source_id"]) for s in previous if s["status"]!="extracted"]
     candidate_refs={};link_refs={};attempted={s["source_url"] for s in previous};allowed={};handoff_attempts=0
+    from .candidate_policy import background_links,platform_exclusion,topic_match,POLICY as CANDIDATE_POLICY
+    background_rows=background_links(definition);background_refs={r['url']:r for r in background_rows}
     def register(url,target=None):
         key=url_identity(url)
         if key is not None:allowed.setdefault(key,target or url)
     for url in definition["resolution_source_urls"]:register(url)
+    for url in background_refs:register(url)
     def register_links(source):
+        if platform_exclusion(source.get('source_url')):return
         for link in (source.get('locator') or {}).get('outgoing_links',[]):
             url=link.get('url')
             if url_identity(url):link_refs.setdefault(url,source['source_id']);register(url)
@@ -394,6 +398,9 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
             for rank,candidate in enumerate(search_record["results"],1):
                 candidate_refs.setdefault(candidate["url"],(search_record["search_id"],rank));register(candidate["url"])
     def fetch(url,role="unresolved",period=None,via=None):
+        blocked=platform_exclusion(url)
+        if blocked:
+            gaps.append(dict(code=blocked,severity='info',detail=url));return False
         if url in attempted:return
         attempted.add(url);ensure(len(attempted)<=max_pages,"PAGE_LIMIT")
         ref=candidate_refs.get(url)
@@ -401,6 +408,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         def bind(obs):
             obs.update(discovered_via=discovery,search_id=ref[0] if ref else None,search_result_rank=ref[1] if ref else None)
             if url in link_refs:obs['locator']=dict(obs.get('locator') or {},parent_source_id=link_refs[url])
+            if url in background_refs:obs['locator']=dict(obs.get('locator') or {},question_link_role='background',question_context='description',definition_sha256=digest(definition),truth_verified=False)
         try:observation,text=tools.page(url)
         except Exception as exc:
             if getattr(exc,'code',None)=='CAPTURE_START_DEADLINE':raise
@@ -433,14 +441,12 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                 except PipelineError as exc:gaps.append(dict(code=exc.code,severity="warning",source_id=sid))
         return readable
     def candidate_blocked(url):
-        from .retrieval_plan import candidate_exclusion,legal_subject,QUERY_POLICY
-        if seed_policy==QUERY_POLICY and legal_subject(definition):
-            rows=candidate_rows()
-            return any(candidate_exclusion(row) for row in rows if url_identity(row.get('url'))==url_identity(url)) or bool(candidate_exclusion(dict(url=url)))
-        return rejection(dict(source_url=url),"candidate")=='MARKET_PRICE_REFERENCE'
+        from .retrieval_plan import candidate_exclusion
+        rows=candidate_rows()
+        return any(candidate_exclusion(row) for row in rows if url_identity(row.get('url'))==url_identity(url)) or bool(candidate_exclusion(dict(url=url)))
     def candidate_rows():
         current=engine.repo.get_question(qid)
-        return ([c for s in current['searches'] if s['run_id']==rid for c in s['results']]
+        return (background_rows+[c for s in current['searches'] if s['run_id']==rid for c in s['results']]
             +[link for s in current['evidence']['sources'] if s['run_id']==rid for link in (s.get('locator') or {}).get('outgoing_links',[])])
     def trace_leads():
         from .source_trace import primary_leads
@@ -452,8 +458,15 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         return retrieval_progress(definition,[s for s in current['evidence']['sources'] if s['run_id']==rid],current['evidence']['texts'],candidate_rows(),attempted,seed_policy)
     def ranked_saved(limit):
         from .retrieval_plan import recovery_candidates
-        return list(dict.fromkeys([*[x['url'] for x in trace_leads()],*recovery_candidates(definition,candidate_rows(),attempted,limit=limit,policy=seed_policy)]))[:limit]
-    def readable_body_exists():return any(m['inclusion'] in ACCEPTED or m['inclusion']=='pending' for m in materials)
+        return list(dict.fromkeys([*[x['url'] for x in trace_leads()],*[u for u in background_refs if u not in attempted and not candidate_blocked(u)],*recovery_candidates(definition,candidate_rows(),attempted,limit=limit,policy=seed_policy)]))[:limit]
+    def readable_body_exists():
+        current=engine.repo.get_question(qid);sources={s['source_id']:s for s in current['evidence']['sources']}
+        for material in materials:
+            source=sources[material['source_id']]
+            if platform_exclusion(source.get('source_url')) or rejection(source,current['evidence']['texts'].get(source.get('text_sha256'))):continue
+            if material['inclusion'] in ACCEPTED:return True
+            if material['inclusion']=='pending' and (source['source_url'] in definition['resolution_source_urls'] or topic_match(definition,dict(url=source['source_url'],title=(current['evidence']['texts'].get(source.get('text_sha256')) or '')[:2000]))):return True
+        return False
     def read_saved_candidate():
         nonlocal handoff_attempts
         from .retrieval_plan import recovery_candidates
@@ -468,11 +481,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
     def read_next_candidate(*,closing=False):
         for _ in range(2):
             if (not closing and readable_body_exists()) or len(attempted)>=max_pages:return
-            from .retrieval_plan import recovery_candidates,legal_subject,QUERY_POLICY
-            if seed_policy==QUERY_POLICY and legal_subject(definition):
-                ranked=recovery_candidates(definition,candidate_rows(),attempted,limit=1,policy=seed_policy)
-                candidate=ranked[0] if ranked else None
-            else:candidate=next((u for u in dict.fromkeys([*candidate_refs,*link_refs]) if u not in attempted and not candidate_blocked(u)),None)
+            ranked=ranked_saved(1);candidate=ranked[0] if ranked else None
             if not candidate:return
             before=len(materials);fetch(candidate)
             if closing and any(m["inclusion"] in ACCEPTED or m["inclusion"]=="pending" for m in materials[before:]):return
@@ -555,6 +564,8 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         required=definition["resolution_source_urls"]
         primary_failed=False
         for url in required[:max_pages]:
+            if platform_exclusion(url):
+                gaps.append(dict(code=platform_exclusion(url),severity='info',detail=url));continue
             if not fetch(url,via="rule_url"):primary_failed=True
         for url in required[max_pages:]:gaps.append(dict(code="RULE_SOURCE_PAGE_LIMIT",severity="warning",detail=url))
         if primary_failed:recover_planner_failure('acquisition','PRIMARY_READ_FAILED')
@@ -615,6 +626,9 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                         from .contracts import canonical
                         gaps.append(dict(code='BOUND_GAP_SEARCH',severity='info',detail=canonical(dict(query=query,evidence_gap=bound_action['evidence_gap'],anchor_id=action.get('anchor_id'),anchor=bound_action['anchor']))))
                     if search(query,phase) is False and iteration_policy==ITERATION_POLICY:
+                        before_attempts=len(attempted);read_next_candidate(closing=True)
+                        if len(attempted)>before_attempts:
+                            gaps.append(dict(code='REPEATED_SEARCH_READ_SAVED_CANDIDATE',severity='info',detail=phase));continue
                         gaps.append(dict(code='SEARCH_STALL_STOP',severity='info',detail=phase));retrieval_stalled=True;break
                     read_next_candidate()
                 elif action.get("action")=="fetch":
@@ -624,7 +638,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                         gaps.append(dict(code='UNSEEN_CANDIDATE_URL',severity='warning',detail=canonical(dict(phase=phase,rejected_url=proposed))))
                         continue
                     if candidate_blocked(url):
-                        gaps.append(dict(code='MARKET_CANDIDATE_NOT_FETCHED',severity='info',detail=url));continue
+                        gaps.append(dict(code=platform_exclusion(url) or 'MARKET_CANDIDATE_NOT_FETCHED',severity='info',detail=url));continue
                     if len(attempted)>=max_pages:gaps.append(dict(code="PAGE_LIMIT",severity="warning"));break
                     role=action.get('source_role','unresolved');period=action.get('applicable_period')
                     if role not in ('current_official','historical_baseline','background','unresolved'):
@@ -686,7 +700,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         if on_first_http is not None:ensure(first_dispatch[0],'CAPTURE_NO_EVIDENCE_REQUEST')
         from .review_lifecycle import capture_review
         review=capture_review(materials,gaps)
-        return engine.seal(qid,rid,aid,owner,materials,gaps=gaps,context=dict(final_review=review,evidence_admission_policy=ADMISSION_POLICY,seed_query_policy=seed_policy,retrieval_iteration_policy=iteration_policy,source_trace_policy=trace_policy,max_gap_searches=max_gap_searches,mandatory_research_query=research_summary,planner_request_policy='same-key-5xx-two-attempts-v1',planner_failure_handoff_policy='saved-candidates-read-failure-stall-v2',planner_handoff_page_attempts=handoff_attempts),temporal_policy="retrospective_unverified" if tools.offline else "prospective",actual_usage=transport.actual_usage())
+        return engine.seal(qid,rid,aid,owner,materials,gaps=gaps,context=dict(final_review=review,evidence_admission_policy=ADMISSION_POLICY,seed_query_policy=seed_policy,retrieval_iteration_policy=iteration_policy,source_trace_policy=trace_policy,candidate_policy=CANDIDATE_POLICY,max_gap_searches=max_gap_searches,mandatory_research_query=research_summary,planner_request_policy='same-key-5xx-two-attempts-v1',planner_failure_handoff_policy='saved-candidates-read-failure-stall-v2',planner_handoff_page_attempts=handoff_attempts),temporal_policy="retrospective_unverified" if tools.offline else "prospective",actual_usage=transport.actual_usage())
     except Exception as exc:
         engine.finish(qid,rid,"acquisition",aid,owner,"failed",code=exc.code if isinstance(exc,PipelineError) else "ACQUISITION_ERROR",summary=type(exc).__name__,actual_usage=transport.actual_usage())
         raise
