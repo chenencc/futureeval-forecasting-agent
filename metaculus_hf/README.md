@@ -357,3 +357,51 @@ The heuristics are narrow and do not certify semantic completeness or forecast
 accuracy. Evaluate queries by distinct relevant bodies actually delivered to
 analysis, not URL novelty alone. Old-question current-data tests are not historical
 as-of backtests. Development evidence and raw failures remain outside this repo.
+
+
+### Development: Mammoth decision input assessment
+
+Default `METACULUS_DECISION_INPUT_PROFILE=stable-v1` preserves the prior request
+format and byte budgets. Eight saved-question replays reproduced all twelve
+baseline request byte strings and native forecast payloads exactly. No production
+workflow, upload path or submission setting is changed by this development work.
+
+Explicit `METACULUS_DECISION_INPUT_PROFILE=role-aware-v2` enables experimental
+source-role/review-status cues, compact audit metadata on the model wire, an
+independent question-background reading policy, and a forecast-usefulness rubric.
+Original questions, exact rules, units, option IDs, native numeric grids, source
+bodies, hashes and offsets remain in saved artifacts. Historical baselines are
+not resolving values; a role label is not evidence approval. Future uncertainty
+is not the same as unusable evidence. Diagnostic answers are parallel judgments,
+not a sequential reasoning chain or observed facts. The changed sufficiency
+rubric makes old/new self-scores unsuitable as a quality comparison.
+
+The experiment can use `METACULUS_DECISION_TOKENIZER_PATH` pointing to a locally
+provisioned, hash-verified `baselabs/mammoth-1` tokenizer. Optional dependency is
+listed in `requirements-token-counting.txt`; the forecasting path never downloads
+or executes model code. Exact tokenizer revision/hash are in `decision_tokens.py`.
+Provider context and non-null prompt caps are both checked. Initial/re-read caps
+are 6,000/9,000 local JSON tokens with 4,096 tokens reserved for hosted templates
+and question branches, plus 24,000/36,000 byte bounds. Actual hosted input usage
+must still be audited: local JSON token counts are not provider billing counts.
+Without a tokenizer, conservative original byte caps remain. Stable mode never
+opts into expanded budgets merely because a tokenizer is present.
+
+For recognizable literal Winner records, the experimental packer calculates
+exact distinct labels only over delivered, hash-bound source slices. It lists
+labels, record references and selected-versus-available coverage per source.
+It performs no person-identity normalization, cross-source reconciliation,
+full-season inference, truth verification or forced probability clamp. Unknown
+layouts receive no calculation. Calculations participate in the same input
+budget as evidence and are recomputed as selected spans change.
+
+The local assessment used eight identical saved bundles in paired runs, ten
+capability/sensitivity probes and one integrated literal-count run. It found
+material probability sensitivity to metadata formatting, a missed raw-record
+count corrected by a deterministic reading aid, and successful financial amount
+extraction from both full and focused original text. These are operational and
+bounded extraction checks, not forecast-calibration evidence. Old-question bodies
+were not reconstructed as of historical forecast cutoffs. Experimental expansion
+therefore stays opt-in; do not promote it based on higher self-scores, more text,
+or agreement with an expected forecast. A separate time-clean held-out evaluation
+and format/irrelevant-text sensitivity gates are required before promotion.

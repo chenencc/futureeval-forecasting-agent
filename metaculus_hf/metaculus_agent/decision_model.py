@@ -11,13 +11,19 @@ VALIDATOR='mammoth-typed-probabilities/1'
 
 def request_payload(state,questions):
     """Carry each source identity once; saved state retains full span provenance."""
+    from .decision_profile import experimental
+    compact=experimental()
     wire=deepcopy(state)
+    # Integrity hashes, offset maps and duplicate aliases stay in the saved audit.
+    # The model needs stable source IDs, original text, observed clocks and scope.
     sources={s['source_id']:s for s in wire.get('sources',[])}
     for e in wire.get('evidence',[]):
         source=sources.get(e.get('source_id'))
         if source and e.get('url')==source.get('url') and e.get('body_sha256')==source.get('body_sha256'):
-            e.pop('url',None);e.pop('body_sha256',None)
+            for key in (('url','body_sha256','evidence_id','start','end') if compact else ('url','body_sha256')):e.pop(key,None)
+    if compact:wire['sources']=[{k:deepcopy(s[k]) for k in ('source_id','url','capture_metadata','evidence_role','review_status','saved_body_truncated') if k in s} for s in wire.get('sources',[])]
     return dict(model=MODEL,state=wire,questions=deepcopy(questions))
+
 
 def encode(payload):return json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
 

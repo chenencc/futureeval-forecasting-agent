@@ -2,9 +2,10 @@
 from copy import deepcopy
 import hashlib,json,re
 from . import decision_model
+from .decision_profile import experimental
 from . import evidence_structure as structure
 
-POLICY='review-bound-original-packing/3'
+POLICY='role-aware-original-packing/4'
 
 class PackingError(ValueError):
     category='configuration'
@@ -65,6 +66,11 @@ def prepare(packet,source):
         # The full capture metadata remains in context and the saved packet audit.
         original=item.get('capture_metadata') or {}
         item['capture_metadata']={k:deepcopy(original[k]) for k in ('retrieved_at_utc','published_at','http_status','captured_at','extraction_version') if k in original}
+        if experimental():
+            roles={b.get('forecast_relevance') for b in group['bindings']} - {None,'unknown','none'}
+            item['evidence_role']=next(iter(roles)) if len(roles)==1 else 'mixed' if roles else 'unclassified'
+            statuses=[source['pages'][u].get('body_diagnostics',{}).get('review_status') for u in group['urls']]
+            item['review_status']='reviewed' if statuses and all(x=='reviewed' for x in statuses) else 'unverified'
         item['saved_body_characters']=len(text)
         narrative=sum(len(line) for _,_,line in body_lines if len(line.strip())>=160)/max(1,len(text))
         kept.append(item);aliases.append(dict(source_id=item['source_id'],body_sha256=hashed,urls=group['urls'],observations=group['observations'],exact_body_duplicate_count=len(group['urls'])-1))
@@ -173,9 +179,14 @@ def prepare(packet,source):
         table_policy='Complete literal rows with original headers, captions and recognized notes; omitted rows remain omitted.')
     return packet
 
-def select(packet,state,limit,registry,reasons=()):
+def select(packet,state,limit,registry,reasons=(),token_limit=None):
     state=deepcopy(state);info=packet['evidence_packing'];meta=info['candidates'];by_id={e['evidence_id']:e for e in packet['evidence']}
-    source_map={s['source_id']:{k:deepcopy(s[k]) for k in ('source_id','url','body_sha256','capture_metadata','saved_body_truncated','saved_body_characters') if k in s} for s in packet['sources']}
+    source_map={s['source_id']:{k:deepcopy(s[k]) for k in ('source_id','url','body_sha256','capture_metadata','saved_body_truncated','saved_body_characters','evidence_role','review_status') if k in s} for s in packet['sources']}
+    from . import decision_tokens,literal_calculations
+    if experimental():literal_calculations.attach(packet,state)
+    token_estimate=lambda candidate:decision_tokens.count(decision_model.request_payload(candidate,registry))
+    if token_limit is not None and token_estimate(state) is None:raise PackingError('DECISION_TOKENIZER_REQUIRED')
+    if token_limit is not None and token_estimate(state)>token_limit:raise PackingError('DECISION_BASE_TOKEN_LIMIT')
     if measure(state,registry)>limit:raise PackingError('DECISION_BASE_INPUT_TOO_LARGE')
     kept={e['evidence_id'] for e in state['evidence']};skipped=[];deferred=[];weak_only_fallback=False
     def covered(span,evidence):return any(x['source_id']==span['source_id'] and x['start']<=span['start'] and x['end']>=span['end'] for x in evidence)
@@ -194,8 +205,9 @@ def select(packet,state,limit,registry,reasons=()):
         for entry in pending:
             candidate['evidence'].append(entry)
             if entry['source_id'] not in {s['source_id'] for s in candidate['sources']}:candidate['sources'].append(source_map[entry['source_id']])
+        if experimental():literal_calculations.attach(packet,candidate)
         # context_omitted may change from true to false (one extra JSON byte).
-        if measure(candidate,registry)+int(candidate.get('context_omitted') is True)<=limit:
+        if measure(candidate,registry)+int(candidate.get('context_omitted') is True)<=limit and (token_limit is None or token_estimate(candidate)+1<=token_limit):
             state.update(candidate);kept.update(x['evidence_id'] for x in pending)
         else:skipped.append(ident)
     # Strong model-bound baselines/direct facts precede navigation and lexical filler.
@@ -224,7 +236,7 @@ def select(packet,state,limit,registry,reasons=()):
     for ident,m in meta.items():
         if m['kind']=='review_bound':review_coverage.append(dict(evidence_id=ident,complete=covered(by_id[ident],delivered)))
     return state,dict(policy=POLICY,selected_ids=sorted(kept),omitted_ids=[x for x in meta if x not in kept],
-        request_bytes=measure(state,registry),request_byte_limit=limit,routing_focus=list(reasons),budget_omitted_ids=skipped,
+        request_bytes=measure(state,registry),request_byte_limit=limit,estimated_wire_tokens=token_estimate(state),token_limit=token_limit,routing_focus=list(reasons),budget_omitted_ids=skipped,
         low_focus_deferred=[dict(evidence_id=i,reason=meta[i]['deferred_reason']) for i in dict.fromkeys(deferred) if i not in kept],weak_only_fallback=weak_only_fallback,
         review_coverage=review_coverage,table_rows_selected=sum(m['kind']=='table_row' and covered(by_id[i],delivered) for i,m in meta.items()),
         structured_coverage={group:dict(available=sum(m.get('record_rows',0) for m in meta.values() if m.get('coverage_group')==group),
