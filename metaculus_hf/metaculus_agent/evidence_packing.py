@@ -181,6 +181,12 @@ def prepare(packet,source):
 
 def select(packet,state,limit,registry,reasons=(),token_limit=None):
     state=deepcopy(state);info=packet['evidence_packing'];meta=info['candidates'];by_id={e['evidence_id']:e for e in packet['evidence']}
+    from .decision_profile import canonical
+    excluded_sources=set();excluded_ids=[]
+    if canonical():
+        from .decision_canonical import CONTEXT
+        excluded_urls={u for s in state[CONTEXT]['sources'] if s['exclusion'] for u in s['aliases']}
+        excluded_sources={s['source_id'] for s in packet['sources'] if s['url'] in excluded_urls}
     source_map={s['source_id']:{k:deepcopy(s[k]) for k in ('source_id','url','body_sha256','capture_metadata','saved_body_truncated','saved_body_characters','evidence_role','review_status') if k in s} for s in packet['sources']}
     from . import decision_tokens,literal_calculations
     if experimental():literal_calculations.attach(packet,state)
@@ -192,6 +198,8 @@ def select(packet,state,limit,registry,reasons=(),token_limit=None):
     def covered(span,evidence):return any(x['source_id']==span['source_id'] and x['start']<=span['start'] and x['end']>=span['end'] for x in evidence)
     def overlap(span):return any(x['source_id']==span['source_id'] and max(x['start'],span['start'])<min(x['end'],span['end']) for x in state['evidence'])
     def offer(ident,allow_weak=False):
+        if meta[ident]['source_id'] in excluded_sources:
+            excluded_ids.append(ident);return
         if ident in kept or covered(by_id[ident],state['evidence']):return
         if meta[ident]['deferred_reason'] and not allow_weak:
             deferred.append(ident);return
@@ -230,12 +238,14 @@ def select(packet,state,limit,registry,reasons=(),token_limit=None):
         for ident in dict.fromkeys(deferred):
             offer(ident,allow_weak=True)
             if state['evidence']:weak_only_fallback=True;break
-    if packet['evidence'] and not state['evidence']:raise PackingError('DECISION_EVIDENCE_BUDGET_EXHAUSTED')
+    if packet['evidence'] and not state['evidence']:
+        raise PackingError('CANONICAL_NO_ADMITTED_EVIDENCE' if excluded_sources else 'DECISION_EVIDENCE_BUDGET_EXHAUSTED')
     delivered=state['evidence'];review_coverage=[]
     state['context_omitted']=any(not covered(e,delivered) for e in packet['evidence'])
     for ident,m in meta.items():
         if m['kind']=='review_bound':review_coverage.append(dict(evidence_id=ident,complete=covered(by_id[ident],delivered)))
     return state,dict(policy=POLICY,selected_ids=sorted(kept),omitted_ids=[x for x in meta if x not in kept],
+        canonical_excluded_ids=sorted(set(excluded_ids)),
         request_bytes=measure(state,registry),request_byte_limit=limit,estimated_wire_tokens=token_estimate(state),token_limit=token_limit,routing_focus=list(reasons),budget_omitted_ids=skipped,
         low_focus_deferred=[dict(evidence_id=i,reason=meta[i]['deferred_reason']) for i in dict.fromkeys(deferred) if i not in kept],weak_only_fallback=weak_only_fallback,
         review_coverage=review_coverage,table_rows_selected=sum(m['kind']=='table_row' and covered(by_id[i],delivered) for i,m in meta.items()),

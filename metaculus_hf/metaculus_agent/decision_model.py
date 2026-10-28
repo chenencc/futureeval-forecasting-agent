@@ -11,7 +11,11 @@ VALIDATOR='mammoth-typed-probabilities/1'
 
 def request_payload(state,questions):
     """Carry each source identity once; saved state retains full span provenance."""
-    from .decision_profile import experimental
+    from .decision_profile import experimental,canonical
+    if canonical():
+        from .decision_canonical import render
+        wire,registry,_=render(state,questions)
+        return dict(model=MODEL,state=wire,questions=registry)
     compact=experimental()
     wire=deepcopy(state)
     # Integrity hashes, offset maps and duplicate aliases stay in the saved audit.

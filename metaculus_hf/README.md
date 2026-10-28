@@ -405,3 +405,53 @@ were not reconstructed as of historical forecast cutoffs. Experimental expansion
 therefore stays opt-in; do not promote it based on higher self-scores, more text,
 or agreement with an expected forecast. A separate time-clean held-out evaluation
 and format/irrelevant-text sensitivity gates are required before promotion.
+
+
+### Development: canonical input and conservative relevance admission
+
+`METACULUS_DECISION_INPUT_PROFILE=canonical-v3` is a separate opt-in profile;
+`stable-v1` remains the default and `role-aware-v2` is unchanged. It does not
+silently enable expanded budgets, alter rules/options/native grids, or deploy a
+workflow. The analysis adapter builds a local source/span index from hash-checked
+saved bodies. The private index is never sent to the model. Its digest binds the
+analysis identity; normalization receipts retain original-to-canonical IDs,
+offsets, hashes and excluded candidates.
+
+The renderer fixes object-key order, source order and source/excerpt IDs. Within
+each source it restores original character order so table headers/rows are not
+alphabetically scrambled. Option lists and other semantic arrays remain in their
+original order. Missing audit-only offsets are recoverable only when the literal
+text identifies one indexed span. Unknown source candidates are excluded with a
+local receipt. Changed text/hash/rules, dangling IDs or ambiguous offset recovery
+stop the call. No readable corpus is silently replaced with a prior-only forecast.
+Raw snapshots are never edited by this model-view operation.
+
+This provenance boundary is NOT a semantic irrelevant-text detector. A separate,
+optional `decision_relevance.review_documents` helper uses the existing Nemotron
+3.5 route on saved text only. An exclusion needs a full-document review, explicit
+irrelevance, entity and metric mismatches, no causal relevance, and one exact
+40-600-character quote bound to the saved body. Partial, ambiguous, failed or
+unbound reviews retain the original. A question-designated source and existing
+direct/baseline/driver bindings are protected from conflicting new exclusions.
+Review outputs never become factual evidence or forecast probabilities.
+
+The host may attach validated receipts under `analysis_selection_reviews[url]`
+in an isolated analysis bundle; `canonical-v3` rechecks question/body binding before
+using them. It does not automatically call this reviewer during every forecast.
+Persist and reuse exact question/body/policy-bound receipts in the development
+harness; no new collection, snapshot replacement or remote checkpoint is needed.
+A body becoming stale, a changed question or a changed policy needs a new review.
+Model relevance judgments remain fallible despite literal quote verification.
+
+The bounded local regression restored identical requests for all 64 prior
+format/noise variants using the frozen capture boundary. An additional test
+explicitly admitted the same unreviewed synthetic noise: some probabilities still
+moved, exposing the distinction between format and semantic robustness. After
+clarifying the review taxonomy, all eight noise cases were excluded while eight
+relevant selections were retained; a separate synthetic counterevidence/driver
+control was retained and a different off-topic fixture was excluded. All eight
+filtered requests matched their canonical baselines byte-for-byte; two fresh
+Decisions calls also matched their baseline answers exactly. This is a narrow
+input-stability result, not a population relevance guarantee or improved forecast
+accuracy. Changing from stable to canonical still changes probabilities, so
+promotion requires a separate held-out, time-clean forecasting evaluation.
