@@ -142,6 +142,30 @@ class RuntimeTests(unittest.TestCase):
         runner=Runner(self.checkpoint('a'),Client(post()),writer='test',collector=lambda *_:self.fail('provider must not run'))
         self.store.fail=True
         with self.assertRaises(Conflict):runner.run([post()])
+    def test_optional_review_queue_does_not_call_model_or_block_analysis(self):
+        import os
+        from metaculus_agent import review_jobs
+        p=post();client=Client(p)
+        def collector(task,p,root,checkpoint):return sealed(task,root/'capture')
+        def analyzer(value,root,checkpoint):
+            return dict(snapshot_id=value['snapshot_id'],context_sha256=digest(value),candidate=dict(payload=payload(value['request'],{'probability_yes':.6}),comment='fixture'))
+        queue=self.root/'independent-review'
+        with patch.dict(os.environ,{'METACULUS_INDEPENDENT_REVIEW_QUEUE':str(queue)}),patch('pipeline_v2.providers.Router.chat',side_effect=AssertionError('enqueue must not call a model')):
+            runner=Runner(self.checkpoint('queued'),client,writer='test',collector=collector,analyzer=analyzer)
+            self.assertEqual(runner.run([p])['failures'],0)
+        handoff=runner.state['tasks']['100']['independent_review'];self.assertFalse(handoff['reviewed']);self.assertEqual(len(handoff['jobs']),1)
+        self.assertEqual(review_jobs.load(queue/handoff['jobs'][0]/'job.json')['status'],'queued')
+        self.assertEqual(client.posts,0)
+    def test_review_enqueue_failure_does_not_block_base_flow(self):
+        p=post()
+        def collector(task,p,root,checkpoint):return sealed(task,root/'capture')
+        def analyzer(value,root,checkpoint):
+            return dict(snapshot_id=value['snapshot_id'],context_sha256=digest(value),candidate=dict(payload=payload(value['request'],{'probability_yes':.6}),comment='fixture'))
+        with patch('metaculus_agent.review_jobs.optional_enqueue',side_effect=OSError('private/path/not-for-output')):
+            runner=Runner(self.checkpoint('enqueue-fail'),Client(p),writer='test',collector=collector,analyzer=analyzer)
+            self.assertEqual(runner.run([p])['failures'],0)
+        self.assertEqual(runner.state['tasks']['100']['independent_review']['error'],'OSError')
+        self.assertEqual(runner.state['tasks']['100']['status'],'analyzed')
     def test_analyzed_dry_run_does_not_starve_next_question(self):
         posts=[post(ident=100),post(ident=101)]
         class MultiClient(Client):

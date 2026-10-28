@@ -23,7 +23,52 @@ Metaculus eligibility remains separate from market tags and opening rules.
 The shared source lock prevents untracked divergence; update it deliberately
 and run the shared regression tests when updating either consuming project.
 
+New Metaculus captures additionally require one durable, question-specific
+Nemotron 3.5 research query after the existing base Exa and Tavily searches.
+The identical generated query is searched once with each provider before page
+reads, even when a rule URL is already available. The original two Tavily gap
+search slots remain separate: at most two Exa plus four Tavily logical searches
+per ordinary new capture. Physical credential failover and bounded model 5xx
+retry can add attempts; existing provider/daily budgets and deadlines still apply.
+
+The query, rationale, input identity, model result and channel observations are
+saved locally and join the existing one-final-HF-commit policy. Restoring the
+capture reuses the saved query/results rather than issuing new calls. Ambiguous
+reserved calls are recorded and not blindly repeated. If query generation is
+unavailable or invalid, both search slots use an explicitly labeled deterministic
+degraded query; this never claims a successful model generation. This new search
+stage does not itself fix unrelated-link prioritization or prove body quality.
+
+The shared `topic-bound-independent-candidates-v1` policy separates Metaculus
+FAQ/help and prediction-question pages from independent event information.
+Their exact URLs and meaning remain in the original rules, but these pages are
+not fetched as evidence or expanded into unrelated primary-source leads. Ordinary
+subject-specific FAQs on other sites remain eligible. Background links explicitly
+present in the question are registered with their provenance; the existing coarse
+`rule_url` discovery enum is qualified by `locator.question_link_role=background`
+and `question_context=description`, without claiming official or factual approval.
+Observed primary links must match the topic/identifier or the targeted parent
+article, not merely share a domain and contain words such as report or data.
+Repeated searches reuse results and try eligible unread candidates before stopping,
+within the same page/search/deadline caps. Literal body admission remains separate.
+
 ## Data
+
+Analysis now reuses the collector's saved Nemotron review bindings to prioritize
+exact original passages, with no additional selection-model call. The derived
+`review-bound-original-packing/1` reading library preserves whole Markdown table
+rows with their literal headers, captions, recognized notes and visible document
+dates. Identical body hashes share one model-input body while all source aliases,
+observation metadata and original context remain archived. Different bodies are
+never removed as near duplicates. Bound citations select locations; their review
+prose is not treated as evidence or rewritten into a summary.
+
+Budget checks apply to the full Mammoth envelope. A readable body that cannot fit
+produces an explicit input-budget error rather than being labeled missing evidence.
+Unselected rows and passages remain in the saved context and packing audits;
+selection is not a completeness or truth claim. Native numeric grids stay in the
+immutable context and forecast conversion, while the compact model view omits
+their redundant 201-point expansion, including on the prior-only path.
 
 Private dataset: `chchen13/forecastagent-data`.
 
@@ -249,3 +294,264 @@ then only later cases. A zero-provider-call injected outage probe validates the
 operational default on that same saved input before normal resumed analysis.
 The branch-only validation allowance is restricted to the named fallback branch;
 production cron continues to use main until the experiment passes and is merged.
+
+### Development: body quality and evidence budget
+
+`metaculus-mammoth-original-evidence/3` reserves the existing byte limits for
+evidence by compacting diagnostic instructions, omitting redundant model-only
+grid/routing metadata and encoding the measured UTF-8 JSON envelope exactly as
+sent. Native forecast grids, option IDs, interval boundaries, original question
+rules/fine print and saved provenance remain intact. Span URL/hash references
+are carried once in the wire source map and fully in saved audit files.
+
+`review-bound-original-packing/2` prioritizes short resolution-designated bodies,
+literal recent season/year rows and complete repeated winner records. Recognized
+table labels, event identities and publication dates accompany selected spans.
+Navigation-heavy or zero-overlap filler is deprioritized. This is deterministic
+selection of original bytes, not a generated summary or a guarantee of exhaustive
+semantic coverage. All omitted bodies remain in the immutable context; selected
+offsets/hashes and available versus delivered row counts are audited.
+
+ClinicalTrials observed search links with exactly the supported intervention and
+`status:rec` filter use the official v2 studies endpoint. Unknown filters are not
+silently dropped. The adapter preserves the API response UTF-8 text, exact query,
+response SHA, request/receive clocks and the original page URL. Its first page is
+limited to 20 projected records (ID/title/status/intervention/update date); the
+official total count and record pagination completeness are separate. It checks
+recruiting status, study identity and count consistency. Current counts are not
+future resolution results or an as-of historical reconstruction.
+
+An unsupported affirmative season/value claim in a review cannot approve that
+claim; the original series remains available for independent reading. This
+narrow guard does not certify arbitrary review prose. If final review leaves no
+usable body, closing recovery may read at most two more saved candidates within
+the original page/deadline/provider budgets, even when an earlier planner
+handoff was used. It does not issue a new search or overwrite the old snapshot.
+
+
+### Development: research-query marginal value
+
+`goal-aligned-research-query-v1` retains one mandatory Nemotron3.5 query and the
+same query on Exa and Tavily. The prompt binds the research goal to the exact
+metric, population and historical period. A narrow quarterly guard rejects a
+historical-baseline plan that searches only for the future target quarter;
+unrecognized semantics are not claimed as validated. Degraded fallback is
+explicitly marked. Platform/forecast-mirror candidates are excluded from query
+inputs. Once-only request slots, physical-attempt accounting and budgets remain.
+
+Before final review, opt-in capture can read at most one eligible additional URL
+observed in the research results and absent from base results and attempted/rule
+URLs, within the existing page and time budgets. It rejects concatenated-protocol
+paths and prefers a different document to a known path's query variant. Unknown
+query parameters are not silently removed. Source ranking is a retrieval cue,
+not evidence approval. A malformed model review date keeps the binding pending;
+independent original-body reading strips the unsupported review. Valid future
+dates, FAQ/navigation pages and explicit hard mismatches remain excluded.
+
+`review-bound-original-packing/3` defers weak quarterly background while retaining
+review-bound drivers and a readable-body fallback. Literal metric paragraphs in
+quarterly documents and complete delivery table cells carry their saved date,
+period, unit/header context. No values are synthesized or inferred. Selected
+bytes/offsets are auditable; weak-only fallback and omissions are explicit.
+The heuristics are narrow and do not certify semantic completeness or forecast
+accuracy. Evaluate queries by distinct relevant bodies actually delivered to
+analysis, not URL novelty alone. Old-question current-data tests are not historical
+as-of backtests. Development evidence and raw failures remain outside this repo.
+
+
+### Development: Mammoth decision input assessment
+
+Default `METACULUS_DECISION_INPUT_PROFILE=stable-v1` preserves the prior request
+format and byte budgets. Eight saved-question replays reproduced all twelve
+baseline request byte strings and native forecast payloads exactly. No production
+workflow, upload path or submission setting is changed by this development work.
+
+Explicit `METACULUS_DECISION_INPUT_PROFILE=role-aware-v2` enables experimental
+source-role/review-status cues, compact audit metadata on the model wire, an
+independent question-background reading policy, and a forecast-usefulness rubric.
+Original questions, exact rules, units, option IDs, native numeric grids, source
+bodies, hashes and offsets remain in saved artifacts. Historical baselines are
+not resolving values; a role label is not evidence approval. Future uncertainty
+is not the same as unusable evidence. Diagnostic answers are parallel judgments,
+not a sequential reasoning chain or observed facts. The changed sufficiency
+rubric makes old/new self-scores unsuitable as a quality comparison.
+
+The experiment can use `METACULUS_DECISION_TOKENIZER_PATH` pointing to a locally
+provisioned, hash-verified `baselabs/mammoth-1` tokenizer. Optional dependency is
+listed in `requirements-token-counting.txt`; the forecasting path never downloads
+or executes model code. Exact tokenizer revision/hash are in `decision_tokens.py`.
+Provider context and non-null prompt caps are both checked. Initial/re-read caps
+are 6,000/9,000 local JSON tokens with 4,096 tokens reserved for hosted templates
+and question branches, plus 24,000/36,000 byte bounds. Actual hosted input usage
+must still be audited: local JSON token counts are not provider billing counts.
+Without a tokenizer, conservative original byte caps remain. Stable mode never
+opts into expanded budgets merely because a tokenizer is present.
+
+For recognizable literal Winner records, the experimental packer calculates
+exact distinct labels only over delivered, hash-bound source slices. It lists
+labels, record references and selected-versus-available coverage per source.
+It performs no person-identity normalization, cross-source reconciliation,
+full-season inference, truth verification or forced probability clamp. Unknown
+layouts receive no calculation. Calculations participate in the same input
+budget as evidence and are recomputed as selected spans change.
+
+The local assessment used eight identical saved bundles in paired runs, ten
+capability/sensitivity probes and one integrated literal-count run. It found
+material probability sensitivity to metadata formatting, a missed raw-record
+count corrected by a deterministic reading aid, and successful financial amount
+extraction from both full and focused original text. These are operational and
+bounded extraction checks, not forecast-calibration evidence. Old-question bodies
+were not reconstructed as of historical forecast cutoffs. Experimental expansion
+therefore stays opt-in; do not promote it based on higher self-scores, more text,
+or agreement with an expected forecast. A separate time-clean held-out evaluation
+and format/irrelevant-text sensitivity gates are required before promotion.
+
+
+### Development: canonical input and conservative relevance admission
+
+`METACULUS_DECISION_INPUT_PROFILE=canonical-v3` is a separate opt-in profile;
+`stable-v1` remains the default and `role-aware-v2` is unchanged. It does not
+silently enable expanded budgets, alter rules/options/native grids, or deploy a
+workflow. The analysis adapter builds a local source/span index from hash-checked
+saved bodies. The private index is never sent to the model. Its digest binds the
+analysis identity; normalization receipts retain original-to-canonical IDs,
+offsets, hashes and excluded candidates.
+
+The renderer fixes object-key order, source order and source/excerpt IDs. Within
+each source it restores original character order so table headers/rows are not
+alphabetically scrambled. Option lists and other semantic arrays remain in their
+original order. Missing audit-only offsets are recoverable only when the literal
+text identifies one indexed span. Unknown source candidates are excluded with a
+local receipt. Changed text/hash/rules, dangling IDs or ambiguous offset recovery
+stop the call. No readable corpus is silently replaced with a prior-only forecast.
+Raw snapshots are never edited by this model-view operation.
+
+This provenance boundary is NOT a semantic irrelevant-text detector. A separate,
+optional `decision_relevance.review_documents` helper uses the existing Nemotron
+3.5 route on saved text only. An exclusion needs a full-document review, explicit
+irrelevance, entity and metric mismatches, no causal relevance, and one exact
+40-600-character quote bound to the saved body. Partial, ambiguous, failed or
+unbound reviews retain the original. A question-designated source and existing
+direct/baseline/driver bindings are protected from conflicting new exclusions.
+Review outputs never become factual evidence or forecast probabilities.
+
+The host may attach validated receipts under `analysis_selection_reviews[url]`
+in an isolated analysis bundle; `canonical-v3` rechecks question/body binding before
+using them. It does not automatically call this reviewer during every forecast.
+Persist and reuse exact question/body/policy-bound receipts in the development
+harness; no new collection, snapshot replacement or remote checkpoint is needed.
+A body becoming stale, a changed question or a changed policy needs a new review.
+Model relevance judgments remain fallible despite literal quote verification.
+
+The bounded local regression restored identical requests for all 64 prior
+format/noise variants using the frozen capture boundary. An additional test
+explicitly admitted the same unreviewed synthetic noise: some probabilities still
+moved, exposing the distinction between format and semantic robustness. After
+clarifying the review taxonomy, all eight noise cases were excluded while eight
+relevant selections were retained; a separate synthetic counterevidence/driver
+control was retained and a different off-topic fixture was excluded. All eight
+filtered requests matched their canonical baselines byte-for-byte; two fresh
+Decisions calls also matched their baseline answers exactly. This is a narrow
+input-stability result, not a population relevance guarantee or improved forecast
+accuracy. Changing from stable to canonical still changes probabilities, so
+promotion requires a separate held-out, time-clean forecasting evaluation.
+
+### Development: independent Ultra evidence review
+
+`metaculus_agent.independent_review` uses
+`nvidia/nemotron-3-ultra-550b-a55b:free` for a blind, optional source review.
+Its input contains only whitelisted question/rule fields and saved source text,
+retrieval time, and program-generated source-specific citation choices. It does
+not receive the first reviewer output, source relevance labels or probabilities.
+Ultra does not enforce `response_format`; the adapter requests JSON text and
+validates IDs, enums, structure, citation indices and literal fields locally.
+The body SHA and selected span are checked; paraphrased dates, values and units
+are not silently corrected. Model interpretations remain explicitly unverified.
+
+Each claim receives `bound_evidence`, `background_or_lead` or `unresolved`.
+`bound_evidence` means the model reports support and the required literal fields
+bind to the saved passage. It does NOT mean the program proved semantic
+entailment, factual truth, freshness or source independence. Disagreements with
+the first review are compared only after blind inference and downgrade the
+affected source's claims. All original sources remain; this module never deletes
+evidence or generates forecasts. Citation choices are bounded, not an exhaustive
+fact inventory. `complete` refers to the saved extracted body, not proof that the
+origin webpage or the topic was completely captured.
+
+The separately invoked `metaculus_agent.review_jobs` queue persists independent,
+hash-bound input copies, parsed results, failures, receipts and a local
+`review.parquet`. Enqueue performs no model/network call. It is idempotent by
+question/body/prompt/model and comparison identity; cached output is revalidated.
+A process interrupted in `running` becomes `interrupted` without another call.
+Explicit `--retry-failed` permits at most two job attempts; each provider call
+uses the existing shared budget and at most two bounded transport attempts.
+Oversize documents are listed as unreviewed instead of silently truncated.
+
+Default workflows are unchanged. An optional absolute
+`METACULUS_INDEPENDENT_REVIEW_QUEUE` enables only local enqueue after context
+sealing; an external worker invocation owns inference. Enqueue errors are
+recorded on the task without blocking base analysis/delivery. Place the queue
+outside task payload retirement directories, on durable storage; do not enable
+this on ephemeral Actions without separately designing its worker persistence
+and publication lifecycle. No new HF commit or automatic publication is added.
+
+```powershell
+python -m metaculus_agent.review_jobs --root D:/review-queue enqueue --bundle saved-input.json
+python -m metaculus_agent.review_jobs --root D:/review-queue run-one --id <job-sha256>
+```
+
+2026-10-28 bounded local trials established Ultra connectivity, not autonomous
+quality acceptance. The first free-quote probe rewrote source text. Switching to
+program-resolved citation indices bound all four claims from three real saved
+documents, but the model still invented/normalized literal fields and misread a
+NOAA historical value as ASO 2026. All those claims remained unresolved. A separate
+synthetic four-document control retained contrary evidence, a driver and a
+baseline, and recognized irrelevant text. These narrow controls do not negate
+the real failures. Keep this reviewer optional and unpromoted; do not interpret
+HTTP success, valid JSON or model agreement as marketable intelligence quality.
+
+### Development: shared literal table geometry
+
+`metaculus_agent.table_evidence` is a source-independent saved-text parser. It
+recognizes explicit pipe tables (including HTML serializer rowspan/colspan
+annotations), CSV/TSV, homogeneous whitespace records, and flattened numeric rows
+with explicit quarter/year column labels. It has no site URLs, question IDs or
+model dependency. It preserves source SHA, exact spans, header paths, row
+dimensions, original numeric strings, missing cells, nearby period/unit context
+and short literal footnotes. It does not modify the source or multiply values.
+
+`parse(text)` returns structures and explicit layout gaps. `records(index)`
+returns individual numeric cells with their row/column dependencies. `bind(...)`
+requires the value, complete recognized period components and measurement label
+to belong to one cell. Cell IDs disambiguate otherwise identical values. Years,
+quarters, seasons, recognized month/day/time components and fiscal-year markers
+cannot be joined arbitrarily. Numeric strings use locale-conservative Decimal;
+comma grouping and parenthesized negatives are supported, decimal-comma inputs
+remain unrecognized. Blank/NA/dash cells never become zero.
+
+Units are derived only from explicit cell symbols, headers, Unit columns or
+adjacent declarations. A dollar symbol is not assigned USD. Missing units,
+mixed scales, and financial declarations with exceptions remain unresolved.
+Merged numeric values are not allocated over multiple periods. Grouped PDF
+headers that have lost coordinates, ragged rows and unresolved dense layouts
+produce gaps instead of guessed column associations. These limits mean detected
+table counts are not an exhaustive table/fact coverage measure.
+
+Independent review policy `blind-evidence-review/3` offers bounded program-bound
+table cells alongside ordinary citations. Claims may select `table_cell_id`;
+the program regenerates choices from the saved body and checks value/metric/
+period/unit associations. Existing free-form claims are also checked when their
+citation overlaps recognized tables. A structural mismatch downgrades the claim;
+unknown units prevent promotion. The program-bound record is retained beside
+the model's unverified interpretation. It does not certify that an interpretation
+is true merely because its fields belong to a table cell.
+
+The 2026-10-28 offline replay used 32 saved bodies from eight questions and
+identified 19 tables. Eleven real-source checks retained the NOAA ASO-2025 value,
+Tesla quarterly/annual delivery records and NYT quarterly baselines while
+rejecting cross-year/quarter/metric joins. Replaying previous Ultra outputs
+blocked the false ASO-2026 claim without another model request. Complex NYT
+grouped PDF headers and unit exceptions remained unverified. The updated suite
+passed 279 tests. This is structural validation, not a fresh Ultra or live
+collection acceptance. Workflow defaults and original snapshots remain intact.
+Old review policy jobs/caches are not silently reused under policy 3.

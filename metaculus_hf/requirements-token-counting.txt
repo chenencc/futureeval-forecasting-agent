@@ -1,0 +1,2 @@
+# Optional local token-counting experiment; not loaded by default workflows.
+tokenizers==0.23.2

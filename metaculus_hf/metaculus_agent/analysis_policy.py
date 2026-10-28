@@ -44,8 +44,19 @@ def decision_route(*,opener=urlopen):
         if not free:raise AnalysisProviderError('ANALYSIS_NONFREE_ROUTE_REFUSED',category='configuration',retry_after=3600)
     lengths=[r.get('context_length') for r in endpoints]
     if any(type(n)!=int or n<4096 for n in lengths):raise AnalysisProviderError('ANALYSIS_CONTEXT_LIMIT_UNKNOWN',category='configuration',retry_after=3600)
+    # Respect a provider-specific prompt cap as well as its context window.
+    for row in endpoints:
+        n=row.get('max_prompt_tokens')
+        if n is not None:
+            if type(n)!=int or n<4096:raise AnalysisProviderError('ANALYSIS_CONTEXT_LIMIT_UNKNOWN',category='configuration',retry_after=3600)
+            lengths.append(n)
     limit=min(lengths)
-    return dict(policy='mammoth-free-decision-v1',decision_model=selected,collection_model=SUPER,pricing_verified_zero=True,
+    from .decision_tokens import policy
+    token_policy=policy(limit)
+    result=dict(policy='mammoth-free-decision-v1',decision_model=selected,collection_model=SUPER,pricing_verified_zero=True,
         protocol='typed-decisions',context_length=limit,first_byte_limit=min(22000,int(limit*.60)),second_byte_limit=min(28000,int(limit*.79)),
         byte_policy='conservative-UTF8-envelope-budget-with-template-headroom-not-exact-token-count',
         endpoint_count=len(endpoints),endpoint_names=[r.get('name') for r in endpoints],metadata_only_preflight=True,implicit_model_fallback=False)
+    result.update(token_policy)
+    if token_policy:result.update(first_byte_limit=24000,second_byte_limit=36000,byte_policy='dual-token-and-byte-budget-with-4096-template-reserve')
+    return result
