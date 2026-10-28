@@ -46,6 +46,8 @@ def collect(task,post,root,checkpoint,*,capture_fn=capture,browser=True):
         if adapted.get('question',{}).get('type')=='discrete':adapted['question']['type']='numeric'
         item=next(x for x in metaculus(adapted) if x['question_id']==qid);engine.question(**item)
         profile=collection_profile();profile['parameters'].update(orderbook=False,submit=False,trade=False)
+        from pipeline_v2.research_query import POLICY as RESEARCH_POLICY
+        profile['parameters']['mandatory_research_query_policy']=RESEARCH_POLICY
         profile['parameters'].pop('post_capture_trade_history',None)
         rid=engine.new_run(qid,profile);task.update(capture_run_id=rid,execution_profile=profile)
         aid,owner=engine.start(qid,rid,'admission');engine.finish(qid,rid,'admission',aid,owner,'succeeded');checkpoint()

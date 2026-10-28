@@ -219,14 +219,15 @@ class LiveTools:
             if value and all(value!=previous for _,previous in keys):keys.append((name,value))
         ensure(bool(keys),"MISSING_"+provider.upper()+"_KEY")
         return keys
-    def exa_search(self,query,phase="acquisition"):
-        # One physical request per question, including failed/ambiguous attempts.
+    def exa_search(self,query,phase="acquisition",*,slot='base'):
+        # Separate once-only base/research slots; failures never reset either slot.
+        ensure(slot in {'base','research'},'INVALID_EXA_SEARCH_SLOT')
         ensure(self.question_id is not None,"EXA_QUESTION_ID_REQUIRED")
         name,key=self.keys("exa")[0]
         params=dict(type="auto",numResults=6,contents={"highlights":True})
         value,meta=self.transport.json("search","POST","https://api.exa.ai/search",
             payload=dict(query=query,**params),headers={"x-api-key":key,"Content-Type":"application/json"},
-            timeout=35,provider="exa",credential=name,once="question/"+self.question_id+"/exa")
+            timeout=35,provider="exa",credential=name,once="question/"+self.question_id+"/exa"+('/research' if slot=='research' else ''))
         try:
             ensure(isinstance(value,dict) and isinstance(value.get("results"),list),"EXA_RESULT_FORMAT")
             results=[];extras={"candidate_metadata":{}}
@@ -250,6 +251,7 @@ class LiveTools:
         except Exception as exc:
             error=exc if isinstance(exc,PipelineError) else PipelineError("EXA_RESULT_FORMAT")
             error.metadata=meta;raise error from None
+    def exa_research_search(self,query,phase='acquisition'):return self.exa_search(query,phase,slot='research')
     def search(self,query,phase="acquisition"):
         params=dict(search_depth="advanced",max_results=6,include_answer=False)
         keys=self.keys("tavily")
@@ -342,7 +344,7 @@ class FrozenTools:
         return observation,text
 
 
-def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplement_rounds=3,seed_queries=None,max_pages=10,reviewer=None,on_first_http=None):
+def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplement_rounds=3,seed_queries=None,max_pages=10,reviewer=None,on_first_http=None,research_planner=None):
     aid,owner=engine.start(qid,rid,"acquisition",lease_seconds=900)
     record=engine.repo.get_question(qid);run=find_run(record,rid)
     first_dispatch=[False]
@@ -370,6 +372,9 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
     trace_policy=run['execution_profile']['parameters'].get('source_trace_policy')
     trace_enabled=trace_policy==TRACE_POLICY
     max_gap_searches=run['execution_profile']['parameters'].get('max_gap_searches',2)
+    from .research_query import ResearchQuery,POLICY as RESEARCH_POLICY,is_research,gap_count,SCHEMA as RESEARCH_SCHEMA,SYSTEM as RESEARCH_SYSTEM
+    research_enabled=run['execution_profile']['parameters'].get('mandatory_research_query_policy')==RESEARCH_POLICY
+    research_summary=None
     previous=[s for s in record["evidence"]["sources"] if s["run_id"]==rid]
     materials=[assess(s,record["evidence"]["texts"].get(s.get("text_sha256"))) for s in previous]
     gaps=[dict(code=s.get("error_code") or "NO_READABLE_TEXT",severity="warning",source_id=s["source_id"]) for s in previous if s["status"]!="extracted"]
@@ -524,7 +529,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         # The optional tool hook is absent only on injected offline fixture adapters.
         # Real/frozen adapters save the Exa result or an explicit failure/cache gap.
         if hasattr(tools,"exa_search"):
-            previous_exa=[s for s in record["searches"] if s["provider"]=="exa"]
+            previous_exa=[s for s in record["searches"] if s["provider"]=="exa" and not is_research(s)]
             if not previous_exa:search(seeds['exa'],"acquisition","exa")
             elif not any(s['run_id']==rid for s in previous_exa):
                 gaps.append(dict(code="EXA_PREVIOUS_QUESTION_ATTEMPT",severity="warning",detail="Question-level single Exa attempt already used; no new request."))
@@ -532,6 +537,21 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         # Retrying this Run reuses its saved seed attempt instead of silently repeating it.
         if not any(s["run_id"]==rid and s["provider"]=="tavily" and s["phase"]=="acquisition" for s in record["searches"]):
             search(seeds['tavily'],"acquisition","tavily")
+        if research_enabled:
+            current=engine.repo.get_question(qid)
+            required_query=ResearchQuery(engine.repo.root,qid,rid,definition,[s for s in current['searches'] if s['run_id']==rid and not is_research(s)])
+            generate=research_planner or (lambda state:router.chat(RESEARCH_SYSTEM,state,max_tokens=1400,json_mode=True,json_schema=RESEARCH_SCHEMA,transient_attempts=2))
+            required_query.plan(generate)
+            for provider in ('exa','tavily'):
+                if any(s['provider']==provider and is_research(s) for s in current['searches'] if s['run_id']==rid):continue
+                method=(getattr(tools,'exa_research_search',None) or tools.exa_search) if provider=='exa' else tools.search
+                observation=required_query.search(provider,lambda query,fn=method:fn(query,'acquisition'))
+                search_id=engine.search(qid,rid,aid,owner,observation)
+                for rank,candidate in enumerate(observation['results'],1):
+                    candidate_refs.setdefault(candidate['url'],(search_id,rank));register(candidate['url'])
+                if observation['status'] in {'failed','not_dispatched'}:gaps.append(dict(code=observation['error_code'] or 'RESEARCH_SEARCH_FAILED',severity='warning',search_id=search_id))
+            research_summary=required_query.summary()
+            if not research_summary['model_generated']:gaps.append(dict(code='RESEARCH_QUERY_DEGRADED',severity='warning',detail=research_summary.get('error_code') or 'QUERY_MODEL_UNAVAILABLE'))
         required=definition["resolution_source_urls"]
         primary_failed=False
         for url in required[:max_pages]:
@@ -555,7 +575,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                     from .source_trace import anchor_catalog
                     state.update(source_trace_policy=trace_policy,primary_source_leads=trace_leads(),
                         search_anchors=anchor_catalog(definition,[s for s in current['evidence']['sources'] if s['run_id']==rid],current['evidence']['texts']),
-                        remaining_gap_searches=max(0,max_gap_searches-max(0,sum(s['provider']=='tavily' for s in current['searches'] if s['run_id']==rid)-1)))
+                        remaining_gap_searches=max(0,max_gap_searches-gap_count([s for s in current['searches'] if s['run_id']==rid])))
                 try:action=planner(state)
                 except PipelineError as exc:
                     if exc.code=='CAPTURE_START_DEADLINE':raise
@@ -584,7 +604,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                         existing=[s for s in current['searches'] if s['run_id']==rid]
                         sources=[s for s in current['evidence']['sources'] if s['run_id']==rid]
                         bound_action,binding_error=bind_search_anchor(definition,sources,current['evidence']['texts'],action)
-                        code='GAP_SEARCH_LIMIT' if max(0,sum(s['provider']=='tavily' for s in existing)-1)>=max_gap_searches else binding_error or gap_search_check(definition,sources,current['evidence']['texts'],existing,bound_action)
+                        code='GAP_SEARCH_LIMIT' if gap_count(existing)>=max_gap_searches else binding_error or gap_search_check(definition,sources,current['evidence']['texts'],existing,bound_action)
                         if code:
                             from .contracts import canonical
                             invalid_search_actions+=1
@@ -666,7 +686,7 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
         if on_first_http is not None:ensure(first_dispatch[0],'CAPTURE_NO_EVIDENCE_REQUEST')
         from .review_lifecycle import capture_review
         review=capture_review(materials,gaps)
-        return engine.seal(qid,rid,aid,owner,materials,gaps=gaps,context=dict(final_review=review,evidence_admission_policy=ADMISSION_POLICY,seed_query_policy=seed_policy,retrieval_iteration_policy=iteration_policy,source_trace_policy=trace_policy,max_gap_searches=max_gap_searches,planner_request_policy='same-key-5xx-two-attempts-v1',planner_failure_handoff_policy='saved-candidates-read-failure-stall-v2',planner_handoff_page_attempts=handoff_attempts),temporal_policy="retrospective_unverified" if tools.offline else "prospective",actual_usage=transport.actual_usage())
+        return engine.seal(qid,rid,aid,owner,materials,gaps=gaps,context=dict(final_review=review,evidence_admission_policy=ADMISSION_POLICY,seed_query_policy=seed_policy,retrieval_iteration_policy=iteration_policy,source_trace_policy=trace_policy,max_gap_searches=max_gap_searches,mandatory_research_query=research_summary,planner_request_policy='same-key-5xx-two-attempts-v1',planner_failure_handoff_policy='saved-candidates-read-failure-stall-v2',planner_handoff_page_attempts=handoff_attempts),temporal_policy="retrospective_unverified" if tools.offline else "prospective",actual_usage=transport.actual_usage())
     except Exception as exc:
         engine.finish(qid,rid,"acquisition",aid,owner,"failed",code=exc.code if isinstance(exc,PipelineError) else "ACQUISITION_ERROR",summary=type(exc).__name__,actual_usage=transport.actual_usage())
         raise

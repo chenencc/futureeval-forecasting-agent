@@ -23,6 +23,22 @@ Metaculus eligibility remains separate from market tags and opening rules.
 The shared source lock prevents untracked divergence; update it deliberately
 and run the shared regression tests when updating either consuming project.
 
+New Metaculus captures additionally require one durable, question-specific
+Nemotron 3.5 research query after the existing base Exa and Tavily searches.
+The identical generated query is searched once with each provider before page
+reads, even when a rule URL is already available. The original two Tavily gap
+search slots remain separate: at most two Exa plus four Tavily logical searches
+per ordinary new capture. Physical credential failover and bounded model 5xx
+retry can add attempts; existing provider/daily budgets and deadlines still apply.
+
+The query, rationale, input identity, model result and channel observations are
+saved locally and join the existing one-final-HF-commit policy. Restoring the
+capture reuses the saved query/results rather than issuing new calls. Ambiguous
+reserved calls are recorded and not blindly repeated. If query generation is
+unavailable or invalid, both search slots use an explicitly labeled deterministic
+degraded query; this never claims a successful model generation. This new search
+stage does not itself fix unrelated-link prioritization or prove body quality.
+
 ## Data
 
 Analysis now reuses the collector's saved Nemotron review bindings to prioritize

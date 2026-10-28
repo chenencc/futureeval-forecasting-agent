@@ -8,7 +8,13 @@
     "pipeline_v2/acquisition.py": {
       "source": "shared-acquisition",
       "sha256": "e29474bcbb795580e8a1c76e53e7f51a8802acdc64873dfea101bfd2b3fe8082",
-      "normalized_sha256": "9aa2c5748f7af22bac4a1cfe12634872dc0afb8dfbc5f98db85f42db48676ea7"
+      "normalized_sha256": "96275203005f0be1d9b428febfcd189e8312efcfc24c3ee6f8f5f830adb6248f",
+      "upstream_normalized_sha256": "9aa2c5748f7af22bac4a1cfe12634872dc0afb8dfbc5f98db85f42db48676ea7",
+      "local_patch": {
+        "policy": "mandatory-question-research-query-v1",
+        "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
+        "description": "Opt-in mandatory query hook, separate once-only Exa research slot, and exclusion of fixed research searches from later gap-search cap. Default legacy callers do not enable new query generation."
+      }
     },
     "pipeline_v2/admission.py": {
       "source": "shared-acquisition",
