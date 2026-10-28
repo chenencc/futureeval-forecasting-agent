@@ -22,3 +22,10 @@ recognizes the ClinicalTrials empty shell, rejects demonstrable season/value
 review contradictions, and excludes generic policy navigation. The narrow
 ClinicalTrials API adapter and period validator are new local modules, not
 claimed as upstream code. Original bodies and failed review receipts are kept.
+
+
+`goal-aligned-research-query-v1` is a local extension to the opt-in query and
+acquisition flow, with bounded observed-candidate follow-through and original-only
+reading of invalid-date review bodies. The patched source lock preserves upstream
+identity separately. Evidence packing version3 is local Metaculus adapter logic,
+not a claim that the upstream market deployment has changed.

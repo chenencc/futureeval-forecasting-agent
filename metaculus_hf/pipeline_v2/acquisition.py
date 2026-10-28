@@ -680,6 +680,13 @@ def capture(engine:Engine,qid,rid,*,tools=None,planner=None,max_rounds=6,supplem
                         retrieval_stalled=True;break
             else:gaps.append(dict(code="AGENT_ROUND_LIMIT",severity="warning",detail=phase))
             if retrieval_stalled:break
+        if research_enabled and len(attempted)<max_pages:
+            from .research_design import reading_candidate
+            saved=engine.repo.get_question(qid)
+            candidate=reading_candidate(definition,[s for s in saved['searches'] if s['run_id']==rid],attempted,[*definition['resolution_source_urls'],*background_refs])
+            if candidate:
+                gaps.append(dict(code='RESEARCH_CANDIDATE_FOLLOWTHROUGH',severity='info',detail=candidate))
+                fetch(candidate)
         review_pending_materials(engine.repo.get_question(qid),materials,definition,reviewer,gaps,citation_reference='index')
         if reviewer is not None and not readable_body_exists() and len(attempted)<max_pages:
             before=len(materials);read_next_candidate(closing=True)

@@ -327,3 +327,33 @@ narrow guard does not certify arbitrary review prose. If final review leaves no
 usable body, closing recovery may read at most two more saved candidates within
 the original page/deadline/provider budgets, even when an earlier planner
 handoff was used. It does not issue a new search or overwrite the old snapshot.
+
+
+### Development: research-query marginal value
+
+`goal-aligned-research-query-v1` retains one mandatory Nemotron3.5 query and the
+same query on Exa and Tavily. The prompt binds the research goal to the exact
+metric, population and historical period. A narrow quarterly guard rejects a
+historical-baseline plan that searches only for the future target quarter;
+unrecognized semantics are not claimed as validated. Degraded fallback is
+explicitly marked. Platform/forecast-mirror candidates are excluded from query
+inputs. Once-only request slots, physical-attempt accounting and budgets remain.
+
+Before final review, opt-in capture can read at most one eligible additional URL
+observed in the research results and absent from base results and attempted/rule
+URLs, within the existing page and time budgets. It rejects concatenated-protocol
+paths and prefers a different document to a known path's query variant. Unknown
+query parameters are not silently removed. Source ranking is a retrieval cue,
+not evidence approval. A malformed model review date keeps the binding pending;
+independent original-body reading strips the unsupported review. Valid future
+dates, FAQ/navigation pages and explicit hard mismatches remain excluded.
+
+`review-bound-original-packing/3` defers weak quarterly background while retaining
+review-bound drivers and a readable-body fallback. Literal metric paragraphs in
+quarterly documents and complete delivery table cells carry their saved date,
+period, unit/header context. No values are synthesized or inferred. Selected
+bytes/offsets are auditable; weak-only fallback and omissions are explicit.
+The heuristics are narrow and do not certify semantic completeness or forecast
+accuracy. Evaluate queries by distinct relevant bodies actually delivered to
+analysis, not URL novelty alone. Old-question current-data tests are not historical
+as-of backtests. Development evidence and raw failures remain outside this repo.

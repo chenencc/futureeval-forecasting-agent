@@ -15,6 +15,7 @@ The SAME query will be searched once with Exa and once with Tavily. Do not retur
 Make it meaningfully different from the two base queries. Preserve the exact subject/event/metric. Ask what independent information would improve a forecast, not merely whether the future result has already happened.
 For a future event count, seek historical same-event counts and the exposure/format driving the count (matches, legs, opportunities), or a clearly identified missing factual driver. For legal events, seek actual proceedings and enforcement stages. For measurements, seek historical values, definitions and relevant leading indicators.
 Choose the highest-value missing angle for this particular question. Use a concise natural search query, at most 400 characters. No invented facts, dates or case IDs. site: domains are allowed only if present in the supplied question or observed candidates.
+Make research_goal narrow enough that this ONE query actually searches for it. Before returning, check the query contains the metric and the period/population named in that goal. If the goal is prior-quarter data, the query must name prior quarters or explicitly seek historical/seasonal data, not just repeat the target quarter. Separate an already observed baseline from a future target result. Do not expand Grand Prix wins into sprint wins, recruiting studies into all AI studies, or digital advertising into total revenue. Existing independent candidate titles are leads, not proof those bodies were read.
 evidence_kind must be historical_baseline, current_status, driver, mechanism, definition or comparison. research_goal and why_this_query must state the information sought and why the base searches alone do not cover it. Do not request prediction-market probabilities.'''
 SCHEMA=dict(type='object',properties=dict(query=dict(type='string'),research_goal=dict(type='string'),why_this_query=dict(type='string'),
     evidence_kind=dict(type='string',enum=['historical_baseline','current_status','driver','mechanism','definition','comparison'])),
@@ -40,12 +41,17 @@ def validate(plan,state):
     for site in re.findall(r'\bsite:([^\s]+)',query,re.I):
         host=site.strip('"\x27').split('/')[0].lower().removeprefix('*.')
         ensure(any(h==host or (h or '').endswith('.'+host) for h in hosts),'RESEARCH_QUERY_UNOBSERVED_DOMAIN')
+    from .research_design import alignment_error
+    error=alignment_error({**plan,'query':query},state)
+    ensure(error is None,error or 'RESEARCH_QUERY_GOAL_MISMATCH')
     return {**plan,'query':query}
 
 def fallback(state):
     title=re.sub(r'^(?:how many|what will|will|when will|does|is|are)\s+','',state['question']['title'],flags=re.I).rstrip(' ?')
     suffix=' historical baseline statistics format underlying drivers'
-    return dict(query=(title[:400-len(suffix)]+suffix),research_goal='Independent historical baselines and factual drivers for the exact subject.',
+    from .research_design import fallback_query
+    query=fallback_query(state,title[:400-len(suffix)]+suffix)
+    return dict(query=query,research_goal='Independent historical baselines and factual drivers for the exact subject.',
         why_this_query='The dedicated query model was unavailable or invalid; deterministic degraded research query, not model-generated.',evidence_kind='historical_baseline')
 
 class ResearchQuery:
@@ -56,8 +62,11 @@ class ResearchQuery:
         for provider in ('exa','tavily'):
             first=next((s for s in base_searches if s['provider']==provider and s['phase']=='acquisition' and not is_research(s)),None)
             if first:bases.append(first)
+        from .retrieval_plan import candidate_exclusion
+        from .research_design import constraints
         self.input=dict(question=deepcopy(definition),base_searches=[{k:s[k] for k in ('provider','query','status')} for s in bases],
-            base_candidates=[{k:r.get(k) for k in ('url','title')} for s in bases for r in s['results']])
+            base_candidates=[{k:r.get(k) for k in ('url','title')} for s in bases for r in s['results'] if not candidate_exclusion(r)],
+            design_constraints=constraints(definition))
         self.identity=dict(policy=POLICY,question_id=qid,run_id=rid,input_sha256=digest(self.input),system_sha256=digest(SYSTEM))
         self.state=json.loads(self.path.read_bytes()) if self.path.exists() else dict(identity=self.identity,status='new',channels={})
         ensure(self.state['identity']==self.identity,'FROZEN_RESEARCH_QUERY_INPUT_CHANGED')

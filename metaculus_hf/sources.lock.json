@@ -8,30 +8,32 @@
     "pipeline_v2/acquisition.py": {
       "source": "shared-acquisition",
       "sha256": "4c304533b28a0e4e996e3fb896c0aafeb0beec0f3952542983c40a1be72bf763",
-      "normalized_sha256": "b11d8a9f1c81e45fde3484002ebdf54dccc8bf0edaddfb3290ac245cbd014684",
+      "normalized_sha256": "e4ab2e4826bf6b138dedae350707a6fb4dc40518cc738e2d3b1a46829e8bf69e",
       "upstream_normalized_sha256": "9aa2c5748f7af22bac4a1cfe12634872dc0afb8dfbc5f98db85f42db48676ea7",
       "local_patch": {
         "policies": [
           "mandatory-question-research-query-v1",
           "topic-bound-independent-candidates-v1",
-          "saved-body-quality-recovery-v1"
+          "saved-body-quality-recovery-v1",
+          "goal-aligned-research-query-v1"
         ],
         "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
-        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained. Additional local bounded closing recovery after unusable reviewed bodies; official ClinicalTrials structured data with exact response provenance; dynamic shell and literal season/value contradiction guards."
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained. Additional local bounded closing recovery after unusable reviewed bodies; official ClinicalTrials structured data with exact response provenance; dynamic shell and literal season/value contradiction guards. Research goal/quarter alignment and one eligible observed new-URL follow-through; malformed reviewer dates permit original-body-only independent reading without approving date claims."
       }
     },
     "pipeline_v2/admission.py": {
       "source": "shared-acquisition",
       "sha256": "a11f4270256c18d1d33464e2b5da054600d0d3aa319c8f8ef134953f7097d8fb",
-      "normalized_sha256": "12d42d9534f9fb8a2e497ef466fc521db7e834572bee2159700299c10de96f67",
+      "normalized_sha256": "e04c45db11691491aa639165ac756b4524e1dc7c9c81ece0b659c820ff2e3ad2",
       "upstream_normalized_sha256": "0242557103eb39bc85242ca957d1a269a5e571a8edc94bb9c9cde1eb3246f1ba",
       "local_patch": {
         "policies": [
           "topic-bound-independent-candidates-v1",
-          "saved-body-quality-recovery-v1"
+          "saved-body-quality-recovery-v1",
+          "goal-aligned-research-query-v1"
         ],
         "upstream_base_commit": "4683609a35bff5f4a17590729f31679b77ef2390",
-        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained. Additional local bounded closing recovery after unusable reviewed bodies; official ClinicalTrials structured data with exact response provenance; dynamic shell and literal season/value contradiction guards."
+        "description": "Documented opt-in mandatory research query where enabled; exclude generic platform references/forecast mirrors from independent evidence, register observed background links, require topical primary leads, and read saved candidates after duplicate searches. Original rules, budgets and immutable bodies are retained. Additional local bounded closing recovery after unusable reviewed bodies; official ClinicalTrials structured data with exact response provenance; dynamic shell and literal season/value contradiction guards. Research goal/quarter alignment and one eligible observed new-URL follow-through; malformed reviewer dates permit original-body-only independent reading without approving date claims."
       }
     },
     "pipeline_v2/contracts.py": {
@@ -687,6 +689,20 @@
       "description": "New local helper, not copied upstream.",
       "sha256": "6430df66827e56258814ebfd347a20cb0e8d360313b93e58fb49521f14b15371",
       "normalized_sha256": "6430df66827e56258814ebfd347a20cb0e8d360313b93e58fb49521f14b15371"
+    },
+    "pipeline_v2/research_query.py": {
+      "source": "local-research-extension",
+      "policy": "goal-aligned-research-query-v1",
+      "description": "Local module, not claimed as upstream code.",
+      "sha256": "f9edc6028b1b170e1023804734e88e483d7a8ea96b51d962b245523303d0d339",
+      "normalized_sha256": "f9edc6028b1b170e1023804734e88e483d7a8ea96b51d962b245523303d0d339"
+    },
+    "pipeline_v2/research_design.py": {
+      "source": "local-research-extension",
+      "policy": "goal-aligned-research-query-v1",
+      "description": "Local module, not claimed as upstream code.",
+      "sha256": "9c08e378708328ba61c6ef5af143b04b795f36c323b38a9cd8ce8e6994649a13",
+      "normalized_sha256": "8ed9db78d8c2082188173b7135da1e2c1d71d1f9226bc95bf9a2e648de026197"
     }
   },
   "line_ending_policy": "lf-normalized-source-v1"

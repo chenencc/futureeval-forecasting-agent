@@ -4,7 +4,7 @@ import hashlib,json,re
 from . import decision_model
 from . import evidence_structure as structure
 
-POLICY='review-bound-original-packing/2'
+POLICY='review-bound-original-packing/3'
 
 class PackingError(ValueError):
     category='configuration'
@@ -29,9 +29,12 @@ def layout(text):
         if end-index>=2:
             header_end=index+1
             if header_end<end and re.fullmatch(r'[\s|:\-]+',rows[header_end][2]):header_end+=1
+            caption_index=index-1
+            while caption_index>=0 and not rows[caption_index][2].strip():caption_index-=1
+            caption=(rows[caption_index][0],rows[caption_index][1]) if caption_index>=0 and rows[index][0]-rows[caption_index][0]<=200 else None
             tables.append(dict(start=rows[index][0],end=rows[end-1][1],header=(rows[index][0],rows[header_end-1][1]),
                 rows=[(a,b) for a,b,_ in rows[header_end:end]],
-                caption=(rows[index-1][0],rows[index-1][1]) if index and rows[index-1][2].strip() else None,
+                caption=caption,
                 note=(rows[end][0],rows[end][1]) if end<len(rows) and re.match(r'\s*(?:notes?\b|\*|the status\b)',rows[end][2],re.I) else None))
         index=end
     return rows,tables
@@ -58,6 +61,7 @@ def prepare(packet,source):
     for hashed,group in groups.items():
         item=group['item'];text=group['text'];body_lines,tables=layout(text)
         designated=structure.primary(packet['question'],item['url'])
+        background_mismatch=bool(group['bindings']) and all(b.get('forecast_relevance')=='context' and (b.get('relevance') or {}).get('metric')=='mismatch' for b in group['bindings'])
         # The full capture metadata remains in context and the saved packet audit.
         original=item.get('capture_metadata') or {}
         item['capture_metadata']={k:deepcopy(original[k]) for k in ('retrieved_at_utc','published_at','http_status','captured_at','extraction_version') if k in original}
@@ -74,9 +78,12 @@ def prepare(packet,source):
                 if old['kind']=='document_header' and kind=='body':old['kind']='body'
                 old['priority']=min(priority,old['priority']);old['dependencies']=list(dict.fromkeys(old['dependencies']+list(deps)));return ident
             library.append(span);words=structure.words(span['text'])
+            focus=structure.quarterly_focus(packet['question'],span['text'])
+            deferred='reviewed_context_metric_mismatch' if background_mismatch and not (designated and focus) else 'quarterly_metric_absent' if focus==0 and not designated and priority>0 else None
+            if not deferred and priority>0 and not designated and structure.old_quarterly_context(packet['question'],span['text']):deferred='old_unbound_quarterly_context'
             meta[ident]=dict(kind=kind,priority=priority,dependencies=list(deps),relevance=sum(4 if t in entities else 1 for t in terms if t in words),
                 source_id=item['source_id'],start=a,end=b,narrative_fraction=narrative,designated_source=designated,
-                navigation_fraction=structure.navigation_fraction(span['text']))
+                navigation_fraction=structure.navigation_fraction(span['text']),quarterly_focus=focus,deferred_reason=deferred)
             return ident
         # Visible document dates are original text, never inferred from fetch time.
         date_ends=[]
@@ -113,16 +120,24 @@ def prepare(packet,source):
                         if x<b<=y and table['start']<=x<table['end']:b=y
             priority=0 if binding.get('forecast_relevance') in {'direct','baseline'} or binding.get('source_role')=='historical_baseline' else 1 if designated else 2
             if structure.navigation_fraction(text[a:b])>.2:continue
-            review_ranges.append((a,b,priority))
+            review_ranges.append((a,b,priority,binding.get('forecast_relevance')=='driver'))
         table_ids=[]
         for table in tables:
             header=add(*table['header'],'table_header')
             caption=add(*table['caption'],'table_caption') if table['caption'] else None
             note=add(*table['note'],'table_note') if table['note'] else None
             deps=[x for x in [caption,header,note] if x]
-            rows=[add(a,b,'table_row',deps=deps) for a,b in table['rows']]
+            rows=[]
+            for a,b in table['rows']:
+                context=text[table['header'][0]:table['header'][1]]+text[a:b]
+                if table['caption']:context=text[table['caption'][0]:table['caption'][1]]+context
+                metric=structure.exact_quarter_metric(packet['question'],context)
+                ident=add(a,b,'table_row',priority=0 if metric else 3,deps=deps)
+                # Numeric cells inherit their explicitly saved column metric.
+                if metric:meta[ident]['deferred_reason']=None
+                rows.append(ident)
             table_ids.append((table,header,rows,deps))
-        for a,b,priority in review_ranges:
+        for a,b,priority,is_driver in review_ranges:
             deps=[]
             for table,header,row_ids,required in table_ids:
                 if a<table['end'] and b>table['start']:
@@ -139,7 +154,8 @@ def prepare(packet,source):
                                 window_deps=[i for i in required if not (start<=meta[i]['start'] and meta[i]['end']<=end)]
                             window_id=add(start,end,'review_table_window',priority,window_deps)
                             meta[window_id]['review_table_rows']=len(touched)
-            add(a,b,'review_bound',priority,deps)
+            ident=add(a,b,'review_bound',priority,deps)
+            if is_driver:meta[ident]['deferred_reason']=None
         # Exclude table ranges from ordinary chunking: a row cannot be bisected.
         cursor=0
         for a,b in [(t['start'],t['end']) for t in tables]+[(len(text),len(text))]:
@@ -161,11 +177,13 @@ def select(packet,state,limit,registry,reasons=()):
     state=deepcopy(state);info=packet['evidence_packing'];meta=info['candidates'];by_id={e['evidence_id']:e for e in packet['evidence']}
     source_map={s['source_id']:{k:deepcopy(s[k]) for k in ('source_id','url','body_sha256','capture_metadata','saved_body_truncated','saved_body_characters') if k in s} for s in packet['sources']}
     if measure(state,registry)>limit:raise PackingError('DECISION_BASE_INPUT_TOO_LARGE')
-    kept={e['evidence_id'] for e in state['evidence']};skipped=[]
+    kept={e['evidence_id'] for e in state['evidence']};skipped=[];deferred=[];weak_only_fallback=False
     def covered(span,evidence):return any(x['source_id']==span['source_id'] and x['start']<=span['start'] and x['end']>=span['end'] for x in evidence)
     def overlap(span):return any(x['source_id']==span['source_id'] and max(x['start'],span['start'])<min(x['end'],span['end']) for x in state['evidence'])
-    def offer(ident):
+    def offer(ident,allow_weak=False):
         if ident in kept or covered(by_id[ident],state['evidence']):return
+        if meta[ident]['deferred_reason'] and not allow_weak:
+            deferred.append(ident);return
         span=by_id[ident]
         # Later filler never crowds an already-selected bound passage with repeats.
         if meta[ident]['kind'] in {'body','review_bound','review_table_window'} and overlap(span):return
@@ -195,6 +213,11 @@ def select(packet,state,limit,registry,reasons=()):
     for index in range(max((len(g) for g in groups.values()),default=0)):
         for group in ordered:
             if index<len(group):offer(group[index])
+    # A relevance heuristic must not relabel the only readable body as absent.
+    if not state['evidence']:
+        for ident in dict.fromkeys(deferred):
+            offer(ident,allow_weak=True)
+            if state['evidence']:weak_only_fallback=True;break
     if packet['evidence'] and not state['evidence']:raise PackingError('DECISION_EVIDENCE_BUDGET_EXHAUSTED')
     delivered=state['evidence'];review_coverage=[]
     state['context_omitted']=any(not covered(e,delivered) for e in packet['evidence'])
@@ -202,6 +225,7 @@ def select(packet,state,limit,registry,reasons=()):
         if m['kind']=='review_bound':review_coverage.append(dict(evidence_id=ident,complete=covered(by_id[ident],delivered)))
     return state,dict(policy=POLICY,selected_ids=sorted(kept),omitted_ids=[x for x in meta if x not in kept],
         request_bytes=measure(state,registry),request_byte_limit=limit,routing_focus=list(reasons),budget_omitted_ids=skipped,
+        low_focus_deferred=[dict(evidence_id=i,reason=meta[i]['deferred_reason']) for i in dict.fromkeys(deferred) if i not in kept],weak_only_fallback=weak_only_fallback,
         review_coverage=review_coverage,table_rows_selected=sum(m['kind']=='table_row' and covered(by_id[i],delivered) for i,m in meta.items()),
         structured_coverage={group:dict(available=sum(m.get('record_rows',0) for m in meta.values() if m.get('coverage_group')==group),
             delivered=sum(m.get('record_rows',0) for i,m in meta.items() if m.get('coverage_group')==group and covered(by_id[i],delivered))) for group in {m['coverage_group'] for m in meta.values() if m.get('coverage_group')}},

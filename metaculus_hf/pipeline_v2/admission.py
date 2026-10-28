@@ -126,10 +126,11 @@ def admitted_view(snapshot):
 
 ORIGINAL_POLICY='forecast-relevant-independent-reading-v2'
 # These are incomplete review states, not affirmative approvals. Explicit
-# exclusion/mismatch, impossible dates and known navigation/market bodies stay out.
+# exclusion/mismatch, verified future dates and known navigation/market bodies stay out.
+# A malformed reviewer date is an invalid review, not proof the saved body is future.
 UNFINISHED_REVIEW={'REVIEW_REQUIRED','UNBOUND_REVIEW','TARGET_RELEVANCE_UNCONFIRMED',
     'INVALID_REVIEW','EXPLICIT_APPROVAL_REQUIRED','CONTENT_KIND_REQUIRED',
-    'SOURCE_ROLE_UNCONFIRMED','REVIEW_UNFINISHED','FORECAST_RELEVANCE_REQUIRES_INDEPENDENT_READING'}
+    'INVALID_AS_OF_DATE','SOURCE_ROLE_UNCONFIRMED','REVIEW_UNFINISHED','FORECAST_RELEVANCE_REQUIRES_INDEPENDENT_READING'}
 ORIGINAL_WARNING=("Some source bodies are UNVERIFIED: upstream relevance or literal citation review did not complete. "
     "Independently assess those saved bodies against the exact rules. Their entity, metric, time and source role "
     "are not verified facts. A missing review is not missing information and missing target observations are not No. "
@@ -145,7 +146,7 @@ def forecast_reading_reason(material):
     if s.get('status')!='extracted':return None
     if rejection(s,text):return None
     if b.get('content_kind') in {'market_probability','reference_index','irrelevant'}:return None
-    if b.get('coverage_note') in {'FUTURE_AS_OF_DATE','INVALID_AS_OF_DATE','WRONG_TARGET_PAGE','IRRELEVANT_CONTENT'}:return None
+    if b.get('coverage_note') in {'FUTURE_AS_OF_DATE','WRONG_TARGET_PAGE','IRRELEVANT_CONTENT'}:return None
     relevance=b.get('relevance') or {};use=b.get('forecast_relevance')
     if use=='none':return None
     if relevance.get('entity')=='mismatch' and use not in {'driver','context'}:return None
