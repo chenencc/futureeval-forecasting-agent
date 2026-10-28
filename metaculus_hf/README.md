@@ -509,3 +509,49 @@ synthetic four-document control retained contrary evidence, a driver and a
 baseline, and recognized irrelevant text. These narrow controls do not negate
 the real failures. Keep this reviewer optional and unpromoted; do not interpret
 HTTP success, valid JSON or model agreement as marketable intelligence quality.
+
+### Development: shared literal table geometry
+
+`metaculus_agent.table_evidence` is a source-independent saved-text parser. It
+recognizes explicit pipe tables (including HTML serializer rowspan/colspan
+annotations), CSV/TSV, homogeneous whitespace records, and flattened numeric rows
+with explicit quarter/year column labels. It has no site URLs, question IDs or
+model dependency. It preserves source SHA, exact spans, header paths, row
+dimensions, original numeric strings, missing cells, nearby period/unit context
+and short literal footnotes. It does not modify the source or multiply values.
+
+`parse(text)` returns structures and explicit layout gaps. `records(index)`
+returns individual numeric cells with their row/column dependencies. `bind(...)`
+requires the value, complete recognized period components and measurement label
+to belong to one cell. Cell IDs disambiguate otherwise identical values. Years,
+quarters, seasons, recognized month/day/time components and fiscal-year markers
+cannot be joined arbitrarily. Numeric strings use locale-conservative Decimal;
+comma grouping and parenthesized negatives are supported, decimal-comma inputs
+remain unrecognized. Blank/NA/dash cells never become zero.
+
+Units are derived only from explicit cell symbols, headers, Unit columns or
+adjacent declarations. A dollar symbol is not assigned USD. Missing units,
+mixed scales, and financial declarations with exceptions remain unresolved.
+Merged numeric values are not allocated over multiple periods. Grouped PDF
+headers that have lost coordinates, ragged rows and unresolved dense layouts
+produce gaps instead of guessed column associations. These limits mean detected
+table counts are not an exhaustive table/fact coverage measure.
+
+Independent review policy `blind-evidence-review/3` offers bounded program-bound
+table cells alongside ordinary citations. Claims may select `table_cell_id`;
+the program regenerates choices from the saved body and checks value/metric/
+period/unit associations. Existing free-form claims are also checked when their
+citation overlaps recognized tables. A structural mismatch downgrades the claim;
+unknown units prevent promotion. The program-bound record is retained beside
+the model's unverified interpretation. It does not certify that an interpretation
+is true merely because its fields belong to a table cell.
+
+The 2026-10-28 offline replay used 32 saved bodies from eight questions and
+identified 19 tables. Eleven real-source checks retained the NOAA ASO-2025 value,
+Tesla quarterly/annual delivery records and NYT quarterly baselines while
+rejecting cross-year/quarter/metric joins. Replaying previous Ultra outputs
+blocked the false ASO-2026 claim without another model request. Complex NYT
+grouped PDF headers and unit exceptions remained unverified. The updated suite
+passed 279 tests. This is structural validation, not a fresh Ultra or live
+collection acceptance. Workflow defaults and original snapshots remain intact.
+Old review policy jobs/caches are not silently reused under policy 3.
