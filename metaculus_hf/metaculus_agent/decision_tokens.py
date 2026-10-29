@@ -16,6 +16,9 @@ def _load(path):
     return Tokenizer.from_str(raw.decode('utf-8'))
 
 def available():
+    # The archived tokenizer is Mammoth-specific, never Mercury token accounting.
+    from .analysis_policy import DECISION_MODEL
+    if os.environ.get('METACULUS_DECISION_MODEL',DECISION_MODEL)!='baseten/mammoth-1:free':return False
     path=os.environ.get('METACULUS_DECISION_TOKENIZER_PATH','')
     if not path:return False
     _load(str(Path(path).resolve()))

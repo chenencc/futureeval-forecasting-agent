@@ -12,20 +12,25 @@ from test_debug_sequence import seed,Native,capture,analyze
 class PolicyTests(unittest.TestCase):
     def setUp(self):
         p=patch.dict(os.environ,dict(os.environ));p.start();self.addCleanup(p.stop)
-    def catalog(self,price='0',decisions=True,endpoints=1):
+    def catalog(self,price='0.00000002',decisions=True,endpoints=1,completion='0',request='0'):
         def get(req,**kwargs):
-            data={'data':dict(id=DECISION_MODEL,architecture={'output_modalities':['decisions'] if decisions else ['text']},endpoints=[dict(context_length=16384,pricing=dict(prompt=price,completion='0'))]*endpoints)}
+            self.assertEqual(req.full_url,'https://openrouter.ai/api/v1/models/inception/mercury-decide/endpoints')
+            data={'data':dict(id=DECISION_MODEL,architecture={'output_modalities':['decisions'] if decisions else ['text']},endpoints=[dict(context_length=16384,pricing=dict(prompt=price,completion=completion,request=request))]*endpoints)}
             return io.StringIO(json.dumps(data))
         return get
-    def test_free_typed_decision_endpoint_is_verified_without_inference(self):
+    def test_authorized_paid_typed_route_is_verified_without_inference(self):
         with patch.dict(os.environ,{'METACULUS_DECISION_MODEL':DECISION_MODEL}):
-            r=decision_route(opener=self.catalog());self.assertEqual(r['decision_model'],DECISION_MODEL);self.assertTrue(r['pricing_verified_zero']);self.assertFalse(r['implicit_model_fallback']);self.assertLess(r['second_byte_limit'],r['context_length'])
-    def test_nonfree_unknown_or_wrong_protocol_routes_fail_closed(self):
-        for price,typed in [('1',True),('invalid',True),('0',False)]:
+            r=decision_route(opener=self.catalog());self.assertEqual(r['decision_model'],DECISION_MODEL);self.assertFalse(r['pricing_verified_zero']);self.assertTrue(r['paid_route_authorized']);self.assertFalse(r['implicit_model_fallback']);self.assertLess(r['second_byte_limit'],r['context_length'])
+            self.assertEqual(r['pricing_usd_per_token'][0]['prompt'],'2E-8')
+    def test_excess_unknown_negative_nonfinite_or_wrong_protocol_routes_fail_closed(self):
+        for price,typed in [('1',True),('invalid',True),('-0.01',True),('NaN',True),('Infinity',True),('0',False)]:
             with self.assertRaises(AnalysisProviderError):decision_route(opener=self.catalog(price,typed))
         with self.assertRaises(AnalysisProviderError):decision_route(opener=self.catalog(endpoints=0))
         with patch.dict(os.environ,{'METACULUS_DECISION_MODEL':'unapproved/paid-model'}):
             with self.assertRaises(AnalysisProviderError):decision_route(opener=lambda *a,**k:self.fail('HTTP for unapproved model'))
+        for kw in (dict(completion='0.00000001'),dict(request='0.01')):
+            with self.assertRaises(AnalysisProviderError):decision_route(opener=self.catalog(**kw))
+        self.assertTrue(decision_route(opener=self.catalog('0.00000004'))['paid_route_authorized'])
     def test_auth_quota_policy_and_provider_are_distinct(self):
         self.assertEqual(classify(401).category,'configuration');self.assertEqual(classify(429).category,'quota')
         self.assertEqual(classify(404,'{"error":{"message":"No endpoints for data policy"}}').code,'ANALYSIS_ROUTING_POLICY_BLOCKED')

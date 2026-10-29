@@ -1,4 +1,4 @@
-"""Typed Mammoth Decisions transport; never parse generated prose as a decision."""
+"""Typed Mercury Decisions transport; never parse generated prose as a decision."""
 import json,math,re
 from copy import deepcopy
 from urllib.request import Request,urlopen
@@ -7,7 +7,7 @@ from .analysis_policy import DECISION_MODEL,classify
 
 MODEL=DECISION_MODEL
 ENDPOINT='https://openrouter.ai/api/alpha/decisions'
-VALIDATOR='mammoth-typed-probabilities/1'
+VALIDATOR='mercury-typed-probabilities/1'
 
 def request_payload(state,questions):
     """Carry each source identity once; saved state retains full span provenance."""
@@ -39,7 +39,7 @@ def probability(value):
     return value
 
 def validate(response,questions):
-    if not isinstance(response,dict) or not re.fullmatch(r'baseten/mammoth-1(?:-\d{8})?(?::free)?',str(response.get('model',''))):raise InvalidDecision('DECISION_MODEL_IDENTITY')
+    if not isinstance(response,dict) or not re.fullmatch(r'inception/mercury-decide(?:-\d{8})?',str(response.get('model',''))):raise InvalidDecision('DECISION_MODEL_IDENTITY')
     answers=response.get('answers')
     if not isinstance(answers,dict) or set(answers)!=set(questions):raise InvalidDecision('DECISION_ANSWER_KEYS')
     for key,q in questions.items():

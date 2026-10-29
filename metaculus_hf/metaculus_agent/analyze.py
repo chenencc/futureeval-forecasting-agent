@@ -1,4 +1,4 @@
-"""Saved original evidence into validated Mammoth typed decisions."""
+"""Saved original evidence into validated Mercury typed decisions."""
 import json,os
 from pathlib import Path
 from pipeline_v2.contracts import digest,now
@@ -28,7 +28,7 @@ def analyze(value,root,checkpoint):
     try:
         route=decision_route();save(root/'route.json',route);checkpoint()
         with installed(budget_root,'analysis-'+value['run_id'],checkpoint) as transport:
-            candidate=decision_analysis.run(source,root/'mammoth',route,checkpoint)
+            candidate=decision_analysis.run(source,root/'decision',route,checkpoint)
     except (Conflict,PersistenceError):raise
     except Exception as exc:
         events=transport.analysis_events if transport else []
@@ -44,7 +44,7 @@ def analyze(value,root,checkpoint):
     records={p.relative_to(root).as_posix():json.loads(p.read_text()) for p in root.rglob('*.json') if p.name!='input.json'}
     result=dict(schema='metaculus-analysis/1',question_id=value['question_id'],run_id=value['run_id'],snapshot_id=value['snapshot_id'],
         context_sha256=digest(value),analysis_input_sha256=digest(source),analysis_release=fallback.POLICY if candidate.get('forecast_origin')=='operational_default' else decision_analysis.PROTOCOL,algorithm_source_release='751145e604406278d6d39d75135668bf30a93b78',
-        research_model=None,collection_model='nvidia/nemotron-3.5-super-vl:free',decision_model=decision_model.MODEL,decision_model_attempted=bool(transport.analysis_events) if transport else False,analysis_route=route,provider_events=transport.analysis_events if transport else [],adapter='shared-snapshot-to-mammoth/1',original_reading=source['original_reading'],
+        research_model=None,collection_model='nvidia/nemotron-3.5-super-vl:free',decision_model=decision_model.MODEL,decision_model_attempted=bool(transport.analysis_events) if transport else False,analysis_route=route,provider_events=transport.analysis_events if transport else [],adapter='shared-snapshot-to-mercury/1',original_reading=source['original_reading'],
         forecast_origin=candidate.get('forecast_origin','original_evidence'),fallback=candidate.get('fallback'),collection_failure=value.get('collection_failure'),
         started_at=started,finished_at=now(),candidate=candidate,records=records)
     checkpoint();return result

@@ -1,11 +1,14 @@
-"""Explicit free analysis route and safe provider failures, separate from bad evidence."""
+"""Explicit paid decision route and safe provider failures, separate from evidence."""
 import json,os,time
 from decimal import Decimal
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from pipeline_v2.providers import SUPER
 
-DECISION_MODEL='baseten/mammoth-1:free'
+DECISION_MODEL='inception/mercury-decide'
+# User-authorized paid route; allow the published undiscounted input rate.
+# All prices are USD per token. No output or per-request surcharge is allowed.
+MAX_PROMPT_PRICE=Decimal('0.00000004')
 
 class AnalysisProviderError(Exception):
     provider_failure=True
@@ -38,10 +41,16 @@ def decision_route(*,opener=urlopen):
     endpoints=metadata.get('endpoints',[])
     if metadata.get('id')!=selected or not endpoints:raise AnalysisProviderError('ANALYSIS_ROUTE_UNAVAILABLE',retry_after=300,status=404)
     if 'decisions' not in metadata.get('architecture',{}).get('output_modalities',[]):raise AnalysisProviderError('ANALYSIS_DECISION_PROTOCOL_UNSUPPORTED',category='configuration',retry_after=3600)
+    prices=[]
     for row in endpoints:
-        try:free=all(Decimal(str(row['pricing'][k]))==0 for k in ['prompt','completion'])
-        except (ArithmeticError,ValueError,KeyError,TypeError):free=False
-        if not free:raise AnalysisProviderError('ANALYSIS_NONFREE_ROUTE_REFUSED',category='configuration',retry_after=3600)
+        try:
+            price={k:Decimal(str(row['pricing'][k])) for k in ('prompt','completion')}
+            price['request']=Decimal(str(row['pricing'].get('request','0')))
+            valid=(all(p.is_finite() and p>=0 for p in price.values()) and
+                   price['prompt']<=MAX_PROMPT_PRICE and price['completion']==0 and price['request']==0)
+        except (ArithmeticError,ValueError,KeyError,TypeError):valid=False
+        if not valid:raise AnalysisProviderError('ANALYSIS_PRICE_LIMIT_EXCEEDED',category='configuration',retry_after=3600)
+        prices.append(price)
     lengths=[r.get('context_length') for r in endpoints]
     if any(type(n)!=int or n<4096 for n in lengths):raise AnalysisProviderError('ANALYSIS_CONTEXT_LIMIT_UNKNOWN',category='configuration',retry_after=3600)
     # Respect a provider-specific prompt cap as well as its context window.
@@ -53,7 +62,10 @@ def decision_route(*,opener=urlopen):
     limit=min(lengths)
     from .decision_tokens import policy
     token_policy=policy(limit)
-    result=dict(policy='mammoth-free-decision-v1',decision_model=selected,collection_model=SUPER,pricing_verified_zero=True,
+    result=dict(policy='mercury-paid-decision-v1',decision_model=selected,collection_model=SUPER,
+        paid_route_authorized=True,pricing_verified_zero=all(p['prompt']==0 for p in prices),
+        pricing_usd_per_token=[{k:str(v) for k,v in p.items()} for p in prices],
+        max_prompt_usd_per_token=str(MAX_PROMPT_PRICE),
         protocol='typed-decisions',context_length=limit,first_byte_limit=min(22000,int(limit*.60)),second_byte_limit=min(28000,int(limit*.79)),
         byte_policy='conservative-UTF8-envelope-budget-with-template-headroom-not-exact-token-count',
         endpoint_count=len(endpoints),endpoint_names=[r.get('name') for r in endpoints],metadata_only_preflight=True,implicit_model_fallback=False)
