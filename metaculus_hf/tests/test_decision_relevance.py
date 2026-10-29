@@ -45,6 +45,6 @@ class RelevanceTests(unittest.TestCase):
    def fake(state,registry,*args):
     wire=model.request_payload(state,registry);self.assertNotIn(c.CONTEXT,wire['state']);self.assertIn('NOT approve',json.dumps(wire));return response(registry)
    with patch.object(model,'decide',side_effect=fake):analysis.run(raw,Path(tmp),dict(first_byte_limit=9830,second_byte_limit=12943),lambda:None)
-   self.assertTrue((Path(tmp)/'first/normalization-audit.json').exists())
+   self.assertTrue((Path(tmp)/'final/normalization-audit.json').exists())
 
 if __name__=='__main__':unittest.main()

@@ -173,20 +173,29 @@ authorized this paid model: input must be at most USD 0.04 per million tokens
 Unknown, negative, nonfinite or increased prices fail closed. No other decision
 model is selected implicitly. The existing physical-call budgets remain intact.
 
-The adapter retains the pinned original-evidence selector and conditional
-rereading criteria. It validates exact question/option identity, finite
+The adapter prepares the final original-evidence packet locally before making
+one logical Mercury call. Collection-model relevance/citation bindings, complete
+table dependencies and source-fair selection use the full final byte budget
+(normally 28,000 bytes). There is no preliminary Mercury score or conditional
+reread. Low-coverage/conflict diagnostics are returned with the final probability
+and saved, never used to trigger a second model judgment. It validates exact question/option identity, finite
 probabilities, distribution sums and ordinal expectations before converting to
 the native binary/categorical/CDF payload. Diagnostic sufficiency is never
 multiplied into event probability. The 65,536-token observed context uses conservative
 UTF8 envelope budgets, retaining complete question rules and exact source spans;
-this is not an exact tokenizer count. At most two logical decision stages run.
+this is not an exact tokenizer count. At most one logical decision stage runs.
 All physical HTTP attempts, including explicit credential-quota failover, are
 still durably counted. The analysis records the actual Mercury identity and
 protocol. The old optional Mammoth tokenizer is never used to estimate Mercury
-tokens. A failed second read retains a valid first decision with an explicit
-reread gap; the existing explicit question-prior/operational-default policy
+tokens. There is no earlier prediction to reuse if the final call fails;
+the existing explicit question-prior/operational-default policy
 still applies when no validated decision can be produced. This model switch
-does not change that fallback policy or overwrite earlier submitted defaults.
+does not change that fallback policy or overwrite earlier submitted forecasts.
+Final inputs, selection omissions, raw typed response, diagnostics and usage
+remain archived. Old two-stage identities fail closed rather than being
+silently overwritten. Existing transport failover/recovery attempts still count
+as physical HTTP attempts; one logical judgment is not a promise of one network
+attempt during a provider failure.
 
 Authentication/access failures, account quota, route absence, and temporary
 provider outages have distinct codes and persisted retry times. They do not

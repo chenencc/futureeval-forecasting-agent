@@ -71,4 +71,6 @@ def decision_route(*,opener=urlopen):
         endpoint_count=len(endpoints),endpoint_names=[r.get('name') for r in endpoints],metadata_only_preflight=True,implicit_model_fallback=False)
     result.update(token_policy)
     if token_policy:result.update(first_byte_limit=24000,second_byte_limit=36000,byte_policy='dual-token-and-byte-budget-with-4096-template-reserve')
+    result.update(final_byte_limit=result['second_byte_limit'],logical_decision_stage_cap=1)
+    if 'second_token_limit' in result:result['final_token_limit']=result['second_token_limit']
     return result

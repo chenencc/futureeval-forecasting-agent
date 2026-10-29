@@ -59,26 +59,48 @@ class DecisionTests(unittest.TestCase):
                 if kind=='binary':self.assertEqual(result['payload']['probability_yes'],.7)
                 elif kind=='multiple_choice':self.assertIn('probability_yes_per_category',result['payload'])
                 else:self.assertIn('continuous_cdf',result['payload'])
-    def test_conditional_reread_preserves_first_spans_and_cached_responses(self):
+    def test_single_final_call_uses_full_budget_despite_low_diagnostics_and_reuses_cache(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);source=self.source(root,long=True);states=[]
             def answer(state,q,*args):states.append(copy.deepcopy(state));return response(q,insufficient=True)
             with patch.object(model,'decide',side_effect=answer):
                 result=analysis.run(source,root/'analysis',self.route(),lambda:None)
                 again=analysis.run(source,root/'analysis',self.route(),lambda:None)
-            self.assertEqual(len(states),2);self.assertEqual(result['selection'],'decision_conditional_reread')
-            first={e['evidence_id'] for e in states[0]['evidence']};second={e['evidence_id'] for e in states[1]['evidence']};self.assertLess(first,second)
+            self.assertEqual(len(states),1);self.assertEqual(result['selection'],'decision_single_final')
+            audit=json.loads((root/'analysis/final-input-audit.json').read_bytes())
+            self.assertEqual(audit['request_byte_limit'],self.route()['second_byte_limit'])
+            self.assertGreater(audit['request_bytes'],self.route()['first_byte_limit'])
+            self.assertTrue(states[0]['evidence']);self.assertLessEqual(audit['request_bytes'],audit['request_byte_limit'])
+            self.assertTrue(all(x['complete'] for x in audit['review_coverage']))
+            self.assertFalse((root/'analysis/first').exists());self.assertFalse((root/'analysis/second').exists())
+            report=json.loads((root/'analysis/result.json').read_bytes())
+            self.assertEqual(report['logical_decision_stages'],1);self.assertTrue(report['remaining_diagnostic_gaps'])
+            self.assertFalse(report['routing']['diagnostics_trigger_inference'])
             self.assertEqual(result['payload']['probability_yes'],.7);self.assertEqual(result,again)
-    def test_failed_second_read_retains_only_valid_first_and_records_gap(self):
+    def test_failed_final_call_never_uses_hidden_first_prediction(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);source=self.source(root,long=True);calls=[]
             def answer(state,q,*args):
                 calls.append(state)
-                if len(calls)==2:raise AnalysisProviderError('ANALYSIS_PROVIDER_UNAVAILABLE',status=503)
-                return response(q,insufficient=True)
-            with patch.object(model,'decide',side_effect=answer):result=analysis.run(source,root/'analysis',self.route(),lambda:None)
-            report=json.loads((root/'analysis/result.json').read_bytes())
-            self.assertEqual(result['payload']['probability_yes'],.7);self.assertEqual(report['status'],'completed_with_reread_gap');self.assertEqual(report['second_error'],'ANALYSIS_PROVIDER_UNAVAILABLE')
+                raise AnalysisProviderError('ANALYSIS_PROVIDER_UNAVAILABLE',status=503)
+            with patch.object(model,'decide',side_effect=answer):
+                with self.assertRaises(AnalysisProviderError):analysis.run(source,root/'analysis',self.route(),lambda:None)
+            self.assertEqual(len(calls),1);self.assertFalse((root/'analysis/result.json').exists())
+            self.assertFalse((root/'analysis/first').exists());self.assertFalse((root/'analysis/second').exists())
+    def test_explicit_final_limit_needs_no_legacy_stage_limits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);source=self.source(root)
+            with patch.object(model,'decide',side_effect=lambda state,q,*a:response(q)) as decide:
+                result=analysis.run(source,root/'analysis',dict(final_byte_limit=12943),lambda:None)
+            self.assertEqual(decide.call_count,1);self.assertEqual(result['payload']['probability_yes'],.7)
+    def test_saved_two_stage_identity_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);source=self.source(root);folder=root/'analysis';folder.mkdir()
+            old=dict(protocol='metaculus-mercury-original-evidence/1',logical_decision_stage_cap=2)
+            (folder/'identity.json').write_text(json.dumps(old))
+            with patch.object(model,'decide',side_effect=AssertionError('inference on old identity')):
+                with self.assertRaisesRegex(ValueError,'FROZEN_DECISION_ANALYSIS_CHANGED'):analysis.run(source,folder,self.route(),lambda:None)
+            self.assertEqual(json.loads((folder/'identity.json').read_bytes()),old)
     def test_too_large_rules_fail_before_inference(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);source=self.source(root);source['request']['resolution_criteria']='x'*30000
