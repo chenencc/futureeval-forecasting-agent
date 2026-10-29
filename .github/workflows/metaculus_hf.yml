@@ -37,7 +37,7 @@ jobs:
       METACULUS_CHECKPOINT: ${{ vars.METACULUS_CHECKPOINT || 'metaculus/_control/checkpoint.json' }}
       METACULUS_WRITER: metaculus-agent-actions-v1
       FORECAST_MODEL: nvidia/nemotron-3.5-super-vl:free
-      METACULUS_DECISION_MODEL: baseten/mammoth-1:free
+      METACULUS_DECISION_MODEL: inception/mercury-decide
       PYTHONUNBUFFERED: '1'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:

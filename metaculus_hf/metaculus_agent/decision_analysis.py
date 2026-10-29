@@ -1,4 +1,4 @@
-"""Mammoth original-evidence decisions with bounded conditional rereading."""
+"""Mercury original-evidence decisions with bounded conditional rereading."""
 import hashlib,json,os
 from copy import deepcopy
 from pathlib import Path
@@ -11,7 +11,7 @@ from . import evidence_packing
 from . import decision_input
 from . import decision_profile,decision_canonical
 
-PROTOCOL='metaculus-mammoth-original-evidence/4'
+PROTOCOL='metaculus-mercury-original-evidence/1'
 
 def envelope_bytes(state,registry):return evidence_packing.measure(state,registry)
 
@@ -70,10 +70,10 @@ def run(source,folder,route,checkpoint):
     ids={e['evidence_id'] for e in first['evidence']};added=[e for e in second['evidence'] if e['evidence_id'] not in ids]
     gate=dict(reasons=reasons,new_ids=[s['evidence_id'] for s in added],new_chars=sum(len(s['text']) for s in added),diagnostics_are_not_facts=True)
     gate['second_call_required']=bool(reasons) and gate['new_chars']>=spans.ROUTING['minimum_new_chars']
-    save(folder/'routing.json',gate);final=response;selection='mammoth_question_prior' if prior_only else 'mammoth_first_read';second_error=None;selected_state=first
+    save(folder/'routing.json',gate);final=response;selection='decision_question_prior' if prior_only else 'decision_first_read';second_error=None;selected_state=first
     if gate['second_call_required']:
         save(folder/'second-state.json',second);save(folder/'second-input-audit.json',second_audit)
-        try:final=call(second,registry,folder/'second',checkpoint,route['second_byte_limit'],route.get('second_token_limit'));selection='mammoth_conditional_reread';selected_state=second
+        try:final=call(second,registry,folder/'second',checkpoint,route['second_byte_limit'],route.get('second_token_limit'));selection='decision_conditional_reread';selected_state=second
         except Exception as exc:
             from .storage import Conflict,PersistenceError
             if isinstance(exc,(Conflict,PersistenceError)):raise
@@ -89,8 +89,8 @@ def run(source,folder,route,checkpoint):
     result=dict(protocol=PROTOCOL,decision_model=client.MODEL,served_models=sorted({response['model'],final['model']}),status='completed_with_prior' if prior_only else 'completed_with_reread_gap' if second_error else 'completed',payload=candidate,selection=selection,forecast_origin=origin,
         routing=gate,remaining_diagnostic_gaps=router(final),second_error=second_error,new_retrieval_calls=0,no_forecasts_submitted=True)
     save(folder/'result.json',result);checkpoint()
-    comment='# ForecastAgent Mammoth decision\n\nSaved original evidence → typed Mammoth decisions → conditional rereading.\n\n## Resolution rules\n'+q['resolution_criteria']+'\n\n'+q.get('fine_print','')
-    if prior_only:comment='# ForecastAgent Mammoth question-prior fallback\n\nNo usable independent evidence was available. This is a model prior based on the question and rules, not an evidence-backed forecast.\n\n## Resolution rules\n'+q['resolution_criteria']+'\n\n'+q.get('fine_print','')
+    comment='# ForecastAgent Mercury Decide decision\n\nSaved original evidence → typed Mercury decisions → conditional rereading.\n\n## Resolution rules\n'+q['resolution_criteria']+'\n\n'+q.get('fine_print','')
+    if prior_only:comment='# ForecastAgent Mercury Decide question-prior fallback\n\nNo usable independent evidence was available. This is a model prior based on the question and rules, not an evidence-backed forecast.\n\n## Resolution rules\n'+q['resolution_criteria']+'\n\n'+q.get('fine_print','')
     comment+='\n\n## Decision diagnostics\n'+json.dumps(dict(selection=selection,remaining_gaps=result['remaining_diagnostic_gaps'],answers=final['answers']),ensure_ascii=False)
     comment+='\n\n## Saved original evidence\n'+'\n\n'.join(f"[{s['evidence_id']}] {s['url']} (characters {s['start']}–{s['end']})\n{s['text']}" for s in selected_state['evidence'])
     value=dict(payload=candidate,selection=selection,forecast_origin=origin,release_version=PROTOCOL,model_result_sha256=digest(result),comment=comment,automatic=True)

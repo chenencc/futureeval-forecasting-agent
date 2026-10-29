@@ -29,13 +29,16 @@ class InputBudgetTests(unittest.TestCase):
     def test_wrong_local_tokenizer_fails_before_parsing_or_network(self):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'tokenizer.json';p.write_text('{}')
-            with patch.dict(os.environ,{'METACULUS_DECISION_TOKENIZER_PATH':str(p)}):
+            with patch.dict(os.environ,{'METACULUS_DECISION_TOKENIZER_PATH':str(p),'METACULUS_DECISION_MODEL':'baseten/mammoth-1:free'}):
                 with self.assertRaisesRegex(ValueError,'HASH_MISMATCH'):tokens.available()
     def test_provider_prompt_limit_takes_precedence_and_preserves_headroom(self):
         data={'data':dict(id=DECISION_MODEL,architecture={'output_modalities':['decisions']},endpoints=[dict(context_length=16384,max_prompt_tokens=10000,pricing=dict(prompt='0',completion='0'))])}
-        with patch.object(tokens,'available',return_value=True):
+        with patch.dict(os.environ,{'METACULUS_DECISION_MODEL':DECISION_MODEL,'METACULUS_DECISION_TOKENIZER_PATH':'not-a-mercury-tokenizer'}):
             route=decision_route(opener=lambda *a,**k:io.StringIO(json.dumps(data)))
-        self.assertEqual(route['context_length'],10000);self.assertEqual(route['second_token_limit'],5904);self.assertEqual(route['template_token_reserve'],4096)
+        self.assertEqual(route['context_length'],10000);self.assertEqual(route['second_byte_limit'],7900);self.assertNotIn('second_token_limit',route)
+    def test_mammoth_tokenizer_is_not_used_for_mercury(self):
+        with patch.dict(os.environ,{'METACULUS_DECISION_MODEL':DECISION_MODEL,'METACULUS_DECISION_TOKENIZER_PATH':'untrusted-tokenizer'}):
+            self.assertFalse(tokens.available());self.assertIsNone(tokens.count({'state':'hello'}));self.assertEqual(tokens.policy(65536),{})
     def test_compact_wire_preserves_text_and_traceable_ids_without_mutating_audit(self):
         state=dict(evidence=[dict(source_id='S1',evidence_id='E123',url='https://example.org',body_sha256='abc',start=10,end=30,text='The motion did NOT pass.')],sources=[dict(source_id='S1',url='https://example.org',body_sha256='abc',evidence_role='baseline',review_status='unverified')])
         before=copy.deepcopy(state);wire=model.request_payload(state,{})['state']

@@ -35,8 +35,8 @@ class DecisionTests(unittest.TestCase):
     def test_typed_validation_rejects_wrong_identity_nan_options_and_ordinal_score(self):
         questions={'a':dict(type='noul'),'b':dict(type='choice',criteria={'yes':'Yes','no':'No'}),'c':dict(type='score',criteria=['low','high'])}
         good=response(questions);self.assertEqual(model.validate(good,questions),good)
-        served=copy.deepcopy(good);served['model']='baseten/mammoth-1-20261021:free';self.assertEqual(model.validate(served,questions),served)
-        for edit in [lambda r:r.update(model='inception/mercury-decide:free'),lambda r:r['answers']['a'].update(noul=True),lambda r:r['answers']['a'].update(noul=float('nan')),lambda r:r['answers']['b']['probabilities'].update(other=.5),lambda r:r['answers']['c'].update(score=.2)]:
+        served=copy.deepcopy(good);served['model']='inception/mercury-decide-20260930';self.assertEqual(model.validate(served,questions),served)
+        for edit in [lambda r:r.update(model='baseten/mammoth-1:free'),lambda r:r.update(model='inception/mercury-decide:free'),lambda r:r['answers']['a'].update(noul=True),lambda r:r['answers']['a'].update(noul=float('nan')),lambda r:r['answers']['b']['probabilities'].update(other=.5),lambda r:r['answers']['c'].update(score=.2)]:
             bad=copy.deepcopy(good);edit(bad)
             with self.assertRaises(model.InvalidDecision):model.validate(bad,questions)
     def test_actual_decisions_wire_and_observer_not_chat(self):
@@ -55,7 +55,7 @@ class DecisionTests(unittest.TestCase):
                 root=Path(tmp);source=self.source(root,kind)
                 with patch.object(model,'decide',side_effect=lambda state,q,*a:response(q)):
                     result=analysis.run(source,root/'analysis',self.route(),lambda:None)
-                self.assertEqual(result['payload']['question'],100);self.assertNotIn('Mercury',result['comment'])
+                self.assertEqual(result['payload']['question'],100);self.assertIn('Mercury Decide',result['comment'])
                 if kind=='binary':self.assertEqual(result['payload']['probability_yes'],.7)
                 elif kind=='multiple_choice':self.assertIn('probability_yes_per_category',result['payload'])
                 else:self.assertIn('continuous_cdf',result['payload'])
@@ -66,7 +66,7 @@ class DecisionTests(unittest.TestCase):
             with patch.object(model,'decide',side_effect=answer):
                 result=analysis.run(source,root/'analysis',self.route(),lambda:None)
                 again=analysis.run(source,root/'analysis',self.route(),lambda:None)
-            self.assertEqual(len(states),2);self.assertEqual(result['selection'],'mammoth_conditional_reread')
+            self.assertEqual(len(states),2);self.assertEqual(result['selection'],'decision_conditional_reread')
             first={e['evidence_id'] for e in states[0]['evidence']};second={e['evidence_id'] for e in states[1]['evidence']};self.assertLess(first,second)
             self.assertEqual(result['payload']['probability_yes'],.7);self.assertEqual(result,again)
     def test_failed_second_read_retains_only_valid_first_and_records_gap(self):
